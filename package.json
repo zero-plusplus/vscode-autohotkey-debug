@@ -23,6 +23,17 @@
     "vscode": "^1.44.0"
   },
   "contributes": {
+		"breakpoints": [
+			{
+				"language": "ahk"
+      },
+      {
+        "language": "ahk2"
+      },
+      {
+        "language": "ah2"
+      }
+		],
     "commands": [
       {
         "command": "vscode-ahk-debug.helloworld",
