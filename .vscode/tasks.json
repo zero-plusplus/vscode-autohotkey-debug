@@ -35,5 +35,10 @@
       "label": "subtask:reload-vscode",
       "command": "${command:workbench.action.reloadWindow}"
     },
+    {
+      "label": "subtask: build",
+      "type": "shell",
+      "command": "yarn build"
+    },
   ],
 }

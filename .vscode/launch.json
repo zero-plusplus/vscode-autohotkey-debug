@@ -5,6 +5,19 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Extension Test",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "preLaunchTask": "subtask: build"
+    },
+    {
       "name": "Mocha Tests",
       "type": "node",
       "request": "launch",
@@ -21,5 +34,5 @@
         "<node_internals>/**"
       ]
     }
-  ]
+  ],
 }
