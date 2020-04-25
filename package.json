@@ -15,7 +15,20 @@
     "lint": "eslint --fix ./src/**/*.ts ./test/**/*.ts",
     "clean": "rimraf dist",
     "build": "yarn clean && yarn lint && tsc",
-    "test": "yarn lint && mocha"
+    "test": "yarn lint && mocha",
+		"vscode:prepublish": "yarn build"
+  },
+  "publisher": "zero-plusplus",
+  "engines": {
+    "vscode": "^1.44.0"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscode-ahk-debug.helloworld",
+        "title": "Hello World!!!!!!!!!!!!"
+      }
+    ]
   },
   "devDependencies": {
     "@types/mocha": "^7.0.2",
@@ -27,6 +40,7 @@
     "eslint": "^6.8.0",
     "mocha": "^7.1.1",
     "ts-node": "^8.9.0",
-    "typescript": "^3.8.3"
+    "typescript": "^3.8.3",
+    "vsce": "^1.75.0"
   }
 }
