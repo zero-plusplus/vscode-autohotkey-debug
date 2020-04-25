@@ -5,7 +5,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Extension Test",
+      "name": "Sub: Extension Test",
       "type": "extensionHost",
       "request": "launch",
       "runtimeExecutable": "${execPath}",
@@ -16,8 +16,21 @@
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"
       ],
-      "preLaunchTask": "subtask: build"
+      "preLaunchTask": "subtask: build",
     },
+		{
+			"name": "Sub: Server Test",
+			"type": "node",
+			"request": "launch",
+			"cwd": "${workspaceFolder}",
+			"program": "${workspaceFolder}/src/debugAdapter.ts",
+			"args": [
+				"--server=4711"
+			],
+			"outFiles": [
+				"${workspaceFolder}/dist/**/*.js"
+			]
+		},
     {
       "name": "Mocha Tests",
       "type": "node",
@@ -36,4 +49,10 @@
       ]
     }
   ],
+	"compounds": [
+		{
+			"name": "Extension + Server",
+			"configurations": [ "Sub: Extension Test", "Sub: Server Test" ]
+		}
+	]
 }

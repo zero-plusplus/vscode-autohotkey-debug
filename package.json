@@ -4,6 +4,7 @@
   "description": "Supports AutoHotkey v1 and v2 debugging",
   "author": "zero-plusplus <git@zero-plusplus.com>",
   "license": "MIT",
+  "main": "./dist/src/extension",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/zero-plusplus/vscode-ahk-debug.git"
@@ -16,16 +17,22 @@
     "clean": "rimraf dist",
     "build": "yarn clean && yarn lint && tsc",
     "test": "yarn lint && mocha",
-		"vscode:prepublish": "yarn build"
+    "vscode:prepublish": "yarn build"
   },
   "publisher": "zero-plusplus",
   "engines": {
     "vscode": "^1.44.0"
   },
+  "activationEvents": [
+    "onDebug",
+    "onLanguage:ahk",
+    "onLanguage:ahk2",
+    "onLanguage:ah2"
+  ],
   "contributes": {
-		"breakpoints": [
-			{
-				"language": "ahk"
+    "breakpoints": [
+      {
+        "language": "ahk"
       },
       {
         "language": "ahk2"
@@ -33,11 +40,46 @@
       {
         "language": "ah2"
       }
-		],
+    ],
     "commands": [
       {
         "command": "vscode-ahk-debug.helloworld",
         "title": "Hello World!!!!!!!!!!!!"
+      }
+    ],
+    "debuggers": [
+      {
+        "type": "ahk",
+        "label": "AutoHotkey",
+        "languages": [
+          "ahk",
+          "ahk2",
+          "ah2"
+        ],
+        "program": "./dist/src/dap/debugAdapter.js",
+        "runtime": "node",
+        "configurationAttributes": {
+          "launch": {
+            "required": [
+              "program"
+            ],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "",
+                "default": "${file}"
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "ahk",
+            "request": "launch",
+            "name": "AutoHotkey Debug",
+            "program": "${file}"
+          }
+        ]
       }
     ]
   },
@@ -52,6 +94,9 @@
     "mocha": "^7.1.1",
     "ts-node": "^8.9.0",
     "typescript": "^3.8.3",
-    "vsce": "^1.75.0"
+    "vsce": "^1.75.0",
+    "vscode-debugadapter": "^1.40.0",
+    "vscode-debugadapter-testsupport": "^1.40.3",
+    "vscode-debugprotocol": "^1.40.0"
   }
 }

@@ -17,5 +17,7 @@ module.exports = {
   rules: {
     ...rules,
     'no-shadow': [ 'error', { builtinGlobals: true, allow: [ 'resolve', 'reject', 'done', 'context' ] } ],
+    'no-undefined': 'off',
+    'class-methods-use-this': 'off',
   }
 }
