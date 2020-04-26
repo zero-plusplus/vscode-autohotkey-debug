@@ -1,3 +1,4 @@
+import * as path from 'path';
 import {
   CancellationToken,
   DebugAdapterDescriptor,
@@ -16,19 +17,17 @@ import { AhkDebugSession } from './dap/ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
-    // if launch.json is missing or empty
-    if (!config.type && !config.request && !config.name) {
+    const isEmptyLaunchConfig = !config.type && !config.request && !config.name;
+    if (isEmptyLaunchConfig) {
       const editor = window.activeTextEditor;
-      if (editor) {
-        if (editor.document.languageId === 'ahk'
-          || editor.document.languageId === 'ahk2'
-          || editor.document.languageId === 'ah') {
-          config.type = 'ahk';
-          config.name = 'Launch';
-          config.request = 'launch';
-          config.program = '${file}';
-          config.stopOnEntry = true;
-        }
+      if (editor !== undefined) {
+        config.type = 'ahk';
+        config.name = 'Launch';
+        config.request = 'launch';
+        config.program = '${file}';
+        config.runtime = editor.document.languageId.toLowerCase() === 'ahk'
+          ? path.resolve(`${String(process.env.ProgramFiles)}/AutoHotkey/AutoHotkey.exe`)
+          : config.runtime = path.resolve(`${String(process.env.ProgramFiles)}/AutoHotkey/v2/AutoHotkey.exe`); // ahk2 or ah2
       }
     }
 
