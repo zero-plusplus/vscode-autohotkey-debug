@@ -77,6 +77,11 @@
                 "type": "string",
                 "description": "Absolute path to a (ahk | ahk2 | ah2) file.",
                 "default": "${file}"
+              },
+              "stopOnEntry": {
+               "type": "boolean",
+               "description": "Automatically stop after launch.",
+               "default": false
               }
             }
           }
@@ -89,7 +94,8 @@
               "type": "ahk",
               "request": "launch",
               "name": "AutoHotkey Debug",
-              "program": "^\"\\${file}\""
+              "program": "^\"\\${file}\"",
+              "stopOnEntry": false
             }
           }
         ]

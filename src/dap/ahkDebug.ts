@@ -28,6 +28,14 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendEvent(new InitializedEvent());
   }
   protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
+    if (args.stopOnEntry) {
+      this.sendResponse(response);
+      return;
+    }
+
+    this.continueRequest(response as DebugProtocol.ContinueResponse);
+  }
+  protected continueRequest(response: DebugProtocol.ContinueResponse): void {
     this.sendResponse(response);
   }
   protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): void {
