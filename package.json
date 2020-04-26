@@ -81,12 +81,16 @@
             }
           }
         },
-        "initialConfigurations": [
+        "configurationSnippets": [
           {
-            "type": "ahk",
-            "request": "launch",
-            "name": "AutoHotkey Debug",
-            "program": "${file}"
+            "label": "AutoHotkey Debug",
+            "description": "A new configuration for 'debugging' a user selected (ahk | ahk2 | ah2) file.",
+            "body": {
+              "type": "ahk",
+              "request": "launch",
+              "name": "AutoHotkey Debug",
+              "program": "^\"\\${file}\""
+            }
           }
         ]
       }
