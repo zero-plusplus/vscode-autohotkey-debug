@@ -14,4 +14,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.sendResponse(response);
   }
+  protected launchRequest(response: DebugProtocol.LaunchResponse, args: DebugProtocol.LaunchRequestArguments): void {
+    this.sendResponse(response);
+  }
 }
