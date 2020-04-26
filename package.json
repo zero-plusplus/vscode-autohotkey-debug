@@ -75,7 +75,7 @@
             "properties": {
               "program": {
                 "type": "string",
-                "description": "",
+                "description": "Absolute path to a (ahk | ahk2 | ah2) file.",
                 "default": "${file}"
               }
             }
