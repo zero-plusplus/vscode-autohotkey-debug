@@ -4,39 +4,50 @@ import * as xmlParse from 'xml-parser';
 /**
  * @see https://xdebug.org/docs/dbgp#connection-initialization
  */
-export interface InitPacket {
+export class InitPacket {
   /**
    * defined by the debugger engine
    */
-  appId: string;
+  public appId: string;
   /**
    * defined by the user. The DBGP_IDEKEY environment variable SHOULD be used if it is available, otherwise setting this value is debugger engine implementation specific. This value may be empty.
    */
-  ideKey: string;
+  public ideKey: string;
   /**
    * If the environment variable DBGP_COOKIE exists, then the init packet MUST contain a session attribute with the value of the variable. This allows an IDE to execute a debugger engine, and maintain some state information between the execution and the protocol connection. This value should not be expected to be set in 'remote' debugging situations where the IDE is not in control of the process.
    */
-  session: string;
+  public session: string;
   /**
    * the systems thread id
    */
-  thread: string;
+  public thread: string;
   /**
    * the appid of the application that spawned the process. When an application is executed, it should set it's APPID into the environment. If an APPID already exists, it should first read that value and use it as the PARENT_APPID.
    */
-  parent: string;
+  public parent: string;
   /**
    * debugger engine specific, must not contain additional information, such as version, etc.
    */
-  language: string;
+  public language: string;
   /**
    * The highest version of this protocol supported
    */
-  protocolVersion: string;
+  public protocolVersion: string;
   /**
    * URI of the script file being debugged
    */
-  fileUri: string;
+  public fileUri: string;
+  constructor(response: xmlParse.Document) {
+    const { attributes } = response.root;
+    this.appId = attributes.appid;
+    this.ideKey = attributes.ide_key;
+    this.session = attributes.session;
+    this.thread = attributes.thread;
+    this.parent = attributes.parent;
+    this.language = attributes.language;
+    this.protocolVersion = attributes.protocol_version;
+    this.fileUri = attributes.fileuri;
+  }
 }
 export class DbgpSession extends EventEmitter {
   public static readonly ID = 1; // No need for multiple sessions
@@ -47,12 +58,14 @@ export class DbgpSession extends EventEmitter {
     super();
 
     this.socket = socket
-      .on('data', (chunkData: Buffer) => this.handleDataChunk(chunkData))
+      .on('data', (chunkData: Buffer): void => this.handleDataChunk(chunkData))
       .on('error', (error: Error) => this.emit('error', error))
       .on('close', () => this.emit('close'));
 
-    this.on('message', (response: DomParser.Dom) => {
-      console.log(response);
+    this.on('message', (response: xmlParse.Document) => {
+      if (response.root.name === 'init') {
+        this.emit('init', new InitPacket(response));
+      }
     });
   }
   public async close(): Promise<void> {

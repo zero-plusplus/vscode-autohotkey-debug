@@ -11,7 +11,10 @@ import {
   ThreadEvent,
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { DbgpSession } from './dbgpSession';
+import {
+  DbgpSession,
+  InitPacket,
+} from './dbgpSession';
 
 
 interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
@@ -74,6 +77,9 @@ export class AhkDebugSession extends LoggingDebugSession {
         .on('connection', (socket) => {
           try {
             this.session = new DbgpSession(socket)
+              .on('init', (initPacket: InitPacket) => {
+                console.log(initPacket);
+              })
               .on('warning', (warning: string) => {
                 this.sendEvent(new OutputEvent(`${warning}\n`));
               })
