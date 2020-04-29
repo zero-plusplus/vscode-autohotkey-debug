@@ -1,7 +1,6 @@
 import { EventEmitter } from 'events';
 import { Socket } from 'net';
-import * as DomParser from 'dom-parser';
-const parser = new DomParser();
+import * as xmlParse from 'xml-parser';
 /**
  * @see https://xdebug.org/docs/dbgp#connection-initialization
  */
@@ -106,7 +105,7 @@ export class DbgpSession extends EventEmitter {
       this.restPackets = [];
 
       const xml_str = data.slice(0, terminatorIndex).toString();
-      const response = parser.parseFromString(xml_str);
+      const response = xmlParse(xml_str);
       this.emit('message', response);
 
       const restPacket = data.slice(terminatorIndex + 1);

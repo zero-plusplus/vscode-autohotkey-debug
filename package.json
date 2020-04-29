@@ -122,6 +122,7 @@
     "@types/node": "^13.13.2",
     "@types/underscore": "^1.9.4",
     "@types/vscode": "^1.44.0",
+    "@types/xml-parser": "^1.2.29",
     "@typescript-eslint/eslint-plugin": "^2.29.0",
     "@typescript-eslint/parser": "^2.29.0",
     "@zero-plusplus/eslint-my-rules": "^1.0.15",
@@ -135,6 +136,7 @@
     "vsce": "^1.75.0",
     "vscode-debugadapter": "^1.40.0",
     "vscode-debugadapter-testsupport": "^1.40.3",
-    "vscode-debugprotocol": "^1.40.0"
+    "vscode-debugprotocol": "^1.40.0",
+    "xml-parser": "^1.2.1"
   }
 }
