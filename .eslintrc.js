@@ -19,5 +19,6 @@ module.exports = {
     'no-shadow': [ 'error', { builtinGlobals: true, allow: [ 'resolve', 'reject', 'done', 'context' ] } ],
     'no-undefined': 'off',
     'class-methods-use-this': 'off',
+    '@typescript-eslint/no-floating-promises': 'off',
   }
 }
