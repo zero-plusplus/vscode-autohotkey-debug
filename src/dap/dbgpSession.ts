@@ -68,23 +68,24 @@ export class DbgpSession extends EventEmitter {
       }
     });
   }
-  public async close(): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
-      this.socket.once('close', resolve);
-      this.socket.end();
-    });
-  }
-  public async sendCommand(command: string): Promise<void> {
+  public async write(command: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (!this.socket.writable) {
         reject(new Error('Socket not writable.'));
       }
+
       this.socket.write(Buffer.from(command), (err) => {
         if (err) {
           reject(new Error('Some error occurred when writing'));
         }
         resolve();
       });
+    });
+  }
+  public async close(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.socket.once('close', resolve);
+      this.socket.end();
     });
   }
   private handlePacket(packet: Buffer): void {
