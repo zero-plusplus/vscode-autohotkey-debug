@@ -127,7 +127,6 @@
     "@zero-plusplus/eslint-my-rules": "^1.0.15",
     "dom-parser": "^0.1.6",
     "eslint": "^6.8.0",
-    "file-exists": "^5.0.1",
     "mocha": "^7.1.1",
     "onchange": "^6.1.1",
     "ts-node": "^8.9.0",

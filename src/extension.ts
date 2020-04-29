@@ -14,7 +14,6 @@ import {
   window,
 } from 'vscode';
 import { defaults } from 'underscore';
-import { sync as fileExistsSync } from 'file-exists';
 import { AhkDebugSession } from './dap/ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
@@ -32,10 +31,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         : config.runtime = path.resolve(`${String(process.env.ProgramFiles)}/AutoHotkey/v2/AutoHotkey.exe`), // ahk2 or ah2
     };
     defaults(config, defaultConfig);
-
-    if (!fileExistsSync(config.program)) {
-      return window.showInformationMessage(`File not found: "${String(config.program)}"`).then((_) => undefined);
-    }
 
     return config;
   }
