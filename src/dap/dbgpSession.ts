@@ -58,7 +58,7 @@ export class DbgpSession extends EventEmitter {
     super();
 
     this.socket = socket
-      .on('data', (chunkData: Buffer): void => this.handleDataChunk(chunkData))
+      .on('data', (packet: Buffer): void => this.handlePacket(packet))
       .on('error', (error: Error) => this.emit('error', error))
       .on('close', () => this.emit('close'));
 
@@ -87,7 +87,7 @@ export class DbgpSession extends EventEmitter {
       });
     });
   }
-  private handleDataChunk(packet: Buffer): void {
+  private handlePacket(packet: Buffer): void {
     // As shown in the example below, the data passed from dbgp is divided into data length and response.
     // https://xdebug.org/docs/dbgp#response
     //     data_length
@@ -105,7 +105,7 @@ export class DbgpSession extends EventEmitter {
       if (isReceivedDataLength) {
         const responsePacket = packet.slice(terminatorIndex + 1);
         this.dataLength = dataLength;
-        this.handleDataChunk(responsePacket);
+        this.handlePacket(responsePacket);
         return;
       }
 
@@ -123,7 +123,7 @@ export class DbgpSession extends EventEmitter {
 
       const restPacket = data.slice(terminatorIndex + 1);
       if (0 < restPacket.length) {
-        this.handleDataChunk(restPacket);
+        this.handlePacket(restPacket);
       }
 
       return;
