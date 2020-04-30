@@ -22,13 +22,14 @@
       "name": "Mocha Tests",
       "type": "node",
       "request": "launch",
+      "preLaunchTask": "subtask: build",
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
       "args": [
-        "--require", "ts-node/register",
-        "--ui", "tdd",
-        "--timeout", "999999",
-        "--colors",
+        "${workspaceFolder}/dist/test"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist/test/**/*.js"
       ],
       "internalConsoleOptions": "openOnSessionStart",
       "skipFiles": [

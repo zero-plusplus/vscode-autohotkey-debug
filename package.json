@@ -17,7 +17,7 @@
     "clean": "rimraf dist",
     "build": "yarn clean && yarn lint && tsc",
     "watch": "yarn build && onchange ./src/**/*.ts ./test/**/*.ts -- yarn build",
-    "test": "yarn lint && mocha",
+    "test": "yarn lint && mocha -r ts-node/register ./test/**/*.test.ts",
     "vscode:prepublish": "yarn build"
   },
   "watch": {
