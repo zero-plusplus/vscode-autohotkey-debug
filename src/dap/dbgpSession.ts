@@ -52,8 +52,7 @@ export class InitPacket {
 export class DbgpSession extends EventEmitter {
   public static readonly ID = 1; // No need for multiple sessions
   private readonly socket: Socket;
-  private restPackets: Buffer[] = [];
-  private dataLength = 0;
+  private insufficientData: Buffer = Buffer.from('');
   constructor(socket: Socket) {
     super();
 
@@ -98,39 +97,33 @@ export class DbgpSession extends EventEmitter {
     //               command="command_name"
     //               transaction_id="transaction_id"/>
     //     [NULL]
-    const terminatorIndex = packet.indexOf(0);
+    const currentPacket = Buffer.concat([ this.insufficientData, packet ]);
+    this.insufficientData = Buffer.from('');
+
+    const terminatorIndex = currentPacket.indexOf(0);
     const isCompleteReceived = -1 < terminatorIndex;
     if (isCompleteReceived) {
-      let dataLength = parseInt(packet.slice(0, terminatorIndex).toString(), 10);
-      const isReceivedDataLength = !isNaN(dataLength);
+      const data = currentPacket.slice(0, terminatorIndex);
+      const isReceivedDataLength = !isNaN(parseInt(data.toString(), 10));
       if (isReceivedDataLength) {
-        const responsePacket = packet.slice(terminatorIndex + 1);
-        this.dataLength = dataLength;
+        const responsePacket = currentPacket.slice(terminatorIndex + 1);
         this.handlePacket(responsePacket);
         return;
       }
 
       // Received response
-      dataLength = this.dataLength;
-      const data = Buffer.concat([ ...this.restPackets, packet ]);
-
-      // flush stored packet
-      this.dataLength = 0;
-      this.restPackets = [];
-
-      const xml_str = data.slice(0, terminatorIndex).toString();
+      const xml_str = data.toString();
       const response = xmlParse(xml_str);
       this.emit('message', response);
 
-      const restPacket = data.slice(terminatorIndex + 1);
+      const restPacket = currentPacket.slice(terminatorIndex + 1);
       if (0 < restPacket.length) {
         this.handlePacket(restPacket);
       }
-
       return;
     }
 
     // Wait for next packet
-    this.restPackets.push(packet);
+    this.insufficientData = currentPacket;
   }
 }
