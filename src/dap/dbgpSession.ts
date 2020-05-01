@@ -94,6 +94,18 @@ export class Response {
     this.success = Boolean(parseInt(attributes.success, 10));
   }
 }
+type FeatureGetName = 'supports_threads' | 'name' | 'version' | 'encoding' | 'protocol_version' | 'supports_async' | 'breakpoint_types';
+export class FeatureGetResponse extends Response {
+  public featureName: FeatureGetName;
+  public supported: boolean;
+  constructor(response: xmlParse.Document) {
+    super(response);
+    const { feature_name, supported } = response.root.attributes;
+
+    this.featureName = feature_name as FeatureGetName;
+    this.supported = Boolean(parseInt(supported, 10));
+  }
+}
 // See https://github.com/Lexikos/AutoHotkey_L/blob/master/source/Debugger.cpp#L451
 type FeatureSetName = 'max_data' | 'max_children' | 'max_depth';
 class FeatureSetResponse extends Response {
@@ -148,6 +160,9 @@ export class DbgpSession extends EventEmitter {
         this.sendCommand(command).catch(command.reject);
       }
     });
+  }
+  public async sendFeatureGetCommand(featureName: FeatureSetName, value: string | number): Promise<FeatureGetResponse> {
+    return new FeatureGetResponse(await this.enqueueCommand('feature_get', `-n ${featureName}`));
   }
   public async sendFeatureSetCommand(featureName: FeatureSetName, value: string | number): Promise<FeatureSetResponse> {
     return new FeatureSetResponse(await this.enqueueCommand('feature_set', `-n ${featureName} -v ${String(value)}`));
