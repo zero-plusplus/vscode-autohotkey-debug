@@ -78,7 +78,8 @@ export class AhkDebugSession extends LoggingDebugSession {
           try {
             this.session = new DbgpSession(socket)
               .on('init', (initPacket: InitPacket) => {
-                console.log(initPacket);
+                this.session?.sendFeatureSetCommand('max_children', 10000);
+                this.session?.sendFeatureSetCommand('max_data', 100000);
               })
               .on('warning', (warning: string) => {
                 this.sendEvent(new OutputEvent(`${warning}\n`));
