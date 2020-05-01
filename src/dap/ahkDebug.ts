@@ -66,7 +66,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
         this.sendEvent(new ThreadEvent('Session exited.', DbgpSession.ID));
 
-        if (this.session === undefined) {
+        if (typeof this.session === 'undefined') {
           return;
         }
         this.session.close();

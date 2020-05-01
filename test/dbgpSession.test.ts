@@ -34,7 +34,7 @@ suite('Debug session test', () => {
     });
     this.serverSocket.on('data', () => {
       const packet = packets.shift();
-      if (packet === undefined) {
+      if (typeof packet === 'undefined') {
         done();
         return;
       }
