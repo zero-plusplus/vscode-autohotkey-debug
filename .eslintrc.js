@@ -16,10 +16,5 @@ module.exports = {
   plugins: [ "@typescript-eslint" ],
   rules: {
     ...rules,
-    'no-shadow': [ 'error', { builtinGlobals: true, allow: [ 'resolve', 'reject', 'done', 'context' ] } ],
-    'no-underscore-dangle': 'off',
-    '@typescript-eslint/no-floating-promises': 'off', // This rule is redundant if you do not intentionally handle the error.
-    'no-unused-expressions': 'off',
-    '@typescript-eslint/no-unused-expressions': 'off', // Not compatible with TS3.7 Optional chaining
   }
 }

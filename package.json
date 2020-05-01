@@ -125,7 +125,7 @@
     "@types/xml-parser": "^1.2.29",
     "@typescript-eslint/eslint-plugin": "^2.29.0",
     "@typescript-eslint/parser": "^2.29.0",
-    "@zero-plusplus/eslint-my-rules": "^1.0.15",
+    "@zero-plusplus/eslint-my-rules": "^1.0.16",
     "dom-parser": "^0.1.6",
     "eslint": "^6.8.0",
     "mocha": "^7.1.1",
