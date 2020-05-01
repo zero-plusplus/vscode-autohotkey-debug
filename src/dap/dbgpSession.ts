@@ -153,7 +153,7 @@ export class DbgpSession extends EventEmitter {
 
       if (0 < this.commandQueue.length) {
         const command = this.commandQueue.shift();
-        if (command === undefined) {
+        if (typeof command === 'undefined') {
           return;
         }
 
@@ -191,10 +191,10 @@ export class DbgpSession extends EventEmitter {
   private async sendCommand(command: Command): Promise<void> {
     const transactionId = this.createTransactionId();
     let command_str = `${command.name} -i ${String(transactionId)}`;
-    if (command.args !== undefined) {
+    if (typeof command.args !== 'undefined') {
       command_str += ` ${command.args}`;
     }
-    if (command.data !== undefined) {
+    if (typeof command.data !== 'undefined') {
       command_str += ` -- ${Buffer.from(command.data).toString('base64')}`;
     }
     command_str += '\0';

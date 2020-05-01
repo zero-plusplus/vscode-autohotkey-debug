@@ -17,7 +17,6 @@ module.exports = {
   rules: {
     ...rules,
     'no-shadow': [ 'error', { builtinGlobals: true, allow: [ 'resolve', 'reject', 'done', 'context' ] } ],
-    'no-undefined': 'off',
     'no-underscore-dangle': 'off',
     '@typescript-eslint/no-floating-promises': 'off', // This rule is redundant if you do not intentionally handle the error.
     'no-unused-expressions': 'off',
