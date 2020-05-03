@@ -94,7 +94,7 @@ export class Response {
     this.success = Boolean(parseInt(attributes.success, 10));
   }
 }
-type FeatureGetName = 'supports_threads' | 'name' | 'version' | 'encoding' | 'protocol_version' | 'supports_async' | 'breakpoint_types';
+type FeatureGetName = 'language_supports_threads' | 'language_name' | 'language_version' | 'encoding' | 'protocol_version' | 'supports_async' | 'breakpoint_types';
 export class FeatureGetResponse extends Response {
   public featureName: FeatureGetName;
   public supported: boolean;
@@ -161,7 +161,7 @@ export class DbgpSession extends EventEmitter {
       }
     });
   }
-  public async sendFeatureGetCommand(featureName: FeatureSetName, value: string | number): Promise<FeatureGetResponse> {
+  public async sendFeatureGetCommand(featureName: FeatureGetName, value: string | number): Promise<FeatureGetResponse> {
     return new FeatureGetResponse(await this.enqueueCommand('feature_get', `-n ${featureName}`));
   }
   public async sendFeatureSetCommand(featureName: FeatureSetName, value: string | number): Promise<FeatureSetResponse> {
