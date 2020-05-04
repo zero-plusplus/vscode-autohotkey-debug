@@ -29,6 +29,7 @@ See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
     - [ ] Function breakpoints
     - [ ] Conditional breakpoints
     - [ ] Hit Conditional breakpoints
+    - [ ] Log point
 - [ ] Step-in, step-over, step-out
 - [ ] Watch expression
     - [ ] Variable name
