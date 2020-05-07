@@ -6,37 +6,13 @@ import * as xmlParse from 'xml-parser';
  * @see https://xdebug.org/docs/dbgp#connection-initialization
  */
 export class InitPacket {
-  /**
-   * defined by the debugger engine
-   */
   public appId: string;
-  /**
-   * defined by the user. The DBGP_IDEKEY environment variable SHOULD be used if it is available, otherwise setting this value is debugger engine implementation specific. This value may be empty.
-   */
   public ideKey: string;
-  /**
-   * If the environment variable DBGP_COOKIE exists, then the init packet MUST contain a session attribute with the value of the variable. This allows an IDE to execute a debugger engine, and maintain some state information between the execution and the protocol connection. This value should not be expected to be set in 'remote' debugging situations where the IDE is not in control of the process.
-   */
   public session: string;
-  /**
-   * the systems thread id
-   */
   public thread: string;
-  /**
-   * the appid of the application that spawned the process. When an application is executed, it should set it's APPID into the environment. If an APPID already exists, it should first read that value and use it as the PARENT_APPID.
-   */
   public parent: string;
-  /**
-   * debugger engine specific, must not contain additional information, such as version, etc.
-   */
   public language: string;
-  /**
-   * The highest version of this protocol supported
-   */
   public protocolVersion: string;
-  /**
-   * URI of the script file being debugged
-   */
   public fileUri: string;
   constructor(response: xmlParse.Node) {
     const { attributes } = response;
@@ -214,7 +190,6 @@ export class BreakpointGetResponse extends Response {
     this.line = parseInt(lineno, 10);
   }
 }
-// Ref: [v1.1.32.00](https://github.com/Lexikos/AutoHotkey_L/blob/36600809a348bd3a09d59e335d2897ed16f11ac7/source/Debugger.cpp#L678)
 export class BreakpointSetResponse extends Response {
   public id: number;
   public state: BreakpointState;
