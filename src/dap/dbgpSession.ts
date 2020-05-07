@@ -59,9 +59,8 @@ export interface Command {
 export class Response {
   public transactionId: number;
   public commandName: string;
-  public success: boolean;
   constructor(response: xmlParse.Node) {
-    const { transaction_id, command, success } = response.attributes;
+    const { transaction_id, command } = response.attributes;
     // if (name === 'error') {
     //   const code = parseInt(attributes.code, 10);
     //   const message = attributes.content;
@@ -69,7 +68,6 @@ export class Response {
     // }
     this.transactionId = parseInt(transaction_id, 10);
     this.commandName = command as CommandName;
-    this.success = Boolean(parseInt(success, 10));
   }
 }
 export type StackFrameType = 'file';
