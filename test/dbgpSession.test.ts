@@ -1,11 +1,11 @@
 import * as assert from 'assert';
-import { DbgpSession, InitPacket } from '../src/dap/dbgpSession';
+import * as dbgp from '../src/dap/dbgpSession';
 import * as net from 'net';
 
 suite('Debug session test', () => {
   setup(function(done) {
     this.serverSocket = net.connect(9000, 'localhost');
-    this.session = new DbgpSession(this.serverSocket);
+    this.session = new dbgp.Session(this.serverSocket);
     this.server = net.createServer((socket) => {
       this.socket = socket;
       done();
@@ -20,7 +20,7 @@ suite('Debug session test', () => {
       '<init appid="AutoHotkey" ide_key="" session="" thread="7208" parent="" ',
       'language="AutoHotkey" protocol_version="1.0" fileuri="file:///W%3A/project/vscode-ahk-debug/demo/demo.ahk"/>\0',
     ];
-    this.session.on('init', (response: InitPacket) => {
+    this.session.on('init', (response: dbgp.InitPacket) => {
       assert.deepEqual(response, {
         appId: 'AutoHotkey',
         fileUri: 'file:///W%3A/project/vscode-ahk-debug/demo/demo.ahk',

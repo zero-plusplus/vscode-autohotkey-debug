@@ -17,5 +17,8 @@ module.exports = {
   rules: {
     ...rules,
     'class-methods-use-this': 'off',
+    'arrow-body-style': 'off',
+    'no-shadow': 'off',
+    'no-plusplus': 'off',
   }
 }

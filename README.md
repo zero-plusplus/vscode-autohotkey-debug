@@ -19,18 +19,18 @@ See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
     - [ ] Primitive
     - [ ] Object
 - [ ] Call stack
-    - [ ] Call stack list
+    - [x] Call stack list
     - [ ] Toggle skipping this file
     - [ ] Restart frame
 - [ ] Show loaded scripts
 - [ ] Breakpoints
-    - [ ] Basic breakpoints
+    - [x] Basic breakpoints
     - [ ] Column breakpoints
     - [ ] Function breakpoints
     - [ ] Conditional breakpoints
     - [ ] Hit Conditional breakpoints
     - [ ] Log point
-- [ ] Step-in, step-over, step-out
+- [x] Step-in, step-over, step-out
 - [ ] Watch expression
     - [ ] Variable name
     - [ ] Expression
