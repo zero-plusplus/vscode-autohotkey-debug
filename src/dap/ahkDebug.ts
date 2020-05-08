@@ -8,8 +8,10 @@ import {
   InitializedEvent,
   LoggingDebugSession,
   OutputEvent,
+  Scope,
   StackFrame,
   StoppedEvent,
+  TerminatedEvent,
   Thread,
   ThreadEvent,
 } from 'vscode-debugadapter';
@@ -17,12 +19,13 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import * as dbgp from './dbgpSession';
 
 
-interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
   program: string;
   runtime: string;
   stopOnEntry?: boolean;
   hostname?: string;
   port?: number;
+  maxChildren: number;
 }
 
 export class AhkDebugSession extends LoggingDebugSession {
@@ -30,8 +33,11 @@ export class AhkDebugSession extends LoggingDebugSession {
   private session!: dbgp.Session;
   private ahkProcess!: ChildProcessWithoutNullStreams;
   private config!: LaunchRequestArguments;
+  private readonly contexts = new Map<number, dbgp.Context>();
   private stackFrameIdCounter = 1;
-  private readonly stackFrameMap = new Map<number, dbgp.StackFrame>();
+  private readonly stackFrames = new Map<number, dbgp.StackFrame>();
+  private variableReferenceCounter = 1;
+  private readonly objectProperties = new Map<number, dbgp.ObjectProperty>();
   constructor() {
     super('ahk-debug.txt');
 
@@ -116,10 +122,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    if (args.stopOnEntry) {
-      this.sendResponse(response);
-      return;
-    }
     this.sendResponse(response);
 
     // this.continueRequest(response as DebugProtocol.ContinueResponse);
@@ -131,7 +133,13 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     // Clear dbgp breakpoints from current file
     await Promise.all(dbgpBreakpoint
-      .filter((breakpoint) => breakpoint.fileUri === fileUri)
+      .filter((breakpoint) => {
+        // (breakpoint.fileUri === fileUri) is not Equals.
+        // breakpoint.fileUri: file:///W%3A/project/vscode-ahk-debug/demo/demo.ahk"
+        // fileUri:            file:///w:/project/vscode-ahk-debug/demo/demo.ahk
+        const filePath = this.convertDebuggerPathToClient(breakpoint.fileUri);
+        return filePath === args.source.path;
+      })
       .map(async(breakpoint) => {
         return this.session.sendBreakpointRemoveCommand(breakpoint);
       }));
@@ -162,6 +170,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
+    await this.session.sendFeatureSetCommand('max_children', this.config.maxChildren);
+
     const dbgpResponse = this.config.stopOnEntry
       ? await this.session.sendStepIntoCommand()
       : await this.session.sendRunCommand();
@@ -201,11 +211,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         const filePath = this.convertDebuggerPathToClient(stackFrame.fileUri);
         const source = {
           name: path.basename(filePath),
-          path: stackFrame.fileUri, // filePath,
-
+          path: stackFrame.fileUri,
         } as DebugProtocol.Source;
 
-        this.stackFrameMap.set(id, stackFrame);
+        this.stackFrames.set(id, stackFrame);
         return {
           id,
           source,
@@ -215,9 +224,88 @@ export class AhkDebugSession extends LoggingDebugSession {
         } as StackFrame;
       }),
     };
+
     this.sendResponse(response);
   }
-  protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request): void {
+  protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request): Promise<void> {
+    const stackFrame = this.stackFrames.get(args.frameId);
+    if (typeof stackFrame === 'undefined') {
+      throw new Error(`Unknown frameId ${args.frameId}`);
+    }
+    const { contexts } = await this.session.sendContextNamesCommand(stackFrame);
+
+    response.body = {
+      scopes: contexts.map((context) => {
+        const variableReference = this.variableReferenceCounter++;
+
+        this.contexts.set(variableReference, context);
+        return new Scope(context.name, variableReference);
+      }),
+    };
+
+    this.sendResponse(response);
+  }
+  protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
+    let properties: dbgp.Property[] = [];
+
+    if (this.contexts.has(args.variablesReference)) {
+      const context = this.contexts.get(args.variablesReference)!;
+      properties = (await this.session.sendContextGetCommand(context)).properties;
+    }
+    else if (this.objectProperties.has(args.variablesReference)) {
+      const objectProperty = this.objectProperties.get(args.variablesReference)!;
+      const { children } = (await this.session.sendPropertyGetCommand(objectProperty)).properties[0] as dbgp.ObjectProperty;
+      properties = children;
+    }
+
+    const variables: DebugProtocol.Variable[] = [];
+    for (const property of properties) {
+      let variablesReference = 0, indexedVariables, namedVariables;
+
+      if (args.filter) {
+        if (args.filter === 'named' && property.isIndex) {
+          continue;
+        }
+        if (args.filter === 'indexed') {
+          if (!property.isIndex) {
+            continue;
+          }
+          const index = property.index!;
+          const start = args.start! + 1;
+          const end = args.start! + args.count!;
+          const contains = start <= index && index <= end;
+          if (!contains) {
+            continue;
+          }
+        }
+      }
+
+      if (property.type === 'object') {
+        const objectProperty = property as dbgp.ObjectProperty;
+
+        variablesReference = this.variableReferenceCounter++;
+        this.objectProperties.set(variablesReference, objectProperty);
+        if (objectProperty.isArray) {
+          const maxIndex = objectProperty.maxIndex!;
+          if (100 < maxIndex) {
+            indexedVariables = maxIndex;
+            namedVariables = 1;
+          }
+        }
+      }
+
+      const name = property.isIndex ? String(property.index!) : property.name;
+      variables.push({
+        name,
+        type: property.type,
+        value: property.displayValue,
+        variablesReference,
+        indexedVariables,
+        namedVariables,
+      });
+    }
+
+    response.body = { variables };
     this.sendResponse(response);
   }
   protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void {
@@ -225,8 +313,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private checkContinuationStatus(response: dbgp.ContinuationResponse): void {
     if (response.status === 'stopped') {
-      this.sendEvent(new ThreadEvent('Session exited', this.session.id));
-      this.session.close();
+      this.sendEvent(new TerminatedEvent('Debug exited'));
     }
     else if (response.status === 'break') {
       let reason: 'entry' | 'step' | 'breakpoint' = 'breakpoint';

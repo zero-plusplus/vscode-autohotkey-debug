@@ -11,13 +11,18 @@ Press `F1`, type `ext vscode-ahk-debug`
 
 # Features
 
+# Known issues
+AutoHotkey v1
+AutoHotkey v2
+* Inspecting a property shows `"<error>"`.
+
 # Issues
 See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
 
 # Roadmap
-- [ ] Variable inspect
-    - [ ] Primitive
-    - [ ] Object
+- [x] Variable inspect
+    - [x] Primitive
+    - [x] Object
 - [ ] Call stack
     - [x] Call stack list
     - [ ] Toggle skipping this file
@@ -35,5 +40,5 @@ See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
     - [ ] Variable name
     - [ ] Expression
 - [ ] Show value when hovering
-    - [ ] Variable name
+    - [x] Variable name
     - [ ] Expression

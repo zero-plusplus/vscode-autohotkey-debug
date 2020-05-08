@@ -20,5 +20,7 @@ module.exports = {
     'arrow-body-style': 'off',
     'no-shadow': 'off',
     'no-plusplus': 'off',
+    '@typescript-eslint/no-use-before-define': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
   }
 }

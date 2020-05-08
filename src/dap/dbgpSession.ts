@@ -1,7 +1,25 @@
 // Ref: https://github.com/Lexikos/AutoHotkey_L/blob/master/source/Debugger.cpp
 import { EventEmitter } from 'events';
 import { Socket } from 'net';
-import * as xmlParse from 'xml-parser';
+import * as parser from 'fast-xml-parser';
+import * as he from 'he';
+import { rtrim } from 'underscore.string';
+
+export interface XmlDocument {
+  init?: XmlNode;
+  response?: XmlNode;
+}
+export interface XmlNode {
+  attributes: {
+    [key: string]: string;
+  };
+  breakpoint?: XmlNode;
+  content?: string;
+  context?: XmlNode[];
+  error?: XmlNode;
+  property?: XmlNode[];
+  stack?: XmlNode[];
+}
 /**
  * @see https://xdebug.org/docs/dbgp#connection-initialization
  */
@@ -14,17 +32,17 @@ export class InitPacket {
   public language: string;
   public protocolVersion: string;
   public fileUri: string;
-  constructor(response: xmlParse.Node) {
-    const { attributes } = response;
+  constructor(response: XmlNode) {
+    const { appid, ide_key, session, thread, parent, language, protocol_version, fileuri } = response.attributes;
 
-    this.appId = attributes.appid;
-    this.ideKey = attributes.ide_key;
-    this.session = attributes.session;
-    this.thread = attributes.thread;
-    this.parent = attributes.parent;
-    this.language = attributes.language;
-    this.protocolVersion = attributes.protocol_version;
-    this.fileUri = attributes.fileuri;
+    this.appId = appid;
+    this.ideKey = ide_key;
+    this.session = session;
+    this.thread = thread;
+    this.parent = parent;
+    this.language = language;
+    this.protocolVersion = protocol_version;
+    this.fileUri = fileuri;
   }
 }
 export type ContinuationCommandName = 'run' | 'step_into' | 'step_over' | 'step_out' | 'break' | 'stop' | 'detach';
@@ -59,7 +77,7 @@ export interface Command {
 export class Response {
   public transactionId: number;
   public commandName: string;
-  constructor(response: xmlParse.Node) {
+  constructor(response: XmlNode) {
     const { transaction_id, command } = response.attributes;
     // if (name === 'error') {
     //   const code = parseInt(attributes.code, 10);
@@ -77,8 +95,8 @@ export class StackFrame {
   public type: StackFrameType;
   public fileUri: string;
   public line: number;
-  constructor(stack: xmlParse.Node) {
-    const { level, type, filename, lineno, where } = stack.attributes;
+  constructor(response: XmlNode) {
+    const { level, type, filename, lineno, where } = response.attributes;
 
     this.level = parseInt(level, 10);
     this.name = where;
@@ -89,12 +107,153 @@ export class StackFrame {
 }
 export class StackGetResponse extends Response {
   public stackFrames: StackFrame[] = [];
-  constructor(response: xmlParse.Node) {
+  constructor(response: XmlNode) {
     super(response);
 
-    response.children.forEach((stack) => {
-      this.stackFrames.push(new StackFrame(stack));
-    });
+    if (response.stack) {
+      const stacks = Array.isArray(response.stack) ? response.stack : [ response.stack ];
+      stacks.forEach((stack) => {
+        this.stackFrames.push(new StackFrame(stack));
+      });
+    }
+  }
+}
+
+type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll';
+type PropertyType = 'undefined' | 'string' | 'integer' | 'float' | 'object';
+export abstract class Property {
+  public context: Context;
+  public facet: PropertyFacet;
+  public fullName: string;
+  public name: string;
+  public type: PropertyType;
+  public size: number;
+  public get isIndex(): boolean {
+    return this.index !== null;
+  }
+  public get index(): number | null {
+    const match = this.name.match(/\[(?<index>\d+)\]/u);
+    if (match?.groups?.index) {
+      return parseInt(match.groups.index, 10);
+    }
+    return null;
+  }
+  public abstract get displayValue(): string;
+  constructor(propertyNode: XmlNode, context: Context) {
+    const { facet, fullname, name, type, size } = propertyNode.attributes;
+
+    this.context = context;
+    this.facet = facet as PropertyFacet;
+    this.fullName = fullname;
+    this.name = name;
+    this.type = type as PropertyType;
+    this.size = parseInt(size, 10);
+  }
+  public static from(propertyNode: XmlNode, context: Context): Property {
+    if (propertyNode.attributes.type === 'object') {
+      return new ObjectProperty(propertyNode, context);
+    }
+    return new PrimitiveProperty(propertyNode, context);
+  }
+}
+export class ObjectProperty extends Property {
+  public className: string;
+  public children: Property[] = [];
+  public maxIndex?: number;
+  public address: number;
+  public page: number;
+  public pageSize: number;
+  public get isArray(): boolean {
+    return typeof this.maxIndex !== 'undefined';
+  }
+  public get displayValue(): string {
+    let value = this.isArray
+      ? `${this.className}(${this.maxIndex!}) [`
+      : `${this.className} {`;
+    for (const property of this.children) {
+      if (50 < value.length) {
+        value += '…';
+        break;
+      }
+      if ('value' in property) {
+        const primitiveProperty = property as PrimitiveProperty;
+        value += this.isArray
+          ? `${primitiveProperty.displayValue}, `
+          : `${primitiveProperty.name}: ${primitiveProperty.displayValue}, `;
+        continue;
+      }
+
+      const objectProperty = property as ObjectProperty;
+      value += this.isArray
+        ? `${objectProperty.className}, `
+        : `${objectProperty.name}: ${objectProperty.className}, `;
+    }
+
+    value = rtrim(value, ', ');
+    value += this.isArray ? ']' : '}';
+    return value;
+  }
+  constructor(propertyNode: XmlNode, context: Context) {
+    super(propertyNode, context);
+    const { classname, address, page, pagesize } = propertyNode.attributes;
+
+    this.className = classname;
+    this.address = parseInt(address, 10);
+    this.page = parseInt(page, 10);
+    this.pageSize = parseInt(pagesize, 10);
+
+    if (propertyNode.property) {
+      let maxIndex = -1;
+      const properties = Array.isArray(propertyNode.property) ? propertyNode.property : [ propertyNode.property ];
+      properties.forEach((propertyNode) => {
+        const match = propertyNode.attributes.name.match(/\[(?<index>\d+)\]/u);
+        if (match?.groups) {
+          const currentIndex = parseInt(match.groups.index, 10);
+          if (maxIndex < currentIndex) {
+            maxIndex = currentIndex;
+          }
+        }
+
+        this.children.push(Property.from(propertyNode, context));
+      });
+
+      if (-1 < maxIndex) {
+        this.maxIndex = maxIndex;
+      }
+    }
+  }
+}
+export class PrimitiveProperty extends Property {
+  public encoding: string;
+  public value: string;
+  public get displayValue(): string {
+    if (this.type === 'string') {
+      return `"${this.value}"`;
+    }
+    else if (this.type === 'undefined') {
+      return 'Not initialized';
+    }
+    return this.value;
+  }
+  constructor(propertyNode: XmlNode, context: Context) {
+    super(propertyNode, context);
+    const { encoding } = propertyNode.attributes;
+
+    this.encoding = encoding;
+    this.value = 'content' in propertyNode ? Buffer.from(String(propertyNode.content), encoding as BufferEncoding).toString() : '';
+  }
+}
+export class PropertyGetResponse extends Response {
+  public properties: Property[] = [];
+  constructor(response: XmlNode, context: Context) {
+    super(response);
+
+    if (response.property) {
+      const properties = Array.isArray(response.property) ? response.property : [ response.property ];
+      properties.forEach((property: XmlNode) => {
+        this.properties.push(Property.from(property, context));
+      });
+    }
   }
 }
 export type ContinuationStatus = 'starting' | 'break' | 'running' | 'stopped';
@@ -103,7 +262,7 @@ export class ContinuationResponse extends Response {
   public commandName: ContinuationCommandName;
   public reason: ContinuationReason;
   public status: ContinuationStatus;
-  constructor(response: xmlParse.Node) {
+  constructor(response: XmlNode) {
     super(response);
     const { command, status, reason } = response.attributes;
 
@@ -112,11 +271,48 @@ export class ContinuationResponse extends Response {
     this.status = status as ContinuationStatus;
   }
 }
+export class Context {
+  public id: number;
+  public name: string;
+  public stackFrame: StackFrame;
+  constructor(id: number, name: string, stackFrame: StackFrame) {
+    this.id = id;
+    this.name = name;
+    this.stackFrame = stackFrame;
+  }
+}
+export class ContextNamesResponse extends Response {
+  public contexts: Context[] = [];
+  constructor(response: XmlNode, stackFrame: StackFrame) {
+    super(response);
+
+    if (response.context) {
+      response.context.forEach(({ attributes: { id, name } }) => {
+        this.contexts.push(new Context(parseInt(id, 10), name, stackFrame));
+      });
+    }
+  }
+}
+export class ContextGetResponse extends Response {
+  public context: Context;
+  public properties: Property[] = [];
+  constructor(response: XmlNode, context: Context) {
+    super(response);
+
+    this.context = context;
+    if (response.property) {
+      const properties = Array.isArray(response.property) ? response.property : [ response.property ];
+      properties.forEach((property) => {
+        this.properties.push(Property.from(property, context));
+      });
+    }
+  }
+}
 export type FeatureGetName = 'language_supports_threads' | 'language_name' | 'language_version' | 'encoding' | 'protocol_version' | 'supports_async' | 'breakpoint_types';
 export class FeatureGetResponse extends Response {
   public featureName: FeatureGetName;
   public supported: boolean;
-  constructor(response: xmlParse.Node) {
+  constructor(response: XmlNode) {
     super(response);
     const { feature_name, supported } = response.attributes;
 
@@ -128,9 +324,10 @@ export type FeatureSetName = 'max_data' | 'max_children' | 'max_depth';
 export class FeatureSetResponse extends Response {
   public featureName: FeatureSetName;
   public success: boolean;
-  constructor(response: xmlParse.Node) {
+  constructor(response: XmlNode) {
     super(response);
     const { feature, success } = response.attributes;
+
     this.featureName = feature as FeatureSetName;
     this.success = Boolean(parseInt(success, 10));
   }
@@ -144,7 +341,7 @@ export class Breakpoint {
   public fileUri: string;
   public line: number;
   public temporary?: boolean;
-  constructor(responseOrFileUri: xmlParse.Node | string, line?: number) {
+  constructor(responseOrFileUri: XmlNode | string, line?: number) {
     if (typeof responseOrFileUri === 'object') {
       const response = responseOrFileUri;
       const { id, type, state, filename, lineno, temporary } = response.attributes;
@@ -177,9 +374,12 @@ export class BreakpointGetResponse extends Response {
   public state: BreakpointState;
   public fileName: string;
   public line: number;
-  constructor(response: xmlParse.Node) {
+  constructor(response: XmlNode) {
     super(response);
-    const { id, filename, lineno, state, type } = response.children[0].attributes;
+    if (typeof response.breakpoint === 'undefined') {
+      throw Error('');
+    }
+    const { id, filename, lineno, state, type } = response.breakpoint.attributes;
 
     this.id = parseInt(id, 10);
     this.type = type as BreakpointType;
@@ -191,7 +391,7 @@ export class BreakpointGetResponse extends Response {
 export class BreakpointSetResponse extends Response {
   public id: number;
   public state: BreakpointState;
-  constructor(response: xmlParse.Node) {
+  constructor(response: XmlNode) {
     super(response);
     const { id, state } = response.attributes;
 
@@ -200,12 +400,16 @@ export class BreakpointSetResponse extends Response {
   }
 }
 export class BreakpointListResponse extends Response {
-  public breakpoints: Breakpoint[];
-  constructor(response: xmlParse.Node) {
+  public readonly breakpoints: Breakpoint[] = [];
+  constructor(response: XmlNode) {
     super(response);
-    const { children } = response;
 
-    this.breakpoints = children.map((node) => new Breakpoint(node));
+    if (response.breakpoint) {
+      const breakpoints = Array.isArray(response.breakpoint) ? response.breakpoint : [ response.breakpoint ];
+      breakpoints.forEach((breakpoint) => {
+        this.breakpoints.push(new Breakpoint(breakpoint));
+      });
+    }
   }
 }
 export class Session extends EventEmitter {
@@ -227,32 +431,38 @@ export class Session extends EventEmitter {
       .on('error', (error: Error) => this.emit('error', error))
       .on('close', () => this.emit('close'));
 
-    this.on('message', (response: xmlParse.Node) => {
-      if (response.name === 'init') {
-        this.emit('init', new InitPacket(response));
-        return;
+    this.on('message', (xml: XmlDocument) => {
+      if (xml.init) {
+        this.emit('init', new InitPacket(xml.init));
       }
-
-      const transactionId = parseInt(response.attributes.transaction_id, 10);
-      if (this.pendingCommands.has(transactionId)) {
-        const command = this.pendingCommands.get(transactionId);
-        this.pendingCommands.delete(transactionId);
-        this._isRunningContinuationCommand = false;
-        command?.resolve(response);
-      }
-
-      if (0 < this.commandQueue.length) {
-        const command = this.commandQueue.shift();
-        if (typeof command === 'undefined') {
-          return;
+      else if (xml.response) {
+        const transactionId = parseInt(xml.response.attributes.transaction_id, 10);
+        if (this.pendingCommands.has(transactionId)) {
+          const command = this.pendingCommands.get(transactionId);
+          this.pendingCommands.delete(transactionId);
+          this._isRunningContinuationCommand = false;
+          command?.resolve(xml.response);
         }
 
-        this.sendCommand(command).catch(command.reject);
+        if (0 < this.commandQueue.length) {
+          const command = this.commandQueue.shift();
+          if (typeof command === 'undefined') {
+            return;
+          }
+
+          this.sendCommand(command).catch(command.reject);
+        }
       }
     });
   }
   public async sendStackGetCommand(): Promise<StackGetResponse> {
     return new StackGetResponse(await this.enqueueCommand('stack_get'));
+  }
+  public async sendPropertyGetCommand(property: Property): Promise<PropertyGetResponse> {
+    return new PropertyGetResponse(
+      await this.enqueueCommand('property_get', `-n ${property.fullName} -c ${property.context.id} -d ${property.context.stackFrame.level}`),
+      property.context,
+    );
   }
   public async sendRunCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.enqueueContinuationCommand('run'));
@@ -271,6 +481,12 @@ export class Session extends EventEmitter {
   }
   public async sendStepOverCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.enqueueContinuationCommand('step_over'));
+  }
+  public async sendContextNamesCommand(stackFrame: StackFrame): Promise<ContextNamesResponse> {
+    return new ContextNamesResponse(await this.enqueueCommand('context_names'), stackFrame);
+  }
+  public async sendContextGetCommand(context: Context): Promise<ContextGetResponse> {
+    return new ContextGetResponse(await this.enqueueCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`), context);
   }
   public async sendFeatureGetCommand(featureName: FeatureGetName, value: string | number): Promise<FeatureGetResponse> {
     return new FeatureGetResponse(await this.enqueueCommand('feature_get', `-n ${featureName}`));
@@ -300,8 +516,8 @@ export class Session extends EventEmitter {
     this.transactionCounter += 1;
     return this.transactionCounter;
   }
-  private async enqueueCommand(commandName: CommandName, args?: string, data?: string, isContinuationCommand = false): Promise<xmlParse.Node> {
-    return new Promise<xmlParse.Node>((resolve, reject) => {
+  private async enqueueCommand(commandName: CommandName, args?: string, data?: string, isContinuationCommand = false): Promise<XmlNode> {
+    return new Promise<XmlNode>((resolve, reject) => {
       const command = { name: commandName, args, data, resolve, reject, isContinuationCommand: false } as Command;
       if (this.commandQueue.length === 0 && this.pendingCommands.size === 0) {
         this.sendCommand(command);
@@ -311,7 +527,7 @@ export class Session extends EventEmitter {
       this.commandQueue.push(command);
     });
   }
-  private async enqueueContinuationCommand(commandName: ContinuationCommandName, args?: string, data?: string): Promise<xmlParse.Node> {
+  private async enqueueContinuationCommand(commandName: ContinuationCommandName, args?: string, data?: string): Promise<XmlNode> {
     return this.enqueueCommand(commandName, args, data, true);
   }
   private async sendCommand(command: Command): Promise<void> {
@@ -369,8 +585,17 @@ export class Session extends EventEmitter {
 
       // Received response
       const xml_str = data.toString();
-      const response = xmlParse(xml_str);
-      this.emit('message', response.root);
+      const response = parser.parse(xml_str, {
+        attributeNamePrefix: '',
+        attrNodeName: 'attributes',
+        textNodeName: 'content',
+        ignoreAttributes: false,
+        parseNodeValue: false,
+        attrValueProcessor: (value: string, attrName: string) => String(he.decode(value, { isAttributeValue: true })),
+        tagValueProcessor: (value: string, tagName: string) => String(he.decode(value)),
+      });
+
+      this.emit('message', response);
 
       const restPacket = currentPacket.slice(terminatorIndex + 1);
       if (0 < restPacket.length) {

@@ -42,15 +42,6 @@ demo()
     instance.property := "overwrite"
     instance.method()
 }
-createBigArray()
-{
-    arr := []
-    Loop 99999
-    {
-        arr.push(A_Index)
-    }
-    return arr
-}
 class Clazz
 {
     static field_static := "static field"
