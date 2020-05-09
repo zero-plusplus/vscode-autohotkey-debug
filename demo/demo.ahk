@@ -35,6 +35,7 @@ demo()
 
     obj_empty := {}
     obj := { str: str, int: int, arr: arr }
+    obj_specialkey := { [1, 2, 3]: "vaue", "space key": "value2"}
 
 	circular := {}
 	circular.circular := circular

@@ -32,9 +32,13 @@ demo()
     arr_big := Util_CreateBigArray()
     arr_like := { 1: str, 2: int, size: 2}
     arr_sparse := { 1: str, 3: int }
+    obj_specialkey := { [1, 2, 3]: "vaue", "space key": "value2"}
 
     obj_empty := {}
     obj := { str: str, int: int, arr: arr }
+
+    mp := Map("key", "value", [1, 2, 3], "value2")
+    buf := BufferAlloc(50)
 
 	circular := {}
 	circular.circular := circular
