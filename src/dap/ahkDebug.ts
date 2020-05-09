@@ -16,8 +16,8 @@ import {
   ThreadEvent,
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
+import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import * as dbgp from './dbgpSession';
-
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
   program: string;
@@ -26,6 +26,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   hostname?: string;
   port?: number;
   maxChildren: number;
+  version: 1 | 2;
 }
 
 export class AhkDebugSession extends LoggingDebugSession {
@@ -46,7 +47,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.setDebuggerPathFormat('uri');
   }
   protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
-    response.body = { supportsConfigurationDoneRequest: true };
+    response.body = {
+      supportsConfigurationDoneRequest: true,
+      supportsLoadedSourcesRequest: true,
+    };
 
     this.sendResponse(response);
   }
@@ -309,6 +313,22 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void {
+    this.sendResponse(response);
+  }
+  // eslint-disable-next-line @typescript-eslint/require-await
+  protected async loadedSourcesRequest(response: DebugProtocol.LoadedSourcesResponse, args: DebugProtocol.LoadedSourcesArguments, request?: DebugProtocol.Request): Promise<void> {
+    const resolver = new AhkIncludeResolver({
+      rootPath: this.config.program,
+      runtimePath: this.config.runtime,
+      version: this.config.version,
+    });
+
+    response.body = {
+      sources: resolver.extractAllIncludePath([ 'local', 'user', 'standard' ])
+        .map((filePath) => {
+          return { name: path.basename(filePath), path: filePath };
+        }),
+    };
     this.sendResponse(response);
   }
   private checkContinuationStatus(response: dbgp.ContinuationResponse): void {

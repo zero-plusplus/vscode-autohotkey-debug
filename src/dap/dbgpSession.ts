@@ -19,6 +19,7 @@ export interface XmlNode {
   error?: XmlNode;
   property?: XmlNode[];
   stack?: XmlNode[];
+  source?: XmlNode[];
 }
 /**
  * @see https://xdebug.org/docs/dbgp#connection-initialization
@@ -408,6 +409,25 @@ export class BreakpointListResponse extends Response {
       const breakpoints = Array.isArray(response.breakpoint) ? response.breakpoint : [ response.breakpoint ];
       breakpoints.forEach((breakpoint) => {
         this.breakpoints.push(new Breakpoint(breakpoint));
+      });
+    }
+  }
+}
+export class Source {
+  public source;
+  constructor(source: XmlNode) {
+    this.source = source;
+  }
+}
+export class SourceResponse extends Response {
+  public sources: Source[] = [];
+  constructor(response: XmlNode) {
+    super(response);
+
+    if (response.source) {
+      const sources = Array.isArray(response.source) ? response.source : [ response.source ];
+      sources.forEach((source) => {
+        this.sources.push(new Source(source));
       });
     }
   }

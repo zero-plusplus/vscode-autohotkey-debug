@@ -1,4 +1,4 @@
-﻿createBigArray()
+Util_CreateBigArray()
 {
     arr := []
     Loop 10000

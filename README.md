@@ -27,7 +27,7 @@ See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
     - [x] Call stack list
     - [ ] Toggle skipping this file
     - [ ] Restart frame
-- [ ] Show loaded scripts
+- [x] Show loaded scripts
 - [ ] Breakpoints
     - [x] Basic breakpoints
     - [ ] Column breakpoints
