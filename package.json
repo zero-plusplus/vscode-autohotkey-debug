@@ -121,6 +121,15 @@
       }
     ]
   },
+  "dependencies": {
+    "@zero-plusplus/ahk-include-path-resolver": "^1.0.5",
+    "fast-xml-parser": "^3.16.0",
+    "he": "^1.2.0",
+    "underscore": "^1.10.2",
+    "underscore.string": "^3.3.5",
+    "vscode-debugadapter": "^1.40.0",
+    "vscode-debugprotocol": "^1.40.0"
+  },
   "devDependencies": {
     "@types/he": "^1.1.1",
     "@types/mocha": "^7.0.2",
@@ -130,22 +139,14 @@
     "@types/vscode": "^1.44.0",
     "@typescript-eslint/eslint-plugin": "^2.29.0",
     "@typescript-eslint/parser": "^2.29.0",
-    "@zero-plusplus/ahk-include-path-resolver": "^1.0.5",
     "@zero-plusplus/eslint-my-rules": "^1.0.16",
     "eslint": "^6.8.0",
-    "fast-xml-parser": "^3.16.0",
-    "he": "^1.2.0",
     "husky": "^4.2.5",
     "mocha": "^7.1.1",
     "onchange": "^6.1.1",
     "ts-node": "^8.9.0",
     "typescript": "^3.8.3",
-    "underscore": "^1.10.2",
-    "underscore.string": "^3.3.5",
     "vsce": "^1.75.0",
-    "vscode-debugadapter": "^1.40.0",
-    "vscode-debugadapter-testsupport": "^1.40.3",
-    "vscode-debugprotocol": "^1.40.0"
-  },
-  "dependencies": {}
+    "vscode-debugadapter-testsupport": "^1.40.3"
+  }
 }
