@@ -30,7 +30,7 @@
   },
   "publisher": "zero-plusplus",
   "engines": {
-    "vscode": "^1.44.0"
+    "vscode": "^1.45.0"
   },
   "activationEvents": [
     "onDebug",
@@ -101,6 +101,11 @@
                 "type": "boolean",
                 "description": "Automatically stop after launch.",
                 "default": false
+              },
+              "useAdvancedBreakpoint": {
+                "type": "boolean",
+                "description": "Note: This is an experimental feature. Execution speed may be slow. Whether to enable Conditional Breakpoint / Hit Count Breakpoint / Log point",
+                "default": false
               }
             }
           }
@@ -125,6 +130,10 @@
     "@zero-plusplus/ahk-include-path-resolver": "^1.0.5",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
+    "parsimmon": "^1.13.0",
+    "pcre-to-regexp": "^1.1.0",
+    "safe-eval": "^0.4.1",
+    "stopwatch-node": "^1.0.2",
     "underscore": "^1.10.2",
     "underscore.string": "^3.3.5",
     "vscode-debugadapter": "^1.40.0",
@@ -134,9 +143,10 @@
     "@types/he": "^1.1.1",
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
+    "@types/parsimmon": "^1.10.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
-    "@types/vscode": "^1.44.0",
+    "@types/vscode": "^1.45.0",
     "@typescript-eslint/eslint-plugin": "^2.29.0",
     "@typescript-eslint/parser": "^2.29.0",
     "@zero-plusplus/eslint-my-rules": "^1.0.16",

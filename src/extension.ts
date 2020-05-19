@@ -26,14 +26,15 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       program: '${file}',
       hostname: 'localhost',
       port: 9000,
-      // If a value greater than 10001 is specified, malfunction may occur due to specification changes.
+      // If a value greater than 10000 is specified, malfunction may occur due to specification changes.
       // Ref: https://github.com/Lexikos/AutoHotkey_L/blob/36600809a348bd3a09d59e335d2897ed16f11ac7/source/Debugger.cpp#L960
       // > TODO: Include the lazy-var arrays for completeness. Low priority since lazy-var arrays are used only for 10001+ variables, and most conventional debugger interfaces would generally not be useful with that many variables.
-      maxChildren: 10000, // 10001以上の
+      maxChildren: 10000,
       runtime: editor && editor.document.languageId.toLowerCase() === 'ahk'
         ? path.resolve(`${String(process.env.ProgramFiles)}/AutoHotkey/AutoHotkey.exe`)
         : config.runtime = path.resolve(`${String(process.env.ProgramFiles)}/AutoHotkey/v2/AutoHotkey.exe`), // ahk2 or ah2
       version: editor && editor.document.languageId.toLowerCase() === 'ahk' ? 1 : 2,
+      useAdvancedBreakpoint: false,
     } as LaunchRequestArguments;
     defaults(config, defaultConfig);
 

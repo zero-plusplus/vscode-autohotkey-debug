@@ -65,26 +65,47 @@ export interface Command {
   reject: (error?: Error) => any;
   isContinuationCommand: boolean;
 }
-// Comment out because I don't know the pattern of error response
-// export class DbgpError extends Error {
-//   public code: number;
-//   constructor(message: string, code: number) {
-//     super(message);
-//     this.code = code;
-//     this.message = message;
-//     this.name = 'DbgpError';
-//   }
-// }
+
+const errorMssages = {
+  '1': 'parse error in command',
+  '3': 'invalid options (ie, missing a required option, invalid value for a passed option, not supported feature)',
+  '4': 'Unimplemented command',
+  '5': 'Command not available (Is used for async commands. For instance if the engine is in state "run" then only "break" and "status" are available).',
+  '100': `can not open file (as a reply to a "source" command if the requested source file can't be opened)`,
+  '200': 'breakpoint could not be set (for some reason the breakpoint could not be set due to problems registering it)',
+  '201': `breakpoint type not supported (for example I don't support 'watch' yet and thus return this error)`,
+  '202': 'invalid breakpoint (the IDE tried to set a breakpoint on a line that does not exist in the file (ie "line 0" or lines past the end of the file)',
+  '203': 'no code on breakpoint line (the IDE tried to set a breakpoint on a line which does not have any executable code. The debugger engine is NOT required to return this type if it is impossible to determine if there is code on a given location. (For example, in the PHP debugger backend this will only be returned in some special cases where the current scope falls into the scope of the breakpoint to be set)).',
+  '204': 'Invalid breakpoint state (using an unsupported breakpoint state was attempted)',
+  '205': 'No such breakpoint (used in breakpoint_get etc. to show that there is no breakpoint with the given ID)',
+  '300': 'Can not get property (when the requested property to get did not exist, this is NOT used for an existing but uninitialized property, which just gets the type "uninitialised" (See: PreferredTypeNames)).',
+  '301': 'Stack depth invalid (the -d stack depth parameter did not exist (ie, there were less stack elements than the number requested) or the parameter was < 0)',
+  '302': 'Context invalid (an non existing context was requested)',
+  '998': 'An internal exception in the debugger occurred',
+};
+
+export class DbgpError extends Error {
+  public code: number;
+  constructor(code: string) {
+    const message = errorMssages[code];
+    super(message);
+
+    this.name = 'DbgpError';
+    this.message = message;
+    this.code = parseInt(code, 10);
+  }
+}
 export class Response {
   public transactionId: number;
   public commandName: string;
   constructor(response: XmlNode) {
     const { transaction_id, command } = response.attributes;
-    // if (name === 'error') {
-    //   const code = parseInt(attributes.code, 10);
-    //   const message = attributes.content;
-    //   throw new DbgpError(message, code);
-    // }
+
+    if (response.error) {
+      const { code } = response.error.attributes;
+      throw new DbgpError(code);
+    }
+
     this.transactionId = parseInt(transaction_id, 10);
     this.commandName = command as CommandName;
   }
@@ -333,6 +354,13 @@ export class FeatureSetResponse extends Response {
     this.success = Boolean(parseInt(success, 10));
   }
 }
+export type BreakpointConditionType = 'condition' | 'hit' | 'log';
+export interface BreakpointAdvancedData {
+  counter: number;
+  condition?: string;
+  hitCondition?: string;
+  logMessage?: string;
+}
 export type BreakpointType = 'line';
 export type BreakpointState = 'enabled' | 'disabled';
 export class Breakpoint {
@@ -342,7 +370,8 @@ export class Breakpoint {
   public fileUri: string;
   public line: number;
   public temporary?: boolean;
-  constructor(responseOrFileUri: XmlNode | string, line?: number) {
+  public advancedData?: BreakpointAdvancedData;
+  constructor(responseOrFileUri: XmlNode | string, line?: number, advancedData?: BreakpointAdvancedData) {
     if (typeof responseOrFileUri === 'object') {
       const response = responseOrFileUri;
       const { id, type, state, filename, lineno, temporary } = response.attributes;
@@ -363,6 +392,10 @@ export class Breakpoint {
       this.fileUri = fileName;
       this.line = line;
       this.temporary = false;
+
+      if (advancedData) {
+        this.advancedData = advancedData;
+      }
     }
     else {
       throw Error('The argument is invalid');
@@ -525,6 +558,19 @@ export class Session extends EventEmitter {
   }
   public async sendBreakpointListCommand(): Promise<BreakpointListResponse> {
     return new BreakpointListResponse(await this.enqueueCommand('breakpoint_list'));
+  }
+  public async fetchPrimitiveProperty(propertyName: string): Promise<string | null> {
+    for await (const contextId of [ 0, 1 ]) {
+      const response = await this.enqueueCommand('property_get', `-n ${propertyName} -c ${contextId}`);
+      if (response.property) {
+        const [ property ] = Array.isArray(response.property) ? response.property : [ response.property ];
+        if (property.content) {
+          return Buffer.from(property.content, property.attributes.encoding as BufferEncoding).toString();
+        }
+      }
+    }
+
+    return null;
   }
   public async close(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
