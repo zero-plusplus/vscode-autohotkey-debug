@@ -102,6 +102,9 @@ See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
 - [x] Data inspection
     - [x] Primitive
     - [x] Object
+    - [x] Rewrite value
+        - [x] Primitive
+        - [ ] Object `Cannot support due to specifications`
 - [ ] Call stack
     - [x] Call stack list
     - [ ] Toggle skipping this file
@@ -109,15 +112,15 @@ See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
 - [x] Show loaded scripts
 - [ ] Breakpoints
     - [x] Basic breakpoints
-    - [ ] Column breakpoints
-    - [ ] Function breakpoints
+    - [ ] Column breakpoints `Cannot support due to specifications`
+    - [ ] Function breakpoints `Cannot support due to specifications`
     - [x] Conditional breakpoints
     - [x] Hit Conditional breakpoints
     - [x] Log point
 - [x] Step-in, step-over, step-out
 - [ ] Watch expression
     - [ ] Variable name
-    - [ ] Expression
+    - [ ] Expression `Cannot support due to specifications`
 - [ ] Show value when hovering
     - [x] Variable name
-    - [ ] Expression
+    - [ ] Expression `Cannot support due to specifications`
