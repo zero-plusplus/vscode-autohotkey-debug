@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import * as dbgp from '../src/dap/dbgpSession';
+import * as dbgp from '../src/dbgpSession';
 import * as net from 'net';
 
 suite('Debug session test', () => {

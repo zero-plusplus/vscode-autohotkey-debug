@@ -14,7 +14,7 @@ import {
   window,
 } from 'vscode';
 import { defaults } from 'underscore';
-import { AhkDebugSession, LaunchRequestArguments } from './dap/ahkDebug';
+import { AhkDebugSession, LaunchRequestArguments } from './ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
