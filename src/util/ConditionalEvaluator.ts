@@ -1,6 +1,6 @@
-import * as P from 'parsimmon';
-import { Session } from '../dbgpSession';
 import * as createPcre from 'pcre-to-regexp';
+import Parser from './AhkSimpleParser';
+import { Session } from '../dbgpSession';
 
 type Operator = (a: string, b: string) => boolean;
 const not = (predicate): Operator => (a: string, b: string): boolean => !predicate(a, b);
@@ -61,16 +61,16 @@ const operators: { [key: string]: Operator} = {
 
 export class ConditionalEvaluator {
   private readonly session: Session;
-  private readonly parser: P.Parser<any>;
   constructor(session: Session) {
     this.session = session;
-    this.parser = this.createParser();
   }
   public async eval(expression: string): Promise<boolean> {
-    const parsed = this.parser.parse(expression);
+    const parsed = Parser.Expression.parse(expression);
     if ('value' in parsed) {
-      if (parsed.value.type === 'LogicalExpression') {
-        const [ a, , operator, , b ] = parsed.value.value;
+      let primitive;
+      const expression = parsed.value.value;
+      if (expression.type === 'LogicalExpression') {
+        const [ a, , operatorType, , b ] = expression.value;
         const _a = a.type === 'PropertyName'
           ? await this.session.fetchPrimitiveProperty(a.value)
           : String(a.value);
@@ -79,158 +79,25 @@ export class ConditionalEvaluator {
           : String(b.value);
 
         if (_a && _b) {
-          const _operator = operator.value;
-          const result = Boolean(_operator(_a, _b));
-          return result;
+          const operator = operators[operatorType.value];
+          return operator(_a, _b);
         }
       }
-      else if (parsed.value.type === 'PropertyName') {
-        const propertyName = parsed.value.value;
-        const propertyValue = await this.session.fetchPrimitiveProperty(propertyName);
-        if (propertyValue !== null) {
-          return propertyValue !== '';
-        }
+      else if (expression.type === 'PropertyName') {
+        const propertyName = expression.value;
+        primitive = await this.session.fetchPrimitiveProperty(propertyName);
       }
-      else {
-        const { value } = parsed.value;
-        if (value === '0') {
+      else if (expression.type === 'Primitive') {
+        primitive = expression.value;
+      }
+
+      if (typeof primitive !== 'undefined') {
+        if (primitive === '0') {
           return false;
         }
-        return value !== '';
+        return primitive !== '';
       }
     }
     return false;
-  }
-  private createParser(): P.Parser<any> {
-    const Lang = P.createLanguage({
-      _(rules) {
-        return P.regex(/\s*/u);
-      },
-      __(rules) {
-        return P.whitespace;
-      },
-      Value(rules) {
-        return P.alt(
-          rules.Primitive,
-          rules.PropertyName,
-        );
-      },
-      Primitive(rules) {
-        return P.alt(
-          rules.StringLiteral,
-          rules.NumberLiteral,
-          rules.BooleanLiteral,
-        ).map((result) => {
-          return {
-            type: 'Primitive',
-            value: result,
-          };
-        });
-      },
-      StringLiteral(rules) {
-        return P.seq(
-          P.string('"'),
-          P.regex(/(?:""|`"|[^`"])+/ui),
-          P.string('"'),
-        ).map((result) => result[1]);
-      },
-      NumberLiteral(rules) {
-        return P.seq(
-          P.alt(rules.NegativeOperator, P.string('')),
-          P.alt(
-            rules.HexLiteral,
-            rules.FloatLiteral,
-            rules.IntegerLiteral,
-          ),
-        ).map((result) => result.join(''));
-      },
-      NegativeOperator() {
-        return P.string('-');
-      },
-      IntegerLiteral(rules) {
-        return P.regex(/(?:[1-9][0-9]+|[0-9])/ui);
-      },
-      FloatLiteral(rules) {
-        return P.seq(
-          rules.IntegerLiteral,
-          P.regex(/\.[0-9]+/ui),
-        ).map((result) => result.join(''));
-      },
-      HexLiteral(rules) {
-        return P.regex(/0x(?:[0-9a-f]|[1-9a-f][0-9a-f]+)/ui);
-      },
-      BooleanLiteral(rules) {
-        return P.regex(/true|false/ui).map((result) => (result === 'true' ? '1' : '0'));
-      },
-      Identifer(rules) {
-        return P.regex(/[^\s.!<>=]+/ui);
-      },
-      PropertyAccesor(rules) {
-        return P.seq(
-          P.string('.'),
-          rules.Identifer,
-        ).map((result) => result.join(''));
-      },
-      IndexAccesor(rules) {
-        return P.seq(
-          P.string('['),
-          rules.Primitive,
-          P.string(']'),
-        ).map((result) => result.join(''));
-      },
-      PropertyName(rules) {
-        return P.seq(
-          rules.Identifer,
-          P.alt(
-            rules.PropertyAccesor,
-            rules.IndexAccesor,
-          ).many(),
-        ).map((result) => {
-          return {
-            type: 'PropertyName',
-            value: result.join(''),
-          };
-        });
-      },
-      Expression(rules) {
-        return P.alt(
-          rules.LogicalExpression,
-          rules.Value,
-        );
-      },
-      LogicalExpression(rules) {
-        return P.seq(
-          rules.Value,
-          rules._,
-          rules.Operator,
-          rules._,
-          rules.Value,
-        ).map((result) => {
-          return {
-            type: 'LogicalExpression',
-            value: result,
-          };
-        });
-      },
-      Operator(rules) {
-        return P.alt(
-          P.string('=='),
-          P.string('='),
-          P.string('!=='),
-          P.string('!='),
-          P.string('<='),
-          P.string('<'),
-          P.string('>='),
-          P.string('>'),
-          P.string('~='),
-        ).map((result) => {
-          return {
-            type: 'Operator',
-            value: operators[result],
-          };
-        });
-      },
-    });
-    return Lang.Expression;
   }
 }
