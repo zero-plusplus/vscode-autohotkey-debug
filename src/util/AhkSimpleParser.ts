@@ -10,37 +10,71 @@ export default P.createLanguage({
   StringLiteral(rules) {
     return P.seq(
       P.string('"'),
-      P.regex(/(?:""|`"|[^`"])+/ui),
+      P.regex(/(?:""|`"|[^`"])*/ui),
       P.string('"'),
-    ).map((result) => result[1]);
+    ).map((result) => {
+      return {
+        type: 'String',
+        value: result[1],
+      };
+    });
   },
   NumberLiteral(rules) {
-    return P.seq(
-      P.alt(rules.NegativeOperator, P.string('')),
-      P.alt(
-        rules.HexLiteral,
-        rules.FloatLiteral,
-        rules.IntegerLiteral,
-      ),
-    ).map((result) => result.join(''));
+    return P.alt(
+      rules.HexLiteral,
+      rules.FloatLiteral,
+      rules.IntegerLiteral,
+    ).map((result) => {
+      return {
+        type: 'Number',
+        value: result,
+      };
+    });
   },
   NegativeOperator() {
     return P.string('-');
   },
   IntegerLiteral(rules) {
-    return P.regex(/(?:[1-9][0-9]+|[0-9])/ui);
+    return P.seq(
+      P.alt(rules.NegativeOperator, P.string('')),
+      P.regex(/(?:[1-9][0-9]+|[0-9])/ui),
+    ).map((result) => {
+      return {
+        type: 'Integer',
+        value: result.join(''),
+      };
+    });
   },
   FloatLiteral(rules) {
     return P.seq(
+      P.alt(rules.NegativeOperator, P.string('')),
       rules.IntegerLiteral,
       P.regex(/\.[0-9]+/ui),
-    ).map((result) => result.join(''));
+    ).map((result) => {
+      return {
+        type: 'Float',
+        value: `${String(result[0])}${String(result[1].value)}${result[2]}`,
+      };
+    });
   },
   HexLiteral(rules) {
-    return P.regex(/0x(?:[0-9a-f]|[1-9a-f][0-9a-f]+)/ui);
+    return P.seq(
+      P.alt(rules.NegativeOperator, P.string('')),
+      P.regex(/0x(?:[1-9a-f][0-9a-f]+|[0-9a-f])/ui),
+    ).map((result) => {
+      return {
+        type: 'Hex',
+        value: result.join(''),
+      };
+    });
   },
   BooleanLiteral(rules) {
-    return P.regex(/true|false/ui).map((result) => (result === 'true' ? '1' : '0'));
+    return P.regex(/true|false/ui).map((result) => {
+      return {
+        type: 'Boolean',
+        value: result === 'true' ? '1' : '0',
+      };
+    });
   },
   Identifer(rules) {
     return P.regex(/[^\s.!<>=]+/ui);

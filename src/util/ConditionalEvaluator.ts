@@ -67,16 +67,31 @@ export class ConditionalEvaluator {
   public async eval(expression: string): Promise<boolean> {
     const parsed = Parser.Expression.parse(expression);
     if ('value' in parsed) {
-      let primitive;
       const expression = parsed.value.value;
+
+      let primitiveValue;
       if (expression.type === 'LogicalExpression') {
         const [ a, , operatorType, , b ] = expression.value;
-        const _a = a.type === 'PropertyName'
-          ? await this.session.fetchPrimitiveProperty(a.value)
-          : String(a.value);
-        const _b = b.type === 'PropertyName'
-          ? (await this.session.fetchPrimitiveProperty(b.value))?.replace('\\', '`')
-          : String(b.value);
+        const getValue = async(value): Promise<string | null> => {
+          if (value.type === 'PropertyName') {
+            const propertyName = value.value;
+            const property = await this.session.fetchPrimitiveProperty(propertyName);
+            return property;
+          }
+
+          const primitive = value.value;
+          if (primitive.type === 'String') {
+            return String(primitive.value);
+          }
+
+          const number = primitive.value;
+          if (number.type === 'Hex') {
+            return String(parseInt(number.value, 16));
+          }
+          return String(number.value);
+        };
+        const _a = await getValue(a);
+        const _b = await getValue(b);
 
         if (_a && _b) {
           const operator = operators[operatorType.value];
@@ -85,17 +100,18 @@ export class ConditionalEvaluator {
       }
       else if (expression.type === 'PropertyName') {
         const propertyName = expression.value;
-        primitive = await this.session.fetchPrimitiveProperty(propertyName);
+        primitiveValue = await this.session.fetchPrimitiveProperty(propertyName);
       }
       else if (expression.type === 'Primitive') {
-        primitive = expression.value;
+        const primitive = expression.value;
+        primitiveValue = primitive.value;
       }
 
-      if (typeof primitive !== 'undefined') {
-        if (primitive === '0') {
+      if (typeof primitiveValue !== 'undefined') {
+        if (primitiveValue === '0') {
           return false;
         }
-        return primitive !== '';
+        return primitiveValue !== '';
       }
     }
     return false;

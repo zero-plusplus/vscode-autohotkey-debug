@@ -19,6 +19,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { StopWatch } from 'stopwatch-node';
 import * as safeEval from 'safe-eval';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
+import Parser from './util/AhkSimpleParser';
 import { ConditionalEvaluator } from './util/ConditionalEvaluator';
 import * as dbgp from './dbgpSession';
 
@@ -37,11 +38,11 @@ export class AhkDebugSession extends LoggingDebugSession {
   private session!: dbgp.Session;
   private ahkProcess!: ChildProcessWithoutNullStreams;
   private config!: LaunchRequestArguments;
-  private readonly contexts = new Map<number, dbgp.Context>();
+  private readonly contextsByVariablesReference = new Map<number, dbgp.Context>();
   private stackFrameIdCounter = 1;
-  private readonly stackFrames = new Map<number, dbgp.StackFrame>();
+  private readonly stackFramesByFrameId = new Map<number, dbgp.StackFrame>();
   private variableReferenceCounter = 1;
-  private readonly objectProperties = new Map<number, dbgp.ObjectProperty>();
+  private readonly objectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private readonly breakpoints: { [key: string]: dbgp.Breakpoint | undefined} = {};
   private conditionalEvaluator!: ConditionalEvaluator;
   private readonly stopwatch = new StopWatch('ahk-process');
@@ -59,6 +60,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportsHitConditionalBreakpoints: true,
       supportsLoadedSourcesRequest: true,
       supportsLogPoints: true,
+      supportsSetVariable: true,
     };
 
     this.sendResponse(response);
@@ -267,7 +269,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           path: stackFrame.fileUri,
         } as DebugProtocol.Source;
 
-        this.stackFrames.set(id, stackFrame);
+        this.stackFramesByFrameId.set(id, stackFrame);
         return {
           id,
           source,
@@ -281,7 +283,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request): Promise<void> {
-    const stackFrame = this.stackFrames.get(args.frameId);
+    const stackFrame = this.stackFramesByFrameId.get(args.frameId);
     if (typeof stackFrame === 'undefined') {
       throw new Error(`Unknown frameId ${args.frameId}`);
     }
@@ -291,7 +293,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       scopes: contexts.map((context) => {
         const variableReference = this.variableReferenceCounter++;
 
-        this.contexts.set(variableReference, context);
+        this.contextsByVariablesReference.set(variableReference, context);
         return new Scope(context.name, variableReference);
       }),
     };
@@ -301,12 +303,12 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
     let properties: dbgp.Property[] = [];
 
-    if (this.contexts.has(args.variablesReference)) {
-      const context = this.contexts.get(args.variablesReference)!;
+    if (this.contextsByVariablesReference.has(args.variablesReference)) {
+      const context = this.contextsByVariablesReference.get(args.variablesReference)!;
       properties = (await this.session.sendContextGetCommand(context)).properties;
     }
-    else if (this.objectProperties.has(args.variablesReference)) {
-      const objectProperty = this.objectProperties.get(args.variablesReference)!;
+    else if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
+      const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
       const { children } = (await this.session.sendPropertyGetCommand(objectProperty)).properties[0] as dbgp.ObjectProperty;
       properties = children;
     }
@@ -337,7 +339,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         const objectProperty = property as dbgp.ObjectProperty;
 
         variablesReference = this.variableReferenceCounter++;
-        this.objectProperties.set(variablesReference, objectProperty);
+        this.objectPropertiesByVariablesReference.set(variablesReference, objectProperty);
         if (objectProperty.isArray) {
           const maxIndex = objectProperty.maxIndex!;
           if (100 < maxIndex) {
@@ -360,6 +362,67 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     response.body = { variables };
     this.sendResponse(response);
+  }
+  protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
+    const context = this.objectPropertiesByVariablesReference.has(args.variablesReference)
+      ? this.objectPropertiesByVariablesReference.get(args.variablesReference)!.context
+      : this.contextsByVariablesReference.get(args.variablesReference)!;
+
+    const setVariable = async(typeName: string, data: string): Promise<void> => {
+      const dbgpResponse = await this.session.sendPropertySetCommand({
+        context,
+        fullName: args.name,
+        typeName,
+        data,
+      });
+
+      if (dbgpResponse.success) {
+        response.body = {
+          type: typeName,
+          variablesReference: 0,
+          value: typeName === 'string' ? `"${data}"` : data,
+        };
+        this.sendResponse(response);
+        return;
+      }
+
+      this.sendErrorResponse(response, {
+        id: args.variablesReference,
+        format: 'Rewriting failed. Probably read-only.',
+      } as DebugProtocol.Message);
+    };
+    const parsed = Parser.Primitive.parse(args.value);
+    if ('value' in parsed) {
+      const primitive = parsed.value.value;
+
+      let typeName = 'string', data = `${String(primitive.value)}`;
+      if (primitive.type === 'Number') {
+        const number = primitive.value;
+        if (number.type === 'Intger') {
+          typeName = 'intger';
+          data = String(number.value);
+        }
+        else if (number.type === 'Hex') {
+          typeName = 'intger';
+          data = String(parseInt(number.value, 16));
+        }
+        else {
+          data = String(number.value);
+        }
+      }
+      await setVariable(typeName, data);
+      return;
+    }
+
+    if (args.value === '') {
+      await setVariable('undefined', 'Not initialized');
+      return;
+    }
+
+    this.sendErrorResponse(response, {
+      id: args.variablesReference,
+      format: 'Only primitive values are supported. e.g. "string", 123, 0x123, true',
+    } as DebugProtocol.Message);
   }
   protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void {
     this.sendResponse(response);

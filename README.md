@@ -13,6 +13,15 @@ Press `F1`, type `ext vscode-ahk-debug`
 ## Data inspection
 See [this](https://code.visualstudio.com/docs/editor/debugging#_data-inspection)
 
+### Set value
+The value of the variable can be rewritten. (Primitive value only)
+Specifically, the following types are supported.
+* `String` e.g `"string"`
+* `Number`
+    * `Integer` Treated as a intger. e.g. `123`
+    * `Float` Treated as a string. e.g. `123.456`
+    * `Hex` Converted to decimal and treated as integer. e.g. `0x123`
+
 ## Breakpoints
 See [this](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
 

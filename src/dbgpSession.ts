@@ -278,6 +278,15 @@ export class PropertyGetResponse extends Response {
     }
   }
 }
+export class PropertySetResponse extends Response {
+  public success: boolean;
+  constructor(response: XmlNode) {
+    super(response);
+    const { success } = response.attributes;
+
+    this.success = Boolean(parseInt(success, 10));
+  }
+}
 export type ContinuationStatus = 'starting' | 'break' | 'running' | 'stopped';
 export type ContinuationReason = 'ok' | 'error';
 export class ContinuationResponse extends Response {
@@ -516,6 +525,9 @@ export class Session extends EventEmitter {
       await this.enqueueCommand('property_get', `-n ${property.fullName} -c ${property.context.id} -d ${property.context.stackFrame.level}`),
       property.context,
     );
+  }
+  public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: string; data: string }): Promise<PropertySetResponse> {
+    return new PropertySetResponse(await this.enqueueCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName} -t ${property.typeName}`, property.data));
   }
   public async sendRunCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.enqueueContinuationCommand('run'));
