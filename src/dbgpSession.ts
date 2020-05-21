@@ -343,12 +343,14 @@ export type FeatureGetName = 'language_supports_threads' | 'language_name' | 'la
 export class FeatureGetResponse extends Response {
   public featureName: FeatureGetName;
   public supported: boolean;
+  public value: string;
   constructor(response: XmlNode) {
     super(response);
     const { feature_name, supported } = response.attributes;
 
     this.featureName = feature_name as FeatureGetName;
     this.supported = Boolean(parseInt(supported, 10));
+    this.value = String(response.content);
   }
 }
 export type FeatureSetName = 'max_data' | 'max_children' | 'max_depth';
@@ -553,7 +555,7 @@ export class Session extends EventEmitter {
   public async sendContextGetCommand(context: Context): Promise<ContextGetResponse> {
     return new ContextGetResponse(await this.enqueueCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`), context);
   }
-  public async sendFeatureGetCommand(featureName: FeatureGetName, value: string | number): Promise<FeatureGetResponse> {
+  public async sendFeatureGetCommand(featureName: FeatureGetName): Promise<FeatureGetResponse> {
     return new FeatureGetResponse(await this.enqueueCommand('feature_get', `-n ${featureName}`));
   }
   public async sendFeatureSetCommand(featureName: FeatureSetName, value: string | number): Promise<FeatureSetResponse> {

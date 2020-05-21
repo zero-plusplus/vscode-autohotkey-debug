@@ -30,13 +30,13 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   hostname?: string;
   port?: number;
   maxChildren: number;
-  version: 1 | 2;
   useAdvancedBreakpoint: boolean;
 }
 export class AhkDebugSession extends LoggingDebugSession {
   private server!: net.Server;
   private session!: dbgp.Session;
   private ahkProcess!: ChildProcessWithoutNullStreams;
+  private ahkVersion!: 1 | 2;
   private config!: LaunchRequestArguments;
   private readonly contextsByVariablesReference = new Map<number, dbgp.Context>();
   private stackFrameIdCounter = 1;
@@ -114,7 +114,10 @@ export class AhkDebugSession extends LoggingDebugSession {
                   return;
                 }
                 // Request breakpoints from VS Code
-                this.sendEvent(new InitializedEvent());
+                this.session.sendFeatureGetCommand('language_version').then((response) => {
+                  this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
+                  this.sendEvent(new InitializedEvent());
+                });
               })
               .on('warning', (warning: string) => {
                 this.sendEvent(new OutputEvent(`${warning}\n`));
@@ -432,7 +435,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const resolver = new AhkIncludeResolver({
       rootPath: this.config.program,
       runtimePath: this.config.runtime,
-      version: this.config.version,
+      version: this.ahkVersion,
     });
 
     response.body = {

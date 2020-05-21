@@ -33,7 +33,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtime: editor && editor.document.languageId.toLowerCase() === 'ahk'
         ? path.resolve(`${String(process.env.ProgramFiles)}/AutoHotkey/AutoHotkey.exe`)
         : config.runtime = path.resolve(`${String(process.env.ProgramFiles)}/AutoHotkey/v2/AutoHotkey.exe`), // ahk2 or ah2
-      version: editor && editor.document.languageId.toLowerCase() === 'ahk' ? 1 : 2,
       useAdvancedBreakpoint: false,
     } as LaunchRequestArguments;
     defaults(config, defaultConfig);
