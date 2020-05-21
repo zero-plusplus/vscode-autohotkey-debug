@@ -10,6 +10,7 @@ demo()
 	SuperGlobalVar := "Local"
 
     ; Primitives
+    str_empty := ""
     str := "string"
     str_multiline := "
     (LTrim

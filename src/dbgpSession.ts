@@ -578,9 +578,10 @@ export class Session extends EventEmitter {
       const response = await this.enqueueCommand('property_get', `-n ${propertyName} -c ${contextId}`);
       if (response.property) {
         const [ property ] = Array.isArray(response.property) ? response.property : [ response.property ];
-        if (property.content) {
-          return Buffer.from(property.content, property.attributes.encoding as BufferEncoding).toString();
-        }
+        const value = property.content
+          ? Buffer.from(property.content, property.attributes.encoding as BufferEncoding).toString()
+          : '';
+        return value;
       }
     }
 

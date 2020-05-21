@@ -109,7 +109,7 @@ export class ConditionalEvaluator {
         primitiveValue = primitive.value;
       }
 
-      if (typeof primitiveValue !== 'undefined') {
+      if (typeof primitiveValue === 'string') {
         if (primitiveValue === '0') {
           return false;
         }
