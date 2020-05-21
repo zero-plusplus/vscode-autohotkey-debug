@@ -33,9 +33,9 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   useAdvancedBreakpoint: boolean;
 }
 export class AhkDebugSession extends LoggingDebugSession {
-  private server!: net.Server;
-  private session!: dbgp.Session;
-  private ahkProcess!: ChildProcessWithoutNullStreams;
+  private server?: net.Server;
+  private session?: dbgp.Session;
+  private ahkProcess?: ChildProcessWithoutNullStreams;
   private ahkVersion!: 1 | 2;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
@@ -67,9 +67,15 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): void {
-    this.ahkProcess.kill();
-    this.session.close();
-    this.server.close();
+    if (this.ahkProcess) {
+      this.ahkProcess.kill();
+    }
+    if (this.session) {
+      this.session.close();
+    }
+    if (this.server) {
+      this.server.close();
+    }
 
     this.stopwatch.stop();
     this.sendEvent(new OutputEvent(this.stopwatch.shortSummary(), 'execution-time'));
@@ -83,6 +89,11 @@ export class AhkDebugSession extends LoggingDebugSession {
         [ `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}` ],
         { cwd: path.dirname(args.program) },
       );
+      ahkProcess.on('exit', (exitCode) => {
+        if (exitCode !== null) {
+          this.sendEvent(new TerminatedEvent());
+        }
+      });
       ahkProcess.stdout.on('data', (chunkData: string | Buffer) => {
         this.sendEvent(new OutputEvent(String(chunkData), 'stdout'));
       });
@@ -97,9 +108,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         if (error) {
           this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
         }
-        this.sendEvent(new ThreadEvent('Session exited.', this.session.id));
+        this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
 
         if (typeof this.session === 'undefined') {
+          this.sendEvent(new TerminatedEvent());
           return;
         }
         this.session.close();
@@ -118,7 +130,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.session.sendFeatureGetCommand('language_version').then((response) => {
                   this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
                   this.ahkParser = createParser(this.ahkVersion);
-                  this.conditionalEvaluator = new ConditionalEvaluator(this.session, this.ahkVersion);
+                  this.conditionalEvaluator = new ConditionalEvaluator(this.session!, this.ahkVersion);
                   this.sendEvent(new InitializedEvent());
                 });
               })
@@ -131,8 +143,8 @@ export class AhkDebugSession extends LoggingDebugSession {
             this.sendEvent(new ThreadEvent('Session started.', this.session.id));
           }
           catch (error) {
-            this.sendEvent(new ThreadEvent('Failed to start session.', this.session.id));
-            this.sendEvent(new TerminatedEvent('Debug exited'));
+            this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
+            this.sendEvent(new TerminatedEvent());
           }
         });
     };
@@ -143,6 +155,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error) {
       this.sendErrorResponse(response, error);
+      this.sendEvent(new TerminatedEvent());
       return;
     }
 
@@ -152,7 +165,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
     const filePath = args.source.path ?? '';
     const fileUri = this.convertClientPathToDebugger(filePath);
-    const dbgpBreakpoint = (await this.session.sendBreakpointListCommand()).breakpoints;
+    const dbgpBreakpoint = (await this.session!.sendBreakpointListCommand()).breakpoints;
 
     // Clear dbgp breakpoints from current file
     await Promise.all(dbgpBreakpoint
@@ -169,7 +182,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return false;
       })
       .map(async(dbgpBreakpoint) => {
-        return this.session.sendBreakpointRemoveCommand(dbgpBreakpoint);
+        return this.session!.sendBreakpointRemoveCommand(dbgpBreakpoint);
       }));
 
 
@@ -178,8 +191,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       const promise = Promise.all(args.breakpoints
         .map(async(vscodeBreakpoint, index) => {
           try {
-            const { id } = await this.session.sendBreakpointSetCommand(fileUri, vscodeBreakpoint.line);
-            const { line } = await this.session.sendBreakpointGetCommand(id);
+            const { id } = await this.session!.sendBreakpointSetCommand(fileUri, vscodeBreakpoint.line);
+            const { line } = await this.session!.sendBreakpointGetCommand(id);
 
             const dbgpBreakpoint = this.breakpoints[`${filePath}${line}`];
             if (dbgpBreakpoint?.advancedData) {
@@ -210,7 +223,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
         }));
 
-      if (this.session.isRunningContinuationCommand) {
+      if (this.session!.isRunningContinuationCommand) {
         promise.catch((error) => {
           this.sendEvent(new OutputEvent(error.message));
         });
@@ -224,11 +237,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
-    await this.session.sendFeatureSetCommand('max_children', this.config.maxChildren);
+    await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
 
     const dbgpResponse = this.config.stopOnEntry
-      ? await this.session.sendStepIntoCommand()
-      : await this.session.sendRunCommand();
+      ? await this.session!.sendStepIntoCommand()
+      : await this.session!.sendRunCommand();
 
     if (this.config.useAdvancedBreakpoint) {
       this.checkContinuationStatus(dbgpResponse, !this.config.stopOnEntry);
@@ -238,32 +251,32 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.checkContinuationStatus(dbgpResponse);
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
-    const dbgpResponse = await this.session.sendRunCommand();
+    const dbgpResponse = await this.session!.sendRunCommand();
 
     this.sendResponse(response);
     this.checkContinuationStatus(dbgpResponse, true);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
-    const dbgpResponse = await this.session.sendStepOverCommand();
+    const dbgpResponse = await this.session!.sendStepOverCommand();
     this.sendResponse(response);
     this.checkContinuationStatus(dbgpResponse);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
-    const dbgpResponse = await this.session.sendStepIntoCommand();
+    const dbgpResponse = await this.session!.sendStepIntoCommand();
     this.sendResponse(response);
     this.checkContinuationStatus(dbgpResponse);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
-    const dbgpResponse = await this.session.sendStepOutCommand();
+    const dbgpResponse = await this.session!.sendStepOutCommand();
     this.sendResponse(response);
     this.checkContinuationStatus(dbgpResponse);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
-    response.body = { threads: [ new Thread(this.session.id, 'Thread 1') ] };
+    response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };
     this.sendResponse(response);
   }
   protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): Promise<void> {
-    const { stackFrames } = await this.session.sendStackGetCommand();
+    const { stackFrames } = await this.session!.sendStackGetCommand();
 
     response.body = {
       stackFrames: stackFrames.map((stackFrame) => {
@@ -292,7 +305,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (typeof stackFrame === 'undefined') {
       throw new Error(`Unknown frameId ${args.frameId}`);
     }
-    const { contexts } = await this.session.sendContextNamesCommand(stackFrame);
+    const { contexts } = await this.session!.sendContextNamesCommand(stackFrame);
 
     response.body = {
       scopes: contexts.map((context) => {
@@ -310,11 +323,11 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (this.contextsByVariablesReference.has(args.variablesReference)) {
       const context = this.contextsByVariablesReference.get(args.variablesReference)!;
-      properties = (await this.session.sendContextGetCommand(context)).properties;
+      properties = (await this.session!.sendContextGetCommand(context)).properties;
     }
     else if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
       const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
-      const { children } = (await this.session.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName)).properties[0] as dbgp.ObjectProperty;
+      const { children } = (await this.session!.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName)).properties[0] as dbgp.ObjectProperty;
       properties = children;
     }
 
@@ -374,7 +387,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       : this.contextsByVariablesReference.get(args.variablesReference)!;
 
     const setVariable = async(typeName: string, data: string): Promise<void> => {
-      const dbgpResponse = await this.session.sendPropertySetCommand({
+      const dbgpResponse = await this.session!.sendPropertySetCommand({
         context,
         fullName: args.name,
         typeName,
@@ -442,11 +455,11 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (!stackFrame) {
         throw Error('Error: Could not get stack frame');
       }
-      const { contexts } = await this.session.sendContextNamesCommand(stackFrame);
+      const { contexts } = await this.session!.sendContextNamesCommand(stackFrame);
 
       let property: dbgp.Property | undefined;
       for await (const context of contexts) {
-        const { properties } = await this.session.sendContextGetCommand(context);
+        const { properties } = await this.session!.sendContextGetCommand(context);
         property = properties.find((property) => property.fullName === args.expression);
         if (property) {
           break;
@@ -495,7 +508,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private async getCurrentBreakpoint(): Promise<dbgp.Breakpoint | null> {
     let stackFrame: dbgp.StackFrame;
     try {
-      const { stackFrames } = await this.session.sendStackGetCommand();
+      const { stackFrames } = await this.session!.sendStackGetCommand();
       stackFrame = stackFrames[0];
     }
     catch (error) {
@@ -513,7 +526,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false): Promise<void> {
     if (response.status === 'stopped') {
-      this.sendEvent(new TerminatedEvent('Debug exited'));
+      this.sendEvent(new TerminatedEvent());
     }
     else if (response.status === 'break') {
       if (checkExtraBreakpoint) {
@@ -527,7 +540,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       const stopReason = response.commandName.startsWith('step')
         ? 'step'
         : 'breakpoint';
-      this.sendEvent(new StoppedEvent(stopReason, this.session.id));
+      this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
     }
   }
   private async checkAdvancedBreakpoint(breakpoint: dbgp.Breakpoint): Promise<void> {
@@ -576,7 +589,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (matchCondition) {
       if (typeof logMessage === 'undefined') {
-        this.sendEvent(new StoppedEvent('conditional breakpoint', this.session.id));
+        this.sendEvent(new StoppedEvent('conditional breakpoint', this.session!.id));
         return;
       }
 
@@ -584,7 +597,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(new OutputEvent(log, 'log'));
     }
 
-    const response = await this.session.sendRunCommand();
+    const response = await this.session!.sendRunCommand();
     await this.checkContinuationStatus(response, true);
   }
   private async evalLogMessage(logMessage: string): Promise<string> {
@@ -593,7 +606,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const regex = /(?<!\\)\{(?<expression>.+?)(?<!\\)\}/gui;
     await Promise.all(Array.from(logMessage.matchAll(regex), (x) => x[1])
       .map(async(propertyName) => {
-        const evaledExpression = await this.session.fetchPrimitiveProperty(propertyName);
+        const evaledExpression = await this.session!.fetchPrimitiveProperty(propertyName);
         if (evaledExpression) {
           evaled = evaled.replace(new RegExp(regex.source, 'ui'), evaledExpression);
         }
