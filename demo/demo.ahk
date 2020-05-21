@@ -1,4 +1,4 @@
-#SingleInstance Force
+﻿#SingleInstance Force
 globalVar := "Global"
 global SuperGlobalVar := "SuperGlobal"
 
