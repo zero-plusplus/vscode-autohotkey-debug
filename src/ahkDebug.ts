@@ -126,11 +126,12 @@ export class AhkDebugSession extends LoggingDebugSession {
                 if (typeof this.session === 'undefined') {
                   return;
                 }
-                // Request breakpoints from VS Code
                 this.session.sendFeatureGetCommand('language_version').then((response) => {
                   this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
                   this.ahkParser = createParser(this.ahkVersion);
                   this.conditionalEvaluator = new ConditionalEvaluator(this.session!, this.ahkVersion);
+
+                  // Request breakpoints from VS Code
                   this.sendEvent(new InitializedEvent());
                 });
               })
