@@ -1,5 +1,10 @@
 **By Google Translate from Japanese to English.**
 
+# Before reading
+Please note the following first.
+* This document has been translated from Japanese to English by Google Translate.
+* This extension alone will not work. You will need to separately install an extension that supports AutoHotkey syntax highlighting. If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2.
+
 # Overview
 I made it for the purpose of replacing the debugger of Scite4AutoHotkey.
 So you can use all the features it can.
@@ -111,7 +116,7 @@ Those with a crossed out line indicate that it cannot be realized due to the spe
     - [ ] Toggle skipping this file
     - [ ] Restart frame
 - [x] Show loaded scripts
-- [ ] Breakpoints
+- [x] Breakpoints
     - [x] Basic breakpoints
     - [ ] ~~Column breakpoints~~
     - [ ] ~~Function breakpoints~~
@@ -119,9 +124,9 @@ Those with a crossed out line indicate that it cannot be realized due to the spe
     - [x] Hit Conditional breakpoints
     - [x] Log point
 - [x] Step-in, step-over, step-out
-- [ ] Watch expression
-    - [ ] Variable name
+- [x] Watch expression
+    - [x] Variable name
     - [ ] ~~Expression~~
-- [ ] Show value when hovering
+- [x] Show value when hovering
     - [x] Variable name
     - [ ] ~~Expression~~
