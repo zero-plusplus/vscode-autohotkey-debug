@@ -1,5 +1,5 @@
 import * as createPcre from 'pcre-to-regexp';
-import Parser from './AhkSimpleParser';
+import { Parser, createParser } from './AhkSimpleParser';
 import { Session } from '../dbgpSession';
 
 type Operator = (a: string, b: string) => boolean;
@@ -61,11 +61,13 @@ const operators: { [key: string]: Operator} = {
 
 export class ConditionalEvaluator {
   private readonly session: Session;
-  constructor(session: Session) {
+  private readonly parser: Parser;
+  constructor(session: Session, version: 1 | 2) {
     this.session = session;
+    this.parser = createParser(version);
   }
   public async eval(expression: string): Promise<boolean> {
-    const parsed = Parser.Expression.parse(expression);
+    const parsed = this.parser.Expression.parse(expression);
     if ('value' in parsed) {
       const expression = parsed.value.value;
 

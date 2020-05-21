@@ -522,10 +522,10 @@ export class Session extends EventEmitter {
   public async sendStackGetCommand(): Promise<StackGetResponse> {
     return new StackGetResponse(await this.enqueueCommand('stack_get'));
   }
-  public async sendPropertyGetCommand(property: Property): Promise<PropertyGetResponse> {
+  public async sendPropertyGetCommand(context: Context, name: string): Promise<PropertyGetResponse> {
     return new PropertyGetResponse(
-      await this.enqueueCommand('property_get', `-n ${property.fullName} -c ${property.context.id} -d ${property.context.stackFrame.level}`),
-      property.context,
+      await this.enqueueCommand('property_get', `-n ${name} -c ${context.id} -d ${context.stackFrame.level}`),
+      context,
     );
   }
   public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: string; data: string }): Promise<PropertySetResponse> {

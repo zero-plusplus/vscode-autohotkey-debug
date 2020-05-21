@@ -19,7 +19,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { StopWatch } from 'stopwatch-node';
 import * as safeEval from 'safe-eval';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
-import Parser from './util/AhkSimpleParser';
+import { Parser, createParser } from './util/AhkSimpleParser';
 import { ConditionalEvaluator } from './util/ConditionalEvaluator';
 import * as dbgp from './dbgpSession';
 
@@ -37,6 +37,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private session!: dbgp.Session;
   private ahkProcess!: ChildProcessWithoutNullStreams;
   private ahkVersion!: 1 | 2;
+  private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
   private readonly contextsByVariablesReference = new Map<number, dbgp.Context>();
   private stackFrameIdCounter = 1;
@@ -116,6 +117,8 @@ export class AhkDebugSession extends LoggingDebugSession {
                 // Request breakpoints from VS Code
                 this.session.sendFeatureGetCommand('language_version').then((response) => {
                   this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
+                  this.ahkParser = createParser(this.ahkVersion);
+                  this.conditionalEvaluator = new ConditionalEvaluator(this.session, this.ahkVersion);
                   this.sendEvent(new InitializedEvent());
                 });
               })
@@ -125,7 +128,6 @@ export class AhkDebugSession extends LoggingDebugSession {
               .on('error', disposeConnection)
               .on('close', disposeConnection);
 
-            this.conditionalEvaluator = new ConditionalEvaluator(this.session);
             this.sendEvent(new ThreadEvent('Session started.', this.session.id));
           }
           catch (error) {
@@ -312,7 +314,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     else if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
       const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
-      const { children } = (await this.session.sendPropertyGetCommand(objectProperty)).properties[0] as dbgp.ObjectProperty;
+      const { children } = (await this.session.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName)).properties[0] as dbgp.ObjectProperty;
       properties = children;
     }
 
@@ -394,7 +396,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         format: 'Rewriting failed. Probably read-only.',
       } as DebugProtocol.Message);
     };
-    const parsed = Parser.Primitive.parse(args.value);
+    const parsed = this.ahkParser.Primitive.parse(args.value);
     if ('value' in parsed) {
       const primitive = parsed.value.value;
 
@@ -426,6 +428,50 @@ export class AhkDebugSession extends LoggingDebugSession {
       id: args.variablesReference,
       format: 'Only primitive values are supported. e.g. "string", 123, 0x123, true',
     } as DebugProtocol.Message);
+  }
+  protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
+    try {
+      if (!args.frameId) {
+        throw Error('Error: Cannot evaluate code without a session');
+      }
+      const parsed = this.ahkParser.PropertyName.parse(args.expression);
+      if (!parsed.status) {
+        throw Error('Error: Only the property name is supported. e.g. `prop`,` prop.field`, `prop [0]`, `prop [" spaced key "]`');
+      }
+      const stackFrame = this.stackFramesByFrameId.get(args.frameId);
+      if (!stackFrame) {
+        throw Error('Error: Could not get stack frame');
+      }
+      const { contexts } = await this.session.sendContextNamesCommand(stackFrame);
+
+      let property: dbgp.Property | undefined;
+      for await (const context of contexts) {
+        const { properties } = await this.session.sendContextGetCommand(context);
+        property = properties.find((property) => property.fullName === args.expression);
+        if (property) {
+          break;
+        }
+      }
+      if (!property) {
+        throw Error('not available');
+      }
+
+      let variablesReference = 0;
+      if (property instanceof dbgp.ObjectProperty) {
+        variablesReference = this.variableReferenceCounter++;
+        this.objectPropertiesByVariablesReference.set(variablesReference, property);
+      }
+      response.body = {
+        result: property.displayValue,
+        type: property.type,
+        variablesReference,
+      };
+      this.sendResponse(response);
+    }
+    catch (error) {
+      response.body = { result: error.message, variablesReference: 0 };
+      this.sendResponse(response);
+    }
   }
   protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void {
     this.sendResponse(response);
