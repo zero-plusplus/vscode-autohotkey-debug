@@ -85,7 +85,7 @@ If the condition is set, the message is output only when the condition is passed
 
 Also, enclosing the full name of the property as it appears in the data inspection in braces, it will be replaced with the value of the property. (Only properties with primitive values are supported)
 
-If you want to show the curly braces, you can escape it by prefixing it with `\` like `\ {` or `\}`.
+If you want to show the curly braces, you can escape it by prefixing it with `\` like `\{` or `\}`.
 
 ## Loaded scripts
 See [this](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_access-loaded-scripts)
@@ -99,12 +99,13 @@ AutoHotkey v2
 See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
 
 # Roadmap
+Those with a crossed out line indicate that it cannot be realized due to the specifications.
 - [x] Data inspection
     - [x] Primitive
     - [x] Object
     - [x] Rewrite value
         - [x] Primitive
-        - [ ] Object `Cannot support due to specifications`
+        - [ ] ~~Object~~
 - [ ] Call stack
     - [x] Call stack list
     - [ ] Toggle skipping this file
@@ -112,15 +113,15 @@ See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
 - [x] Show loaded scripts
 - [ ] Breakpoints
     - [x] Basic breakpoints
-    - [ ] Column breakpoints `Cannot support due to specifications`
-    - [ ] Function breakpoints `Cannot support due to specifications`
+    - [ ] ~~Column breakpoints~~
+    - [ ] ~~Function breakpoints~~
     - [x] Conditional breakpoints
     - [x] Hit Conditional breakpoints
     - [x] Log point
 - [x] Step-in, step-over, step-out
 - [ ] Watch expression
     - [ ] Variable name
-    - [ ] Expression `Cannot support due to specifications`
+    - [ ] ~~Expression~~
 - [ ] Show value when hovering
     - [x] Variable name
-    - [ ] Expression `Cannot support due to specifications`
+    - [ ] ~~Expression~~
