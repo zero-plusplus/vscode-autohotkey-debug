@@ -368,7 +368,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
 
-      const name = property.isIndex ? String(property.index!) : property.name;
+      const name = property.name;
       variables.push({
         name,
         type: property.type,
