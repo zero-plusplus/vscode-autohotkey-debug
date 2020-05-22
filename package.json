@@ -129,7 +129,8 @@
               "request": "launch",
               "name": "AutoHotkey Debug",
               "program": "^\"\\${file}\"",
-              "stopOnEntry": false
+              "stopOnEntry": false,
+              "useAdvancedBreakpoint": false
             }
           }
         ]
