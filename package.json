@@ -39,9 +39,9 @@
     "debug",
     "dbgp"
   ],
-	"categories": [
+  "categories": [
     "Debuggers"
-	],
+  ],
   "activationEvents": [
     "onDebug",
     "onLanguage:ahk",
