@@ -12,7 +12,7 @@ All features can be found in [`Features`](#features).
 # Installation
 1. Please install [AutoHotkey](https://www.autohotkey.com/)
 2. Install an extension that supports AutoHotkey (most famous is `slevesque.vscode-autohotkey`)
-3. Press `F1`, type `ext install zero-plusplus.vscode-ahk-debug`
+3. Press `F1`, type `ext install zero-plusplus.vscode-autohotkey-debug`
 
 # Features
 ## Data inspection
@@ -116,4 +116,4 @@ Since v2 is an alpha version, the following problems occur.
 * Inspecting a [property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) shows `"<error>"`.
 
 # Issues
-If you have issues you can report [here](https://github.com/zero-plusplus/vscode-ahk-debug/issues).
+If you have issues you can report [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).

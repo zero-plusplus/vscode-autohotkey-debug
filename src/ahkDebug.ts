@@ -47,7 +47,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private conditionalEvaluator!: ConditionalEvaluator;
   private readonly stopwatch = new StopWatch('ahk-process');
   constructor() {
-    super('ahk-debug.txt');
+    super('autohotkey-debug.txt');
 
     this.setDebuggerColumnsStartAt1(true);
     this.setDebuggerLinesStartAt1(true);
@@ -171,8 +171,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     await Promise.all(dbgpBreakpoint
       .filter((dbgpBreakpoint) => {
         // (breakpoint.fileUri === fileUri) is not Equals.
-        // breakpoint.fileUri: file:///W%3A/project/vscode-ahk-debug/demo/demo.ahk"
-        // fileUri:            file:///w:/project/vscode-ahk-debug/demo/demo.ahk
+        // breakpoint.fileUri: file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"
+        // fileUri:            file:///w:/project/vscode-autohotkey-debug/demo/demo.ahk
         const _fileUri = this.convertDebuggerPathToClient(dbgpBreakpoint.fileUri);
         if (filePath.toLowerCase() === _fileUri.toLowerCase()) {
           // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
