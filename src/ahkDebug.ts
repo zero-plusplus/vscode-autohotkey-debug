@@ -17,7 +17,6 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { StopWatch } from 'stopwatch-node';
-import * as safeEval from 'safe-eval';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import { Parser, createParser } from './util/AhkSimpleParser';
 import { ConditionalEvaluator } from './util/ConditionalEvaluator';
@@ -570,10 +569,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
 
         const code = _operator === '%'
-          ? `(${counter} % ${number} === 0)`
+          ? `(${counter % parseInt(number, 10)} === 0)`
           : `${counter} ${_operator} ${number}`;
         try {
-          hitConditionResult = safeEval(code);
+          hitConditionResult = await this.conditionalEvaluator.eval(code);
         }
         catch {
         }
