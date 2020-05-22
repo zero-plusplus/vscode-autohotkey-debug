@@ -14,7 +14,7 @@
         "${workspaceFolder}/demo"
       ],
       "outFiles": [
-        "${workspaceFolder}/dist/**/*.js"
+        "${workspaceFolder}/build/**/*.js"
       ],
       "preLaunchTask": "subtask: build",
     },
@@ -26,10 +26,10 @@
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
       "args": [
-        "${workspaceFolder}/dist/test"
+        "${workspaceFolder}/build/test"
       ],
       "outFiles": [
-        "${workspaceFolder}/dist/test/**/*.js"
+        "${workspaceFolder}/build/test/**/*.js"
       ],
       "internalConsoleOptions": "openOnSessionStart",
       "skipFiles": [

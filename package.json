@@ -4,7 +4,7 @@
   "description": "Supports AutoHotkey v1 and v2 debugging",
   "author": "zero-plusplus <git@zero-plusplus.com>",
   "license": "MIT",
-  "main": "./dist/src/extension",
+  "main": "./build/src/extension",
   "repository": {
     "type": "git",
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug.git"
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "lint": "eslint --fix ./src/**/*.ts ./test/**/*.ts",
-    "clean": "rimraf dist",
+    "clean": "rimraf build",
     "build": "yarn clean && yarn lint && tsc",
     "watch": "yarn build && onchange ./src/**/*.ts ./test/**/*.ts -- yarn build",
     "test": "yarn lint && mocha -r ts-node/register ./test/**/*.test.ts",
@@ -60,12 +60,6 @@
         "language": "ah2"
       }
     ],
-    "commands": [
-      {
-        "command": "vscode-ahk-debug.helloworld",
-        "title": "Hello World!!!!!!!!!!!!"
-      }
-    ],
     "debuggers": [
       {
         "type": "ahk",
@@ -75,7 +69,7 @@
           "ahk2",
           "ah2"
         ],
-        "program": "./dist/src/dap/debugAdapter.js",
+        "program": "./build/src/dap/debugAdapter.js",
         "runtime": "node",
         "configurationAttributes": {
           "launch": {

@@ -7,7 +7,7 @@
 			"DOM"
 		],
 
-		"outDir": "dist", // Use the same directory name as the sample. https://github.com/microsoft/TypeScript-Node-Starter/blob/master/tsconfig.json#L10
+		"outDir": "build",
 		"sourceMap": true,
 		"strict": true,
 		"declaration": true,
