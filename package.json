@@ -7,7 +7,7 @@
   "main": "./dist/src/extension",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zero-plusplus/vscode-ahk-debug.git"
+    "url": "https://github.com/zero-plusplus/vscode-ahk-debug.git"
   },
   "bugs": {
     "url": "https://github.com/zero-plusplus/vscode-ahk-debug/issues"
@@ -32,6 +32,16 @@
   "engines": {
     "vscode": "^1.45.0"
   },
+  "icon": "image/icon.png",
+  "keywords": [
+    "ahk",
+    "autohotkey",
+    "debug",
+    "dbgp"
+  ],
+	"categories": [
+    "Debuggers"
+	],
   "activationEvents": [
     "onDebug",
     "onLanguage:ahk",
