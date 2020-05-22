@@ -1,0 +1,28 @@
+{
+	"compilerOptions": {
+		"target": "es6",
+		"module": "commonjs",
+        "lib": [
+			"ESNext",
+			"DOM"
+		],
+
+		"outDir": "dist", // Use the same directory name as the sample. https://github.com/microsoft/TypeScript-Node-Starter/blob/master/tsconfig.json#L10
+		"sourceMap": true,
+		"strict": true,
+		"declaration": true,
+		"skipLibCheck": true,
+		"inlineSourceMap": false,
+		"noImplicitAny": false,
+		"noImplicitThis": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": false,
+		"preserveConstEnums": true,
+		"removeComments": false,
+		"newLine": "crlf",
+	},
+	"include": [
+		"src/**/*",
+		"test/**/*"
+	]
+}

@@ -1,0 +1,44 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "install-test-vsix",
+      "type": "shell",
+      "dependsOn": [
+        "subtask:build-test-vsix",
+        "subtask:install-test-vsix",
+        "subtask:reload-vscode",
+      ],
+      "dependsOrder": "sequence"
+    },
+    {
+      "label": "subtask:build-test-vsix",
+      "type": "shell",
+      "command": "vsce",
+      "args": [
+        "package",
+        "-o", "extension-test.vsix"
+      ]
+    },
+    {
+      "label": "subtask:install-test-vsix",
+      "type": "shell",
+      "command": "code",
+      "args": [
+        "--install-extension", "${workspaceFolder}/extension-test.vsix"
+      ],
+      "dependsOn": [ "build-test-vsix" ],
+    },
+    {
+      "label": "subtask:reload-vscode",
+      "command": "${command:workbench.action.reloadWindow}"
+    },
+    {
+      "label": "subtask: build",
+      "type": "shell",
+      "command": "yarn build"
+    },
+  ],
+}
