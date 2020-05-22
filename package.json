@@ -1,5 +1,5 @@
 {
-  "name": "vscode-ahk-debug",
+  "name": "vscode-autohotkey-debug",
   "version": "0.9.0",
   "description": "Supports AutoHotkey v1 and v2 debugging",
   "author": "zero-plusplus <git@zero-plusplus.com>",
@@ -7,10 +7,10 @@
   "main": "./dist/src/extension",
   "repository": {
     "type": "git",
-    "url": "https://github.com/zero-plusplus/vscode-ahk-debug.git"
+    "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug.git"
   },
   "bugs": {
-    "url": "https://github.com/zero-plusplus/vscode-ahk-debug/issues"
+    "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug/issues"
   },
   "scripts": {
     "lint": "eslint --fix ./src/**/*.ts ./test/**/*.ts",
