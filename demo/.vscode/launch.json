@@ -10,7 +10,8 @@
             "name": "AutoHotkey Debug",
             "program": "${file}",
             "stopOnEntry": false,
-            "useAdvancedBreakpoint": true
+            "useAdvancedBreakpoint": true,
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }
