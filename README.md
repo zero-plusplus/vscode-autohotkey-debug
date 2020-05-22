@@ -1,5 +1,3 @@
-**By Google Translate from Japanese to English.**
-
 # Before reading
 Please note the following first.
 * This document has been translated from Japanese to English by Google Translate.
@@ -10,6 +8,8 @@ I made it for the purpose of replacing the debugger of Scite4AutoHotkey.
 So you can use all the features it can.
 In addition to that, I am implementing new features such as conditional breakpoints.
 All features can be found in [`Features`](#features).
+
+![debugger-demo](image/debugger-demo.gif)
 
 # Installation
 Press `F1`, type `ext vscode-ahk-debug`
@@ -93,40 +93,13 @@ Also, enclosing the full name of the property as it appears in the data inspecti
 If you want to show the curly braces, you can escape it by prefixing it with `\` like `\{` or `\}`.
 
 ## Loaded scripts
-See [this](https://code.visualstudio.com/docs/nodejs/nodejs-debugging#_access-loaded-scripts)
+![loaded-scripts](image/loaded-scripts.gif)
 
 # Known issues
-AutoHotkey v1
-AutoHotkey v2
-* Inspecting a property shows `"<error>"`.
+## AutoHotkey v2
+Since v2 is an alpha version, the following problems occur.
+* Method not visible in data inspecting
+* Inspecting a [property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) shows `"<error>"`.
 
 # Issues
-See [issues](https://github.com/zero-plusplus/vscode-ahk-debug/issues)
-
-# Roadmap
-Those with a crossed out line indicate that it cannot be realized due to the specifications.
-- [x] Data inspection
-    - [x] Primitive
-    - [x] Object
-    - [x] Rewrite value
-        - [x] Primitive
-        - [ ] ~~Object~~
-- [ ] Call stack
-    - [x] Call stack list
-    - [ ] Toggle skipping this file
-    - [ ] Restart frame
-- [x] Show loaded scripts
-- [x] Breakpoints
-    - [x] Basic breakpoints
-    - [ ] ~~Column breakpoints~~
-    - [ ] ~~Function breakpoints~~
-    - [x] Conditional breakpoints
-    - [x] Hit Conditional breakpoints
-    - [x] Log point
-- [x] Step-in, step-over, step-out
-- [x] Watch expression
-    - [x] Variable name
-    - [ ] ~~Expression~~
-- [x] Show value when hovering
-    - [x] Variable name
-    - [ ] ~~Expression~~
+If you have issues you can report [here](https://github.com/zero-plusplus/vscode-ahk-debug/issues).
