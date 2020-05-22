@@ -255,7 +255,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const dbgpResponse = await this.session!.sendRunCommand();
 
     this.sendResponse(response);
-    this.checkContinuationStatus(dbgpResponse, true);
+    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
     const dbgpResponse = await this.session!.sendStepOverCommand();
