@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as net from 'net';
+import { stat } from 'fs';
 import {
   ChildProcessWithoutNullStreams,
   spawn,
@@ -505,12 +506,23 @@ export class AhkDebugSession extends LoggingDebugSession {
       version: this.ahkVersion,
     });
 
-    response.body = {
-      sources: resolver.extractAllIncludePath([ 'local', 'user', 'standard' ])
-        .map((filePath) => {
-          return { name: path.basename(filePath), path: filePath };
-        }),
-    };
+    const sources: DebugProtocol.Source[] = [];
+    await Promise.all(resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]).map(async(filePath): Promise<void> => {
+      return new Promise((resolve) => {
+        stat(filePath, (err, stats) => {
+          if (err) {
+            // sources.push({ name: 'Failed to read' });
+            return;
+          }
+
+          if (stats.isFile()) {
+            sources.push({ name: path.basename(filePath), path: filePath });
+          }
+          resolve();
+        });
+      });
+    }));
+    response.body = { sources };
     this.sendResponse(response);
   }
   private async getCurrentBreakpoint(): Promise<dbgp.Breakpoint | null> {
