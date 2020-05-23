@@ -23,6 +23,7 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     NumberLiteral(rules) {
       return P.alt(
+        rules.ScientificLiteral,
         rules.HexLiteral,
         rules.FloatLiteral,
         rules.IntegerLiteral,
@@ -67,6 +68,17 @@ export const createParser = function(version: 1 | 2): P.Language {
         return {
           type: 'Hex',
           value: result.join(''),
+        };
+      });
+    },
+    ScientificLiteral(rules) {
+      return P.seq(
+        P.alt(rules.FloatLiteral, rules.IntegerLiteral),
+        P.regex(/e[+]?\d+/ui),
+      ).map((result) => {
+        return {
+          type: 'Scientific',
+          value: `${String(result[0].value)}${result[1]}`,
         };
       });
     },

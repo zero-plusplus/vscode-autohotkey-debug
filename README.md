@@ -26,8 +26,9 @@ Specifically, the following types are supported.
 * `String` e.g `"string"`
 * `Number`
     * `Integer` Treated as a intger. e.g. `123`
-    * `Float` Treated as a string. e.g. `123.456`
+    * `Float` Treated as a string. v2 is an intger. e.g. `123.456`
     * `Hex` Converted to decimal and treated as integer. e.g. `0x123`
+    * `Scientific` Treated as a string. Converted to float in v2. e.g. `1e3` `3.0e+5`
 
 ## Call stack
 ![call-stack](image/call-stack.gif)

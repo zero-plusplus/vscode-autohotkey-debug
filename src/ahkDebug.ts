@@ -425,9 +425,13 @@ export class AhkDebugSession extends LoggingDebugSession {
           typeName = 'intger';
           data = String(parseInt(number.value, 16));
         }
+        else if (this.ahkVersion === 2 && number.type === 'Scientific') {
+          typeName = 'float';
+          data = `${String(parseFloat(number.value))}.0`;
+        }
         else {
           if (this.ahkVersion === 2) {
-            typeName = String(number.type).toLowerCase();
+            typeName = 'float';
           }
           data = String(number.value);
         }
@@ -443,7 +447,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.sendErrorResponse(response, {
       id: args.variablesReference,
-      format: 'Only primitive values are supported. e.g. "string", 123, 0x123, true',
+      format: 'Only primitive values are supported. e.g. "string", 123, 0x123, 1.0e+5, true',
     } as DebugProtocol.Message);
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {

@@ -24,6 +24,7 @@ demo()
     float_negative := -123.456
     hex := 0x123
     hex_negative := -0x123
+    scientificNotation := 1.0e5
     bool_true := true
     bool_false := false
 
