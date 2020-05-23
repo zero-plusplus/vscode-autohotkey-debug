@@ -30,6 +30,13 @@ Specifically, the following types are supported.
     * `Hex` Converted to decimal and treated as integer. e.g. `0x123`
     * `Scientific` Treated as a string. Converted to float in v2. e.g. `1e3` `3.0e+5`
 
+### Hover over variable
+![data-inspection-when-hover](image/data-inspection-when-hover.gif)
+
+You can see the data displayed in the [data inspection](#data-inspection) by hovering over the variable.
+However, the correspondence is only dot notation like `obj.field`.
+
+Bracket notation like `arr[1]` is not supported by the vscode specification.
 ## Call stack
 ![call-stack](image/call-stack.gif)
 ## Breakpoints
