@@ -1,7 +1,7 @@
 # Before reading
 Please note the following first.
-* This document has been translated from Japanese to English by Google Translate.
-* This extension alone will not work. You will need to separately install an extension that supports AutoHotkey syntax highlighting. If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2.
+* This document has been **translated from Japanese to English** by Google Translate.
+* **This extension alone will not work**. You will need to separately install an extension that supports AutoHotkey language(Most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2(For example `dudelmoser.vscode-autohotkey2`). I plan to make an all-in pack, but it will take time because I will make it from scratch for studying.
 
 # Overview
 I made it for the purpose of replacing the debugger of Scite4AutoHotkey.
@@ -10,44 +10,88 @@ In addition to that, I am implementing new features such as conditional breakpoi
 All features can be found in [`Features`](#features).
 
 # Installation
-1. Please install [AutoHotkey](https://www.autohotkey.com/)
-2. Install an extension that supports AutoHotkey (most famous is `slevesque.vscode-autohotkey`)
-3. Press `F1`, type `ext install zero-plusplus.vscode-autohotkey-debug`
+1. Install [AutoHotkey](https://www.autohotkey.com/)
+2. Install an extension that supports AutoHotkey (Most famous is `slevesque.vscode-autohotkey`)
+3. Press `Ctrl + P`, type `ext install zero-plusplus.vscode-autohotkey-debug`
+
+# Usage
+1. Open a file with the (`ahk` or `ahk2` or `ah2`) extension.
+2. Set breakpoints wherever you like.
+3. Press `F5`
+
+# Customize the launch configuration
+If you want to change the launch configuration of the debugger, you need to edit `launch.json`. If you are satisfied with the default settings, you do not need to look at this item.
+
+You can learn the basics of `launch.json` [here](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations)
+
+Below is the default configuration snippet.
+```json
+.vscode/launch.json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "AutoHotkey Debug",
+            "request": "launch",
+            "type": "ahk",
+            "runtime_v1": "AutoHotkey.exe",
+            "runtime_v2": "v2/AutoHotkey.exe",
+            "program": "${file}",
+            "stopOnEntry": false,
+            "useAdvancedBreakpoint": false,
+            "maxChildren": 10000
+        }
+    ]
+}
+```
+
+The settings that should be noted are described below.
+* `runtime`: Path for AutoHotkey.exe. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. e.g. `AutoHotkeyU64.exe` `v2/AutoHotkey.exe`
+* `runtime_v1`, `runtime_v2`: If you want to change the runtime for each extension (ahk, ahk2, ah2), you need to change this setting. `runtime_v1` corresponds to `ahk`, and `runtime_v2` corresponds to `ahk2` or `ah2`. The setting method is the same as `runtime`.
+* `stopOnEntry`: If true, stop at the first line. Set to true if you want it to be the same as Scite4AutoHotkey.
+* `useAdvancedBreakpoint`: Unlock conditional breakpoints, etc. See [Advanced breakpoints](#Advanced-breakpoints-(Optional)) for details
+* `maxChildren`: Maximum number of child elements to get. It is necessary to change it when handling an array exceeding 10000.
 
 # Features
 ## Data inspection
 ![data-inspection](image/data-inspection.gif)
 
-### Set value
-![set-value](image/set-value.gif)
+You can see the data contents of the variables. However, v2 cannot see some data. Probably because of the alpha version.
+
+When a `variable name` is requested by another feature, it means the name displayed by this feature. e.g. `variable`, `obj.field`, `obj["spaced key"]`, ` arr[0]`
+
+### Rewriting variables
+![rewriting-variables](image/rewriting-variables.gif)
 
 The value of the variable can be rewritten. (Primitive value only)
 Specifically, the following types are supported.
 * `String` e.g `"string"`
 * `Number`
-    * `Integer` Treated as a intger. e.g. `123`
-    * `Float` Treated as a string. v2 is an intger. e.g. `123.456`
-    * `Hex` Converted to decimal and treated as integer. e.g. `0x123`
-    * `Scientific` Treated as a string. Converted to float in v2. e.g. `1e3` `3.0e+5`
+    * `Integer`: Treated as a `intger`. e.g. `123`
+    * `Float`: Treated as a `string`. v2 is an `intger`. e.g. `123.456`
+    * `Hex`: Converted to intger and treated as `integer`. e.g. `0x123`
+    * `Scientific`: Treated as a `string`. Converted to `float` in v2. e.g. `1e3` `3.0e+5`
 
 ### Hover over variable
 ![data-inspection-when-hover](image/data-inspection-when-hover.gif)
 
 You can see the data displayed in the [data inspection](#data-inspection) by hovering over the variable.
 However, the correspondence is only dot notation like `obj.field`.
-
 Bracket notation like `arr[1]` is not supported by the vscode specification.
+
 ## Call stack
 ![call-stack](image/call-stack.gif)
+
+You can check or change the variables for each stack.
+
 ## Breakpoints
-See [this](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
+You can learn the basics [here](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
 
 ## Advanced breakpoints (Optional)
-### Note
-> **This feature is experimental and subject to change.
-Also, the evaluation of the condition is so slow.**
-This is because the AutoHotkey Debugger doesn't support this feature and it is inefficient. Therefore, there is no big improvement.
-However, in many cases this feature will work. Unless conditions or logs are set for breakpoints, the speed will not slow down much, so if you do not bother with the specification change, you should always enable this function.
+### Before use
+**This feature is experimental and subject to change.
+Also note that Condition evaluation is slow.**
+Therefore it is off by default.
 
 ### How to enable
 `useAdvancedBreakpoint` to `true` in launch.json.
@@ -55,6 +99,7 @@ However, in many cases this feature will work. Unless conditions or logs are set
 {
     ...
     "useAdvancedBreakpoint": true
+    ...
 }
 ```
 
@@ -68,8 +113,8 @@ However, in many cases this feature will work. Unless conditions or logs are set
 e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Rules
-* `Value`: `PropertyName` or `Primitive`
-* `PropertyName` Property name displayed in data inspection (only properties with primitive values are supported). e.g. `prop`, `prop.field`, `prop[0]`, `prop["spaced key"]`
+* `Value`: `VariableName` or `Primitive`
+* `VariableName` Property name displayed in data inspection (only properties with primitive values are supported). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 * `Primitive` AutoHotkey primitives. e.g. `"string"`, `123`, `123.456`, `0x123`
 * `Operator` AutoHotkey like comparison operators
     * `=` Equal ignore case
@@ -77,7 +122,7 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
     * `!=` Not equal ignore case
     * `!==` Not equal case sensitive
     * `~=` Compare with regular expression (AutoHotkey like). e.g. `123 ~= "O)\d+"`
-        * Note. AutoHotkey regular expression is converted to JavaScript regular expression. for that reason I cannot use some functions such as `(?R)`. But in most cases you won't mind.
+        * Note. Regular expression like AutoHotkey is converted to JavaScript regular expression. for that reason I cannot use some feature such as `(?R)`. But in most cases you won't mind.
     * `>` Greater than
     * `>=` Greater than or equal
     * `<` Less than
@@ -86,21 +131,21 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 ### Hit count breakpoint
 ![hit-count-breakpoint](image/hit-count-breakpoint.gif)
 
-##### Condition grammer
-`[{Counter} Operator] Number`
+##### Grammer
+`{Counter} [Operator] Intger`
 
 e.g. `= 30`, `<= 30`
 
 ##### Rules
-* `Counter` Number of times the breakpoint has been reached (no need to enter)
+* `Counter` Number of breakpoint hits (no need to enter)
 * `Operator` If omitted, it is equivalent to `>=`
-    * `= or ==` Same as `Counter == Number`
-    * `>` Same as `Counter > Number`
-    * `>=` Same as `Counter >= Number`
-    * `<` Same as `Counter < Number`
-    * `<=` Same as `Counter <= Number`
-    * `%` Equivalent to `Mod(Counter, Number) == 0`
-* `Number` Input value
+    * `= or ==` Same as `Counter == Intger`
+    * `>` Same as `Counter > Intger`
+    * `>=` Same as `Counter >= Intger`
+    * `<` Same as `Counter < Intger`
+    * `<=` Same as `Counter <= Intger`
+    * `%` Equivalent to `Mod(Counter, Intger) == 0`
+* `Intger` e.g. `30`
 
 ### Log point
 ![log-point](image/log-point.gif)
@@ -108,20 +153,24 @@ e.g. `= 30`, `<= 30`
 Print a message to standard output. If you set a message, it will not stop at the breakpoint.
 If the condition is set, the message is output only when the condition is passed.
 
-Also, enclosing the full name of the property as it appears in the data inspection in braces, it will be replaced with the value of the property. (Only properties with primitive values are supported)
+Also, enclosing the variable name as it appears in the [data inspection](#data-inspection) in braces, it will be replaced with the value of the variable. (Only variables with primitive values are supported)
 
 If you want to show the curly braces, you can escape it by prefixing it with `\` like `\{` or `\}`.
 
 e.g. `count: {A_Index}`, `name: {person.name}`
 
+## Watch expression
+![watch-expression](image/watch-expression.gif)
+
+Only variable name is supported.
+The variable name should be the name displayed in [data inspection](#data-inspection).
+
 ## Loaded scripts
 ![loaded-scripts](image/loaded-scripts.gif)
 
-# Known issues
-## AutoHotkey v2
-Since v2 is an alpha version, the following problems occur.
-* Method not visible in data inspecting
-* Inspecting a [property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) shows `"<error>"`.
+Shows the files that are actually loaded.
+
+Supports both explicit loading using `#Include` and implicit loading of [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib)
 
 # Issues
 If you have issues you can report [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).

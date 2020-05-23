@@ -84,15 +84,15 @@
               },
               "runtime": {
                 "type": "string",
-                "description": "The AutoHotkey set here is used regardless of the extension(ahk, ahk2, ah2). In case of relative path \"A_AhkPath\\..\" will be the current directory."
+                "description": "Assign `AutoHotkey.exe` to the extension `ahk` and `ahk2` and `ah2`. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory."
               },
               "runtime_v1": {
                 "type": "string",
-                "description": "The path of AutoHotkey.exe assigned to the extension `ahk`. In case of relative path \"A_AhkPath\\..\" will be the current directory."
+                "description": "Assign `AutoHotkey.exe` to the extension `ahk`. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory."
               },
               "runtime_v2": {
                 "type": "string",
-                "description": "The path of AutoHotkey.exe assigned to the extension `ahk2` or `ah2`. In case of relative path \"A_AhkPath\\..\" will be the current directory."
+                "description": "Assign `AutoHotkey.exe` to the extension `ahk2` or `ah2`. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory."
               },
               "hostname": {
                 "type": "string",
