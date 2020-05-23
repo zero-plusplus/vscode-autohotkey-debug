@@ -84,7 +84,15 @@
               },
               "runtime": {
                 "type": "string",
-                "description": "Full path of Autohotkey.exe"
+                "description": "The AutoHotkey set here is used regardless of the extension(ahk, ahk2, ah2). In case of relative path \"A_AhkPath\\..\" will be the current directory."
+              },
+              "runtime_v1": {
+                "type": "string",
+                "description": "The path of AutoHotkey.exe assigned to the extension `ahk`. In case of relative path \"A_AhkPath\\..\" will be the current directory."
+              },
+              "runtime_v2": {
+                "type": "string",
+                "description": "The path of AutoHotkey.exe assigned to the extension `ahk2` or `ah2`. In case of relative path \"A_AhkPath\\..\" will be the current directory."
               },
               "hostname": {
                 "type": "string",
@@ -119,12 +127,15 @@
             "label": "AutoHotkey Debug",
             "description": "A new configuration for 'debugging' a user selected (ahk | ahk2 | ah2) file.",
             "body": {
-              "type": "ahk",
-              "request": "launch",
               "name": "AutoHotkey Debug",
+              "request": "launch",
+              "type": "ahk",
+              "runtime_v1": "AutoHotkey.exe",
+              "runtime_v2": "v2/AutoHotkey.exe",
               "program": "^\"\\${file}\"",
               "stopOnEntry": false,
-              "useAdvancedBreakpoint": false
+              "useAdvancedBreakpoint": false,
+              "maxChildren": 10000
             }
           }
         ]

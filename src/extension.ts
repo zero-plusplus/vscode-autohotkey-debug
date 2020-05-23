@@ -18,7 +18,6 @@ import { AhkDebugSession, LaunchRequestArguments } from './ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
-    const editor = window.activeTextEditor;
     const defaultConfig = {
       type: 'ahk',
       name: 'Launch',
@@ -30,12 +29,24 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       // Ref: https://github.com/Lexikos/AutoHotkey_L/blob/36600809a348bd3a09d59e335d2897ed16f11ac7/source/Debugger.cpp#L960
       // > TODO: Include the lazy-var arrays for completeness. Low priority since lazy-var arrays are used only for 10001+ variables, and most conventional debugger interfaces would generally not be useful with that many variables.
       maxChildren: 10000,
-      runtime: editor && editor.document.languageId.toLowerCase() === 'ahk'
-        ? path.resolve(`${String(process.env.ProgramFiles)}/AutoHotkey/AutoHotkey.exe`)
-        : config.runtime = path.resolve(`${String(process.env.ProgramFiles)}/AutoHotkey/v2/AutoHotkey.exe`), // ahk2 or ah2
+      runtime_v1: 'AutoHotkey.exe',
+      runtime_v2: 'v2/AutoHotkey.exe',
+      runtime: '',
       useAdvancedBreakpoint: false,
     } as LaunchRequestArguments;
     defaults(config, defaultConfig);
+
+    if (config.runtime === '') {
+      const editor = window.activeTextEditor;
+      config.runtime = editor && editor.document.languageId.toLowerCase() === 'ahk'
+        ? config.runtime_v1
+        : config.runtime_v2; // ahk2 or ah2
+    }
+
+    if (!path.isAbsolute(config.runtime)) {
+      const ahkPath = `${String(process.env.PROGRAMFILES)}/AutoHotkey`;
+      config.runtime = path.resolve(ahkPath, config.runtime);
+    }
 
     return config;
   }
