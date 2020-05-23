@@ -47,7 +47,7 @@ Below is the default configuration snippet.
 
 The settings that should be noted are described below.
 * `runtime`: Path for AutoHotkey.exe. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. e.g. `AutoHotkeyU64.exe` `v2/AutoHotkey.exe`
-* `runtime_v1`, `runtime_v2`: If you want to change the runtime for each extension (ahk, ahk2, ah2), you need to change this setting. `runtime_v1` corresponds to `ahk`, and `runtime_v2` corresponds to `ahk2` or `ah2`. The setting method is the same as `runtime`.
+* `runtime_v1`, `runtime_v2`: If you want to change AutoHotkey runtime by extension, you need to change this setting. `runtime_v1` corresponds to `ahk`, and `runtime_v2` corresponds to `ahk2` or `ah2`. The setting method is the same as `runtime`.
 * `stopOnEntry`: If true, stop at the first line. Set to true if you want it to be the same as Scite4AutoHotkey.
 * `useAdvancedBreakpoint`: Unlock conditional breakpoints, etc. See [Advanced breakpoints](#Advanced-breakpoints-(Optional)) for details
 * `maxChildren`: Maximum number of child elements to get. It is necessary to change it when handling an array exceeding 10000.
@@ -108,15 +108,19 @@ Therefore it is off by default.
 
 #### Condition expresion
 ##### Grammer
-`Value [Operator Value]`
+```md
+# The inside of `[]` can be omitted.
+
+Value [Operator Value]
+```
 
 e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Rules
 * `Value`: `VariableName` or `Primitive`
-* `VariableName` Property name displayed in data inspection (only properties with primitive values are supported). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `VariableName` Property name displayed in [data inspection](#data-inspection) (only properties with primitive values are supported). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 * `Primitive` AutoHotkey primitives. e.g. `"string"`, `123`, `123.456`, `0x123`
-* `Operator` AutoHotkey like comparison operators
+* `Operator`
     * `=` Equal ignore case
     * `==` Equal case sensitive
     * `!=` Not equal ignore case
@@ -132,19 +136,24 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 ![hit-count-breakpoint](image/hit-count-breakpoint.gif)
 
 ##### Grammer
-`{Counter} [Operator] Intger`
+```md
+# You don't need to enter anything in `{}`
+# The inside of `[]` can be omitted.
+
+{NumberOfHits} [Operator] Intger
+```
 
 e.g. `= 30`, `<= 30`
 
 ##### Rules
-* `Counter` Number of breakpoint hits (no need to enter)
+* `NumberOfHits` Number of breakpoint hits (no need to enter)
 * `Operator` If omitted, it is equivalent to `>=`
-    * `= or ==` Same as `Counter == Intger`
-    * `>` Same as `Counter > Intger`
-    * `>=` Same as `Counter >= Intger`
-    * `<` Same as `Counter < Intger`
-    * `<=` Same as `Counter <= Intger`
-    * `%` Equivalent to `Mod(Counter, Intger) == 0`
+    * `= or ==` Same as `NumberOfHits == Intger`
+    * `>` Same as `NumberOfHits > Intger`
+    * `>=` Same as `NumberOfHits >= Intger`
+    * `<` Same as `NumberOfHits < Intger`
+    * `<=` Same as `NumberOfHits <= Intger`
+    * `%` Equivalent to `Mod(NumberOfHits, Intger) == 0`
 * `Intger` e.g. `30`
 
 ### Log point
