@@ -409,6 +409,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         format: 'Rewriting failed. Probably read-only.',
       } as DebugProtocol.Message);
     };
+
     const parsed = this.ahkParser.Primitive.parse(args.value);
     if ('value' in parsed) {
       const primitive = parsed.value.value;
@@ -425,6 +426,9 @@ export class AhkDebugSession extends LoggingDebugSession {
           data = String(parseInt(number.value, 16));
         }
         else {
+          if (this.ahkVersion === 2) {
+            typeName = String(number.type).toLowerCase();
+          }
           data = String(number.value);
         }
       }
