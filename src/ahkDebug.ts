@@ -162,7 +162,11 @@ export class AhkDebugSession extends LoggingDebugSession {
       lunchScript();
     }
     catch (error) {
-      this.sendErrorResponse(response, error);
+      const message = {
+        id: 1,
+        format: error.message,
+      } as DebugProtocol.Message;
+      this.sendErrorResponse(response, message);
       this.sendEvent(new TerminatedEvent());
       return;
     }
