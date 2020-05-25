@@ -14,7 +14,7 @@ import {
   window,
 } from 'vscode';
 import { defaults } from 'underscore';
-import { AhkDebugSession, LaunchRequestArguments } from './ahkDebug';
+import { AhkDebugSession } from './ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
@@ -31,21 +31,26 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       maxChildren: 10000,
       runtime_v1: 'AutoHotkey.exe',
       runtime_v2: 'v2/AutoHotkey.exe',
-      runtime: '',
       useAdvancedBreakpoint: false,
-    } as LaunchRequestArguments;
+    };
     defaults(config, defaultConfig);
 
-    if (config.runtime === '') {
+    if (typeof config.runtime === 'undefined') {
       const editor = window.activeTextEditor;
       config.runtime = editor && editor.document.languageId.toLowerCase() === 'ahk'
         ? config.runtime_v1
         : config.runtime_v2; // ahk2 or ah2
     }
 
-    if (!path.isAbsolute(config.runtime)) {
-      const ahkPath = `${String(process.env.PROGRAMFILES)}/AutoHotkey`;
-      config.runtime = path.resolve(ahkPath, config.runtime);
+    if (config.runtime !== '') {
+      if (!path.isAbsolute(config.runtime)) {
+        const ahkPath = `${String(process.env.PROGRAMFILES)}/AutoHotkey`;
+        config.runtime = path.resolve(ahkPath, config.runtime);
+      }
+
+      if (path.extname(config.runtime) === '') {
+        config.runtime += '.exe';
+      }
     }
 
     return config;
