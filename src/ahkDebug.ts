@@ -160,7 +160,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.stopwatch.start();
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
@@ -240,6 +239,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
 
+    this.stopwatch.start();
     const dbgpResponse = this.config.stopOnEntry
       ? await this.session!.sendStepIntoCommand()
       : await this.session!.sendRunCommand();
