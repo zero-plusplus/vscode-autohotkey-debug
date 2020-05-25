@@ -18,6 +18,7 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { StopWatch } from 'stopwatch-node';
+import { sync as pathExistsSync } from 'path-exists';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import { Parser, createParser } from './util/AhkSimpleParser';
 import { ConditionalEvaluator } from './util/ConditionalEvaluator';
@@ -76,14 +77,20 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (this.server) {
       this.server.close();
     }
+    if (this.stopwatch.isRunning()) {
+      this.stopwatch.stop();
+      this.sendEvent(new OutputEvent(this.stopwatch.shortSummary(), 'execution-time'));
+    }
 
-    this.stopwatch.stop();
-    this.sendEvent(new OutputEvent(this.stopwatch.shortSummary(), 'execution-time'));
     this.shutdown();
   }
   protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
     this.config = args;
     const lunchScript = (): void => {
+      if (!pathExistsSync(this.config.runtime)) {
+        throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. The following path was specified: '${this.config.runtime}'`);
+      }
+
       const ahkProcess = spawn(
         args.runtime,
         [ `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}` ],
