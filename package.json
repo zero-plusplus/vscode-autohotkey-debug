@@ -16,17 +16,8 @@
     "lint": "eslint --fix ./src/**/*.ts ./test/**/*.ts",
     "clean": "rimraf build",
     "build": "yarn clean && yarn lint && tsc",
-    "watch": "yarn build && onchange ./src/**/*.ts ./test/**/*.ts -- yarn build",
     "test": "yarn lint && mocha -r ts-node/register ./test/**/*.test.ts",
     "vscode:prepublish": "yarn build"
-  },
-  "watch": {
-    "build": {
-      "pattern": [
-        "src",
-        "test"
-      ]
-    }
   },
   "publisher": "zero-plusplus",
   "engines": {
@@ -168,7 +159,6 @@
     "eslint": "^6.8.0",
     "husky": "^4.2.5",
     "mocha": "^7.1.1",
-    "onchange": "^6.1.1",
     "ts-node": "^8.9.0",
     "typescript": "^3.8.3",
     "vsce": "^1.75.0",
