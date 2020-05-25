@@ -18,6 +18,7 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { StopWatch } from 'stopwatch-node';
+import { sync as pathExistsSync } from 'path-exists';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import { Parser, createParser } from './util/AhkSimpleParser';
 import { ConditionalEvaluator } from './util/ConditionalEvaluator';
@@ -76,14 +77,20 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (this.server) {
       this.server.close();
     }
+    if (this.stopwatch.isRunning()) {
+      this.stopwatch.stop();
+      this.sendEvent(new OutputEvent(this.stopwatch.shortSummary(), 'execution-time'));
+    }
 
-    this.stopwatch.stop();
-    this.sendEvent(new OutputEvent(this.stopwatch.shortSummary(), 'execution-time'));
     this.shutdown();
   }
   protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
     this.config = args;
     const lunchScript = (): void => {
+      if (!pathExistsSync(this.config.runtime)) {
+        throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. The following path was specified: '${this.config.runtime}'`);
+      }
+
       const ahkProcess = spawn(
         args.runtime,
         [ `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}` ],
@@ -155,12 +162,15 @@ export class AhkDebugSession extends LoggingDebugSession {
       lunchScript();
     }
     catch (error) {
-      this.sendErrorResponse(response, error);
+      const message = {
+        id: 1,
+        format: error.message,
+      } as DebugProtocol.Message;
+      this.sendErrorResponse(response, message);
       this.sendEvent(new TerminatedEvent());
       return;
     }
 
-    this.stopwatch.start();
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
@@ -240,6 +250,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
 
+    this.stopwatch.start();
     const dbgpResponse = this.config.stopOnEntry
       ? await this.session!.sendStepIntoCommand()
       : await this.session!.sendRunCommand();

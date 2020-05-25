@@ -2,6 +2,10 @@
 Please note the following first.
 * This document has been **translated from Japanese to English** by Google Translate.
 * **This extension alone will not work**. You will need to separately install an extension that supports AutoHotkey language(Most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2(For example `dudelmoser.vscode-autohotkey2`). I plan to make an all-in pack, but it will take time because I will make it from scratch for studying.
+* The new version may have defects. In that case please reinstall the previous version.
+
+# News
+* Release version 1.0.1 - see [CHANGELOG](CHANGELOG.md)
 
 # Overview
 I made it for the purpose of replacing the debugger of Scite4AutoHotkey.
@@ -46,7 +50,7 @@ Below is the default configuration snippet.
 ```
 
 The settings that should be noted are described below.
-* `runtime`: Path for AutoHotkey.exe. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. e.g. `AutoHotkeyU64.exe` `v2/AutoHotkey.exe`
+* `runtime`: Path for AutoHotkey.exe. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. The extension `.exe` can be omitted. e.g. `AutoHotkeyU64` `v2/AutoHotkey.exe`
 * `runtime_v1`, `runtime_v2`: If you want to change AutoHotkey runtime by extension, you need to change this setting. `runtime_v1` corresponds to `ahk`, and `runtime_v2` corresponds to `ahk2` or `ah2`. The setting method is the same as `runtime`.
 * `stopOnEntry`: If true, stop at the first line. Set to true if you want it to be the same as Scite4AutoHotkey.
 * `useAdvancedBreakpoint`: Unlock conditional breakpoints, etc. See [Advanced breakpoints](#Advanced-breakpoints-(Optional)) for details
@@ -180,6 +184,9 @@ The variable name should be the name displayed in [data inspection](#data-inspec
 Shows the files that are actually loaded.
 
 Supports both explicit loading using `#Include` and implicit loading of [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib)
+
+# Change log
+See [CHANGELOG](CHANGELOG.md)
 
 # Issues
 If you have issues you can report [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
