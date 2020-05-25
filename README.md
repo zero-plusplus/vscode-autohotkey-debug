@@ -2,6 +2,10 @@
 Please note the following first.
 * This document has been **translated from Japanese to English** by Google Translate.
 * **This extension alone will not work**. You will need to separately install an extension that supports AutoHotkey language(Most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2(For example `dudelmoser.vscode-autohotkey2`). I plan to make an all-in pack, but it will take time because I will make it from scratch for studying.
+* The new version may have defects. In that case please reinstall the previous version.
+
+# News
+* Release version 1.0.1 - see [CHANGELOG](CHANGELOG.md)
 
 # Overview
 I made it for the purpose of replacing the debugger of Scite4AutoHotkey.
@@ -180,6 +184,9 @@ The variable name should be the name displayed in [data inspection](#data-inspec
 Shows the files that are actually loaded.
 
 Supports both explicit loading using `#Include` and implicit loading of [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib)
+
+# Change log
+See [CHANGELOG](CHANGELOG.md)
 
 # Issues
 If you have issues you can report [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
