@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as net from 'net';
-import { stat } from 'fs';
+import { stat, statSync } from 'fs';
 import {
   ChildProcessWithoutNullStreams,
   spawn,
@@ -18,7 +18,6 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { StopWatch } from 'stopwatch-node';
-import { sync as pathExistsSync } from 'path-exists';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import { Parser, createParser } from './util/AhkSimpleParser';
 import { ConditionalEvaluator } from './util/ConditionalEvaluator';
@@ -87,9 +86,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
     this.config = args;
     const lunchScript = (): void => {
-      if (!pathExistsSync(this.config.runtime)) {
-        throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. The following path was specified: '${this.config.runtime}'`);
-      }
+      this.checkRuntime(this.config.runtime);
 
       const ahkProcess = spawn(
         args.runtime,
@@ -554,6 +551,18 @@ export class AhkDebugSession extends LoggingDebugSession {
       return breakpoint;
     }
     return null;
+  }
+  private checkRuntime(runtimePath: string): void {
+    const notFoundError = Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. The following path was specified: '${runtimePath}'`);
+    try {
+      if (statSync(runtimePath).isFile()) {
+        return;
+      }
+      throw notFoundError;
+    }
+    catch (error) {
+      throw notFoundError;
+    }
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false): Promise<void> {
     if (response.status === 'stopped') {

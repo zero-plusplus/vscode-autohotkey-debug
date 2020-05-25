@@ -138,7 +138,6 @@
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
     "parsimmon": "^1.13.0",
-    "path-exists": "^4.0.0",
     "pcre-to-regexp": "^1.1.0",
     "stopwatch-node": "^1.0.2",
     "underscore": "^1.10.2",
