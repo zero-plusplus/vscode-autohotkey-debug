@@ -20,7 +20,7 @@ This is not implemented due to my lack of knowledge, so I would appreciate it if
 ## [1.0.2] - 2020-05-26 [YANKED]
 ### Fixed
 * If the script is in Persistent mode, for example because it defines a hotkey, the process would stop when leaving the scope
-* Debug fails if script path is UNC
+* Debug fails if the script path is a UNC path starting with `\\`
 
 ## [1.0.1] - 2020-05-25
 ### Changed

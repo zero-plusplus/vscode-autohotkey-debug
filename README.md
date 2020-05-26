@@ -12,7 +12,7 @@ Please note the following first.
 ### Update
 * 1.0.2 - 2020-05-26 - Fixed a fatal bug
     * Fix: If the script is in Persistent mode, for example because it defines a hotkey, the process would stop when leaving the scope
-    * Fix: Debug fails if script path is UNC
+    * Fix: Debug fails if the script path is a UNC path starting with `\\`
 * 1.0.1 - 2020-05-25
     * Changed: Displays an error if the runtime does not exist. Previously the process stopped until the user stopped debugging.
 
