@@ -55,6 +55,15 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.setDebuggerLinesStartAt1(true);
     this.setDebuggerPathFormat('uri');
   }
+  public convertDebuggerPathToClient(fileUri: string): string {
+    const filePath = super.convertDebuggerPathToClient(fileUri);
+
+    const isUNC = filePath.startsWith('\\');
+    if (isUNC) {
+      return `\\${filePath}`;
+    }
+    return filePath;
+  }
   protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
     response.body = {
       supportsConditionalBreakpoints: true,
@@ -175,7 +184,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
     const filePath = args.source.path ?? '';
-    const fileUri = this.convertClientPathToDebugger(filePath);
     const dbgpBreakpoint = (await this.session!.sendBreakpointListCommand()).breakpoints;
 
     // Clear dbgp breakpoints from current file
@@ -184,8 +192,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         // (breakpoint.fileUri === fileUri) is not Equals.
         // breakpoint.fileUri: file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"
         // fileUri:            file:///w:/project/vscode-autohotkey-debug/demo/demo.ahk
-        const _fileUri = this.convertDebuggerPathToClient(dbgpBreakpoint.fileUri);
-        if (filePath.toLowerCase() === _fileUri.toLowerCase()) {
+        const _filePath = this.convertDebuggerPathToClient(dbgpBreakpoint.fileUri);
+        if (filePath.toLowerCase() === _filePath.toLowerCase()) {
           // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
           delete this.breakpoints[`${filePath.toLowerCase()}${dbgpBreakpoint.line}`];
           return true;
@@ -196,14 +204,13 @@ export class AhkDebugSession extends LoggingDebugSession {
         return this.session!.sendBreakpointRemoveCommand(dbgpBreakpoint);
       }));
 
-
     const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
     if (args.breakpoints) {
-      const promise = Promise.all(args.breakpoints
+      await Promise.all(args.breakpoints
         .map(async(vscodeBreakpoint, index) => {
           try {
-            const { id } = await this.session!.sendBreakpointSetCommand(fileUri, vscodeBreakpoint.line);
-            const { line } = await this.session!.sendBreakpointGetCommand(id);
+            const { id } = await this.session!.sendBreakpointSetCommand(filePath, vscodeBreakpoint.line);
+            const { fileUri, line } = await this.session!.sendBreakpointGetCommand(id);
 
             const dbgpBreakpoint = this.breakpoints[`${filePath}${line}`];
             if (dbgpBreakpoint?.advancedData) {
@@ -233,15 +240,6 @@ export class AhkDebugSession extends LoggingDebugSession {
             };
           }
         }));
-
-      if (this.session!.isRunningContinuationCommand) {
-        promise.catch((error) => {
-          this.sendEvent(new OutputEvent(error.message));
-        });
-      }
-      else {
-        await promise;
-      }
     }
 
     response.body = { breakpoints: vscodeBreakpoints };
@@ -255,6 +253,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       ? await this.session!.sendStepIntoCommand()
       : await this.session!.sendRunCommand();
 
+    this.sendResponse(response);
     if (this.config.useAdvancedBreakpoint) {
       this.checkContinuationStatus(dbgpResponse, !this.config.stopOnEntry);
       return;
@@ -296,7 +295,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         const filePath = this.convertDebuggerPathToClient(stackFrame.fileUri);
         const source = {
           name: path.basename(filePath),
-          path: stackFrame.fileUri,
+          path: filePath,
         } as DebugProtocol.Source;
 
         this.stackFramesByFrameId.set(id, stackFrame);

@@ -417,7 +417,7 @@ export class BreakpointGetResponse extends Response {
   public id: number;
   public type: BreakpointType;
   public state: BreakpointState;
-  public fileName: string;
+  public fileUri: string;
   public line: number;
   constructor(response: XmlNode) {
     super(response);
@@ -429,7 +429,7 @@ export class BreakpointGetResponse extends Response {
     this.id = parseInt(id, 10);
     this.type = type as BreakpointType;
     this.state = state as BreakpointState;
-    this.fileName = filename;
+    this.fileUri = filename;
     this.line = parseInt(lineno, 10);
   }
 }
