@@ -21,8 +21,6 @@ This is not implemented due to my lack of knowledge, so I would appreciate it if
 ### Fixed
 * If the script is in Persistent mode, for example because it defines a hotkey, the process would stop when leaving the scope
 * Debug fails if script path is UNC
-### Changed
-* It seems that there are many potential bugs, so we changed it to the preview version
 
 ## [1.0.1] - 2020-05-25
 ### Changed
