@@ -16,6 +16,12 @@ This is not implemented due to my lack of knowledge, so I would appreciate it if
 ---
 
 ## [Released]
+
+## [1.0.2] - 2020-05-26 [YANKED]
+### Fixed
+* If the script is in Persistent mode, for example because it defines a hotkey, the process would stop when leaving the scope
+* Debug fails if the script path is a UNC path starting with `\\`
+
 ## [1.0.1] - 2020-05-25
 ### Changed
 * Displays an error if the runtime does not exist. Previously the process stopped until the user stopped debugging.
@@ -30,5 +36,6 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.0.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.1..v1.0.2
 [1.0.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.0..v1.0.1
 [1.0.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/tree/v1.0.0

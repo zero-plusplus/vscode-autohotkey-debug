@@ -417,7 +417,7 @@ export class BreakpointGetResponse extends Response {
   public id: number;
   public type: BreakpointType;
   public state: BreakpointState;
-  public fileName: string;
+  public fileUri: string;
   public line: number;
   constructor(response: XmlNode) {
     super(response);
@@ -429,7 +429,7 @@ export class BreakpointGetResponse extends Response {
     this.id = parseInt(id, 10);
     this.type = type as BreakpointType;
     this.state = state as BreakpointState;
-    this.fileName = filename;
+    this.fileUri = filename;
     this.line = parseInt(lineno, 10);
   }
 }
@@ -599,7 +599,7 @@ export class Session extends EventEmitter {
   }
   private async enqueueCommand(commandName: CommandName, args?: string, data?: string, isContinuationCommand = false): Promise<XmlNode> {
     return new Promise<XmlNode>((resolve, reject) => {
-      const command = { name: commandName, args, data, resolve, reject, isContinuationCommand: false } as Command;
+      const command = { name: commandName, args, data, resolve, reject, isContinuationCommand } as Command;
       if (this.commandQueue.length === 0 && this.pendingCommands.size === 0) {
         this.sendCommand(command);
         return;
