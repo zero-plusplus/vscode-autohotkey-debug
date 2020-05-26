@@ -63,7 +63,6 @@ export interface Command {
   data?: string;
   resolve: (response: any) => any;
   reject: (error?: Error) => any;
-  isContinuationCommand: boolean;
 }
 
 const errorMssages = {
@@ -481,13 +480,8 @@ export class Session extends EventEmitter {
   public readonly id: number = 1;
   private readonly socket: Socket;
   private readonly pendingCommands = new Map<number, Command>();
-  private readonly commandQueue: Command[] = [];
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
-  private _isRunningContinuationCommand = false;
-  public get isRunningContinuationCommand(): boolean {
-    return this._isRunningContinuationCommand;
-  }
   constructor(socket: Socket) {
     super();
     this.socket = socket
@@ -504,78 +498,68 @@ export class Session extends EventEmitter {
         if (this.pendingCommands.has(transactionId)) {
           const command = this.pendingCommands.get(transactionId);
           this.pendingCommands.delete(transactionId);
-          this._isRunningContinuationCommand = false;
           command?.resolve(xml.response);
-        }
-
-        if (0 < this.commandQueue.length) {
-          const command = this.commandQueue.shift();
-          if (typeof command === 'undefined') {
-            return;
-          }
-
-          this.sendCommand(command).catch(command.reject);
         }
       }
     });
   }
   public async sendStackGetCommand(): Promise<StackGetResponse> {
-    return new StackGetResponse(await this.enqueueCommand('stack_get'));
+    return new StackGetResponse(await this.sendCommand('stack_get'));
   }
   public async sendPropertyGetCommand(context: Context, name: string): Promise<PropertyGetResponse> {
     return new PropertyGetResponse(
-      await this.enqueueCommand('property_get', `-n ${name} -c ${context.id} -d ${context.stackFrame.level}`),
+      await this.sendCommand('property_get', `-n ${name} -c ${context.id} -d ${context.stackFrame.level}`),
       context,
     );
   }
   public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: string; data: string }): Promise<PropertySetResponse> {
-    return new PropertySetResponse(await this.enqueueCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName} -t ${property.typeName}`, property.data));
+    return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName} -t ${property.typeName}`, property.data));
   }
   public async sendRunCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.enqueueContinuationCommand('run'));
+    return new ContinuationResponse(await this.sendCommand('run'));
   }
   public async sendBreakCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.enqueueContinuationCommand('break'));
+    return new ContinuationResponse(await this.sendCommand('break'));
   }
   public async sendStopCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.enqueueContinuationCommand('stop'));
+    return new ContinuationResponse(await this.sendCommand('stop'));
   }
   public async sendStepIntoCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.enqueueContinuationCommand('step_into'));
+    return new ContinuationResponse(await this.sendCommand('step_into'));
   }
   public async sendStepOutCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.enqueueContinuationCommand('step_out'));
+    return new ContinuationResponse(await this.sendCommand('step_out'));
   }
   public async sendStepOverCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.enqueueContinuationCommand('step_over'));
+    return new ContinuationResponse(await this.sendCommand('step_over'));
   }
   public async sendContextNamesCommand(stackFrame: StackFrame): Promise<ContextNamesResponse> {
-    return new ContextNamesResponse(await this.enqueueCommand('context_names'), stackFrame);
+    return new ContextNamesResponse(await this.sendCommand('context_names'), stackFrame);
   }
   public async sendContextGetCommand(context: Context): Promise<ContextGetResponse> {
-    return new ContextGetResponse(await this.enqueueCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`), context);
+    return new ContextGetResponse(await this.sendCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`), context);
   }
   public async sendFeatureGetCommand(featureName: FeatureGetName): Promise<FeatureGetResponse> {
-    return new FeatureGetResponse(await this.enqueueCommand('feature_get', `-n ${featureName}`));
+    return new FeatureGetResponse(await this.sendCommand('feature_get', `-n ${featureName}`));
   }
   public async sendFeatureSetCommand(featureName: FeatureSetName, value: string | number): Promise<FeatureSetResponse> {
-    return new FeatureSetResponse(await this.enqueueCommand('feature_set', `-n ${featureName} -v ${String(value)}`));
+    return new FeatureSetResponse(await this.sendCommand('feature_set', `-n ${featureName} -v ${String(value)}`));
   }
   public async sendBreakpointGetCommand(breakpointId: number): Promise<BreakpointGetResponse> {
-    return new BreakpointGetResponse(await this.enqueueCommand('breakpoint_get', `-d ${breakpointId}`));
+    return new BreakpointGetResponse(await this.sendCommand('breakpoint_get', `-d ${breakpointId}`));
   }
   public async sendBreakpointSetCommand(fileUri: string, line: number): Promise<BreakpointSetResponse> {
-    return new BreakpointSetResponse(await this.enqueueCommand('breakpoint_set', `-t line -f ${fileUri} -n ${line}`));
+    return new BreakpointSetResponse(await this.sendCommand('breakpoint_set', `-t line -f ${fileUri} -n ${line}`));
   }
   public async sendBreakpointRemoveCommand(breakpoint: Breakpoint): Promise<Response> {
-    return new Response(await this.enqueueCommand('breakpoint_remove', `-d ${String(breakpoint.id)}`));
+    return new Response(await this.sendCommand('breakpoint_remove', `-d ${String(breakpoint.id)}`));
   }
   public async sendBreakpointListCommand(): Promise<BreakpointListResponse> {
-    return new BreakpointListResponse(await this.enqueueCommand('breakpoint_list'));
+    return new BreakpointListResponse(await this.sendCommand('breakpoint_list'));
   }
   public async fetchPrimitiveProperty(propertyName: string): Promise<string | null> {
     for await (const contextId of [ 0, 1 ]) {
-      const response = await this.enqueueCommand('property_get', `-n ${propertyName} -c ${contextId}`);
+      const response = await this.sendCommand('property_get', `-n ${propertyName} -c ${contextId}`);
       if (response.property) {
         const [ property ] = Array.isArray(response.property) ? response.property : [ response.property ];
         const value = property.content
@@ -597,34 +581,27 @@ export class Session extends EventEmitter {
     this.transactionCounter += 1;
     return this.transactionCounter;
   }
-  private async enqueueCommand(commandName: CommandName, args?: string, data?: string, isContinuationCommand = false): Promise<XmlNode> {
+  private async sendCommand(commandName: CommandName, args?: string, data?: string): Promise<XmlNode> {
     return new Promise<XmlNode>((resolve, reject) => {
-      const command = { name: commandName, args, data, resolve, reject, isContinuationCommand } as Command;
-      if (this.commandQueue.length === 0 && this.pendingCommands.size === 0) {
-        this.sendCommand(command);
-        return;
+      const transactionId = this.createTransactionId();
+      let command_str = `${commandName} -i ${String(transactionId)}`;
+      if (typeof args !== 'undefined') {
+        command_str += ` ${args}`;
       }
+      if (typeof data !== 'undefined') {
+        command_str += ` -- ${Buffer.from(data).toString('base64')}`;
+      }
+      command_str += '\0';
 
-      this.commandQueue.push(command);
+      this.pendingCommands.set(transactionId, {
+        name: commandName,
+        args,
+        data,
+        resolve,
+        reject,
+      } as Command);
+      this.write(command_str);
     });
-  }
-  private async enqueueContinuationCommand(commandName: ContinuationCommandName, args?: string, data?: string): Promise<XmlNode> {
-    return this.enqueueCommand(commandName, args, data, true);
-  }
-  private async sendCommand(command: Command): Promise<void> {
-    const transactionId = this.createTransactionId();
-    let command_str = `${command.name} -i ${String(transactionId)}`;
-    if (typeof command.args !== 'undefined') {
-      command_str += ` ${command.args}`;
-    }
-    if (typeof command.data !== 'undefined') {
-      command_str += ` -- ${Buffer.from(command.data).toString('base64')}`;
-    }
-    command_str += '\0';
-
-    this.pendingCommands.set(transactionId, command);
-    this._isRunningContinuationCommand = command.isContinuationCommand;
-    await this.write(command_str);
   }
   private async write(command: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {
