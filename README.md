@@ -2,10 +2,23 @@
 Please note the following first.
 * This document has been **translated from Japanese to English** by Google Translate.
 * **This extension alone will not work**. You will need to separately install an extension that supports AutoHotkey language(Most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2(For example `dudelmoser.vscode-autohotkey2`). I plan to make an all-in pack, but it will take time because I will make it from scratch for studying.
+* If you want to update, please see News first. It may contain important information.
 * The new version may have defects. In that case please reinstall the previous version.
 
 # News
-* Release version 1.0.1 - see [CHANGELOG](CHANGELOG.md)
+* I have fixed a fatal bug, so please update
+* Many will expect version 1.0.0 to work perfectly. Unfortunately, I expect this extension to have many bugs. Therefore, I changed it to the preview version
+
+### Update
+* 1.0.2 - 2020-05-26 - Fixed a fatal bug
+    * Changed: It seems that there are many potential bugs, so we changed it to the preview version
+    * Fix: If the script is in Persistent mode, for example because it defines a hotkey, the process would stop when leaving the scope
+    * Fix: Debug fails if script path is UNC
+* 1.0.1 - 2020-05-25
+    * Changed: Displays an error if the runtime does not exist. Previously the process stopped until the user stopped debugging.
+
+see [CHANGELOG](CHANGELOG.md) for details.
+
 
 # Overview
 I made it for the purpose of replacing the debugger of Scite4AutoHotkey.

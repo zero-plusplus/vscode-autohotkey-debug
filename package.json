@@ -33,6 +33,7 @@
   "categories": [
     "Debuggers"
   ],
+  "preview": true,
   "activationEvents": [
     "onDebug",
     "onLanguage:ahk",
