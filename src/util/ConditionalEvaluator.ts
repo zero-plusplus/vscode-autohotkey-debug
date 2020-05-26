@@ -95,7 +95,7 @@ export class ConditionalEvaluator {
         const _a = await getValue(a);
         const _b = await getValue(b);
 
-        if (_a && _b) {
+        if (_a !== null && _b !== null) {
           const operator = operators[operatorType.value];
           return operator(_a, _b);
         }

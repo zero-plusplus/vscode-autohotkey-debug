@@ -17,6 +17,11 @@ This is not implemented due to my lack of knowledge, so I would appreciate it if
 
 ## [Released]
 
+## [1.0.3] - 2020-05-26 [YANKED]
+### Fixed
+* Setting breakpoints while the script is waiting does not work. This makes hotkey debugging easier.
+* Returns false when comparing empty characters in conditional breakpoint
+
 ## [1.0.2] - 2020-05-26 [YANKED]
 ### Fixed
 * If the script is in Persistent mode, for example because it defines a hotkey, the process would stop when leaving the scope
@@ -36,6 +41,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.0.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.2..v1.0.3
 [1.0.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.1..v1.0.2
 [1.0.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.0..v1.0.1
 [1.0.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/tree/v1.0.0
