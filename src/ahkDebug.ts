@@ -262,25 +262,60 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.checkContinuationStatus(dbgpResponse);
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
-    const dbgpResponse = await this.session!.sendRunCommand();
-
     this.sendResponse(response);
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+
+    const promise = this.session!.sendRunCommand();
+    if (this.session?.isRunningContinuationCommand) {
+      promise.then((dbgpResponse) => {
+        this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+      });
+    }
+    else {
+      const dbgpResponse = await promise;
+      this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+    }
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
-    const dbgpResponse = await this.session!.sendStepOverCommand();
     this.sendResponse(response);
-    this.checkContinuationStatus(dbgpResponse);
+
+    const promise = this.session!.sendStepOverCommand();
+    if (this.session?.isRunningContinuationCommand) {
+      promise.then((dbgpResponse) => {
+        this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+      });
+    }
+    else {
+      const dbgpResponse = await promise;
+      this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+    }
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
-    const dbgpResponse = await this.session!.sendStepIntoCommand();
     this.sendResponse(response);
-    this.checkContinuationStatus(dbgpResponse);
+
+    const promise = this.session!.sendStepIntoCommand();
+    if (this.session?.isRunningContinuationCommand) {
+      promise.then((dbgpResponse) => {
+        this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+      });
+    }
+    else {
+      const dbgpResponse = await promise;
+      this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+    }
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
-    const dbgpResponse = await this.session!.sendStepOutCommand();
     this.sendResponse(response);
-    this.checkContinuationStatus(dbgpResponse);
+
+    const promise = this.session!.sendStepOutCommand();
+    if (this.session?.isRunningContinuationCommand) {
+      promise.then((dbgpResponse) => {
+        this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+      });
+    }
+    else {
+      const dbgpResponse = await promise;
+      this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+    }
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };

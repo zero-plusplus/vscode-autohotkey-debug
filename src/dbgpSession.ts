@@ -599,7 +599,7 @@ export class Session extends EventEmitter {
   }
   private async enqueueCommand(commandName: CommandName, args?: string, data?: string, isContinuationCommand = false): Promise<XmlNode> {
     return new Promise<XmlNode>((resolve, reject) => {
-      const command = { name: commandName, args, data, resolve, reject, isContinuationCommand: false } as Command;
+      const command = { name: commandName, args, data, resolve, reject, isContinuationCommand } as Command;
       if (this.commandQueue.length === 0 && this.pendingCommands.size === 0) {
         this.sendCommand(command);
         return;
