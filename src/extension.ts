@@ -17,7 +17,7 @@ import { defaults } from 'underscore';
 import { AhkDebugSession } from './ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
-  public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+  public resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
     const defaultConfig = {
       type: 'ahk',
       name: 'Launch',
