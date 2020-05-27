@@ -17,9 +17,15 @@ This is not implemented due to my lack of knowledge, so I would appreciate it if
 
 ## [Released]
 
-## [1.0.4] - 2020-05-26
+## [1.0.5] - 2020-05-27 [YANKED]
 ### Fixed
-* Fix: If you specify a path using a [variable](https://code.visualstudio.com/docs/editor/variables-reference) in runtime in launch.json, the path is not set correctly and debugging fails. For example `${workspaceFolder}/AutoHotkey.exe`
+* Debug will fail if launch.json is not created or "program" is omitted. This bug occurred in 1.0.4
+
+## [1.0.4] - 2020-05-27
+**Note: This version is broken. This will be fixed in 1.0.5.**
+
+### Fixed
+* If you specify a path using a [variable](https://code.visualstudio.com/docs/editor/variables-reference) in runtime in launch.json, the path is not set correctly and debugging fails. For example `${workspaceFolder}/AutoHotkey.exe`
 
 ## [1.0.3] - 2020-05-26 [YANKED]
 ### Fixed
@@ -45,6 +51,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.0.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.4..v1.0.5
 [1.0.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.3..v1.0.4
 [1.0.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.2..v1.0.3
 [1.0.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.1..v1.0.2
