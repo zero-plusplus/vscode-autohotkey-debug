@@ -52,6 +52,7 @@ Below is the default configuration snippet.
             "runtime_v1": "AutoHotkey.exe",
             "runtime_v2": "v2/AutoHotkey.exe",
             "program": "${file}",
+            "args": [],
             "stopOnEntry": false,
             "useAdvancedBreakpoint": false,
             "maxChildren": 10000
