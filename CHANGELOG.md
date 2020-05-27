@@ -17,6 +17,10 @@ This is not implemented due to my lack of knowledge, so I would appreciate it if
 
 ## [Released]
 
+## [1.0.4] - 2020-05-26
+### Fixed
+* Fix: If you specify a path using a [variable](https://code.visualstudio.com/docs/editor/variables-reference) in runtime in launch.json, the path is not set correctly and debugging fails. For example `${workspaceFolder}/AutoHotkey.exe`
+
 ## [1.0.3] - 2020-05-26 [YANKED]
 ### Fixed
 * Setting breakpoints while the script is waiting does not work. This makes hotkey debugging easier.
@@ -41,6 +45,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.0.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.3..v1.0.4
 [1.0.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.2..v1.0.3
 [1.0.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.1..v1.0.2
 [1.0.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.0..v1.0.1
