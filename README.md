@@ -7,17 +7,15 @@ Please note the following first.
 * The new version may have defects. In that case please reinstall the previous version.
 
 # News
-* I have fixed a fatal bug, so please update
-
 ### Update
+* 1.0.4 - 2020-05-27
+    * Fix: If you specify a path using a [variable](https://code.visualstudio.com/docs/editor/variables-reference) in runtime in launch.json, the path is not set correctly and debugging fails. For example `${workspaceFolder}/AutoHotkey.exe`
 * 1.0.3 - 2020-05-26 - Fixed a fatal bug
     * Fix: Setting breakpoints while the script is waiting does not work. This makes hotkey debugging easier.
     * Fix: Returns false when comparing empty characters in conditional breakpoint
 * 1.0.2 - 2020-05-26 - Fixed a fatal bug
     * Fix: If the script is in Persistent mode, for example because it defines a hotkey, the process would stop when leaving the scope
-    * Fix: Debug fails if the script path is a UNC path starting with `\\`
-* 1.0.1 - 2020-05-25
-    * Changed: Displays an error if the runtime does not exist. Previously the process stopped until the user stopped debugging.
+    * Fix: Debug fails if the script path is a UNC path starting with `\\`the user stopped debugging.
 
 see [CHANGELOG](CHANGELOG.md) for details.
 
