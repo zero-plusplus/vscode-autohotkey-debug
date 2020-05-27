@@ -17,7 +17,7 @@ import { defaults } from 'underscore';
 import { AhkDebugSession } from './ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
-  public resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+  public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
     const defaultConfig = {
       type: 'ahk',
       name: 'Launch',
@@ -34,7 +34,9 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       useAdvancedBreakpoint: false,
     };
     defaults(config, defaultConfig);
-
+    return config;
+  }
+  public resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
     if (typeof config.runtime === 'undefined') {
       const editor = window.activeTextEditor;
       config.runtime = editor && editor.document.languageId.toLowerCase() === 'ahk'
@@ -52,7 +54,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         config.runtime += '.exe';
       }
     }
-
     return config;
   }
 }
