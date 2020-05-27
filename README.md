@@ -4,19 +4,18 @@ Please note the following first.
 * **This extension alone will not work**. You will need to separately install an extension that supports AutoHotkey language(Most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2(For example `dudelmoser.vscode-autohotkey2`). I plan to make an all-in pack, but it will take time because I will make it from scratch for studying.
 * It is expected that there are still many potential bugs. Please report to [issues](https:github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 * If you want to update, please see News first. It may contain important information.
-* The new version may have defects. In that case please reinstall the previous version.
+* The new version may have defects. In that case, please refer to the [CHANGELOG](CHANGELOG.md) and reinstall the previous version.
 
 # News
 ### Update
+* 1.1.0 - 2020-05-27
+    * Setting execution arguments
 * 1.0.5 - 2020-05-27 - Fixed a fatal bug
-    * Fix: Debug will fail if launch.json is not created or "program" is omitted. This bug occurred in 1.0.4
+    * Fixed: Debug will fail if launch.json is not created or "program" is omitted. This bug occurred in 1.0.4
 * 1.0.4 - 2020-05-27
-    * Fix: If you specify a path using a [variable](https://code.visualstudio.com/docs/editor/variables-reference) in runtime in launch.json, the path is not set correctly and debugging fails. For example `${workspaceFolder}/AutoHotkey.exe`
-* 1.0.3 - 2020-05-26 - Fixed a fatal bug
-    * Fix: Setting breakpoints while the script is waiting does not work. This makes hotkey debugging easier.
-    * Fix: Returns false when comparing empty characters in conditional breakpoint
+    * Fixed: If you specify a path using a [variable](https://code.visualstudio.com/docs/editor/variables-reference) in runtime in launch.json, the path is not set correctly and debugging fails. For example `${workspaceFolder}/AutoHotkey.exe`
 
-see [CHANGELOG](CHANGELOG.md) for details.
+See [CHANGELOG](CHANGELOG.md) for details.
 
 
 # Overview

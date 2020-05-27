@@ -17,6 +17,10 @@ This is not implemented due to my lack of knowledge, so I would appreciate it if
 
 ## [Released]
 
+## [1.1.0] - 2020-05-27
+### Added
+* Setting execution arguments
+
 ## [1.0.5] - 2020-05-27 [YANKED]
 ### Fixed
 * Debug will fail if launch.json is not created or "program" is omitted. This bug occurred in 1.0.4
@@ -51,7 +55,8 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[1.0.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.4..v1.0.5
+[1.1.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.5..v1.1.0
+[1.0.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.4..v1.0.5
 [1.0.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.3..v1.0.4
 [1.0.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.2..v1.0.3
 [1.0.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.1..v1.0.2
