@@ -27,6 +27,7 @@ import * as dbgp from './dbgpSession';
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
   program: string;
   runtime: string;
+  args: string[];
   stopOnEntry?: boolean;
   hostname?: string;
   port?: number;
@@ -102,7 +103,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       const ahkProcess = spawn(
         args.runtime,
-        [ `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}` ],
+        [ `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ],
         { cwd: path.dirname(args.program) },
       );
       ahkProcess.on('exit', (exitCode) => {

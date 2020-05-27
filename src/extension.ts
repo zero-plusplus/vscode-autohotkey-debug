@@ -23,6 +23,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       name: 'Launch',
       request: 'launch',
       program: '${file}',
+      args: [],
       hostname: 'localhost',
       port: 9000,
       // If a value greater than 10000 is specified, malfunction may occur due to specification changes.

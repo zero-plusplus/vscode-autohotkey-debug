@@ -73,6 +73,11 @@
                 "description": "Absolute path to a (ahk | ahk2 | ah2) file.",
                 "default": "${file}"
               },
+              "args": {
+                "type": "array",
+                "description": "Arguments passed to the program to debug.",
+                "default": []
+              },
               "runtime": {
                 "type": "string",
                 "description": "Assign `AutoHotkey.exe` to the extension `ahk` and `ahk2` and `ah2`. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. The extension `.exe` can be omitted."
@@ -124,6 +129,7 @@
               "runtime_v1": "AutoHotkey.exe",
               "runtime_v2": "v2/AutoHotkey.exe",
               "program": "^\"\\${file}\"",
+              "args": [],
               "stopOnEntry": false,
               "useAdvancedBreakpoint": false,
               "maxChildren": 10000

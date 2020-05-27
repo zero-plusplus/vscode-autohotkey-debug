@@ -9,6 +9,7 @@
             "request": "launch",
             "name": "AutoHotkey Debug",
             "program": "${file}",
+            "args": [],
             "stopOnEntry": false,
             "useAdvancedBreakpoint": true,
             "internalConsoleOptions": "openOnSessionStart"
