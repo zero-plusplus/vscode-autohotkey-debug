@@ -90,7 +90,7 @@ Specifically, the following types are supported.
     * `Hex`: Converted to intger and treated as `integer`. e.g. `0x123`
     * `Scientific`: Treated as a `string`. Converted to `float` in v2. e.g. `1e3` `3.0e+5`
 
-### Hover over variable
+### Data inspection when hover
 ![data-inspection-when-hover](image/data-inspection-when-hover.gif)
 
 You can see the data displayed in the [data inspection](#data-inspection) by hovering over the variable.
