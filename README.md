@@ -77,7 +77,7 @@ The settings that should be noted are described below.
 
 You can see the data contents of the variables. However, v2 cannot see some data. Probably because of the alpha version.
 
-When a `variable name` is requested by another feature, it means the name displayed by this feature. e.g. `variable`, `obj.field`, `obj["spaced key"]`, ` arr[0]`
+If `VariableName` is requested by another function, it means the name displayed by this function. Note that unlike AutoHotkey, it is case sensitive. e.g. `variable`, `obj.field`, `obj["spaced key"]`, ` arr[0]`
 
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
@@ -137,7 +137,7 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Rules
 * `Value`: `VariableName` or `Primitive`
-* `VariableName` Property name displayed in [data inspection](#data-inspection) (only properties with primitive values are supported). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `VariableName` Property name displayed in [data inspection](#data-inspection) (only properties with primitive values are supported). Note that the case must match. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 * `Primitive` AutoHotkey primitives. e.g. `"string"`, `123`, `123.456`, `0x123`
 * `Operator`
     * `=` Equal ignore case
@@ -181,7 +181,7 @@ e.g. `= 30`, `<= 30`
 Print a message to standard output. If you set a message, it will not stop at the breakpoint.
 If the condition is set, the message is output only when the condition is passed.
 
-Also, enclosing the variable name as it appears in the [data inspection](#data-inspection) in braces, it will be replaced with the value of the variable. (Only variables with primitive values are supported)
+By describing like `{VariableName}`, the value of the variable (only the primitive value is supported) can be output. The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
 
 If you want to show the curly braces, you can escape it by prefixing it with `\` like `\{` or `\}`.
 
@@ -190,8 +190,8 @@ e.g. `count: {A_Index}`, `name: {person.name}`
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
 
-Only variable name is supported.
-The variable name should be the name displayed in [data inspection](#data-inspection).
+Only `VariableName` is supported.
+The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
 
 ## Loaded scripts
 ![loaded-scripts](image/loaded-scripts.gif)
