@@ -75,6 +75,9 @@
               },
               "args": {
                 "type": "array",
+                "items": {
+                  "type": "string"
+                },
                 "description": "Arguments passed to the program to debug.",
                 "default": []
               },
