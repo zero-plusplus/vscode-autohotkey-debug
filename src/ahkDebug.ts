@@ -28,6 +28,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   program: string;
   runtime: string;
   args: string[];
+  env: NodeJS.ProcessEnv;
   stopOnEntry?: boolean;
   hostname?: string;
   port?: number;
@@ -104,7 +105,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       const ahkProcess = spawn(
         args.runtime,
         [ `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ],
-        { cwd: path.dirname(args.program) },
+        {
+          cwd: path.dirname(args.program),
+          env: args.env,
+        },
       );
       ahkProcess.on('exit', (exitCode) => {
         if (exitCode !== null) {
