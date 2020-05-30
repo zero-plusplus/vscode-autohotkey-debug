@@ -24,6 +24,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       request: 'launch',
       program: '${file}',
       args: [],
+      env: {},
       hostname: 'localhost',
       port: 9000,
       // If a value greater than 10000 is specified, malfunction may occur due to specification changes.
@@ -35,6 +36,13 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       useAdvancedBreakpoint: false,
     };
     defaults(config, defaultConfig);
+
+    for (const key in config.env) {
+      if (config.env[key] === null) {
+        config.env[key] = '';
+      }
+    }
+
     return config;
   }
   public resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {

@@ -8,15 +8,15 @@ Please note the following first.
 
 # News
 ### Update
+* 1.2.0 - 2020-05-30
+    * Added: The setting item of `env` to launch.json
+    * Changed: Warn if the value assigned to `args` in launch.json is a non-string
 * 1.1.0 - 2020-05-27
-    * Setting execution arguments
+    * Added: The setting item of `args` to launch.json
 * 1.0.5 - 2020-05-27 - Fixed a fatal bug
     * Fixed: Debug will fail if launch.json is not created or "program" is omitted. This bug occurred in 1.0.4
-* 1.0.4 - 2020-05-27
-    * Fixed: If you specify a path using a [variable](https://code.visualstudio.com/docs/editor/variables-reference) in runtime in launch.json, the path is not set correctly and debugging fails. For example `${workspaceFolder}/AutoHotkey.exe`
 
 See [CHANGELOG](CHANGELOG.md) for details.
-
 
 # Overview
 I made it for the purpose of replacing the debugger of Scite4AutoHotkey.
@@ -52,6 +52,7 @@ Below is the default configuration snippet.
             "runtime_v1": "AutoHotkey.exe",
             "runtime_v2": "v2/AutoHotkey.exe",
             "program": "${file}",
+            "args": [],
             "stopOnEntry": false,
             "useAdvancedBreakpoint": false,
             "maxChildren": 10000
@@ -65,6 +66,7 @@ The settings that should be noted are described below.
 * `runtime_v1`, `runtime_v2`: If you want to change AutoHotkey runtime by extension, you need to change this setting. `runtime_v1` corresponds to `ahk`, and `runtime_v2` corresponds to `ahk2` or `ah2`. The setting method is the same as `runtime`.
 * `program`: Executable or file to run when launching the debugger.
 * `args`: Arguments passed to `program`.
+* `env`: Environment variables. If null is specified, it is treated as an empty string.
 * `stopOnEntry`: If true, stop at the first line. Set to true if you want it to be the same as Scite4AutoHotkey.
 * `useAdvancedBreakpoint`: Unlock conditional breakpoints, etc. See [Advanced breakpoints](#Advanced-breakpoints-(Optional)) for details
 * `maxChildren`: Maximum number of child elements to get. It is necessary to change it when handling an array exceeding 10000.
@@ -75,7 +77,7 @@ The settings that should be noted are described below.
 
 You can see the data contents of the variables. However, v2 cannot see some data. Probably because of the alpha version.
 
-When a `variable name` is requested by another feature, it means the name displayed by this feature. e.g. `variable`, `obj.field`, `obj["spaced key"]`, ` arr[0]`
+If `VariableName` is requested by another function, it means the name displayed by this function. Note that unlike AutoHotkey, it is case sensitive. e.g. `variable`, `obj.field`, `obj["spaced key"]`, ` arr[0]`
 
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
@@ -89,7 +91,7 @@ Specifically, the following types are supported.
     * `Hex`: Converted to intger and treated as `integer`. e.g. `0x123`
     * `Scientific`: Treated as a `string`. Converted to `float` in v2. e.g. `1e3` `3.0e+5`
 
-### Hover over variable
+### Data inspection when hover
 ![data-inspection-when-hover](image/data-inspection-when-hover.gif)
 
 You can see the data displayed in the [data inspection](#data-inspection) by hovering over the variable.
@@ -135,7 +137,7 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Rules
 * `Value`: `VariableName` or `Primitive`
-* `VariableName` Property name displayed in [data inspection](#data-inspection) (only properties with primitive values are supported). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `VariableName` Property name displayed in [data inspection](#data-inspection) (only properties with primitive values are supported). Note that the case must match. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 * `Primitive` AutoHotkey primitives. e.g. `"string"`, `123`, `123.456`, `0x123`
 * `Operator`
     * `=` Equal ignore case
@@ -179,7 +181,7 @@ e.g. `= 30`, `<= 30`
 Print a message to standard output. If you set a message, it will not stop at the breakpoint.
 If the condition is set, the message is output only when the condition is passed.
 
-Also, enclosing the variable name as it appears in the [data inspection](#data-inspection) in braces, it will be replaced with the value of the variable. (Only variables with primitive values are supported)
+By describing like `{VariableName}`, the value of the variable (only the primitive value is supported) can be output. The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
 
 If you want to show the curly braces, you can escape it by prefixing it with `\` like `\{` or `\}`.
 
@@ -188,8 +190,8 @@ e.g. `count: {A_Index}`, `name: {person.name}`
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
 
-Only variable name is supported.
-The variable name should be the name displayed in [data inspection](#data-inspection).
+Only `VariableName` is supported.
+The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
 
 ## Loaded scripts
 ![loaded-scripts](image/loaded-scripts.gif)

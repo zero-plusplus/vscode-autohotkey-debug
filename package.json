@@ -75,8 +75,19 @@
               },
               "args": {
                 "type": "array",
+                "items": {
+                  "type": "string"
+                },
                 "description": "Arguments passed to the program to debug.",
                 "default": []
+              },
+              "env": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": [ "string", "null"]
+                },
+                "description": "environment variables (the value null can be used to empty string a variable)",
+                "default": {}
               },
               "runtime": {
                 "type": "string",
