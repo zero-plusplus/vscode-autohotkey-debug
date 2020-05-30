@@ -9,7 +9,7 @@ Please note the following first.
 # News
 ### Update
 * 1.1.0 - 2020-05-27
-    * Setting execution arguments
+    * Added: The setting item of `args` to launch.json
 * 1.0.5 - 2020-05-27 - Fixed a fatal bug
     * Fixed: Debug will fail if launch.json is not created or "program" is omitted. This bug occurred in 1.0.4
 * 1.0.4 - 2020-05-27
