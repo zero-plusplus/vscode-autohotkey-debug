@@ -252,7 +252,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
-
+    this.session!.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code');
     this.stopwatch.start();
     const dbgpResponse = this.config.stopOnEntry
       ? await this.session!.sendStepIntoCommand()

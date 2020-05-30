@@ -503,6 +503,28 @@ export class Session extends EventEmitter {
       }
     });
   }
+  public async sendCommand(commandName: CommandName, args?: string, data?: string): Promise<XmlNode> {
+    return new Promise<XmlNode>((resolve, reject) => {
+      const transactionId = this.createTransactionId();
+      let command_str = `${commandName} -i ${String(transactionId)}`;
+      if (typeof args !== 'undefined') {
+        command_str += ` ${args}`;
+      }
+      if (typeof data !== 'undefined') {
+        command_str += ` -- ${Buffer.from(data).toString('base64')}`;
+      }
+      command_str += '\0';
+
+      this.pendingCommands.set(transactionId, {
+        name: commandName,
+        args,
+        data,
+        resolve,
+        reject,
+      } as Command);
+      this.write(command_str);
+    });
+  }
   public async sendStackGetCommand(): Promise<StackGetResponse> {
     return new StackGetResponse(await this.sendCommand('stack_get'));
   }
@@ -580,28 +602,6 @@ export class Session extends EventEmitter {
   private createTransactionId(): number {
     this.transactionCounter += 1;
     return this.transactionCounter;
-  }
-  private async sendCommand(commandName: CommandName, args?: string, data?: string): Promise<XmlNode> {
-    return new Promise<XmlNode>((resolve, reject) => {
-      const transactionId = this.createTransactionId();
-      let command_str = `${commandName} -i ${String(transactionId)}`;
-      if (typeof args !== 'undefined') {
-        command_str += ` ${args}`;
-      }
-      if (typeof data !== 'undefined') {
-        command_str += ` -- ${Buffer.from(data).toString('base64')}`;
-      }
-      command_str += '\0';
-
-      this.pendingCommands.set(transactionId, {
-        name: commandName,
-        args,
-        data,
-        resolve,
-        reject,
-      } as Command);
-      this.write(command_str);
-    });
   }
   private async write(command: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {

@@ -79,6 +79,8 @@ You can see the data contents of the variables. However, v2 cannot see some data
 
 If `VariableName` is requested by another function, it means the name displayed by this function. Note that unlike AutoHotkey, it is case sensitive. e.g. `variable`, `obj.field`, `obj["spaced key"]`, ` arr[0]`
 
+Note. `A_DebuggerName` is added at the start of debugging, following Scite4AutoHotkey. This allows you to execute certain code only while you are debugging.
+
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
 
