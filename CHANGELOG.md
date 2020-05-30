@@ -8,18 +8,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog][Keep a Changelog] and this project adheres to [Semantic Versioning][Semantic Versioning].
 
 ## [Unreleased]
-All features that the AutoHotkey debugger can execute and the features that can be supported by the extension side are implemented as much as possible, so new functions will not be added. After that, the main thing is to fix bugs or improve processing.
+Mainly bug fixes and processing improvements.
 
-However, there is one feature you can add. That is the function to output objects at log points.
-This is not implemented due to my lack of knowledge, so I would appreciate it if someone familiar with it could tell me.
+### Road Map
+- [ ] Output of object at Log point. Implementable but not sure how
 
 ---
 
 ## [Released]
+## [1.2.0] - 2020-05-30
+### Added
+* The setting item of `env` to launch.json
+### Changed
+* Warn if the value assigned to `args` in launch.json is a non-string
 
 ## [1.1.0] - 2020-05-27
 ### Added
-* Setting execution arguments
+* The setting item of `args` to launch.json
 
 ## [1.0.5] - 2020-05-27 [YANKED]
 ### Fixed
@@ -55,6 +60,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.2.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.1.0..v1.2.0
 [1.1.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.5..v1.1.0
 [1.0.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.4..v1.0.5
 [1.0.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.3..v1.0.4

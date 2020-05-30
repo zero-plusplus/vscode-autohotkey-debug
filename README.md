@@ -8,15 +8,15 @@ Please note the following first.
 
 # News
 ### Update
+* 1.2.0 - 2020-05-30
+    * Added: The setting item of `env` to launch.json
+    * Changed: Warn if the value assigned to `args` in launch.json is a non-string
 * 1.1.0 - 2020-05-27
     * Added: The setting item of `args` to launch.json
 * 1.0.5 - 2020-05-27 - Fixed a fatal bug
     * Fixed: Debug will fail if launch.json is not created or "program" is omitted. This bug occurred in 1.0.4
-* 1.0.4 - 2020-05-27
-    * Fixed: If you specify a path using a [variable](https://code.visualstudio.com/docs/editor/variables-reference) in runtime in launch.json, the path is not set correctly and debugging fails. For example `${workspaceFolder}/AutoHotkey.exe`
 
 See [CHANGELOG](CHANGELOG.md) for details.
-
 
 # Overview
 I made it for the purpose of replacing the debugger of Scite4AutoHotkey.
