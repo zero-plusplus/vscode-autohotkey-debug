@@ -5,6 +5,7 @@ import {
   ChildProcessWithoutNullStreams,
   spawn,
 } from 'child_process';
+import { window, workspace } from 'vscode';
 import {
   InitializedEvent,
   LoggingDebugSession,
@@ -34,6 +35,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   port?: number;
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
+  openFileOnExit: string;
 }
 export class AhkDebugSession extends LoggingDebugSession {
   private server?: net.Server;
@@ -93,13 +95,30 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(new OutputEvent(this.stopwatch.shortSummary(), 'execution-time'));
     }
 
+    if (this.config.openFileOnExit !== null) {
+      if (pathExistsSync(this.config.openFileOnExit)) {
+        workspace.openTextDocument(this.config.openFileOnExit).then((doc) => {
+          window.showTextDocument(doc);
+        });
+      }
+      else {
+        const message = {
+          id: 1,
+          format: `File not found. Value of \`openFileOnExit\` in launch.json: \`${this.config.openFileOnExit}\``,
+        } as DebugProtocol.Message;
+        // For some reason, the error message could not be displayed by the following method.
+        // this.sendErrorResponse(response, message);
+        window.showErrorMessage(message.format);
+      }
+    }
+
     this.shutdown();
   }
   protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
     this.config = args;
     const lunchScript = (): void => {
       if (!pathExistsSync(this.config.runtime)) {
-        throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. The following path was specified: '${this.config.runtime}'`);
+        throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
       }
 
       const ahkProcess = spawn(
@@ -177,7 +196,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error) {
       const message = {
-        id: 1,
+        id: 2,
         format: error.message,
       } as DebugProtocol.Message;
       this.sendErrorResponse(response, message);

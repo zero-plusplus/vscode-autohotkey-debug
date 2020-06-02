@@ -34,6 +34,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtime_v1: 'AutoHotkey.exe',
       runtime_v2: 'v2/AutoHotkey.exe',
       useAdvancedBreakpoint: false,
+      openFileOnExit: null,
     };
     defaults(config, defaultConfig);
 
