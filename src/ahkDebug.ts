@@ -44,10 +44,10 @@ export class AhkDebugSession extends LoggingDebugSession {
   private ahkVersion!: 1 | 2;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
-  private readonly contextsByVariablesReference = new Map<number, dbgp.Context>();
+  private readonly contextByVariablesReference = new Map<number, dbgp.Context>();
   private stackFrameIdCounter = 1;
   private readonly stackFramesByFrameId = new Map<number, dbgp.StackFrame>();
-  private variableReferenceCounter = 1;
+  private variablesReferenceCounter = 1;
   private readonly objectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private readonly breakpoints: { [key: string]: dbgp.Breakpoint | undefined} = {};
   private conditionalEvaluator!: ConditionalEvaluator;
@@ -347,9 +347,9 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     response.body = {
       scopes: contexts.map((context) => {
-        const variableReference = this.variableReferenceCounter++;
+        const variableReference = this.variablesReferenceCounter++;
 
-        this.contextsByVariablesReference.set(variableReference, context);
+        this.contextByVariablesReference.set(variableReference, context);
         return new Scope(context.name, variableReference);
       }),
     };
@@ -359,8 +359,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
     let properties: dbgp.Property[] = [];
 
-    if (this.contextsByVariablesReference.has(args.variablesReference)) {
-      const context = this.contextsByVariablesReference.get(args.variablesReference)!;
+    if (this.contextByVariablesReference.has(args.variablesReference)) {
+      const context = this.contextByVariablesReference.get(args.variablesReference)!;
       properties = (await this.session!.sendContextGetCommand(context)).properties;
     }
     else if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
@@ -394,7 +394,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (property.type === 'object') {
         const objectProperty = property as dbgp.ObjectProperty;
 
-        variablesReference = this.variableReferenceCounter++;
+        variablesReference = this.variablesReferenceCounter++;
         this.objectPropertiesByVariablesReference.set(variablesReference, objectProperty);
         if (objectProperty.isArray) {
           const maxIndex = objectProperty.maxIndex!;
@@ -422,7 +422,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
     const context = this.objectPropertiesByVariablesReference.has(args.variablesReference)
       ? this.objectPropertiesByVariablesReference.get(args.variablesReference)!.context
-      : this.contextsByVariablesReference.get(args.variablesReference)!;
+      : this.contextByVariablesReference.get(args.variablesReference)!;
 
     const setVariable = async(typeName: string, data: string): Promise<void> => {
       const dbgpResponse = await this.session!.sendPropertySetCommand({
@@ -517,7 +517,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       let variablesReference = 0;
       if (property instanceof dbgp.ObjectProperty) {
-        variablesReference = this.variableReferenceCounter++;
+        variablesReference = this.variablesReferenceCounter++;
         this.objectPropertiesByVariablesReference.set(variablesReference, property);
       }
       response.body = {
