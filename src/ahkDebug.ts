@@ -396,8 +396,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
 
-      if (property.type === 'object') {
-        const objectProperty = property as dbgp.ObjectProperty;
+      if (property instanceof dbgp.ObjectProperty) {
+        const objectProperty = property;
 
         variablesReference = this.variablesReferenceCounter++;
         this.objectPropertiesByVariablesReference.set(variablesReference, objectProperty);
@@ -494,11 +494,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     } as DebugProtocol.Message);
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
+    const propertyName = args.expression;
     try {
       if (!args.frameId) {
         throw Error('Error: Cannot evaluate code without a session');
       }
-      const parsed = this.ahkParser.PropertyName.parse(args.expression);
+      const parsed = this.ahkParser.PropertyName.parse(propertyName);
       if (!parsed.status) {
         throw Error('Error: Only the property name is supported. e.g. `prop`,` prop.field`, `prop [0]`, `prop [" spaced key "]`');
       }
@@ -510,9 +511,10 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       let property: dbgp.Property | undefined;
       for await (const context of contexts) {
-        const { properties } = await this.session!.sendContextGetCommand(context);
-        property = properties.find((property) => property.fullName === args.expression);
-        if (property) {
+        const { properties } = await this.session!.sendPropertyGetCommand(context, propertyName);
+
+        if (properties[0].type !== 'undefined') {
+          property = properties[0];
           break;
         }
       }
