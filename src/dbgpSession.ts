@@ -525,6 +525,9 @@ export class Session extends EventEmitter {
       this.write(command_str);
     });
   }
+  public async sendStatusCommand(): Promise<ContinuationResponse> {
+    return new ContinuationResponse(await this.sendCommand('status'));
+  }
   public async sendStackGetCommand(): Promise<StackGetResponse> {
     return new StackGetResponse(await this.sendCommand('stack_get'));
   }
@@ -540,8 +543,8 @@ export class Session extends EventEmitter {
   public async sendRunCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.sendCommand('run'));
   }
-  public async sendBreakCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('break'));
+  public async sendBreakCommand(): Promise<Response> {
+    return new Response(await this.sendCommand('break'));
   }
   public async sendStopCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.sendCommand('stop'));

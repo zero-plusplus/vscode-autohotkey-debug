@@ -275,17 +275,21 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
     this.session!.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code');
     this.stopwatch.start();
-    const dbgpResponse = this.config.stopOnEntry
-      ? await this.session!.sendStepIntoCommand()
-      : await this.session!.sendRunCommand();
-
     this.sendResponse(response);
-    if (this.config.useAdvancedBreakpoint) {
-      this.checkContinuationStatus(dbgpResponse, !this.config.stopOnEntry);
+    if (this.config.stopOnEntry) {
+      const dbgpResponse = await this.session!.sendStepIntoCommand();
+      this.checkContinuationStatus(dbgpResponse);
       return;
     }
 
-    this.checkContinuationStatus(dbgpResponse);
+    this.session!.sendRunCommand().then((dbgpResponse) => {
+      if (this.config.useAdvancedBreakpoint) {
+        this.checkContinuationStatus(dbgpResponse, !this.config.stopOnEntry);
+        return;
+      }
+
+      this.checkContinuationStatus(dbgpResponse);
+    });
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
@@ -314,6 +318,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     await this.session!.sendBreakCommand();
     this.sendEvent(new StoppedEvent('pause', this.session!.id));
+    this.sendResponse(response);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };
