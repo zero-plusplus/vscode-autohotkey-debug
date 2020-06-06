@@ -24,6 +24,9 @@ So you can use all the features it can.
 In addition to that, I am implementing new features such as conditional breakpoints.
 All features can be found in [`Features`](#features).
 
+The following features are not supported due to restrictions
+* Attach to a script that is already running
+
 # Installation
 1. Install [AutoHotkey](https://www.autohotkey.com/)
 2. Install an extension that supports AutoHotkey (Most famous is `slevesque.vscode-autohotkey`)
