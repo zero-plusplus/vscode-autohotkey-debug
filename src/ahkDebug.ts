@@ -310,6 +310,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     const dbgpResponse = await this.session!.sendStepOutCommand();
     this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
   }
+  protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
+    await this.session!.sendBreakCommand();
+    this.sendEvent(new StoppedEvent('pause', this.session!.id));
+  }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };
     this.sendResponse(response);
