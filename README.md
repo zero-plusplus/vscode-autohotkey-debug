@@ -184,7 +184,7 @@ e.g. `= 30`, `<= 30`
 Print a message to standard output. If you set a message, it will not stop at the breakpoint.
 If the condition is set, the message is output only when the condition is passed.
 
-By describing like `{VariableName}`, the value of the variable (only the primitive value is supported) can be output. The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
+By describing like `{VariableName}`, the value of the variable can be output. The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
 
 If you want to show the curly braces, you can escape it by prefixing it with `\` like `\{` or `\}`.
 
