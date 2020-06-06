@@ -8,6 +8,7 @@ import { rtrim } from 'underscore.string';
 export interface XmlDocument {
   init?: XmlNode;
   response?: XmlNode;
+  stream?: XmlNode;
 }
 export interface XmlNode {
   attributes: {
@@ -456,6 +457,21 @@ export class BreakpointListResponse extends Response {
     }
   }
 }
+type StdMode = 'disable' | 'copy' | 'redirect';
+enum StdModeEnum {
+  disable,
+  copy,
+  redirect
+}
+export class StdResponse extends Response {
+  public success: boolean;
+  constructor(response: XmlNode) {
+    super(response);
+    const { success } = response.attributes;
+
+    this.success = Boolean(parseInt(success, 10));
+  }
+}
 export class Source {
   public source;
   constructor(source: XmlNode) {
@@ -499,6 +515,13 @@ export class Session extends EventEmitter {
           const command = this.pendingCommands.get(transactionId);
           this.pendingCommands.delete(transactionId);
           command?.resolve(xml.response);
+        }
+      }
+      else if (xml.stream) {
+        const { type } = xml.stream.attributes;
+        if (xml.stream.content) {
+          const data = Buffer.from(xml.stream.content, 'base64').toString('utf8');
+          this.emit(type, data);
         }
       }
     });
@@ -581,6 +604,12 @@ export class Session extends EventEmitter {
   }
   public async sendBreakpointListCommand(): Promise<BreakpointListResponse> {
     return new BreakpointListResponse(await this.sendCommand('breakpoint_list'));
+  }
+  public async sendStdoutCommand(mode: StdMode): Promise<StdResponse> {
+    return new StdResponse(await this.sendCommand('stdout', `-c ${StdModeEnum[mode]}`));
+  }
+  public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
+    return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
   }
   public async fetchPrimitiveProperty(propertyName: string): Promise<string | null> {
     for await (const contextId of [ 0, 1 ]) {

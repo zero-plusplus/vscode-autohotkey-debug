@@ -35,6 +35,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   port?: number;
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
+  useAdvancedOutput: boolean;
   openFileOnExit: string;
 }
 export class AhkDebugSession extends LoggingDebugSession {
@@ -137,10 +138,21 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       });
       ahkProcess.stdout.on('data', (chunkData: string | Buffer) => {
-        this.sendEvent(new OutputEvent(String(chunkData), 'stdout'));
+        const data = String(chunkData);
+        if (this.session && this.config.useAdvancedOutput) {
+          this.printLogMessage(data, 'stdout');
+          return;
+        }
+        this.sendEvent(new OutputEvent(data, 'stdout'));
       });
       ahkProcess.stderr.on('data', (chunkData: Buffer) => {
-        this.sendEvent(new OutputEvent(String(chunkData), 'stderr'));
+        const data = String(chunkData);
+        if (this.session && this.config.useAdvancedOutput) {
+          this.printLogMessage(data, 'stderr');
+          return;
+        }
+
+        this.sendEvent(new OutputEvent(data, 'stderr'));
       });
 
       this.ahkProcess = ahkProcess;
@@ -181,7 +193,21 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendEvent(new OutputEvent(`${warning}\n`));
               })
               .on('error', disposeConnection)
-              .on('close', disposeConnection);
+              .on('close', disposeConnection)
+              .on('stdout', (data) => {
+                if (this.session && this.config.useAdvancedOutput) {
+                  this.printLogMessage(data, 'stdout');
+                  return;
+                }
+                this.sendEvent(new OutputEvent(data, 'stdout'));
+              })
+              .on('stderr', (data) => {
+                if (this.session && this.config.useAdvancedOutput) {
+                  this.printLogMessage(data, 'stderr');
+                  return;
+                }
+                this.sendEvent(new OutputEvent(data, 'stderr'));
+              });
 
             this.sendEvent(new ThreadEvent('Session started.', this.session.id));
           }
@@ -273,7 +299,9 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
-    this.session!.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code');
+    await this.session!.sendStdoutCommand('redirect');
+    await this.session!.sendStderrCommand('redirect');
+    await this.session!.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code');
     this.stopwatch.start();
     this.sendResponse(response);
     if (this.config.stopOnEntry) {
@@ -673,15 +701,14 @@ export class AhkDebugSession extends LoggingDebugSession {
     const response = await this.session!.sendRunCommand();
     await this.checkContinuationStatus(response, true);
   }
-  private async printLogMessage(logMessage: string): Promise<void> {
-    const logCategory = 'stdout';
+  private async printLogMessage(logMessage: string, logCategory = 'stdout'): Promise<void> {
     const { stackFrames } = await this.session!.sendStackGetCommand();
     const { contexts } = await this.session!.sendContextNamesCommand(stackFrames[0]);
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
 
-    const regex = /(?<!\\)\{(?<variableName>(?:\\\{|\\\}|[^{}])+?)(?<!\\)\}/gu;
+    const regex = /(?<!\\)\{(?<variableName>(?:\\\{|\\\}|[^{}\n])+?)(?<!\\)\}/gu;
     let message = '';
     if (logMessage.search(regex) === -1) {
       message = unescapeLogMessage(logMessage);

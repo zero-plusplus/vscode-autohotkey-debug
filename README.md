@@ -55,6 +55,7 @@ Below is the default configuration snippet.
             "args": [],
             "stopOnEntry": false,
             "useAdvancedBreakpoint": false,
+            "useAdvancedOutput": false,
             "maxChildren": 10000
         }
     ]
@@ -69,6 +70,7 @@ The settings that should be noted are described below.
 * `env`: Environment variables. If null is specified, it is treated as an empty string.
 * `stopOnEntry`: If true, stop at the first line. Set to true if you want it to be the same as Scite4AutoHotkey.
 * `useAdvancedBreakpoint`: Unlock conditional breakpoints, etc. See [Advanced breakpoints](#Advanced-breakpoints-(Optional)) for details
+* `useAdvancedOutput`: Make the output method equivalent to [Log point](#log-point). This is useful when you want to output an object.
 * `maxChildren`: Maximum number of child elements to get. It is necessary to change it when handling an array exceeding 10000.
 * `openFileOnExit`: The absolute path of the file to open when the debugger exits. If you have a file that you want to edit immediately after debugging, you should set this feature. You can save the trouble of switching files. If you want to turn this feature off, set it to null or omit it.
 
@@ -202,6 +204,18 @@ The `VariableName` must exactly match the name displayed in the [data inspection
 Shows the files that are actually loaded.
 
 Supports both explicit loading using `#Include` and implicit loading of [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib)
+
+## Standard output
+Supports standard output. You can output a string to the [debug console panel](https://code.visualstudio.com/docs/editor/debugging) using the following function or command.
+* [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
+* [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
+* [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
+
+## Advanced standard output
+**This feature is experimental and subject to change.**
+
+Output method can be made equivalent to [Log point](#log-point) by enabling `useAdvancedOutput`.
+This is useful when you want to output an object.
 
 # Change log
 See [CHANGELOG](CHANGELOG.md)

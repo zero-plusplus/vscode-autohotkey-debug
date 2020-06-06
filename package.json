@@ -129,6 +129,11 @@
                 "description": "Note: This is an experimental feature. Execution speed may be slow. Whether to enable Conditional Breakpoint / Hit Count Breakpoint / Log point",
                 "default": false
               },
+              "useAdvancedOutput": {
+                "type": "boolean",
+                "description": "Make the output method equivalent to Log point. This is useful when you want to output an object.",
+                "default": false
+              },
               "openFileOnExit": {
                 "type": "string",
                 "description": "The absolute path of the file to open when the debugger exits.  If you want to turn this feature off, set it to null or omit it.",
@@ -151,6 +156,7 @@
               "args": [],
               "stopOnEntry": false,
               "useAdvancedBreakpoint": false,
+              "useAdvancedOutput": false,
               "maxChildren": 10000
             }
           }
