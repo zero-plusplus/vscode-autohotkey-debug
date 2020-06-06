@@ -126,7 +126,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       const ahkProcess = spawn(
         args.runtime,
-        [ `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ],
+        [ '/ErrorStdOut', `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ],
         {
           cwd: path.dirname(args.program),
           env: args.env,
