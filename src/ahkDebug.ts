@@ -113,6 +113,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
+    this.sendResponse(response);
     this.shutdown();
   }
   protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
