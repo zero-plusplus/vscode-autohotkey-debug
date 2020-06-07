@@ -12,7 +12,9 @@ export const createParser = function(version: 1 | 2): P.Language {
     StringLiteral(rules) {
       return P.seq(
         P.string('"'),
-        P.regex(/(?:""|`"|[^`"])*/ui),
+        version === 1
+          ? P.regex(/(?:""|[^"\n])*/ui)
+          : P.regex(/(?:`"|[^"\n])*/ui),
         P.string('"'),
       ).map((result) => {
         return {
@@ -92,8 +94,8 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     Identifer(rules) {
       return version === 1
-        ? P.regex(/[^\s.!<>="]+/ui)
-        : P.regex(/[^\s.!<>=$@"]+/ui);
+        ? P.regex(/[^\s.!<>="[\]]+/ui)
+        : P.regex(/[^\s.!<>=$@"[\]]+/ui);
     },
     PropertyAccesor(rules) {
       return P.seq(

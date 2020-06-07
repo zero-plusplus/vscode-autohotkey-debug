@@ -8,6 +8,7 @@ import { rtrim } from 'underscore.string';
 export interface XmlDocument {
   init?: XmlNode;
   response?: XmlNode;
+  stream?: XmlNode;
 }
 export interface XmlNode {
   attributes: {
@@ -456,6 +457,21 @@ export class BreakpointListResponse extends Response {
     }
   }
 }
+type StdMode = 'disable' | 'copy' | 'redirect';
+enum StdModeEnum {
+  disable,
+  copy,
+  redirect
+}
+export class StdResponse extends Response {
+  public success: boolean;
+  constructor(response: XmlNode) {
+    super(response);
+    const { success } = response.attributes;
+
+    this.success = Boolean(parseInt(success, 10));
+  }
+}
 export class Source {
   public source;
   constructor(source: XmlNode) {
@@ -501,7 +517,39 @@ export class Session extends EventEmitter {
           command?.resolve(xml.response);
         }
       }
+      else if (xml.stream) {
+        const { type } = xml.stream.attributes;
+        if (xml.stream.content) {
+          const data = Buffer.from(xml.stream.content, 'base64').toString('utf8');
+          this.emit(type, data);
+        }
+      }
     });
+  }
+  public async sendCommand(commandName: CommandName, args?: string, data?: string): Promise<XmlNode> {
+    return new Promise<XmlNode>((resolve, reject) => {
+      const transactionId = this.createTransactionId();
+      let command_str = `${commandName} -i ${String(transactionId)}`;
+      if (typeof args !== 'undefined') {
+        command_str += ` ${args}`;
+      }
+      if (typeof data !== 'undefined') {
+        command_str += ` -- ${Buffer.from(data).toString('base64')}`;
+      }
+      command_str += '\0';
+
+      this.pendingCommands.set(transactionId, {
+        name: commandName,
+        args,
+        data,
+        resolve,
+        reject,
+      } as Command);
+      this.write(command_str);
+    });
+  }
+  public async sendStatusCommand(): Promise<ContinuationResponse> {
+    return new ContinuationResponse(await this.sendCommand('status'));
   }
   public async sendStackGetCommand(): Promise<StackGetResponse> {
     return new StackGetResponse(await this.sendCommand('stack_get'));
@@ -518,8 +566,8 @@ export class Session extends EventEmitter {
   public async sendRunCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.sendCommand('run'));
   }
-  public async sendBreakCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('break'));
+  public async sendBreakCommand(): Promise<Response> {
+    return new Response(await this.sendCommand('break'));
   }
   public async sendStopCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.sendCommand('stop'));
@@ -557,6 +605,12 @@ export class Session extends EventEmitter {
   public async sendBreakpointListCommand(): Promise<BreakpointListResponse> {
     return new BreakpointListResponse(await this.sendCommand('breakpoint_list'));
   }
+  public async sendStdoutCommand(mode: StdMode): Promise<StdResponse> {
+    return new StdResponse(await this.sendCommand('stdout', `-c ${StdModeEnum[mode]}`));
+  }
+  public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
+    return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
+  }
   public async fetchPrimitiveProperty(propertyName: string): Promise<string | null> {
     for await (const contextId of [ 0, 1 ]) {
       const response = await this.sendCommand('property_get', `-n ${propertyName} -c ${contextId}`);
@@ -580,28 +634,6 @@ export class Session extends EventEmitter {
   private createTransactionId(): number {
     this.transactionCounter += 1;
     return this.transactionCounter;
-  }
-  private async sendCommand(commandName: CommandName, args?: string, data?: string): Promise<XmlNode> {
-    return new Promise<XmlNode>((resolve, reject) => {
-      const transactionId = this.createTransactionId();
-      let command_str = `${commandName} -i ${String(transactionId)}`;
-      if (typeof args !== 'undefined') {
-        command_str += ` ${args}`;
-      }
-      if (typeof data !== 'undefined') {
-        command_str += ` -- ${Buffer.from(data).toString('base64')}`;
-      }
-      command_str += '\0';
-
-      this.pendingCommands.set(transactionId, {
-        name: commandName,
-        args,
-        data,
-        resolve,
-        reject,
-      } as Command);
-      this.write(command_str);
-    });
   }
   private async write(command: string): Promise<void> {
     return new Promise<void>((resolve, reject) => {

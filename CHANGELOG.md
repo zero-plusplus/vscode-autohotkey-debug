@@ -16,9 +16,31 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+
+## [1.3.0] - 2020-06-07
+### Added
+* `openFileOnExit` to launch.json
+* `useAdvancedOutput` to launch.json
+* Global variable `A_DebuggerName`. Followed Scite4Autohotkey
+
+### Changed
+* Enhanced standard output
+    * Supports object output with `Log point`
+    * Supports functions or commands that print to standard output
+        * [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
+        * [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
+        * [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
+    * Output runtime error to standard error
+
+### Fixed
+* Pause and restart did not work for debug actions
+* Cannot get child element of object with `Watch expression`
+* The value cannot be obtained if it is an index accessor using a string such as `obj["spaced key"]` with `Watch expression`
+
 ## [1.2.0] - 2020-05-30
 ### Added
 * The setting item of `env` to launch.json
+
 ### Changed
 * Warn if the value assigned to `args` in launch.json is a non-string
 
@@ -60,6 +82,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.3.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.2.0..v1.3.0
 [1.2.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.1.0..v1.2.0
 [1.1.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.5..v1.1.0
 [1.0.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.0.4..v1.0.5

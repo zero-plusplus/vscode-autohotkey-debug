@@ -8,13 +8,24 @@ Please note the following first.
 
 # News
 ### Update
+* 1.3.0 - 2020-06-06
+    * Added: `openFileOnExit` to launch.json
+    * Added: `useAdvancedOutput` to launch.json
+    * Added: Global variable `A_DebuggerName`. Followed Scite4Autohotkey
+    * Changed: Supports object output with [Log point](#log-point)
+    * Changed: Supports functions or commands that print to standard output
+        * [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
+        * [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
+        * [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
+    * Changed: Output runtime error to standard error
+    * Fixed: Pause and restart did not work for debug actions
+    * Fixed: Cannot get child element of object with [Watch expression](#watch-expression)
+    * Fixed: The value cannot be obtained if it is an index accessor using a string such as `obj["spaced key"]` with [Watch expression](#watch-expression)
 * 1.2.0 - 2020-05-30
     * Added: The setting item of `env` to launch.json
     * Changed: Warn if the value assigned to `args` in launch.json is a non-string
 * 1.1.0 - 2020-05-27
     * Added: The setting item of `args` to launch.json
-* 1.0.5 - 2020-05-27 - Fixed a fatal bug
-    * Fixed: Debug will fail if launch.json is not created or "program" is omitted. This bug occurred in 1.0.4
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -23,6 +34,9 @@ I made it for the purpose of replacing the debugger of Scite4AutoHotkey.
 So you can use all the features it can.
 In addition to that, I am implementing new features such as conditional breakpoints.
 All features can be found in [`Features`](#features).
+
+The following features are not supported due to restrictions
+* Attach to a script that is already running
 
 # Installation
 1. Install [AutoHotkey](https://www.autohotkey.com/)
@@ -55,6 +69,7 @@ Below is the default configuration snippet.
             "args": [],
             "stopOnEntry": false,
             "useAdvancedBreakpoint": false,
+            "useAdvancedOutput": false,
             "maxChildren": 10000
         }
     ]
@@ -69,7 +84,9 @@ The settings that should be noted are described below.
 * `env`: Environment variables. If null is specified, it is treated as an empty string.
 * `stopOnEntry`: If true, stop at the first line. Set to true if you want it to be the same as Scite4AutoHotkey.
 * `useAdvancedBreakpoint`: Unlock conditional breakpoints, etc. See [Advanced breakpoints](#Advanced-breakpoints-(Optional)) for details
+* `useAdvancedOutput`: Make the output method equivalent to [Log point](#log-point). This is useful when you want to output an object.
 * `maxChildren`: Maximum number of child elements to get. It is necessary to change it when handling an array exceeding 10000.
+* `openFileOnExit`: The absolute path of the file to open when the debugger exits. If you have a file that you want to edit immediately after debugging, you should set this feature. You can save the trouble of switching files. If you want to turn this feature off, set it to null or omit it.
 
 # Features
 ## Data inspection
@@ -78,6 +95,8 @@ The settings that should be noted are described below.
 You can see the data contents of the variables. However, v2 cannot see some data. Probably because of the alpha version.
 
 If `VariableName` is requested by another function, it means the name displayed by this function. Note that unlike AutoHotkey, it is case sensitive. e.g. `variable`, `obj.field`, `obj["spaced key"]`, ` arr[0]`
+
+Note. `A_DebuggerName` is added at the start of debugging, following Scite4AutoHotkey. This allows you to execute certain code only while you are debugging.
 
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
@@ -181,7 +200,7 @@ e.g. `= 30`, `<= 30`
 Print a message to standard output. If you set a message, it will not stop at the breakpoint.
 If the condition is set, the message is output only when the condition is passed.
 
-By describing like `{VariableName}`, the value of the variable (only the primitive value is supported) can be output. The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
+By describing like `{VariableName}`, the value of the variable can be output. The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
 
 If you want to show the curly braces, you can escape it by prefixing it with `\` like `\{` or `\}`.
 
@@ -199,6 +218,18 @@ The `VariableName` must exactly match the name displayed in the [data inspection
 Shows the files that are actually loaded.
 
 Supports both explicit loading using `#Include` and implicit loading of [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib)
+
+## Standard output
+Supports standard output. You can output a string to the [debug console panel](https://code.visualstudio.com/docs/editor/debugging) using the following function or command.
+* [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
+* [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
+* [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
+
+## Advanced standard output
+**This feature is experimental and subject to change.**
+
+Output method can be made equivalent to [Log point](#log-point) by enabling `useAdvancedOutput`.
+This is useful when you want to output an object.
 
 # Change log
 See [CHANGELOG](CHANGELOG.md)

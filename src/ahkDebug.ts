@@ -5,6 +5,7 @@ import {
   ChildProcessWithoutNullStreams,
   spawn,
 } from 'child_process';
+import { window, workspace } from 'vscode';
 import {
   InitializedEvent,
   LoggingDebugSession,
@@ -34,6 +35,8 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   port?: number;
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
+  useAdvancedOutput: boolean;
+  openFileOnExit: string;
 }
 export class AhkDebugSession extends LoggingDebugSession {
   private server?: net.Server;
@@ -42,11 +45,12 @@ export class AhkDebugSession extends LoggingDebugSession {
   private ahkVersion!: 1 | 2;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
-  private readonly contextsByVariablesReference = new Map<number, dbgp.Context>();
+  private readonly contextByVariablesReference = new Map<number, dbgp.Context>();
   private stackFrameIdCounter = 1;
   private readonly stackFramesByFrameId = new Map<number, dbgp.StackFrame>();
-  private variableReferenceCounter = 1;
+  private variablesReferenceCounter = 1;
   private readonly objectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
+  private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private readonly breakpoints: { [key: string]: dbgp.Breakpoint | undefined} = {};
   private conditionalEvaluator!: ConditionalEvaluator;
   private readonly stopwatch = new StopWatch('ahk-process');
@@ -93,18 +97,36 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(new OutputEvent(this.stopwatch.shortSummary(), 'execution-time'));
     }
 
+    if (this.config.openFileOnExit !== null) {
+      if (pathExistsSync(this.config.openFileOnExit)) {
+        workspace.openTextDocument(this.config.openFileOnExit).then((doc) => {
+          window.showTextDocument(doc);
+        });
+      }
+      else {
+        const message = {
+          id: 1,
+          format: `File not found. Value of \`openFileOnExit\` in launch.json: \`${this.config.openFileOnExit}\``,
+        } as DebugProtocol.Message;
+        // For some reason, the error message could not be displayed by the following method.
+        // this.sendErrorResponse(response, message);
+        window.showErrorMessage(message.format);
+      }
+    }
+
+    this.sendResponse(response);
     this.shutdown();
   }
   protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
     this.config = args;
     const lunchScript = (): void => {
       if (!pathExistsSync(this.config.runtime)) {
-        throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. The following path was specified: '${this.config.runtime}'`);
+        throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
       }
 
       const ahkProcess = spawn(
         args.runtime,
-        [ `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ],
+        [ '/ErrorStdOut', `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ],
         {
           cwd: path.dirname(args.program),
           env: args.env,
@@ -116,10 +138,21 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       });
       ahkProcess.stdout.on('data', (chunkData: string | Buffer) => {
-        this.sendEvent(new OutputEvent(String(chunkData), 'stdout'));
+        const data = String(chunkData);
+        if (this.session && this.config.useAdvancedOutput) {
+          this.printLogMessage(data, 'stdout');
+          return;
+        }
+        this.sendEvent(new OutputEvent(data, 'stdout'));
       });
       ahkProcess.stderr.on('data', (chunkData: Buffer) => {
-        this.sendEvent(new OutputEvent(String(chunkData), 'stderr'));
+        const data = String(chunkData);
+        if (this.session && this.config.useAdvancedOutput) {
+          this.printLogMessage(data, 'stderr');
+          return;
+        }
+
+        this.sendEvent(new OutputEvent(data, 'stderr'));
       });
 
       this.ahkProcess = ahkProcess;
@@ -160,7 +193,21 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendEvent(new OutputEvent(`${warning}\n`));
               })
               .on('error', disposeConnection)
-              .on('close', disposeConnection);
+              .on('close', disposeConnection)
+              .on('stdout', (data) => {
+                if (this.session && this.config.useAdvancedOutput) {
+                  this.printLogMessage(data, 'stdout');
+                  return;
+                }
+                this.sendEvent(new OutputEvent(data, 'stdout'));
+              })
+              .on('stderr', (data) => {
+                if (this.session && this.config.useAdvancedOutput) {
+                  this.printLogMessage(data, 'stderr');
+                  return;
+                }
+                this.sendEvent(new OutputEvent(data, 'stderr'));
+              });
 
             this.sendEvent(new ThreadEvent('Session started.', this.session.id));
           }
@@ -177,7 +224,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error) {
       const message = {
-        id: 1,
+        id: 2,
         format: error.message,
       } as DebugProtocol.Message;
       this.sendErrorResponse(response, message);
@@ -252,19 +299,25 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
-
+    await this.session!.sendStdoutCommand('redirect');
+    await this.session!.sendStderrCommand('redirect');
+    await this.session!.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code');
     this.stopwatch.start();
-    const dbgpResponse = this.config.stopOnEntry
-      ? await this.session!.sendStepIntoCommand()
-      : await this.session!.sendRunCommand();
-
     this.sendResponse(response);
-    if (this.config.useAdvancedBreakpoint) {
-      this.checkContinuationStatus(dbgpResponse, !this.config.stopOnEntry);
+    if (this.config.stopOnEntry) {
+      const dbgpResponse = await this.session!.sendStepIntoCommand();
+      this.checkContinuationStatus(dbgpResponse);
       return;
     }
 
-    this.checkContinuationStatus(dbgpResponse);
+    this.session!.sendRunCommand().then((dbgpResponse) => {
+      if (this.config.useAdvancedBreakpoint) {
+        this.checkContinuationStatus(dbgpResponse, !this.config.stopOnEntry);
+        return;
+      }
+
+      this.checkContinuationStatus(dbgpResponse);
+    });
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
@@ -289,6 +342,11 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const dbgpResponse = await this.session!.sendStepOutCommand();
     this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+  }
+  protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
+    await this.session!.sendBreakCommand();
+    this.sendEvent(new StoppedEvent('pause', this.session!.id));
+    this.sendResponse(response);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };
@@ -328,9 +386,9 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     response.body = {
       scopes: contexts.map((context) => {
-        const variableReference = this.variableReferenceCounter++;
+        const variableReference = this.variablesReferenceCounter++;
 
-        this.contextsByVariablesReference.set(variableReference, context);
+        this.contextByVariablesReference.set(variableReference, context);
         return new Scope(context.name, variableReference);
       }),
     };
@@ -340,14 +398,18 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
     let properties: dbgp.Property[] = [];
 
-    if (this.contextsByVariablesReference.has(args.variablesReference)) {
-      const context = this.contextsByVariablesReference.get(args.variablesReference)!;
+    if (this.contextByVariablesReference.has(args.variablesReference)) {
+      const context = this.contextByVariablesReference.get(args.variablesReference)!;
       properties = (await this.session!.sendContextGetCommand(context)).properties;
     }
     else if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
       const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
       const { children } = (await this.session!.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName)).properties[0] as dbgp.ObjectProperty;
       properties = children;
+    }
+    else if (this.logObjectPropertiesByVariablesReference.has(args.variablesReference)) {
+      const objectProperty = this.logObjectPropertiesByVariablesReference.get(args.variablesReference);
+      properties = [ objectProperty as dbgp.Property ];
     }
 
     const variables: DebugProtocol.Variable[] = [];
@@ -372,10 +434,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
 
-      if (property.type === 'object') {
-        const objectProperty = property as dbgp.ObjectProperty;
+      if (property instanceof dbgp.ObjectProperty) {
+        const objectProperty = property;
 
-        variablesReference = this.variableReferenceCounter++;
+        variablesReference = this.variablesReferenceCounter++;
         this.objectPropertiesByVariablesReference.set(variablesReference, objectProperty);
         if (objectProperty.isArray) {
           const maxIndex = objectProperty.maxIndex!;
@@ -403,7 +465,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
     const context = this.objectPropertiesByVariablesReference.has(args.variablesReference)
       ? this.objectPropertiesByVariablesReference.get(args.variablesReference)!.context
-      : this.contextsByVariablesReference.get(args.variablesReference)!;
+      : this.contextByVariablesReference.get(args.variablesReference)!;
 
     const setVariable = async(typeName: string, data: string): Promise<void> => {
       const dbgpResponse = await this.session!.sendPropertySetCommand({
@@ -470,11 +532,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     } as DebugProtocol.Message);
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
+    const propertyName = args.expression;
     try {
       if (!args.frameId) {
         throw Error('Error: Cannot evaluate code without a session');
       }
-      const parsed = this.ahkParser.PropertyName.parse(args.expression);
+      const parsed = this.ahkParser.PropertyName.parse(propertyName);
       if (!parsed.status) {
         throw Error('Error: Only the property name is supported. e.g. `prop`,` prop.field`, `prop [0]`, `prop [" spaced key "]`');
       }
@@ -486,9 +549,10 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       let property: dbgp.Property | undefined;
       for await (const context of contexts) {
-        const { properties } = await this.session!.sendContextGetCommand(context);
-        property = properties.find((property) => property.fullName === args.expression);
-        if (property) {
+        const { properties } = await this.session!.sendPropertyGetCommand(context, propertyName);
+
+        if (properties[0].type !== 'undefined') {
+          property = properties[0];
           break;
         }
       }
@@ -498,7 +562,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       let variablesReference = 0;
       if (property instanceof dbgp.ObjectProperty) {
-        variablesReference = this.variableReferenceCounter++;
+        variablesReference = this.variablesReferenceCounter++;
         this.objectPropertiesByVariablesReference.set(variablesReference, property);
       }
       response.body = {
@@ -631,24 +695,82 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
-      const log = await this.evalLogMessage(logMessage);
-      this.sendEvent(new OutputEvent(log, 'log'));
+      this.printLogMessage(logMessage);
     }
 
     const response = await this.session!.sendRunCommand();
     await this.checkContinuationStatus(response, true);
   }
-  private async evalLogMessage(logMessage: string): Promise<string> {
-    let evaled = logMessage;
+  private async printLogMessage(logMessage: string, logCategory = 'stdout'): Promise<void> {
+    const { stackFrames } = await this.session!.sendStackGetCommand();
+    const { contexts } = await this.session!.sendContextNamesCommand(stackFrames[0]);
+    const unescapeLogMessage = (string: string): string => {
+      return string.replace(/\\([{}])/gu, '$1');
+    };
 
-    const regex = /(?<!\\)\{(?<expression>.+?)(?<!\\)\}/gui;
-    await Promise.all(Array.from(logMessage.matchAll(regex), (x) => x[1])
-      .map(async(propertyName) => {
-        const evaledExpression = await this.session!.fetchPrimitiveProperty(propertyName);
-        if (evaledExpression) {
-          evaled = evaled.replace(new RegExp(regex.source, 'ui'), evaledExpression);
+    const regex = /(?<!\\)\{(?<variableName>(?:\\\{|\\\}|[^{}\n])+?)(?<!\\)\}/gu;
+    let message = '';
+    if (logMessage.search(regex) === -1) {
+      message = unescapeLogMessage(logMessage);
+      this.sendEvent(new OutputEvent(message, logCategory));
+      return;
+    }
+
+    let currentIndex = 0;
+    for await (const match of logMessage.matchAll(regex)) {
+      if (typeof match.index === 'undefined') {
+        break;
+      }
+      if (typeof match.groups === 'undefined') {
+        break;
+      }
+      const { variableName } = match.groups;
+
+      for await (const context of contexts) {
+        let property: dbgp.Property;
+        try {
+          const { properties } = await this.session!.sendPropertyGetCommand(context, variableName);
+          property = properties[0];
         }
-      }));
-    return `${evaled}\n`;
+        catch (error) {
+          continue;
+        }
+
+        if (property.type === 'undefined') {
+          continue;
+        }
+
+        if (property instanceof dbgp.ObjectProperty) {
+          if (currentIndex < match.index) {
+            message += logMessage.slice(currentIndex, match.index);
+          }
+          if (message) {
+            this.sendEvent(new OutputEvent(unescapeLogMessage(message), logCategory));
+            message = '';
+          }
+
+          const objectProperty = property;
+          const variablesReference = this.variablesReferenceCounter++;
+          this.logObjectPropertiesByVariablesReference.set(variablesReference, objectProperty);
+          const event = new OutputEvent(objectProperty.displayValue, logCategory) as DebugProtocol.OutputEvent;
+          event.body.variablesReference = variablesReference;
+          this.sendEvent(event);
+        }
+        else {
+          const primitiveProperty = property as dbgp.PrimitiveProperty;
+          message += logMessage.slice(currentIndex, match.index) + primitiveProperty.value;
+        }
+
+        currentIndex = match[0].length + match.index;
+        break;
+      }
+    }
+
+    if (currentIndex < logMessage.length) {
+      message += logMessage.slice(currentIndex);
+    }
+    if (message) {
+      this.sendEvent(new OutputEvent(unescapeLogMessage(message), logCategory));
+    }
   }
 }
