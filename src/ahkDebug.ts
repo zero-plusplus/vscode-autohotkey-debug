@@ -702,8 +702,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.checkContinuationStatus(response, true);
   }
   private async printLogMessage(logMessage: string, logCategory = 'stdout'): Promise<void> {
-    const { stackFrames } = await this.session!.sendStackGetCommand();
-    const { contexts } = await this.session!.sendContextNamesCommand(stackFrames[0]);
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
@@ -716,6 +714,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
+    const { stackFrames } = await this.session!.sendStackGetCommand();
+    const { contexts } = await this.session!.sendContextNamesCommand(stackFrames[0]);
     let currentIndex = 0;
     for await (const match of logMessage.matchAll(regex)) {
       if (typeof match.index === 'undefined') {
