@@ -10,9 +10,6 @@ The format is based on [Keep a Changelog][Keep a Changelog] and this project adh
 ## [Unreleased]
 Mainly bug fixes and processing improvements.
 
-### Road Map
-- [ ] Output of object at Log point. Implementable but not sure how
-
 ---
 
 ## [Released]
