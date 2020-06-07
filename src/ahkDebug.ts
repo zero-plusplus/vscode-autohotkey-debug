@@ -61,11 +61,19 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.setDebuggerLinesStartAt1(true);
     this.setDebuggerPathFormat('uri');
   }
+  public convertClientPathToDebugger(filePath: string): string {
+    const fileUri = super.convertClientPathToDebugger(filePath).replace('file:///', '');
+    const isUnc = path.parse(fileUri).root === '';
+    if (isUnc) {
+      return `\\\\${fileUri}`;
+    }
+    return fileUri;
+  }
   public convertDebuggerPathToClient(fileUri: string): string {
     const filePath = super.convertDebuggerPathToClient(fileUri);
 
-    const isUNC = filePath.startsWith('\\');
-    if (isUNC) {
+    const isUnc = filePath.startsWith('\\');
+    if (isUnc) {
       return `\\${filePath}`;
     }
     return filePath;
@@ -261,7 +269,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       await Promise.all(args.breakpoints
         .map(async(vscodeBreakpoint, index) => {
           try {
-            const { id } = await this.session!.sendBreakpointSetCommand(filePath, vscodeBreakpoint.line);
+            const { id } = await this.session!.sendBreakpointSetCommand(this.convertClientPathToDebugger(filePath), vscodeBreakpoint.line);
             const { fileUri, line } = await this.session!.sendBreakpointGetCommand(id);
 
             const dbgpBreakpoint = this.breakpoints[`${filePath}${line}`];
