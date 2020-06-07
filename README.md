@@ -8,7 +8,9 @@ Please note the following first.
 
 # News
 ### Update
-* 1.3.0 - 2020-06-06
+* 1.3.1 - 2020-06-07
+    * Fix: [#3](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/3) Breakpoints fail if filename has embedded space followed by hyphen
+* 1.3.0 - 2020-06-07
     * Added: `openFileOnExit` to launch.json
     * Added: `useAdvancedOutput` to launch.json
     * Added: Global variable `A_DebuggerName`. Followed Scite4Autohotkey
@@ -24,8 +26,6 @@ Please note the following first.
 * 1.2.0 - 2020-05-30
     * Added: The setting item of `env` to launch.json
     * Changed: Warn if the value assigned to `args` in launch.json is a non-string
-* 1.1.0 - 2020-05-27
-    * Added: The setting item of `args` to launch.json
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
