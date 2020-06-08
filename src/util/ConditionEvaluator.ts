@@ -1,5 +1,5 @@
 import * as createPcre from 'pcre-to-regexp';
-import { Parser, createParser } from './AhkSimpleParser';
+import { Parser, createParser } from './ConditionParser';
 import { Session } from '../dbgpSession';
 
 type Operator = (a: string, b: string) => boolean;

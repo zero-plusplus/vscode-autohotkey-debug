@@ -20,8 +20,8 @@ import {
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { sync as pathExistsSync } from 'path-exists';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
-import { Parser, createParser } from './util/AhkSimpleParser';
-import { ConditionalEvaluator } from './util/ConditionalEvaluator';
+import { Parser, createParser } from './util/ConditionParser';
+import { ConditionalEvaluator } from './util/ConditionEvaluator';
 import * as dbgp from './dbgpSession';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
