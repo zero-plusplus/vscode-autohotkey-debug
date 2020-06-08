@@ -19,6 +19,10 @@ Mainly bug fixes and processing improvements.
 
 ### Fixed
 * When outputting a variable to the debug console, a variable in another scope may be referenced
+* Incorrect display of object summary
+* Cannot set `obj.<base>` in `Watch expression`. This is limited to ahkv2
+* Can't rewrite field of object
+* Writing an integer is treated as a floating point
 
 ### Removed
 * Message at the end of debugging. I was showing the time spent debugging but I didn't need it
