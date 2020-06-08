@@ -106,7 +106,18 @@ export class ConditionalEvaluator {
       }
       else if (expression.type === 'Primitive') {
         const primitive = expression.value;
-        primitiveValue = primitive.value;
+        if (primitive.type === 'String') {
+          const string = expression.value;
+          primitiveValue = string.value;
+        }
+        else if (primitive.type === 'Number') {
+          const number = expression.value;
+          primitiveValue = number.value.value;
+        }
+        else {
+          const boolean = primitive;
+          primitiveValue = boolean.value;
+        }
       }
 
       if (typeof primitiveValue === 'string') {

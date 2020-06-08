@@ -108,7 +108,7 @@ export const createParser = function(version: 1 | 2): P.Language {
         P.string('['),
         rules.Primitive,
         P.string(']'),
-      ).map((result) => result.join(''));
+      ).map((result) => `${result[0]}${result[1].value.value.value as string}${result[2]}`);
     },
     BaseAccesor(rules) {
       return P.string('.<base>');
@@ -123,7 +123,7 @@ export const createParser = function(version: 1 | 2): P.Language {
       ).map((result) => {
         return {
           type: 'PropertyName',
-          value: result.join(''),
+          value: `${String(result[0])}${result[1].join('')}`,
         };
       });
     },
