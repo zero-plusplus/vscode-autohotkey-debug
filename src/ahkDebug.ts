@@ -18,7 +18,6 @@ import {
   ThreadEvent,
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
-import { StopWatch } from 'stopwatch-node';
 import { sync as pathExistsSync } from 'path-exists';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import { Parser, createParser } from './util/AhkSimpleParser';
@@ -53,7 +52,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private readonly breakpoints: { [key: string]: dbgp.Breakpoint | undefined} = {};
   private conditionalEvaluator!: ConditionalEvaluator;
-  private readonly stopwatch = new StopWatch('ahk-process');
   constructor() {
     super('autohotkey-debug.txt');
 
@@ -99,10 +97,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     if (this.server) {
       this.server.close();
-    }
-    if (this.stopwatch.isRunning()) {
-      this.stopwatch.stop();
-      this.sendEvent(new OutputEvent(this.stopwatch.shortSummary(), 'execution-time'));
     }
 
     if (this.config.openFileOnExit !== null) {
@@ -310,7 +304,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.session!.sendStdoutCommand('redirect');
     await this.session!.sendStderrCommand('redirect');
     await this.session!.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code');
-    this.stopwatch.start();
     this.sendResponse(response);
     if (this.config.stopOnEntry) {
       const dbgpResponse = await this.session!.sendStepIntoCommand();
