@@ -8,6 +8,10 @@ Please note the following first.
 
 # News
 ### Update
+* 1.3.2 - 2020-06-8
+    * Changed: Although it is limited to when outputting with log points, it is possible to jump to the output source by clicking the file name on the right side of the output
+    * Fixed: When outputting a variable to the debug console, a variable in another scope may be referenced
+    * Removed: Message at the end of debugging. I was showing the time spent debugging but I didn't need it
 * 1.3.1 - 2020-06-07
     * Fix: [#3](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/3) Breakpoints fail if filename has embedded space followed by hyphen
 * 1.3.0 - 2020-06-07
@@ -23,9 +27,6 @@ Please note the following first.
     * Fixed: Pause and restart did not work for debug actions
     * Fixed: Cannot get child element of object with [Watch expression](#watch-expression)
     * Fixed: The value cannot be obtained if it is an index accessor using a string such as `obj["spaced key"]` with [Watch expression](#watch-expression)
-* 1.2.0 - 2020-05-30
-    * Added: The setting item of `env` to launch.json
-    * Changed: Warn if the value assigned to `args` in launch.json is a non-string
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
