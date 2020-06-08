@@ -185,10 +185,15 @@ export class ObjectProperty extends Property {
   public address: number;
   public page: number;
   public pageSize: number;
+  public isSparseArray = false;
   public get isArray(): boolean {
+    if (this.isSparseArray) {
+      return false;
+    }
     return typeof this.maxIndex !== 'undefined';
   }
   public get displayValue(): string {
+    let indexCount = 1;
     let value = this.isArray
       ? `${this.className}(${this.maxIndex!}) [`
       : `${this.className} {`;
@@ -197,18 +202,27 @@ export class ObjectProperty extends Property {
         value += '…';
         break;
       }
-      if ('value' in property) {
-        const primitiveProperty = property as PrimitiveProperty;
-        value += this.isArray
-          ? `${primitiveProperty.displayValue}, `
-          : `${primitiveProperty.name}: ${primitiveProperty.displayValue}, `;
+
+      const displayValue = property instanceof ObjectProperty
+        ? property.className
+        : property.displayValue;
+      if (this.isArray) {
+        if (property.isIndex) {
+          if (property.index === indexCount) {
+            value += `${displayValue}, `;
+            indexCount++;
+            continue;
+          }
+          this.isSparseArray = true;
+          return this.displayValue;
+        }
         continue;
       }
 
-      const objectProperty = property as ObjectProperty;
-      value += this.isArray
-        ? `${objectProperty.className}, `
-        : `${objectProperty.name}: ${objectProperty.className}, `;
+      const key = property.isIndex
+        ? String(property.index)
+        : property.name;
+      value += `${key}: ${displayValue}, `;
     }
 
     value = rtrim(value, ', ');
