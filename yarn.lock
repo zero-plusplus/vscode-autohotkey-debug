@@ -1833,11 +1833,6 @@ sprintf-js@~1.0.2:
   resolved "https://registry.yarnpkg.com/sprintf-js/-/sprintf-js-1.0.3.tgz#04e6926f662895354f3dd015203633b857297e2c"
   integrity sha1-BOaSb2YolTVPPdAVIDYzuFcpfiw=
 
-stopwatch-node@^1.0.2:
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/stopwatch-node/-/stopwatch-node-1.0.2.tgz#af0546773ed7866ba43a199452d368c88490c128"
-  integrity sha512-ASPCIhcAhgi7JyyMWOYvv4z2W3FZAIV6wYG4Rp3QA+Yjpdi8DCHuYclNSG1KpjvGhT4U+eJWZRnpmVK/bl+6Kw==
-
 "string-width@^1.0.2 || 2":
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/string-width/-/string-width-2.1.1.tgz#ab93f27a8dc13d28cac815c462143a6d9012ae9e"

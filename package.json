@@ -171,7 +171,6 @@
     "parsimmon": "^1.13.0",
     "path-exists": "^4.0.0",
     "pcre-to-regexp": "^1.1.0",
-    "stopwatch-node": "^1.0.2",
     "underscore": "^1.10.2",
     "underscore.string": "^3.3.5",
     "vscode-debugadapter": "^1.40.0",
