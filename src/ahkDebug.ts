@@ -473,12 +473,12 @@ export class AhkDebugSession extends LoggingDebugSession {
       data = `${String(primitive.value)}`;
       if (primitive.type === 'Number') {
         const number = primitive.value;
-        if (number.type === 'Intger') {
-          typeName = 'intger';
+        if (number.type === 'Integer') {
+          typeName = 'integer';
           data = String(number.value);
         }
         else if (number.type === 'Hex') {
-          typeName = 'intger';
+          typeName = 'integer';
           data = String(parseInt(number.value, 16));
         }
         else if (this.ahkVersion === 2 && number.type === 'Scientific') {
