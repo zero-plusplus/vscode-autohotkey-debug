@@ -464,39 +464,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
-    const context = this.objectPropertiesByVariablesReference.has(args.variablesReference)
-      ? this.objectPropertiesByVariablesReference.get(args.variablesReference)!.context
-      : this.contextByVariablesReference.get(args.variablesReference)!;
-
-    const setVariable = async(typeName: string, data: string): Promise<void> => {
-      const dbgpResponse = await this.session!.sendPropertySetCommand({
-        context,
-        fullName: args.name,
-        typeName,
-        data,
-      });
-
-      if (dbgpResponse.success) {
-        response.body = {
-          type: typeName,
-          variablesReference: 0,
-          value: typeName === 'string' ? `"${data}"` : data,
-        };
-        this.sendResponse(response);
-        return;
-      }
-
-      this.sendErrorResponse(response, {
-        id: args.variablesReference,
-        format: 'Rewriting failed. Probably read-only.',
-      } as DebugProtocol.Message);
-    };
-
+    let typeName: string, data: string;
     const parsed = this.ahkParser.Primitive.parse(args.value);
     if ('value' in parsed) {
       const primitive = parsed.value.value;
 
-      let typeName = 'string', data = `${String(primitive.value)}`;
+      typeName = 'string';
+      data = `${String(primitive.value)}`;
       if (primitive.type === 'Number') {
         const number = primitive.value;
         if (number.type === 'Intger') {
@@ -518,19 +492,60 @@ export class AhkDebugSession extends LoggingDebugSession {
           data = String(number.value);
         }
       }
-      await setVariable(typeName, data);
+    }
+    else if (args.value === '') {
+      typeName = 'undefined';
+      data = `Not initialized`;
+    }
+    else {
+      this.sendErrorResponse(response, {
+        id: args.variablesReference,
+        format: 'Only primitive values are supported. e.g. "string", 123, 0x123, 1.0e+5, true',
+      } as DebugProtocol.Message);
       return;
     }
 
-    if (args.value === '') {
-      await setVariable('undefined', 'Not initialized');
-      return;
+    const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference);
+    let fullName = args.name;
+    let context: dbgp.Context;
+    if (objectProperty) {
+      const name = args.name.startsWith('[') ? args.name : `.${args.name}`;
+      fullName = `${objectProperty.fullName}${name}`;
+      context = objectProperty.context;
+    }
+    else {
+      context = this.contextByVariablesReference.get(args.variablesReference)!;
     }
 
-    this.sendErrorResponse(response, {
-      id: args.variablesReference,
-      format: 'Only primitive values are supported. e.g. "string", 123, 0x123, 1.0e+5, true',
-    } as DebugProtocol.Message);
+    try {
+      const dbgpResponse = await this.session!.sendPropertySetCommand({
+        context,
+        fullName,
+        typeName,
+        data,
+      });
+
+      if (!dbgpResponse.success) {
+        this.sendErrorResponse(response, {
+          id: args.variablesReference,
+          format: 'Rewriting failed. Probably read-only.',
+        } as DebugProtocol.Message);
+        return;
+      }
+
+      response.body = {
+        type: typeName,
+        variablesReference: 0,
+        value: typeName === 'string' ? `"${data}"` : data,
+      };
+      this.sendResponse(response);
+    }
+    catch (error) {
+      this.sendErrorResponse(response, {
+        id: args.variablesReference,
+        format: 'Execution of the command failed. Users will not normally see this message',
+      } as DebugProtocol.Message);
+    }
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
     const propertyName = args.expression;
