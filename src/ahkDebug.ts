@@ -703,22 +703,32 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
-      await this.printLogMessage(logMessage);
+      await this.printLogMessage(logMessage, 'stdout', breakpoint);
     }
 
     const response = await this.session!.sendRunCommand();
     await this.checkContinuationStatus(response, true);
   }
-  private async printLogMessage(logMessage: string, logCategory = 'stdout'): Promise<void> {
+  private async printLogMessage(logMessage: string, logCategory: string, breakpoint: dbgp.Breakpoint | null = null): Promise<void> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
+    };
+    const createOutputEvent = (message: string, variablesReference: number | null = null): DebugProtocol.OutputEvent => {
+      const event = new OutputEvent(unescapeLogMessage(message), logCategory) as DebugProtocol.OutputEvent;
+      if (variablesReference) {
+        event.body.variablesReference = variablesReference;
+      }
+      if (breakpoint) {
+        event.body.source = { path: breakpoint.fileUri };
+        event.body.line = breakpoint.line;
+      }
+      return event;
     };
 
     const regex = /(?<!\\)\{(?<variableName>(?:\\\{|\\\}|[^{}\n])+?)(?<!\\)\}/gu;
     let message = '';
     if (logMessage.search(regex) === -1) {
-      message = unescapeLogMessage(logMessage);
-      this.sendEvent(new OutputEvent(message, logCategory));
+      this.sendEvent(createOutputEvent(logMessage));
       return;
     }
 
@@ -760,9 +770,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           const objectProperty = property;
           const variablesReference = this.variablesReferenceCounter++;
           this.logObjectPropertiesByVariablesReference.set(variablesReference, objectProperty);
-          const event = new OutputEvent(objectProperty.displayValue, logCategory) as DebugProtocol.OutputEvent;
-          event.body.variablesReference = variablesReference;
-          this.sendEvent(event);
+          this.sendEvent(createOutputEvent(objectProperty.displayValue, variablesReference));
         }
         else {
           const primitiveProperty = property as dbgp.PrimitiveProperty;
@@ -778,7 +786,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       message += logMessage.slice(currentIndex);
     }
     if (message) {
-      this.sendEvent(new OutputEvent(unescapeLogMessage(message), logCategory));
+      this.sendEvent(createOutputEvent(message));
     }
   }
 }
