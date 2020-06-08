@@ -703,7 +703,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
-      this.printLogMessage(logMessage);
+      await this.printLogMessage(logMessage);
     }
 
     const response = await this.session!.sendRunCommand();
