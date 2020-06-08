@@ -625,18 +625,16 @@ export class Session extends EventEmitter {
   public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
   }
-  public async fetchPrimitiveProperty(propertyName: string): Promise<string | null> {
-    for await (const contextId of [ 0, 1 ]) {
-      const response = await this.sendCommand('property_get', `-n ${propertyName} -c ${contextId}`);
-      if (response.property) {
-        const [ property ] = Array.isArray(response.property) ? response.property : [ response.property ];
-        const value = property.content
-          ? Buffer.from(property.content, property.attributes.encoding as BufferEncoding).toString()
-          : '';
-        return value;
+  public async fetchLatestProperty(propertyName: string): Promise<Property | null> {
+    const { stackFrames } = await this.sendStackGetCommand();
+    const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
+    for await (const context of contexts) {
+      const { properties } = await this.sendPropertyGetCommand(context, propertyName);
+      const property = properties[0];
+      if (property.type !== 'undefined') {
+        return property;
       }
     }
-
     return null;
   }
   public async close(): Promise<void> {

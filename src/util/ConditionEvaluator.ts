@@ -1,13 +1,23 @@
 import * as createPcre from 'pcre-to-regexp';
 import { Parser, createParser } from './ConditionParser';
-import { Session } from '../dbgpSession';
+import * as dbgp from '../dbgpSession';
 
-type Operator = (a: string, b: string) => boolean;
-const not = (predicate): Operator => (a: string, b: string): boolean => !predicate(a, b);
-const equalsIgnoreCase: Operator = (a, b) => a.toLowerCase() === b.toLocaleLowerCase();
+type Operator = (a, b) => boolean;
+const not = (predicate): Operator => (a, b): boolean => !predicate(a, b);
 const equals: Operator = (a, b) => a === b;
+const equalsIgnoreCase: Operator = (a, b) => {
+  const containsObjectAddress = typeof a === 'number' || typeof b === 'number';
+  if (containsObjectAddress) {
+    return a === b;
+  }
+  return a.toLowerCase() === b.toLocaleLowerCase();
+};
 const inequality = (sign: string): Operator => {
   return (a, b): boolean => {
+    const containsObjectAddress = typeof a === 'number' || typeof b === 'number';
+    if (containsObjectAddress) {
+      return false;
+    }
     const _a = parseInt(a, 10);
     const _b = parseInt(b, 10);
     if (Number.isNaN(_a) || Number.isNaN(_b)) {
@@ -44,6 +54,11 @@ const ahkRegexToJsRegex = function(ahkRegex): RegExp {
   return createPcre(`%${pattern}%${flags}`);
 };
 const regexCompare: Operator = function(input, ahkRegex) {
+  const containsObjectAddress = typeof input === 'number' || typeof ahkRegex === 'number';
+  if (containsObjectAddress) {
+    return false;
+  }
+
   const regex = ahkRegexToJsRegex(ahkRegex);
   return regex.test(input);
 };
@@ -60,9 +75,9 @@ const operators: { [key: string]: Operator} = {
 };
 
 export class ConditionalEvaluator {
-  private readonly session: Session;
+  private readonly session: dbgp.Session;
   private readonly parser: Parser;
-  constructor(session: Session, version: 1 | 2) {
+  constructor(session: dbgp.Session, version: 1 | 2) {
     this.session = session;
     this.parser = createParser(version);
   }
@@ -74,11 +89,18 @@ export class ConditionalEvaluator {
       let primitiveValue;
       if (expression.type === 'LogicalExpression') {
         const [ a, , operatorType, , b ] = expression.value;
-        const getValue = async(value): Promise<string | null> => {
+        const getValue = async(value): Promise<string | number | null> => {
           if (value.type === 'PropertyName') {
             const propertyName = value.value;
-            const property = await this.session.fetchPrimitiveProperty(propertyName);
-            return property;
+            const property = await this.session.fetchLatestProperty(propertyName);
+            if (property === null) {
+              return '';
+            }
+            if (property instanceof dbgp.PrimitiveProperty) {
+              return property.value;
+            }
+            const objectProperty = property as dbgp.ObjectProperty;
+            return objectProperty.address;
           }
 
           const primitive = value.value;
@@ -102,7 +124,14 @@ export class ConditionalEvaluator {
       }
       else if (expression.type === 'PropertyName') {
         const propertyName = expression.value;
-        primitiveValue = await this.session.fetchPrimitiveProperty(propertyName);
+        const property = await this.session.fetchLatestProperty(propertyName);
+        if (property instanceof dbgp.PrimitiveProperty) {
+          primitiveValue = property.value;
+        }
+        else {
+          const objectProperty = property as dbgp.ObjectProperty;
+          primitiveValue = String(objectProperty.address);
+        }
       }
       else if (expression.type === 'Primitive') {
         const primitive = expression.value;

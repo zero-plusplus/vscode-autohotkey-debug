@@ -161,7 +161,7 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Rules
 * `Value`: `VariableName` or `Primitive`
-* `VariableName` Property name displayed in [data inspection](#data-inspection) (only properties with primitive values are supported). Note that the case must match. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `VariableName` Property name displayed in [data inspection](#data-inspection)  Note that the case must match. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 * `Primitive` AutoHotkey primitives. e.g. `"string"`, `123`, `123.456`, `0x123`
 * `Operator`
     * `=` Equal ignore case
