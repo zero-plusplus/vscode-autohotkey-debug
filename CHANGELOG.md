@@ -13,9 +13,10 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
-## [1.3.2] - 2020-06-08
+## [1.3.2] - 2020-06-09
 ### Changed
 * Although it is limited to when outputting with log points, it is possible to jump to the output source by clicking the file name on the right side of the output
+* Support object values in conditional expressions
 
 ### Fixed
 * When outputting a variable to the debug console, a variable in another scope may be referenced
@@ -23,6 +24,7 @@ Mainly bug fixes and processing improvements.
 * Cannot set `obj.<base>` in `Watch expression`. This is limited to ahkv2
 * Can't rewrite field of object
 * Writing an integer is treated as a floating point
+* Conditional breakpoint was not working
 
 ### Removed
 * Message at the end of debugging. I was showing the time spent debugging but I didn't need it
