@@ -330,19 +330,19 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
 
     const dbgpResponse = await this.session!.sendStepOverCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint, true);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
     const dbgpResponse = await this.session!.sendStepIntoCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint, true);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
     const dbgpResponse = await this.session!.sendStepOutCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint, true);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     await this.session!.sendBreakCommand();
@@ -674,7 +674,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     return null;
   }
-  private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false): Promise<void> {
+  private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
     if (response.status === 'stopped') {
       this.sendEvent(new TerminatedEvent());
     }
@@ -682,7 +682,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (checkExtraBreakpoint) {
         const breakpoint = await this.getCurrentBreakpoint();
         if (breakpoint) {
-          await this.checkAdvancedBreakpoint(breakpoint);
+          await this.checkAdvancedBreakpoint(breakpoint, forceStop);
           return;
         }
       }
@@ -693,7 +693,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
     }
   }
-  private async checkAdvancedBreakpoint(breakpoint: dbgp.Breakpoint): Promise<void> {
+  private async checkAdvancedBreakpoint(breakpoint: dbgp.Breakpoint, forceStop = false): Promise<void> {
     if (!breakpoint.advancedData) {
       return;
     }
@@ -748,6 +748,11 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       await this.printLogMessage(logMessage, 'stdout', breakpoint);
+    }
+
+    if (forceStop) {
+      this.sendEvent(new StoppedEvent('force stop', this.session!.id));
+      return;
     }
 
     const response = await this.session!.sendRunCommand();

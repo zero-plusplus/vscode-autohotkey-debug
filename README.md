@@ -129,6 +129,11 @@ You can learn the basics [here](https://code.visualstudio.com/docs/editor/debugg
 Also note that Condition evaluation is slow.**
 Therefore it is off by default.
 
+In addition, there are the following restrictions.
+* Set an Advanced Breakpoint and cross that line with step ins, outs, and overs.
+At this time, even if the result of the condition is false, it will be forcibly stopped.
+This is due to a design limitation.
+
 ### How to enable
 `useAdvancedBreakpoint` to `true` in launch.json.
 ```json
