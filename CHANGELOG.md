@@ -13,6 +13,14 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.3.3] - 2020-06-10
+### Changed
+* Support for lazy loading of stack frames. Loading is delayed when there are 20 more than stack frames
+* [#10](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/10) Output after molding so that vscode can be recognized as a link at runtime error of AutoHotkey
+
+### Fixed
+* [#7](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/7) Variables are not displayed when you press pause while idling. It is not a complete fix due to a specification problem
+
 ## [1.3.2] - 2020-06-09
 ### Changed
 * Although it is limited to when outputting with log points, it is possible to jump to the output source by clicking the file name on the right side of the output
@@ -98,6 +106,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.3.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.2..v1.3.3
 [1.3.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.1..v1.3.2
 [1.3.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.0..v1.3.1
 [1.3.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.2.0..v1.3.0
