@@ -148,7 +148,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendEvent(new OutputEvent(data, 'stdout'));
       });
       ahkProcess.stderr.on('data', (chunkData: Buffer) => {
-        const data = String(chunkData);
+        const data = String(chunkData).replace(/^([^(]+) \((\d+)\)/gu, '$1:$2');
         if (this.session && this.config.useAdvancedOutput) {
           this.printLogMessage(data, 'stderr');
           return;
@@ -354,27 +354,56 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): Promise<void> {
-    const { stackFrames } = await this.session!.sendStackGetCommand();
+    const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
+    const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
+    const endFrame = startFrame + maxLevels;
 
-    response.body = {
-      stackFrames: stackFrames.map((stackFrame) => {
-        const id = this.stackFrameIdCounter++;
-        const filePath = this.convertDebuggerPathToClient(stackFrame.fileUri);
-        const source = {
-          name: path.basename(filePath),
-          path: filePath,
-        } as DebugProtocol.Source;
+    const { stackFrames: allStackFrames } = await this.session!.sendStackGetCommand();
+    const stackFrames = allStackFrames.slice(startFrame, endFrame);
 
-        this.stackFramesByFrameId.set(id, stackFrame);
-        return {
-          id,
-          source,
-          name: stackFrame.name,
-          line: stackFrame.line,
-          column: 1,
-        } as StackFrame;
-      }),
-    };
+    if (0 < stackFrames.length) {
+      response.body = {
+        totalFrames: allStackFrames.length,
+        stackFrames: stackFrames.map((stackFrame) => {
+          const id = this.stackFrameIdCounter++;
+          const filePath = this.convertDebuggerPathToClient(stackFrame.fileUri);
+          const source = {
+            name: path.basename(filePath),
+            path: filePath,
+          } as DebugProtocol.Source;
+
+          this.stackFramesByFrameId.set(id, stackFrame);
+          return {
+            id,
+            source,
+            name: stackFrame.name,
+            line: stackFrame.line,
+            column: 1,
+          } as StackFrame;
+        }),
+      };
+    }
+    else {
+      const stackFrame = {
+        name: 'Idling (Click me if you want to see the variables)',
+        fileUri: '',
+        level: 0,
+        line: -1,
+        type: 'file',
+      } as dbgp.StackFrame;
+      const id = this.stackFrameIdCounter++;
+
+      this.stackFramesByFrameId.set(id, stackFrame);
+      response.body = {
+        totalFrames: 1,
+        stackFrames: [
+          {
+            id,
+            name: stackFrame.name,
+          } as StackFrame,
+        ],
+      };
+    }
 
     this.sendResponse(response);
   }
@@ -710,7 +739,11 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (matchCondition) {
       if (typeof logMessage === 'undefined') {
-        this.sendEvent(new StoppedEvent('conditional breakpoint', this.session!.id));
+        let stopReason = 'conditional breakpoint';
+        if (typeof condition === 'undefined' && typeof hitCondition === 'undefined') {
+          stopReason = 'breakpoint';
+        }
+        this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
         return;
       }
 

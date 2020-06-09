@@ -8,6 +8,10 @@ Please note the following first.
 
 # News
 ### Update
+* 1.3.3 - 2020-06-10
+    * Changed: Support for lazy loading of stack frames. Loading is delayed when there are 20 or more stack frames
+    * Changed: [#10](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/10) Output after molding so that vscode can be recognized as a link at runtime error of AutoHotkey
+    * Fixed: [#7](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/7) Variables are not displayed when you press pause while idling. It is not a complete fix due to a specification problem
 * 1.3.2 - 2020-06-09
     * Changed: Although it is limited to when outputting with log points, it is possible to jump to the output source by clicking the file name on the right side of the output
     * Changed: Support object values in conditional expressions
@@ -20,19 +24,6 @@ Please note the following first.
     * Removed: Message at the end of debugging. I was showing the time spent debugging but I didn't need it
 * 1.3.1 - 2020-06-07
     * Fix: [#3](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/3) Breakpoints fail if filename has embedded space followed by hyphen
-* 1.3.0 - 2020-06-07
-    * Added: `openFileOnExit` to launch.json
-    * Added: `useAdvancedOutput` to launch.json
-    * Added: Global variable `A_DebuggerName`. Followed Scite4Autohotkey
-    * Changed: Supports object output with [Log point](#log-point)
-    * Changed: Supports functions or commands that print to standard output
-        * [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
-        * [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
-        * [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
-    * Changed: Output runtime error to standard error
-    * Fixed: Pause and restart did not work for debug actions
-    * Fixed: Cannot get child element of object with [Watch expression](#watch-expression)
-    * Fixed: The value cannot be obtained if it is an index accessor using a string such as `obj["spaced key"]` with [Watch expression](#watch-expression)
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
