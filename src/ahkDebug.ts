@@ -354,9 +354,16 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): Promise<void> {
-    const { stackFrames } = await this.session!.sendStackGetCommand();
+    const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
+    const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
+    const endFrame = startFrame + maxLevels;
+
+    const { stackFrames: allStackFrames } = await this.session!.sendStackGetCommand();
+    const stackFrames = allStackFrames.slice(startFrame, endFrame);
+
     if (0 < stackFrames.length) {
       response.body = {
+        totalFrames: allStackFrames.length,
         stackFrames: stackFrames.map((stackFrame) => {
           const id = this.stackFrameIdCounter++;
           const filePath = this.convertDebuggerPathToClient(stackFrame.fileUri);
@@ -388,6 +395,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       this.stackFramesByFrameId.set(id, stackFrame);
       response.body = {
+        totalFrames: 1,
         stackFrames: [
           {
             id,
