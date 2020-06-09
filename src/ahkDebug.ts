@@ -148,7 +148,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendEvent(new OutputEvent(data, 'stdout'));
       });
       ahkProcess.stderr.on('data', (chunkData: Buffer) => {
-        const data = String(chunkData);
+        const data = String(chunkData).replace(/^([^(]+) \((\d+)\)/gu, '$1:$2');
         if (this.session && this.config.useAdvancedOutput) {
           this.printLogMessage(data, 'stderr');
           return;
