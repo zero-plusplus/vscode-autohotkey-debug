@@ -8,7 +8,9 @@ Please note the following first.
 
 # News
 ### Update
-* 1.3.3 - 2020-06-10
+* 1.3.4 - 2020-06-10
+    * Fixed: When you step in, out, or over a line with a conditional breakpoint or logpoint, it continues to run until the next breakpoint. It was changed to stop regardless of the conditions. Also, this bug is limited when `useAdvancedBreakpoint` is true.
+* 1.3.3 - 2020-06-09
     * Changed: Support for lazy loading of stack frames. Loading is delayed when there are 20 or more stack frames
     * Changed: [#10](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/10) Output after molding so that vscode can be recognized as a link at runtime error of AutoHotkey
     * Fixed: [#7](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/7) Variables are not displayed when you press pause while idling. It is not a complete fix due to a specification problem
@@ -22,8 +24,6 @@ Please note the following first.
     * Fixed: Writing an integer is treated as a floating point
     * Fixed: Conditional breakpoint was not working
     * Removed: Message at the end of debugging. I was showing the time spent debugging but I didn't need it
-* 1.3.1 - 2020-06-07
-    * Fix: [#3](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/3) Breakpoints fail if filename has embedded space followed by hyphen
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -128,6 +128,11 @@ You can learn the basics [here](https://code.visualstudio.com/docs/editor/debugg
 **This feature is experimental and subject to change.
 Also note that Condition evaluation is slow.**
 Therefore it is off by default.
+
+In addition, there are the following restrictions.
+* Set an Advanced Breakpoint and cross that line with step ins, outs, and overs.
+At this time, even if the result of the condition is false, it will be forcibly stopped.
+This is due to a design limitation.
 
 ### How to enable
 `useAdvancedBreakpoint` to `true` in launch.json.
