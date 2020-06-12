@@ -8,22 +8,14 @@ Please note the following first.
 
 # News
 ### Update
+* 1.3.5 - 2020-06-12
+    * Changed: When debugging multiple source code at the same time, show a dialog asking if you want to debug using another port
 * 1.3.4 - 2020-06-10
     * Fixed: When you step in, out, or over a line with a conditional breakpoint or logpoint, it continues to run until the next breakpoint. It was changed to stop regardless of the conditions. Also, this bug is limited when `useAdvancedBreakpoint` is true.
 * 1.3.3 - 2020-06-09
     * Changed: Support for lazy loading of stack frames. Loading is delayed when there are 20 or more stack frames
     * Changed: [#10](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/10) Output after molding so that vscode can be recognized as a link at runtime error of AutoHotkey
     * Fixed: [#7](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/7) Variables are not displayed when you press pause while idling. It is not a complete fix due to a specification problem
-* 1.3.2 - 2020-06-09
-    * Changed: Although it is limited to when outputting with log points, it is possible to jump to the output source by clicking the file name on the right side of the output
-    * Changed: Support object values in conditional expressions
-    * Fixed: When outputting a variable to the debug console, a variable in another scope may be referenced
-    * Fixed: Incorrect display of object summary
-    * Fixed: Cannot set `obj.<base>` in `Watch expression`. This is limited to ahkv2
-    * Fixed: Can't rewrite field of object
-    * Fixed: Writing an integer is treated as a floating point
-    * Fixed: Conditional breakpoint was not working
-    * Removed: Message at the end of debugging. I was showing the time spent debugging but I didn't need it
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
