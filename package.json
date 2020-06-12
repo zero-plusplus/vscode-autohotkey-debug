@@ -111,7 +111,7 @@
               },
               "port": {
                 "type": "number",
-                "description": "127.0.0.1",
+                "description": "You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, `9001`, `9002`.",
                 "default": 9000
               },
               "maxChildren": {
