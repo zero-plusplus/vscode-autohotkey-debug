@@ -168,6 +168,7 @@
     "@zero-plusplus/ahk-include-path-resolver": "^1.0.5",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
+    "is-port-taken": "^0.0.3",
     "parsimmon": "^1.13.0",
     "path-exists": "^4.0.0",
     "pcre-to-regexp": "^1.1.0",
