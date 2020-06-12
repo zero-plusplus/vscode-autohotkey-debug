@@ -13,6 +13,10 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.3.5] - 2020-06-12
+### Changed
+* When debugging multiple source code at the same time, show a dialog asking if you want to debug using another port
+
 ## [1.3.4] - 2020-06-10
 ### Fixed
 * When you step in, out, or over a line with a conditional breakpoint or logpoint, it continues to run until the next breakpoint. It was changed to stop regardless of the conditions. Also, this bug is limited when `useAdvancedBreakpoint` is true.
@@ -110,6 +114,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.3.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.4..v1.3.5
 [1.3.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.3..v1.3.4
 [1.3.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.2..v1.3.3
 [1.3.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.1..v1.3.2

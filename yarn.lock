@@ -1174,6 +1174,11 @@ is-path-inside@^3.0.1:
   resolved "https://registry.yarnpkg.com/is-path-inside/-/is-path-inside-3.0.2.tgz#f5220fc82a3e233757291dddc9c5877f2a1f3017"
   integrity sha512-/2UGPSgmtqwo1ktx8NDHjuPwZWmHhO+gj0f93EkhLB5RgW9RZevWYYlIkS6zePc6U2WpOdQYIwHe9YC4DWEBVg==
 
+is-port-taken@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/is-port-taken/-/is-port-taken-0.0.3.tgz#e871032906d1b042ad03f6de56b5999c3c8e93b4"
+  integrity sha1-6HEDKQbRsEKtA/beVrWZnDyOk7Q=
+
 is-promise@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/is-promise/-/is-promise-2.1.0.tgz#79a2a9ece7f096e80f36d2b2f3bc16c1ff4bf3fa"

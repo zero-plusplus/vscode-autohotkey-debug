@@ -111,7 +111,7 @@
               },
               "port": {
                 "type": "number",
-                "description": "127.0.0.1",
+                "description": "You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, `9001`, `9002`.",
                 "default": 9000
               },
               "maxChildren": {
@@ -168,6 +168,7 @@
     "@zero-plusplus/ahk-include-path-resolver": "^1.0.5",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
+    "is-port-taken": "^0.0.3",
     "parsimmon": "^1.13.0",
     "path-exists": "^4.0.0",
     "pcre-to-regexp": "^1.1.0",

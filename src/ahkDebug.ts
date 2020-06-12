@@ -19,6 +19,7 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { sync as pathExistsSync } from 'path-exists';
+import * as isPortTaken from 'is-port-taken';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import { Parser, createParser } from './util/ConditionParser';
 import { ConditionalEvaluator } from './util/ConditionEvaluator';
@@ -29,9 +30,9 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   runtime: string;
   args: string[];
   env: NodeJS.ProcessEnv;
-  stopOnEntry?: boolean;
-  hostname?: string;
-  port?: number;
+  stopOnEntry: boolean;
+  hostname: string;
+  port: number;
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
   useAdvancedOutput: boolean;
@@ -119,7 +120,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
     this.shutdown();
   }
-  protected launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): void {
+  protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): Promise<void> {
     this.config = args;
     const lunchScript = (): void => {
       if (!pathExistsSync(this.config.runtime)) {
@@ -219,6 +220,14 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
         });
     };
+
+    const portUsed = await isPortTaken(this.config.port, this.config.hostname);
+    if (portUsed) {
+      if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
+        this.sendEvent(new TerminatedEvent());
+        return;
+      }
+    }
 
     try {
       createServer();
@@ -654,6 +663,20 @@ export class AhkDebugSession extends LoggingDebugSession {
     }));
     response.body = { sources };
     this.sendResponse(response);
+  }
+  private async confirmWhetherUseAnotherPort(originalPort: number): Promise<boolean> {
+    const portUsed = await isPortTaken(this.config.port, this.config.hostname);
+    if (portUsed) {
+      this.config.port++;
+      return this.confirmWhetherUseAnotherPort(originalPort);
+    }
+
+    const message = `Port number \`${originalPort}\` is already in use. Would you like to start debugging using \`${this.config.port}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
+    const result = await window.showInformationMessage(message, { modal: true }, 'Yes');
+    if (typeof result === 'undefined') {
+      return false;
+    }
+    return true;
   }
   private async getCurrentBreakpoint(): Promise<dbgp.Breakpoint | null> {
     let stackFrame: dbgp.StackFrame;
