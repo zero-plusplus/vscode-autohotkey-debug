@@ -8,14 +8,12 @@ Please note the following first.
 
 # News
 ### Update
+* 1.3.6 - 2020-06-13
+    * Fixed: The path is displayed a little strange when a runtime error is output in a script that includes parentheses in the file name
 * 1.3.5 - 2020-06-12
     * Changed: When debugging multiple source code at the same time, show a dialog asking if you want to debug using another port
 * 1.3.4 - 2020-06-10
     * Fixed: When you step in, out, or over a line with a conditional breakpoint or logpoint, it continues to run until the next breakpoint. It was changed to stop regardless of the conditions. Also, this bug is limited when `useAdvancedBreakpoint` is true.
-* 1.3.3 - 2020-06-09
-    * Changed: Support for lazy loading of stack frames. Loading is delayed when there are 20 or more stack frames
-    * Changed: [#10](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/10) Output after molding so that vscode can be recognized as a link at runtime error of AutoHotkey
-    * Fixed: [#7](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/7) Variables are not displayed when you press pause while idling. It is not a complete fix due to a specification problem
 
 See [CHANGELOG](CHANGELOG.md) for details.
 

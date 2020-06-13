@@ -13,6 +13,10 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.3.6] - 2020-06-13
+### Fixed
+* The path is displayed a little strange when a runtime error is output in a script that includes parentheses in the file name
+
 ## [1.3.5] - 2020-06-12
 ### Changed
 * When debugging multiple source code at the same time, show a dialog asking if you want to debug using another port
@@ -114,6 +118,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.3.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.5..v1.3.6
 [1.3.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.4..v1.3.5
 [1.3.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.3..v1.3.4
 [1.3.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.2..v1.3.3
