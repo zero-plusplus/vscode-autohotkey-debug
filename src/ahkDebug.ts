@@ -149,7 +149,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendEvent(new OutputEvent(data, 'stdout'));
       });
       ahkProcess.stderr.on('data', (chunkData: Buffer) => {
-        const data = String(chunkData).replace(/^([^(]+) \((\d+)\)/gu, '$1:$2');
+        const data = String(chunkData).replace(/^(.+)\s\((\d+)\)\s:/u, `$1:$2`); // Fix path format of runtime error
         if (this.session && this.config.useAdvancedOutput) {
           this.printLogMessage(data, 'stderr');
           return;
