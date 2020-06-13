@@ -53,7 +53,7 @@
     ],
     "debuggers": [
       {
-        "type": "ahk",
+        "type": "autohotkey",
         "label": "AutoHotkey",
         "languages": [
           "ahk",
@@ -149,7 +149,7 @@
             "body": {
               "name": "AutoHotkey Debug",
               "request": "launch",
-              "type": "ahk",
+              "type": "autohotkey",
               "runtime_v1": "AutoHotkey.exe",
               "runtime_v2": "v2/AutoHotkey.exe",
               "program": "^\"\\${file}\"",

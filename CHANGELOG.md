@@ -13,6 +13,14 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.3.7] - 2020-06-13
+### Important Notices
+This is a notice to those who are setting launch.json and debugging. From this version the debugger type has changed from `ahk` to `autohotkey`. This is a change to avoid being mistaken for a file extension.
+You can debug with `ahk` for a while (however, an error will be displayed), but it will not be usable in the future, so please change as soon as possible.
+
+### Changed
+* Debugger type from `ahk` to `autohotkey`
+
 ## [1.3.6] - 2020-06-13
 ### Fixed
 * The path is displayed a little strange when a runtime error is output in a script that includes parentheses in the file name
@@ -118,6 +126,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.3.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.6..v1.3.7
 [1.3.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.5..v1.3.6
 [1.3.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.4..v1.3.5
 [1.3.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.3..v1.3.4

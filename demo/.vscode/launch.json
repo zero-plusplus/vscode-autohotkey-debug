@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "ahk",
+            "type": "autohotkey",
             "request": "launch",
             "name": "AutoHotkey Debug",
             "program": "${file}",

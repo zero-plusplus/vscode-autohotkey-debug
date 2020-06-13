@@ -19,7 +19,7 @@ import { AhkDebugSession } from './ahkDebug';
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
     const defaultConfig = {
-      type: 'ahk',
+      type: 'autohotkey',
       name: 'Launch',
       request: 'launch',
       program: '${file}',
@@ -38,6 +38,11 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       openFileOnExit: null,
     };
     defaults(config, defaultConfig);
+
+    if (config.type === 'ahk') {
+      window.showErrorMessage('From version 1.3.7, the `type` of launch.json has been changed from `ahk` to `autohotkey`. This deprecates setting `type` to `ahk` and will prevent future debugging. This change prevents the `type` from being mistaken for a file extension. Please edit launch.json now.');
+      config.type = 'autohotkey';
+    }
 
     for (const key in config.env) {
       if (config.env[key] === null) {
@@ -76,7 +81,9 @@ class InlineDebugAdapterFactory implements DebugAdapterDescriptorFactory {
 
 export const activate = function(context: ExtensionContext): void {
   const provider = new AhkConfigurationProvider();
+
   context.subscriptions.push(debug.registerDebugConfigurationProvider('ahk', provider));
 
-  context.subscriptions.push(debug.registerDebugAdapterDescriptorFactory('ahk', new InlineDebugAdapterFactory()));
+  context.subscriptions.push(debug.registerDebugConfigurationProvider('autohotkey', provider));
+  context.subscriptions.push(debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
 };
