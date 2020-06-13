@@ -7,7 +7,13 @@ Please note the following first.
 * The new version may have defects. In that case, please refer to the [CHANGELOG](CHANGELOG.md) and reinstall the previous version.
 
 # News
+### Important Notices
+This is a notice to those who are setting launch.json and debugging. From version 1.3.7 the debugger type has changed from `ahk` to `autohotkey`. This is a change to avoid being mistaken for a file extension.
+You can debug with `ahk` for a while (however, an error will be displayed), but it will not be usable in the future, so please change as soon as possible.
+
 ### Update
+* 1.3.7 - 2020-06-13
+    * Changed: Debugger type from `ahk` to `autohotkey`
 * 1.3.6 - 2020-06-13
     * Fixed: The path is displayed a little strange when a runtime error is output in a script that includes parentheses in the file name
 * 1.3.5 - 2020-06-12
