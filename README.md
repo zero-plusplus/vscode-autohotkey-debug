@@ -50,7 +50,7 @@ Below is the default configuration snippet.
         {
             "name": "AutoHotkey Debug",
             "request": "launch",
-            "type": "ahk",
+            "type": "autohotkey",
             "runtime_v1": "AutoHotkey.exe",
             "runtime_v2": "v2/AutoHotkey.exe",
             "program": "${file}",
