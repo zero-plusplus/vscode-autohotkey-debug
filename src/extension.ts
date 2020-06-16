@@ -33,11 +33,25 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       maxChildren: 10000,
       runtime_v1: 'AutoHotkey.exe',
       runtime_v2: 'v2/AutoHotkey.exe',
+      runtimeArgs_v1: [ '/ErrorStdOut' ],
+      runtimeArgs_v2: [ '/ErrorStdOut' ],
       useAdvancedBreakpoint: false,
       useAdvancedOutput: false,
       openFileOnExit: null,
     };
     defaults(config, defaultConfig);
+
+    if (typeof config.runtimeArgs === 'undefined') {
+      const editor = window.activeTextEditor;
+      config.runtimeArgs = editor && editor.document.languageId.toLowerCase() === 'ahk'
+        ? config.runtimeArgs_v1
+        : config.runtimeArgs_v2; // ahk2 or ah2
+    }
+    if (!Array.isArray(config.runtimeArgs)) {
+      config.runtimeArgs = [];
+    }
+    config.runtimeArgs = config.runtimeArgs.filter((arg) => arg.search(/\/debug/ui) === -1);
+    config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
 
     if (config.type === 'ahk') {
       window.showErrorMessage('From version 1.3.7, the `type` of launch.json has been changed from `ahk` to `autohotkey`. This deprecates setting `type` to `ahk` and will prevent future debugging. This change prevents the `type` from being mistaken for a file extension. Please edit launch.json now.');

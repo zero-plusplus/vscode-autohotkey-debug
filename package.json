@@ -104,6 +104,36 @@
                 "type": "string",
                 "description": "Assign `AutoHotkey.exe` to the extension `ahk2` or `ah2`. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. The extension `.exe` can be omitted."
               },
+              "runtimeArgs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "In most cases you will not need to change this setting. Be aware that debugging may fail if you make changes.\nArguments to pass to AutoHotkey.exe. However, `/Debug` is ignored.",
+                "default": [
+                  "/ErrorStdOut"
+                ]
+              },
+              "runtimeArgs_v1": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "In most cases you will not need to change this setting. Be aware that debugging may fail if you make changes.\nArgument to be passed to AutoHotkey.exe when the extension is `ahk`. However, `/Debug` is ignored.",
+                "default": [
+                  "/ErrorStdOut"
+                ]
+              },
+              "runtimeArgs_v2": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "In most cases you will not need to change this setting. Be aware that debugging may fail if you make changes.\nArgument to be passed to AutoHotkey.exe when the extension is `ahk2` or `ah2`. However, `/Debug` is ignored.",
+                "default": [
+                  "/ErrorStdOut"
+                ]
+              },
               "hostname": {
                 "type": "string",
                 "description": "",

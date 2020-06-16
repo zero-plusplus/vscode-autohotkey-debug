@@ -2,7 +2,7 @@
 Please note the following first.
 * This document has been **translated from Japanese to English** by Google Translate.
 * **This extension alone will not work**. You will need to separately install an extension that supports AutoHotkey language(Most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2(For example `dudelmoser.vscode-autohotkey2`). I plan to make an all-in pack, but it will take time because I will make it from scratch for studying.
-* It is expected that there are still many potential bugs. Please report to [issues](https:github.com/zero-plusplus/vscode-autohotkey-debug/issues).
+* It is expected that there are still many potential bugs. Please report to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 * If you want to update, please see News first. It may contain important information.
 * The new version may have defects. In that case, please refer to the [CHANGELOG](CHANGELOG.md) and reinstall the previous version.
 
@@ -12,14 +12,14 @@ This is a notice to those who are setting launch.json and debugging. From versio
 You can debug with `ahk` for a while (however, an error will be displayed), but it will not be usable in the future, so please change as soon as possible.
 
 ### Update
+* 1.4.0 - 2020-06-16
+    * Added: `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
+    * Changed: Output the startup command of AutoHotkey
+    * Fixed: [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) Broken link to issues in README(`Details` when viewed from vscode)
 * 1.3.7 - 2020-06-13
     * Changed: Debugger type from `ahk` to `autohotkey`
 * 1.3.6 - 2020-06-13
     * Fixed: The path is displayed a little strange when a runtime error is output in a script that includes parentheses in the file name
-* 1.3.5 - 2020-06-12
-    * Changed: When debugging multiple source code at the same time, show a dialog asking if you want to debug using another port
-* 1.3.4 - 2020-06-10
-    * Fixed: When you step in, out, or over a line with a conditional breakpoint or logpoint, it continues to run until the next breakpoint. It was changed to stop regardless of the conditions. Also, this bug is limited when `useAdvancedBreakpoint` is true.
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -72,7 +72,9 @@ Below is the default configuration snippet.
 
 The settings that should be noted are described below.
 * `runtime`: Path for AutoHotkey.exe. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. The extension `.exe` can be omitted. e.g. `AutoHotkeyU64` `v2/AutoHotkey.exe`
-* `runtime_v1`, `runtime_v2`: If you want to change AutoHotkey runtime by extension, you need to change this setting. `runtime_v1` corresponds to `ahk`, and `runtime_v2` corresponds to `ahk2` or `ah2`. The setting method is the same as `runtime`.
+* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but `runtime_v1` corresponds to `ahk` and `runtime_v2` corresponds to `ahk2` or `ah2`.
+* `runtimeArgs`: **Many people do not need to change this setting. Any changes may cause debugging to fail.** Arguments you want to pass to AutoHotkey.exe. It corresponds to Switches described in [here](https://www.autohotkey.com/docs/Scripts.htm#cmd). `/Debug` is ignored. This is because it is set on the debugger side
+* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but `runtimeArgs_v1` corresponds to `ahk` and `runtimeArgs_v2` corresponds to `ahk2` or `ah2`.
 * `port`: You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, `9001`, `9002`
 * `program`: Executable or file to run when launching the debugger.
 * `args`: Arguments passed to `program`.
