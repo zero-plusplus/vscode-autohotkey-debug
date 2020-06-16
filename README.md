@@ -2,7 +2,7 @@
 Please note the following first.
 * This document has been **translated from Japanese to English** by Google Translate.
 * **This extension alone will not work**. You will need to separately install an extension that supports AutoHotkey language(Most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2(For example `dudelmoser.vscode-autohotkey2`). I plan to make an all-in pack, but it will take time because I will make it from scratch for studying.
-* It is expected that there are still many potential bugs. Please report to [issues](https:github.com/zero-plusplus/vscode-autohotkey-debug/issues).
+* It is expected that there are still many potential bugs. Please report to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 * If you want to update, please see News first. It may contain important information.
 * The new version may have defects. In that case, please refer to the [CHANGELOG](CHANGELOG.md) and reinstall the previous version.
 
