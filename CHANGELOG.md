@@ -13,6 +13,16 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.4.0] - 2020-06-16
+### Added
+* `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
+
+### Changed
+* Output the startup command of AutoHotkey
+
+### Fixed
+* [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) Broken link to issues in README(`Details` when viewed from vscode)
+
 ## [1.3.7] - 2020-06-13
 ### Important Notices
 This is a notice to those who are setting launch.json and debugging. From this version the debugger type has changed from `ahk` to `autohotkey`. This is a change to avoid being mistaken for a file extension.
@@ -126,6 +136,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.7..v1.4.0
 [1.3.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.6..v1.3.7
 [1.3.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.5..v1.3.6
 [1.3.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.4..v1.3.5

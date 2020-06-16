@@ -12,14 +12,14 @@ This is a notice to those who are setting launch.json and debugging. From versio
 You can debug with `ahk` for a while (however, an error will be displayed), but it will not be usable in the future, so please change as soon as possible.
 
 ### Update
+* 1.4.0 - 2020-06-16
+    * Added: `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
+    * Changed: Output the startup command of AutoHotkey
+    * Fixed: [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) Broken link to issues in README(`Details` when viewed from vscode)
 * 1.3.7 - 2020-06-13
     * Changed: Debugger type from `ahk` to `autohotkey`
 * 1.3.6 - 2020-06-13
     * Fixed: The path is displayed a little strange when a runtime error is output in a script that includes parentheses in the file name
-* 1.3.5 - 2020-06-12
-    * Changed: When debugging multiple source code at the same time, show a dialog asking if you want to debug using another port
-* 1.3.4 - 2020-06-10
-    * Fixed: When you step in, out, or over a line with a conditional breakpoint or logpoint, it continues to run until the next breakpoint. It was changed to stop regardless of the conditions. Also, this bug is limited when `useAdvancedBreakpoint` is true.
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
