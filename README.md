@@ -72,8 +72,9 @@ Below is the default configuration snippet.
 
 The settings that should be noted are described below.
 * `runtime`: Path for AutoHotkey.exe. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. The extension `.exe` can be omitted. e.g. `AutoHotkeyU64` `v2/AutoHotkey.exe`
-* `runtime_v1`, `runtime_v2`: If you want to change AutoHotkey runtime by extension, you need to change this setting. `runtime_v1` corresponds to `ahk`, and `runtime_v2` corresponds to `ahk2` or `ah2`. The setting method is the same as `runtime`.
+* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but `runtime_v1` corresponds to `ahk` and `runtime_v2` corresponds to `ahk2` or `ah2`.
 * `runtimeArgs`: **Many people do not need to change this setting. Any changes may cause debugging to fail.** Arguments you want to pass to AutoHotkey.exe. It corresponds to Switches described in [here](https://www.autohotkey.com/docs/Scripts.htm#cmd). `/Debug` is ignored. This is because it is set on the debugger side
+* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but `runtimeArgs_v1` corresponds to `ahk` and `runtimeArgs_v2` corresponds to `ahk2` or `ah2`.
 * `port`: You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, `9001`, `9002`
 * `program`: Executable or file to run when launching the debugger.
 * `args`: Arguments passed to `program`.
