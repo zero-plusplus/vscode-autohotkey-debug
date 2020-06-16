@@ -139,7 +139,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         },
       );
       ahkProcess.on('exit', (exitCode) => {
-        if (exitCode !== null) {
+        if (!(exitCode === null || exitCode === 0)) {
+          this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, 'stderr'));
           this.sendEvent(new TerminatedEvent());
         }
       });
