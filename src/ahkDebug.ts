@@ -28,6 +28,7 @@ import * as dbgp from './dbgpSession';
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
   program: string;
   runtime: string;
+  runtimeArgs: string[];
   args: string[];
   env: NodeJS.ProcessEnv;
   stopOnEntry: boolean;
@@ -127,9 +128,11 @@ export class AhkDebugSession extends LoggingDebugSession {
         throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
       }
 
+      const runtimeArgs = [ ...this.config.runtimeArgs, `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ];
+      this.sendEvent(new OutputEvent(`${this.config.runtime} ${runtimeArgs.join(' ')}\n`, 'console'));
       const ahkProcess = spawn(
-        args.runtime,
-        [ '/ErrorStdOut', `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ],
+        this.config.runtime,
+        runtimeArgs,
         {
           cwd: path.dirname(args.program),
           env: args.env,
