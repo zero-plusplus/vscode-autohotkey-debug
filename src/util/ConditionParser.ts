@@ -75,7 +75,9 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     ScientificLiteral(rules) {
       return P.seq(
-        P.alt(rules.FloatLiteral, rules.IntegerLiteral),
+        version === 1
+          ? rules.FloatLiteral
+          : P.alt(rules.FloatLiteral, rules.IntegerLiteral),
         P.regex(/e[+]?\d+/ui),
       ).map((result) => {
         return {
