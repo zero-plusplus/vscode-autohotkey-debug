@@ -40,6 +40,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   openFileOnExit: string;
 }
 export class AhkDebugSession extends LoggingDebugSession {
+  private isSessionStopped = false;
   private server?: net.Server;
   private session?: dbgp.Session;
   private ahkProcess?: ChildProcessWithoutNullStreams;
@@ -90,12 +91,14 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.sendResponse(response);
   }
-  protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): void {
-    if (this.ahkProcess) {
-      this.ahkProcess.kill();
-    }
+  protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
     if (this.session) {
-      this.session.close();
+      if (this.ahkProcess) {
+        if (!this.isSessionStopped) {
+          await this.session.sendStopCommand();
+        }
+      }
+      await this.session.close();
     }
     if (this.server) {
       this.server.close();
@@ -103,9 +106,8 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (this.config.openFileOnExit !== null) {
       if (pathExistsSync(this.config.openFileOnExit)) {
-        workspace.openTextDocument(this.config.openFileOnExit).then((doc) => {
-          window.showTextDocument(doc);
-        });
+        const doc = await workspace.openTextDocument(this.config.openFileOnExit);
+        window.showTextDocument(doc);
       }
       else {
         const message = {
@@ -170,12 +172,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
         }
         this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-
-        if (typeof this.session === 'undefined') {
-          this.sendEvent(new TerminatedEvent());
-          return;
-        }
-        this.session.close();
+        this.sendEvent(new TerminatedEvent());
       };
 
       this.server = net.createServer()
@@ -703,6 +700,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
     if (response.status === 'stopped') {
+      this.isSessionStopped = true;
       this.sendEvent(new TerminatedEvent());
     }
     else if (response.status === 'break') {
