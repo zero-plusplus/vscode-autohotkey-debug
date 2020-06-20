@@ -116,12 +116,13 @@ export const createParser = function(version: 1 | 2): P.Language {
       return P.string('.<base>');
     },
     PropertyName(rules) {
-      const altRules = version === 1
-        ? [ rules.PropertyAccesor, rules.IndexAccesor ]
-        : [ rules.PropertyAccesor, rules.IndexAccesor, rules.BaseAccesor ];
       return P.seq(
         rules.Identifer,
-        P.alt(...altRules).many(),
+        P.alt(
+          rules.PropertyAccesor,
+          rules.IndexAccesor,
+          rules.BaseAccesor,
+        ).many(),
       ).map((result) => {
         return {
           type: 'PropertyName',

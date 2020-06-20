@@ -594,10 +594,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       const parsed = this.ahkParser.PropertyName.parse(propertyName);
       if (!parsed.status) {
-        const errorMessage = this.ahkVersion === 1
-          ? 'Error: Only the property name is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`'
-          : 'Error: Only the property name is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`';
-        throw Error(errorMessage);
+        throw Error('Error: Only the property name is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`');
       }
       const stackFrame = this.stackFramesByFrameId.get(args.frameId);
       if (!stackFrame) {
