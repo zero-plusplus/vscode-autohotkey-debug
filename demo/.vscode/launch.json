@@ -14,6 +14,19 @@
             "useAdvancedBreakpoint": true,
             "useAdvancedOutput": true,
             "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "name": "AutoHotkey_H Debug",
+            "request": "launch",
+            "type": "autohotkey",
+            "runtime_v1": "h/AutoHotkey.exe",
+            "runtime_v2": "h/v2/AutoHotkey.exe",
+            "program": "${file}",
+            "args": [],
+            "stopOnEntry": false,
+            "useAdvancedBreakpoint": false,
+            "useAdvancedOutput": false,
+            "maxChildren": 10000
         }
     ]
 }
