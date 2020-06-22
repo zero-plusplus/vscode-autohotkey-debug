@@ -155,13 +155,13 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendEvent(new OutputEvent(data, 'stdout'));
       });
       ahkProcess.stderr.on('data', (chunkData: Buffer) => {
-        const data = String(chunkData).replace(/^(.+)\s\((\d+)\)\s:/u, `$1:$2`); // Fix path format of runtime error
+        const fixedData = this.fixPathOfRuntimeError(String(chunkData));
         if (this.session && this.config.useAdvancedOutput) {
-          this.printLogMessage(data, 'stderr');
+          this.printLogMessage(fixedData, 'stderr');
           return;
         }
 
-        this.sendEvent(new OutputEvent(data, 'stderr'));
+        this.sendEvent(new OutputEvent(fixedData, 'stderr'));
       });
 
       this.ahkProcess = ahkProcess;
@@ -206,11 +206,12 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendEvent(new OutputEvent(data, 'stdout'));
               })
               .on('stderr', (data) => {
+                const fixedData = this.fixPathOfRuntimeError(String(data));
                 if (this.session && this.config.useAdvancedOutput) {
-                  this.printLogMessage(data, 'stderr');
+                  this.printLogMessage(fixedData, 'stderr');
                   return;
                 }
-                this.sendEvent(new OutputEvent(data, 'stderr'));
+                this.sendEvent(new OutputEvent(fixedData, 'stderr'));
               });
 
             this.sendEvent(new ThreadEvent('Session started.', this.session.id));
@@ -694,6 +695,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       return breakpoint;
     }
     return null;
+  }
+  private fixPathOfRuntimeError(errorMessage: string): string {
+    return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/u, `$1:$2`);
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
     if (response.status === 'stopped') {
