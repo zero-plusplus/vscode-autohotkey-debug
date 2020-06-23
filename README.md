@@ -32,6 +32,11 @@ All features can be found in [`Features`](#features).
 The following features are not supported due to restrictions
 * Attach to a script that is already running
 
+### About AutoHotkey_H
+I'm not familiar with [AutoHotkey_H](https://hotkeyit.github.io/v2/) so I can't guarantee it, but it should be possible to debug without problems.
+
+However, there are source code differences between the AutoHotkey Debugger and the AutoHotkey_H Debugger, which may contain specific bugs.
+
 # Installation
 1. Install [AutoHotkey](https://www.autohotkey.com/)
 2. Install an extension that supports AutoHotkey (Most famous is `slevesque.vscode-autohotkey`)
@@ -93,6 +98,11 @@ You can see the data contents of the variables. However, v2 cannot see some data
 
 If `VariableName` is requested by another function, it means the name displayed by this function. Note that unlike AutoHotkey, it is case sensitive. e.g. `variable`, `obj.field`, `obj["spaced key"]`, ` arr[0]`
 
+However, `<base>` is given an alias of `base`.
+That is, the following Variable Names are treated the same.
+* `instance.<base>`
+* `instance.base`
+
 Note. `A_DebuggerName` is added at the start of debugging, following Scite4AutoHotkey. This allows you to execute certain code only while you are debugging.
 
 ### Rewriting variables
@@ -105,7 +115,7 @@ Specifically, the following types are supported.
     * `Integer`: Treated as a `intger`. e.g. `123`
     * `Float`: Treated as a `string`. v2 is an `intger`. e.g. `123.456`
     * `Hex`: Converted to intger and treated as `integer`. e.g. `0x123`
-    * `Scientific`: Treated as a `string`. Converted to `float` in v2. e.g. `1e3` `3.0e+5`
+    * `Scientific`: Treated as a `string`. Converted to `float` in v2. e.g. `3.0e+5`
 
 ### Data inspection when hover
 ![data-inspection-when-hover](image/data-inspection-when-hover.gif)
@@ -227,7 +237,15 @@ Supports standard output. You can output a string to the [debug console panel](h
 * [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
 * [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
 
-## Advanced standard output
+### About error message
+There are two types of error messages in AutoHotkey: load-time error and runtime error.
+
+The load-time error outputs the file path, whereas the runtime error does not output the path.
+Moreover, it is a little inconvenient specification such as displaying a message box regardless of the setting of [ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm).
+
+If you want all errors to be the same as load-time error, add the [this code](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) to your script.
+
+### Advanced standard output
 **This feature is experimental and subject to change.**
 
 Output method can be made equivalent to [Log point](#log-point) by enabling `useAdvancedOutput`.
