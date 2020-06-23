@@ -13,6 +13,13 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.4.1] - 2020-06-23
+### Fixed
+* v1 only bug. Can rewrite variables with scientific notation that uses integers that are not allowed in v1 like `1e+5`. In v1 it needs to be Float like `1.0e+5`
+* v1 only bug. Can't get properties using `<base>` like `obj.<base>` in watch expression
+* The icon remains in the system tray when you finish debugging
+* [#15](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/15) v2-a112 only bug. Rewriting the error message to treat the path as a link containing line number, but it does not work in `a112`
+
 ## [1.4.0] - 2020-06-16
 ### Added
 * `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
@@ -136,6 +143,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.0..v1.4.1
 [1.4.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.7..v1.4.0
 [1.3.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.6..v1.3.7
 [1.3.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.5..v1.3.6

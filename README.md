@@ -12,14 +12,17 @@ This is a notice to those who are setting launch.json and debugging. From versio
 You can debug with `ahk` for a while (however, an error will be displayed), but it will not be usable in the future, so please change as soon as possible.
 
 ### Update
+* 1.4.1 - 2020-06-23
+    * Fix: v1 only bug. Can rewrite variables with scientific notation that uses integers that are not allowed in v1 like `1e+5`. In v1 it needs to be Float like `1.0e+5`
+    * Fix: v1 only bug. Can't get properties using `<base>` like `obj.<base>` in watch expression
+    * Fix: The icon remains in the system tray when you finish debugging
+    * Fix: [#15](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/15) v2-a112 only bug. Rewriting the error message to treat the path as a link containing line number, but it does not work in `a112`
 * 1.4.0 - 2020-06-16
     * Added: `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
     * Changed: Output the startup command of AutoHotkey
     * Fixed: [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) Broken link to issues in README(`Details` when viewed from vscode)
 * 1.3.7 - 2020-06-13
     * Changed: Debugger type from `ahk` to `autohotkey`
-* 1.3.6 - 2020-06-13
-    * Fixed: The path is displayed a little strange when a runtime error is output in a script that includes parentheses in the file name
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
