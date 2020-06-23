@@ -638,7 +638,12 @@ export class Session extends EventEmitter {
     return null;
   }
   public async close(): Promise<void> {
+    this.removeAllListeners();
     return new Promise<void>((resolve, reject) => {
+      if (!this.socket.writable) {
+        resolve();
+      }
+
       this.socket.once('close', resolve);
       this.socket.end();
     });

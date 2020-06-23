@@ -5,6 +5,8 @@ global SuperGlobalVar := "SuperGlobal"
 demo()
 demo()
 {
+    static staticVar := "Static"
+
     ; Overwrite global var
 	globalVar := "Local"
 	SuperGlobalVar := "Local"
@@ -32,9 +34,9 @@ demo()
     arr_empty := []
     arr := [str, int]
     arr_big := Util_CreateBigArray()
-    arr_like := { 1: str, 2: int, size: 2}
-    arr_sparse := { 1: str, 3: int }
-    obj_specialkey := { [1, 2, 3]: "vaue", "space key": "value2"}
+    arr_like := Map(1, str, 2, int, "size", 2)
+    arr_sparse := Map(1, str, 3, int)
+    obj_specialkey := Map([1, 2, 3], "value", "spaced key", "value2")
 
     obj_empty := {}
     obj := { str: str, int: int, arr: arr }
