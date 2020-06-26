@@ -12,6 +12,9 @@ This is a notice to those who are setting launch.json and debugging. From versio
 You can debug with `ahk` for a while (however, an error will be displayed), but it will not be usable in the future, so please change as soon as possible.
 
 ### Update
+* 1.4.2 - 2020-06-26
+    * Fixed: [#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) Broken link to `Advanced breakpoint` in README(`Details` when viewed from vscode)
+    * Changed: [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` in launch.json has been extended to allow you to declare a range of ports to use. This allows you to suppress the confirmation message.
 * 1.4.1 - 2020-06-23
     * Fix: v1 only bug. Can rewrite variables with scientific notation that uses integers that are not allowed in v1 like `1e+5`. In v1 it needs to be Float like `1.0e+5`
     * Fix: v1 only bug. Can't get properties using `<base>` like `obj.<base>` in watch expression
@@ -21,8 +24,6 @@ You can debug with `ahk` for a while (however, an error will be displayed), but 
     * Added: `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
     * Changed: Output the startup command of AutoHotkey
     * Fixed: [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) Broken link to issues in README(`Details` when viewed from vscode)
-* 1.3.7 - 2020-06-13
-    * Changed: Debugger type from `ahk` to `autohotkey`
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -83,12 +84,12 @@ The settings that should be noted are described below.
 * `runtime_v1`, `runtime_v2`: Similar to `runtime`, but `runtime_v1` corresponds to `ahk` and `runtime_v2` corresponds to `ahk2` or `ah2`.
 * `runtimeArgs`: **Many people do not need to change this setting. Any changes may cause debugging to fail.** Arguments you want to pass to AutoHotkey.exe. It corresponds to Switches described in [here](https://www.autohotkey.com/docs/Scripts.htm#cmd). `/Debug` is ignored. This is because it is set on the debugger side
 * `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but `runtimeArgs_v1` corresponds to `ahk` and `runtimeArgs_v2` corresponds to `ahk2` or `ah2`.
-* `port`: You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, `9001`, `9002`
+* `port`: You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, `9001`, `9002`. You can also declare a range of port numbers that may be used by setting a string like `"start-last"`. `start` and `last` are numbers. Also, it must be `start < last` For example, `"9000-9010"`. By declaring it, you can suppress the message confirming the port usage.
 * `program`: Executable or file to run when launching the debugger.
 * `args`: Arguments passed to `program`.
 * `env`: Environment variables. If null is specified, it is treated as an empty string.
 * `stopOnEntry`: If true, stop at the first line. Set to true if you want it to be the same as Scite4AutoHotkey.
-* `useAdvancedBreakpoint`: Unlock conditional breakpoints, etc. See [Advanced breakpoints](#Advanced-breakpoints-(Optional)) for details
+* `useAdvancedBreakpoint`: Unlock conditional breakpoints, etc. See [Advanced breakpoints](#advanced-breakpoints-optional) for details
 * `useAdvancedOutput`: Make the output method equivalent to [Log point](#log-point). This is useful when you want to output an object.
 * `maxChildren`: Maximum number of child elements to get. It is necessary to change it when handling an array exceeding 10000.
 * `openFileOnExit`: The absolute path of the file to open when the debugger exits. If you have a file that you want to edit immediately after debugging, you should set this feature. You can save the trouble of switching files. If you want to turn this feature off, set it to null or omit it.
@@ -248,7 +249,7 @@ Moreover, it is a little inconvenient specification such as displaying a message
 
 If you want all errors to be the same as load-time error, add the [this code](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) to your script.
 
-### Advanced standard output
+### Advanced standard output (Optional)
 **This feature is experimental and subject to change.**
 
 Output method can be made equivalent to [Log point](#log-point) by enabling `useAdvancedOutput`.
