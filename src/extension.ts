@@ -59,7 +59,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
           throw Error(`${commonMessage} The value on the left and the value on the right are the same. Set it like "9000-9010".`);
         }
         else if (last <= start) {
-          throw Error(`${commonMessage} Set a low number on the left like ${last}-${start} instead of ${config.port}`);
+          throw Error(`${commonMessage} Set a low number on the left like "${last}-${start}" instead of "${config.port}"`);
         }
         config.port = start;
         config.permittedPortRange = range(start, last + 1);
