@@ -248,7 +248,7 @@ Moreover, it is a little inconvenient specification such as displaying a message
 
 If you want all errors to be the same as load-time error, add the [this code](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) to your script.
 
-### Advanced standard output
+### Advanced standard output (Optional)
 **This feature is experimental and subject to change.**
 
 Output method can be made equivalent to [Log point](#log-point) by enabling `useAdvancedOutput`.
