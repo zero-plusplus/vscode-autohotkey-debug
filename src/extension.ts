@@ -13,7 +13,7 @@ import {
   debug,
   window,
 } from 'vscode';
-import { defaults } from 'underscore';
+import { defaults, range } from 'underscore';
 import { AhkDebugSession } from './ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
@@ -27,6 +27,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       env: {},
       hostname: 'localhost',
       port: 9000,
+      permittedPortRange: [],
       // If a value greater than 10000 is specified, malfunction may occur due to specification changes.
       // Ref: https://github.com/Lexikos/AutoHotkey_L/blob/36600809a348bd3a09d59e335d2897ed16f11ac7/source/Debugger.cpp#L960
       // > TODO: Include the lazy-var arrays for completeness. Low priority since lazy-var arrays are used only for 10001+ variables, and most conventional debugger interfaces would generally not be useful with that many variables.
@@ -40,6 +41,35 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       openFileOnExit: null,
     };
     defaults(config, defaultConfig);
+
+    if (typeof config.port === 'string') {
+      const match = config.port.match(/(?<start>\d+)-(?<last>\d+)/u);
+      try {
+        const commonMessage = 'An invalid value is set in the `port` of launch.json.';
+        let start: number, last: number;
+        try {
+          start = parseInt(match!.groups!.start, 10);
+          last = parseInt(match!.groups!.last, 10);
+        }
+        catch (error) {
+          throw Error(`${commonMessage} A non-numeric value has been set. Please set the value like "9000-9010".`);
+        }
+
+        if (start === last) {
+          throw Error(`${commonMessage} The value on the left and the value on the right are the same. Set it like "9000-9010".`);
+        }
+        else if (last <= start) {
+          throw Error(`${commonMessage} Set a low number on the left like ${last}-${start} instead of ${config.port}`);
+        }
+        config.port = start;
+        config.permittedPortRange = range(start, last + 1);
+      }
+      catch (error) {
+        window.showErrorMessage(error.message);
+        config.port = 9000;
+        config.permittedPortRange = [ config.port ];
+      }
+    }
 
     if (typeof config.runtimeArgs === 'undefined') {
       const editor = window.activeTextEditor;

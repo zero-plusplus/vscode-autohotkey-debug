@@ -34,6 +34,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   stopOnEntry: boolean;
   hostname: string;
   port: number;
+  permittedPortRange: number[];
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
   useAdvancedOutput: boolean;
@@ -670,11 +671,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       return this.confirmWhetherUseAnotherPort(originalPort);
     }
 
-    const message = `Port number \`${originalPort}\` is already in use. Would you like to start debugging using \`${this.config.port}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
-    const result = await window.showInformationMessage(message, { modal: true }, 'Yes');
-    if (typeof result === 'undefined') {
-      return false;
+    if (!this.config.permittedPortRange.includes(this.config.port)) {
+      const message = `Port number \`${originalPort}\` is already in use. Would you like to start debugging using \`${this.config.port}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
+      const result = await window.showInformationMessage(message, { modal: true }, 'Yes');
+      if (typeof result === 'undefined') {
+        return false;
+      }
     }
+
     return true;
   }
   private async getCurrentBreakpoint(): Promise<dbgp.Breakpoint | null> {

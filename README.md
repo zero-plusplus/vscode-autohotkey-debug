@@ -83,7 +83,7 @@ The settings that should be noted are described below.
 * `runtime_v1`, `runtime_v2`: Similar to `runtime`, but `runtime_v1` corresponds to `ahk` and `runtime_v2` corresponds to `ahk2` or `ah2`.
 * `runtimeArgs`: **Many people do not need to change this setting. Any changes may cause debugging to fail.** Arguments you want to pass to AutoHotkey.exe. It corresponds to Switches described in [here](https://www.autohotkey.com/docs/Scripts.htm#cmd). `/Debug` is ignored. This is because it is set on the debugger side
 * `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but `runtimeArgs_v1` corresponds to `ahk` and `runtimeArgs_v2` corresponds to `ahk2` or `ah2`.
-* `port`: You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, `9001`, `9002`
+* `port`: You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, `9001`, `9002`. You can also declare a range of port numbers that may be used by setting a string like `"start-last"`. `start` and `last` are numbers. Also, it must be `start < last` For example, `"9000-9010"`. By declaring it, you can suppress the message confirming the port usage.
 * `program`: Executable or file to run when launching the debugger.
 * `args`: Arguments passed to `program`.
 * `env`: Environment variables. If null is specified, it is treated as an empty string.
