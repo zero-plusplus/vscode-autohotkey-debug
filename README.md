@@ -12,6 +12,9 @@ This is a notice to those who are setting launch.json and debugging. From versio
 You can debug with `ahk` for a while (however, an error will be displayed), but it will not be usable in the future, so please change as soon as possible.
 
 ### Update
+* 1.4.2 - 2020-06-26
+    * Fixed: [#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) Broken link to `Advanced breakpoint` in README(`Details` when viewed from vscode)
+    * Changed: [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` in launch.json has been extended to allow you to declare a range of ports to use. This allows you to suppress the confirmation message.
 * 1.4.1 - 2020-06-23
     * Fix: v1 only bug. Can rewrite variables with scientific notation that uses integers that are not allowed in v1 like `1e+5`. In v1 it needs to be Float like `1.0e+5`
     * Fix: v1 only bug. Can't get properties using `<base>` like `obj.<base>` in watch expression
@@ -21,8 +24,6 @@ You can debug with `ahk` for a while (however, an error will be displayed), but 
     * Added: `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
     * Changed: Output the startup command of AutoHotkey
     * Fixed: [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) Broken link to issues in README(`Details` when viewed from vscode)
-* 1.3.7 - 2020-06-13
-    * Changed: Debugger type from `ahk` to `autohotkey`
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
