@@ -1,6 +1,6 @@
 {
   "name": "vscode-autohotkey-debug",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Supports AutoHotkey v1 and v2 debugging",
   "author": "zero-plusplus <git@zero-plusplus.com>",
   "license": "MIT",
@@ -140,7 +140,10 @@
                 "default": "127.0.0.1"
               },
               "port": {
-                "type": ["string", "number"],
+                "type": [
+                  "string",
+                  "number"
+                ],
                 "description": "You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, 9001, 9002. You can also declare a range of port numbers that may be used by setting a string like \"start-last\". `start` and `last` are numbers. Also, it must be `start < last` For example, \"9000-9010\". By declaring it, you can suppress the message confirming the port usage.",
                 "default": 9000
               },
