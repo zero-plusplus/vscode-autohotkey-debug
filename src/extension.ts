@@ -43,31 +43,36 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     defaults(config, defaultConfig);
 
     if (typeof config.port === 'string') {
-      const match = config.port.match(/(?<start>\d+)-(?<last>\d+)/u);
-      try {
-        const commonMessage = 'An invalid value is set in the `port` of launch.json.';
-        let start: number, last: number;
+      if (config.port.match(/^\d+$/u)) {
+        config.port = parseInt(config.port, 10);
+      }
+      else {
+        const match = config.port.match(/^(?<start>\d+)-(?<last>\d+)$/u);
         try {
-          start = parseInt(match!.groups!.start, 10);
-          last = parseInt(match!.groups!.last, 10);
+          const commonMessage = 'An invalid value is set in the `port` of launch.json.';
+          let start: number, last: number;
+          try {
+            start = parseInt(match!.groups!.start, 10);
+            last = parseInt(match!.groups!.last, 10);
+          }
+          catch (error) {
+            throw Error(`${commonMessage} A non-numeric value has been set. Please set the value like "9000-9010".`);
+          }
+
+          if (start === last) {
+            throw Error(`${commonMessage} The value on the left and the value on the right are the same. Set it like "9000-9010".`);
+          }
+          else if (last <= start) {
+            throw Error(`${commonMessage} Set a low number on the left like "${last}-${start}" instead of "${config.port}"`);
+          }
+          config.port = start;
+          config.permittedPortRange = range(start, last + 1);
         }
         catch (error) {
-          throw Error(`${commonMessage} A non-numeric value has been set. Please set the value like "9000-9010".`);
+          window.showErrorMessage(error.message);
+          config.port = 9000;
+          config.permittedPortRange = [ config.port ];
         }
-
-        if (start === last) {
-          throw Error(`${commonMessage} The value on the left and the value on the right are the same. Set it like "9000-9010".`);
-        }
-        else if (last <= start) {
-          throw Error(`${commonMessage} Set a low number on the left like "${last}-${start}" instead of "${config.port}"`);
-        }
-        config.port = start;
-        config.permittedPortRange = range(start, last + 1);
-      }
-      catch (error) {
-        window.showErrorMessage(error.message);
-        config.port = 9000;
-        config.permittedPortRange = [ config.port ];
       }
     }
 
