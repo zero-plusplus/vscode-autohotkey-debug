@@ -56,7 +56,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
             last = parseInt(match!.groups!.last, 10);
           }
           catch (error) {
-            throw Error(`${commonMessage} A non-numeric value has been set. Please set the value like "9000-9010".`);
+            throw Error(`${commonMessage} Please set the value like "9000-9010". Also, white space and unrelated character strings may be included before and after.`);
           }
 
           if (start === last) {
