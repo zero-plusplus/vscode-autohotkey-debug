@@ -793,7 +793,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return string.replace(/\\([{}])/gu, '$1');
     };
     const createOutputEvent = (message: string, variablesReference: number | null = null): DebugProtocol.OutputEvent => {
-      const event = new OutputEvent(unescapeLogMessage(message), logCategory) as DebugProtocol.OutputEvent;
+      const event = new OutputEvent(`${unescapeLogMessage(message)}\n`, logCategory) as DebugProtocol.OutputEvent;
       if (variablesReference) {
         event.body.variablesReference = variablesReference;
       }
