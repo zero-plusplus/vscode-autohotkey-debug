@@ -777,7 +777,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
-      await this.printLogMessage(logMessage, 'stdout', breakpoint);
+      await this.printLogMessage(logMessage, 'stdout', breakpoint, true);
     }
 
     if (forceStop) {
@@ -788,12 +788,16 @@ export class AhkDebugSession extends LoggingDebugSession {
     const response = await this.session!.sendRunCommand();
     await this.checkContinuationStatus(response, true);
   }
-  private async printLogMessage(logMessage: string, logCategory: string, breakpoint: dbgp.Breakpoint | null = null): Promise<void> {
+  private async printLogMessage(logMessage: string, logCategory: string, breakpoint: dbgp.Breakpoint | null = null, newline = false): Promise<void> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
     const createOutputEvent = (message: string, variablesReference: number | null = null): DebugProtocol.OutputEvent => {
-      const event = new OutputEvent(`${unescapeLogMessage(message)}\n`, logCategory) as DebugProtocol.OutputEvent;
+      let unescapedMessage = unescapeLogMessage(message);
+      if (newline) {
+        unescapedMessage += '\n';
+      }
+      const event = new OutputEvent(unescapedMessage, logCategory) as DebugProtocol.OutputEvent;
       if (variablesReference) {
         event.body.variablesReference = variablesReference;
       }
