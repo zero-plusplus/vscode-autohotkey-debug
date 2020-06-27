@@ -1,6 +1,6 @@
 # Before reading
-Please note the following first.
-* This document has been **translated from Japanese to English** by Google Translate.
+Please read the following first.
+* This document has been translated from Japanese to English using DeepL Translate
 
 # Changelog
 All notable changes to this project will be documented in this file.
@@ -13,77 +13,87 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
-## [1.4.2] - 2020-06-26
-### Fixed
-[#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) Broken link to `Advanced breakpoint` in README(`Details` when viewed from vscode)
-
+## [1.4.3] - 2020-06-27
 ### Changed
-* [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` in launch.json has been extended to allow you to declare a range of ports to use. This allows you to suppress the confirmation message.
+* Rewritten the document using the DeepL translate
+
+### Fixed
+* The output in the logpoint does not contain line feeds.
+
+## [1.4.2] - 2020-06-26
+### Changed
+* [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` of launch.json has been extended to include
+It is now possible to declare a range of ports to be used.  This allows you to suppress confirmation messages
+
+### Fixed
+[#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) The link to `Advanced breakpoint` is broken in README (`Details` from vscode)
 
 ## [1.4.1] - 2020-06-23
 ### Fixed
-* v1 only bug. Can rewrite variables with scientific notation that uses integers that are not allowed in v1 like `1e+5`. In v1 it needs to be Float like `1.0e+5`
-* v1 only bug. Can't get properties using `<base>` like `obj.<base>` in watch expression
-* The icon remains in the system tray when you finish debugging
-* [#15](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/15) v2-a112 only bug. Rewriting the error message to treat the path as a link containing line number, but it does not work in `a112`
+* v1 only bug; you can rewrite a variable with Integer scientific notation. It is not allowed in v1
+* v1 only. Cannot use `<base>` in watch expression
+* The icon will remain in the system tray when the debug is finished
+* [#15](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/15) v2-a112 only bug. Rewrote the error message to treat the path as a link containing a line number, but `a112` Then it won't work
 
 ## [1.4.0] - 2020-06-16
 ### Added
 * `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
 
 ### Changed
-* Output the startup command of AutoHotkey
+* Output the AutoHotkey launch command
 
 ### Fixed
-* [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) Broken link to issues in README(`Details` when viewed from vscode)
+* [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) The link to `issues` is broken in README (`Details` from vscode)
 
 ## [1.3.7] - 2020-06-13
 ### Important Notices
-This is a notice to those who are setting launch.json and debugging. From this version the debugger type has changed from `ahk` to `autohotkey`. This is a change to avoid being mistaken for a file extension.
-You can debug with `ahk` for a while (however, an error will be displayed), but it will not be usable in the future, so please change as soon as possible.
+This is a notification for people who debug using launch.json.
+As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to `autohotkey`.
+This is to prevent it from being misinterpreted as a file extension.
+You need to edit the launch.json as soon as possible.
 
 ### Changed
 * Debugger type from `ahk` to `autohotkey`
 
 ## [1.3.6] - 2020-06-13
 ### Fixed
-* The path is displayed a little strange when a runtime error is output in a script that includes parentheses in the file name
+* If a script that contains parentheses in the file name produces a loadtime error, the path is displayed a little oddly in be
 
 ## [1.3.5] - 2020-06-12
 ### Changed
-* When debugging multiple source code at the same time, show a dialog asking if you want to debug using another port
+* If you want to debug multiple source codes at the same time, a dialog box appears to confirm whether you want to use another port for debugging
 
 ## [1.3.4] - 2020-06-10
 ### Fixed
-* When you step in, out, or over a line with a conditional breakpoint or logpoint, it continues to run until the next breakpoint. It was changed to stop regardless of the conditions. Also, this bug is limited when `useAdvancedBreakpoint` is true.
+* A bug when 'useAdvancedBreakpoint' is true. When a conditional breakpoint or a line with a logpoint is passed by step-in, out, or over, the execution continues until the next breakpoint. Changed it to stop regardless of the condition
 
 ## [1.3.3] - 2020-06-09
 ### Changed
-* Support for lazy loading of stack frames. Loading is delayed when there are 20 more than stack frames
-* [#10](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/10) Output after molding so that vscode can be recognized as a link at runtime error of AutoHotkey
+* Support for lazy loading of stacked frames. When the stack frame exceeds 20, loading is lazy
+* [#10](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/10) Change the message to allow vscode to recognize the file path, including the line number, as a link if an AutoHotkey error occurs
 
 ### Fixed
-* [#7](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/7) Variables are not displayed when you press pause while idling. It is not a complete fix due to a specification problem
+* [#7](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/7) Pressing pause while idling does not display any variables. Not a complete fix due to a specification issue. You must click on the stack frame to view it
 
 ## [1.3.2] - 2020-06-09
 ### Changed
-* Although it is limited to when outputting with log points, it is possible to jump to the output source by clicking the file name on the right side of the output
-* Support object values in conditional expressions
+* You can jump to the output source by clicking on the file name to the right of the output, but only if you are outputting at a log point
+* Supporting object values in conditional expressions
 
 ### Fixed
-* When outputting a variable to the debug console, a variable in another scope may be referenced
-* Incorrect display of object summary
-* Cannot set `obj.<base>` in `Watch expression`. This is limited to ahkv2
-* Can't rewrite field of object
-* Writing an integer is treated as a floating point
-* Conditional breakpoint was not working
+* When outputting a variable to the debug console, it may refer to a variable of a different scope
+* Incorrectly displaying an object's overview
+* We can't set the `obj.<base>` in the Watch expression, this is limited to v2. This is restricted to v2. (2020/06/27 This was a mistake and was retracted in 1.4.1)
+* Can't rewrite the fields of an object
+* If write an Integer, it will be treated as a Float
+* The conditional breakpoint was not working
 
 ### Removed
-* Message at the end of debugging. I was showing the time spent debugging but I didn't need it
+* Message at the end of the debugging process Shows how long it took to debug. I didn't need it
 
 ## [1.3.1] - 2020-06-07
 ### Fixed
-* [#3](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/3) Breakpoints fail if filename has embedded space followed by hyphen
+* [#3](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/3) The breakpoint fails if the file name contains an embedded space followed by a hyphen
 
 ## [1.3.0] - 2020-06-07
 ### Added
@@ -101,16 +111,16 @@ You can debug with `ahk` for a while (however, an error will be displayed), but 
     * Output runtime error to standard error
 
 ### Fixed
-* Pause and restart did not work for debug actions
-* Cannot get child element of object with `Watch expression`
-* The value cannot be obtained if it is an index accessor using a string such as `obj["spaced key"]` with `Watch expression`
+* The pause and restart didn't work
+* Can't get the child elements of an object in a `Watch expression`
+* Item access with strings like `obj["spaced key"]` does not work with `Watch expression`
 
 ## [1.2.0] - 2020-05-30
 ### Added
 * The setting item of `env` to launch.json
 
 ### Changed
-* Warn if the value assigned to `args` in launch.json is a non-string
+* Warn when the value assigned to `args` of `launch.json` is not a string
 
 ## [1.1.0] - 2020-05-27
 ### Added
@@ -118,27 +128,27 @@ You can debug with `ahk` for a while (however, an error will be displayed), but 
 
 ## [1.0.5] - 2020-05-27 [YANKED]
 ### Fixed
-* Debug will fail if launch.json is not created or "program" is omitted. This bug occurred in 1.0.4
+* If no launch.json is created or `program` is omitted, the Debugging fails. This bug was introduced in 1.0.4
 
 ## [1.0.4] - 2020-05-27
 **Note: This version is broken. This will be fixed in 1.0.5.**
 
 ### Fixed
-* If you specify a path using a [variable](https://code.visualstudio.com/docs/editor/variables-reference) in runtime in launch.json, the path is not set correctly and debugging fails. For example `${workspaceFolder}/AutoHotkey.exe`
+* Debugging fails if you use [variables](https://code.visualstudio.com/docs/editor/variables-reference) in the `runtime` in launch.json. e.g. `"$ {workspaceFolder}/AutoHotkey.exe"`
 
 ## [1.0.3] - 2020-05-26 [YANKED]
 ### Fixed
-* Setting breakpoints while the script is waiting does not work. This makes hotkey debugging easier.
-* Returns false when comparing empty characters in conditional breakpoint
+* Setting a breakpoint while waiting for a script does not work
+* Comparing an empty character with a conditional breakpoint returns false
 
 ## [1.0.2] - 2020-05-26 [YANKED]
 ### Fixed
-* If the script is in Persistent mode, for example because it defines a hotkey, the process would stop when leaving the scope
-* Debug fails if the script path is a UNC path starting with `\\`
+* If the script is in [persistent mode](https://www.autohotkey.com/docs/commands/_Persistent.htm), the process stops when you leave the scope
+* Debugging will fail if the script path is a UNC path
 
 ## [1.0.1] - 2020-05-25
 ### Changed
-* Displays an error if the runtime does not exist. Previously the process stopped until the user stopped debugging.
+* If the runtime does not exist, an error will be displayed and debugging will stop. Previously, the user had to stop debugging
 
 ## [1.0.0] - 2020-05-23
 First released
@@ -150,6 +160,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.2..v1.4.3
 [1.4.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.1..v1.4.2
 [1.4.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.0..v1.4.1
 [1.4.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.7..v1.4.0

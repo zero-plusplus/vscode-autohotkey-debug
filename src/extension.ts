@@ -49,21 +49,21 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       else {
         const match = config.port.match(/^(?<start>\d+)-(?<last>\d+)$/u);
         try {
-          const commonMessage = 'An invalid value is set in the `port` of launch.json.';
+          const commonMessage = 'Invalid value is set to `port` in `launch.json`.';
           let start: number, last: number;
           try {
             start = parseInt(match!.groups!.start, 10);
             last = parseInt(match!.groups!.last, 10);
           }
           catch (error) {
-            throw Error(`${commonMessage} Please set the value like "9000-9010". Also, white space and unrelated character strings may be included before and after.`);
+            throw Error(`${commonMessage} Please set it like "9000-9010". It may contain whitespace or irrelevant strings.`);
           }
 
           if (start === last) {
-            throw Error(`${commonMessage} The value on the left and the value on the right are the same. Set it like "9000-9010".`);
+            throw Error(`${commonMessage} The values on the left and right are the same, please set it like "9000-9010".`);
           }
           else if (last <= start) {
-            throw Error(`${commonMessage} Set a low number on the left like "${last}-${start}" instead of "${config.port}"`);
+            throw Error(`${commonMessage} Set a lower number on the left than on the right, like "${last}-${start}" instead of "${config.port}"`);
           }
           config.port = start;
           config.permittedPortRange = range(start, last + 1);
@@ -89,7 +89,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
 
     if (config.type === 'ahk') {
-      window.showErrorMessage('From version 1.3.7, the `type` of launch.json has been changed from `ahk` to `autohotkey`. This deprecates setting `type` to `ahk` and will prevent future debugging. This change prevents the `type` from being mistaken for a file extension. Please edit launch.json now.');
+      window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
       config.type = 'autohotkey';
     }
 

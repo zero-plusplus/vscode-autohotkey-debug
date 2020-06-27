@@ -584,7 +584,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     catch (error) {
       this.sendErrorResponse(response, {
         id: args.variablesReference,
-        format: 'Execution of the command failed. Users will not normally see this message',
+        format: 'Command execution failed. This message is not normally displayed.',
       } as DebugProtocol.Message);
     }
   }
@@ -793,7 +793,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return string.replace(/\\([{}])/gu, '$1');
     };
     const createOutputEvent = (message: string, variablesReference: number | null = null): DebugProtocol.OutputEvent => {
-      const event = new OutputEvent(unescapeLogMessage(message), logCategory) as DebugProtocol.OutputEvent;
+      const event = new OutputEvent(`${unescapeLogMessage(message)}\n`, logCategory) as DebugProtocol.OutputEvent;
       if (variablesReference) {
         event.body.variablesReference = variablesReference;
       }
