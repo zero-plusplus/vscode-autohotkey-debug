@@ -14,12 +14,12 @@ Mainly bug fixes and processing improvements.
 
 ## [Released]
 ## [1.4.2] - 2020-06-26
-### Fixed
-[#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) The link to `Advanced breakpoint` is broken in README (`Details` from vscode)
-
 ### Changed
 * [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` of launch.json has been extended to include
 It is now possible to declare a range of ports to be used.  This allows you to suppress confirmation messages
+
+### Fixed
+[#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) The link to `Advanced breakpoint` is broken in README (`Details` from vscode)
 
 ## [1.4.1] - 2020-06-23
 ### Fixed

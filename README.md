@@ -19,8 +19,8 @@ You need to edit the launch.json as soon as possible.
 
 ### Update
 * 1.4.2 - 2020-06-26
-    * Fixed: [#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) The link to `Advanced breakpoint` is broken in README (`Details` from vscode)
     * Changed: [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` of launch.json has been extended to include
+    * Fixed: [#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) The link to `Advanced breakpoint` is broken in README (`Details` from vscode)
 It is now possible to declare a range of ports to be used.  This allows you to suppress confirmation messages.
 
 * 1.4.1 - 2020-06-23
