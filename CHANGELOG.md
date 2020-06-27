@@ -13,6 +13,13 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.4.3] - 2020-06-27
+### Changed
+* Rewritten the document using the DeepL translate
+
+### Fixed
+* The output in the logpoint does not contain line feeds.
+
 ## [1.4.2] - 2020-06-26
 ### Changed
 * [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` of launch.json has been extended to include
@@ -153,6 +160,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.2..v1.4.3
 [1.4.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.1..v1.4.2
 [1.4.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.0..v1.4.1
 [1.4.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.3.7..v1.4.0

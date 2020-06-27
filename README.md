@@ -18,6 +18,10 @@ This is to prevent it from being misinterpreted as a file extension.
 You need to edit the launch.json as soon as possible.
 
 ### Update
+* 1.4.3 - 2020-06-27
+    * Changed: Rewritten the document using the DeepL translate
+    * Fix: The output in the logpoint does not contain line feeds.
+
 * 1.4.2 - 2020-06-26
     * Changed: [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` of launch.json has been extended to include
     * Fixed: [#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) The link to `Advanced breakpoint` is broken in README (`Details` from vscode)
@@ -28,11 +32,6 @@ It is now possible to declare a range of ports to be used.  This allows you to s
     * Fix: v1 only. Cannot use `<base>` in watch expression
     * Fix: The icon will remain in the system tray when the debug is finished
     * Fix: [#15](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/15) v2-a112 only bug. Rewrote the error message to treat the path as a link containing a line number, but `a112` Then it won't work.
-
-* 1.4.0 - 2020-06-16
-    * Added: `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
-    * Changed: Output the AutoHotkey launch command
-    * Fixed: [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) The link to `issues` is broken in README (`Details` from vscode)
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
