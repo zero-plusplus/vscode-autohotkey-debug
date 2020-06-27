@@ -1,161 +1,167 @@
 # Before reading
-Please note the following first.
-* This document has been **translated from Japanese to English** by Google Translate.
-* **This extension alone will not work**. You will need to separately install an extension that supports AutoHotkey language(Most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2 you should look for an extension that supports ah2 and ahk2(For example `dudelmoser.vscode-autohotkey2`). I plan to make an all-in pack, but it will take time because I will make it from scratch for studying.
-* It is expected that there are still many potential bugs. Please report to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
-* If you want to update, please see News first. It may contain important information.
-* The new version may have defects. In that case, please refer to the [CHANGELOG](CHANGELOG.md) and reinstall the previous version.
+Please read the following first.
+* This document has been translated from Japanese to English using DeepL Translate.
+
+* **This extension will not work alone.**
+A separate extension that supports the AutoHotkey language is required(The most famous is slevesque.vscode-autohotkey). If you are using AutoHotkey v2, another extension that supports it required. (For example, `dudelmoser.vscode-autohotkey2`)
+
+* Please report any bugs or feature requests in [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)(Github account is required).
+
+* Before you update, please look at the News below this first. It may contain important information.
+Also, there may be a fatal bug in the new version. If this is the case, please refer to [CHANGELOG](CHANGELOG.md) to downgrade it.
 
 # News
 ### Important Notices
-This is a notice to those who are setting launch.json and debugging. From version 1.3.7 the debugger type has changed from `ahk` to `autohotkey`. This is a change to avoid being mistaken for a file extension.
-You can debug with `ahk` for a while (however, an error will be displayed), but it will not be usable in the future, so please change as soon as possible.
+This is a notification for people who debug using launch.json.
+As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to `autohotkey`.
+This is to prevent it from being misinterpreted as a file extension.
+You need to edit the launch.json as soon as possible.
 
 ### Update
 * 1.4.2 - 2020-06-26
-    * Fixed: [#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) Broken link to `Advanced breakpoint` in README(`Details` when viewed from vscode)
-    * Changed: [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` in launch.json has been extended to allow you to declare a range of ports to use. This allows you to suppress the confirmation message.
+    * Fixed: [#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) The link to `Advanced breakpoint` is broken in README (`Details` from vscode)
+    * Changed: [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` of launch.json has been extended to include
+It is now possible to declare a range of ports to be used.  This allows you to suppress confirmation messages.
+
 * 1.4.1 - 2020-06-23
-    * Fix: v1 only bug. Can rewrite variables with scientific notation that uses integers that are not allowed in v1 like `1e+5`. In v1 it needs to be Float like `1.0e+5`
-    * Fix: v1 only bug. Can't get properties using `<base>` like `obj.<base>` in watch expression
-    * Fix: The icon remains in the system tray when you finish debugging
-    * Fix: [#15](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/15) v2-a112 only bug. Rewriting the error message to treat the path as a link containing line number, but it does not work in `a112`
+    * Fix: v1 only bug; you can rewrite a variable with Integer scientific notation. It is not allowed in v1
+    * Fix: v1 only. Cannot use `<base>` in watch expression
+    * Fix: The icon will remain in the system tray when the debug is finished
+    * Fix: [#15](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/15) v2-a112 only bug. Rewrote the error message to treat the path as a link containing a line number, but `a112` Then it won't work.
+
 * 1.4.0 - 2020-06-16
     * Added: `runtimeArgs` and `runtimeArgs_v1` and `runtimeArgs_v2` to launch.json
-    * Changed: Output the startup command of AutoHotkey
-    * Fixed: [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) Broken link to issues in README(`Details` when viewed from vscode)
+    * Changed: Output the AutoHotkey launch command
+    * Fixed: [#14](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/14) The link to `issues` is broken in README (`Details` from vscode)
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
 # Overview
-I made it for the purpose of replacing the debugger of Scite4AutoHotkey.
-So you can use all the features it can.
-In addition to that, I am implementing new features such as conditional breakpoints.
-All features can be found in [`Features`](#features).
+This extension was designed to be upwardly compatible with the SciTE4AutoHotkey debug adapter.
+So you can use all of it's features as well as new features such as conditional breakpoints.
 
-The following features are not supported due to restrictions
-* Attach to a script that is already running
+See [`Features`](#features) for more information.
+
+### Unsupported
+The following features cannot be implemented due to specifications.
+* Attach to a running script
 
 ### About AutoHotkey_H
-I'm not familiar with [AutoHotkey_H](https://hotkeyit.github.io/v2/) so I can't guarantee it, but it should be possible to debug without problems.
+It should be possible to debug [AutoHotkey_H](https://hotkeyit.github.io/v2/), but I'm not familiar with it so I can't guarantee it will work.
 
-However, there are source code differences between the AutoHotkey Debugger and the AutoHotkey_H Debugger, which may contain specific bugs.
+Note, however, that there are differences between the AutoHotkey debugger and the AutoHotkey_H debugger in the source code, so there may be some inherent bugs.
+I'm not familiar with  so I can't guarantee it, but it should be possible to debug without problems.
 
 # Installation
 1. Install [AutoHotkey](https://www.autohotkey.com/)
-2. Install an extension that supports AutoHotkey (Most famous is `slevesque.vscode-autohotkey`)
+2. Install an extension to support AutoHotkey (the famous ` slevesque.vscode-autohotkey`)
 3. Press `Ctrl + P`, type `ext install zero-plusplus.vscode-autohotkey-debug`
 
 # Usage
-1. Open a file with the (`ahk` or `ahk2` or `ah2`) extension.
-2. Set breakpoints wherever you like.
+1. Open a file with the extension `ahk`, `ahk2` or `ah2`.
+2. Place the breakpoints where you want them
 3. Press `F5`
 
 # Customize the launch configuration
-If you want to change the launch configuration of the debugger, you need to edit `launch.json`. If you are satisfied with the default settings, you do not need to look at this item.
+If you want to change the settings of the debugger, you need to edit the `launch.json` file.
+You don't need to see this section if the default settings are sufficient for you.
 
-You can learn the basics of `launch.json` [here](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations)
+You can learn the basics of `launch.json` [here](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
 
-Below is the default configuration snippet.
-```json
-.vscode/launch.json
-{
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "AutoHotkey Debug",
-            "request": "launch",
-            "type": "autohotkey",
-            "runtime_v1": "AutoHotkey.exe",
-            "runtime_v2": "v2/AutoHotkey.exe",
-            "program": "${file}",
-            "args": [],
-            "stopOnEntry": false,
-            "useAdvancedBreakpoint": false,
-            "useAdvancedOutput": false,
-            "maxChildren": 10000
-        }
-    ]
-}
-```
+Some noteworthy settings are described below.
 
-The settings that should be noted are described below.
-* `runtime`: Path for AutoHotkey.exe. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. The extension `.exe` can be omitted. e.g. `AutoHotkeyU64` `v2/AutoHotkey.exe`
-* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but `runtime_v1` corresponds to `ahk` and `runtime_v2` corresponds to `ahk2` or `ah2`.
-* `runtimeArgs`: **Many people do not need to change this setting. Any changes may cause debugging to fail.** Arguments you want to pass to AutoHotkey.exe. It corresponds to Switches described in [here](https://www.autohotkey.com/docs/Scripts.htm#cmd). `/Debug` is ignored. This is because it is set on the debugger side
-* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but `runtimeArgs_v1` corresponds to `ahk` and `runtimeArgs_v2` corresponds to `ahk2` or `ah2`.
-* `port`: You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, `9001`, `9002`. You can also declare a range of port numbers that may be used by setting a string like `"start-last"`. `start` and `last` are numbers. Also, it must be `start < last` For example, `"9000-9010"`. By declaring it, you can suppress the message confirming the port usage.
-* `program`: Executable or file to run when launching the debugger.
-* `args`: Arguments passed to `program`.
-* `env`: Environment variables. If null is specified, it is treated as an empty string.
-* `stopOnEntry`: If true, stop at the first line. Set to true if you want it to be the same as Scite4AutoHotkey.
-* `useAdvancedBreakpoint`: Unlock conditional breakpoints, etc. See [Advanced breakpoints](#advanced-breakpoints-optional) for details
-* `useAdvancedOutput`: Make the output method equivalent to [Log point](#log-point). This is useful when you want to output an object.
-* `maxChildren`: Maximum number of child elements to get. It is necessary to change it when handling an array exceeding 10000.
-* `openFileOnExit`: The absolute path of the file to open when the debugger exits. If you have a file that you want to edit immediately after debugging, you should set this feature. You can save the trouble of switching files. If you want to turn this feature off, set it to null or omit it.
+* `runtime`: The path to AutoHotkey.exe.
+If you specify a relative path, the installation directory for AutoHotkey will be the current directory.
+You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
+
+* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but used to set each extension. runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `. ah2`.
+If the `runtime` is set, it takes precedence
+
+* `runtimeArgs`: **Most people don't need to change this setting. If you set it wrong, debugging may fail.** Arguments to pass to AutoHotkey.exe. You can see a description of the argument [here](https://www.autohotkey.com/docs/Scripts.htm#cmd), described as a Switch. However, `/debug` will be ignored
+
+* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but used to set each extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`.
+If the `runtimeArgs` is set, it takes precedence
+
+* `port`: You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each.
+If the configured port is in use, a confirmation message will be displayed asking if you want to use another port.
+If you want to suppress this message, you should declare the range of ports you can use, such as `9000-9010`
+
+* `program`: The absolute path to the script you want to debug
+
+* `args`: Arguments to be passed to `program`
+
+* `env`: Environment variable to be set during debugging; if set to null, it will be treated as an empty string
+
+* `stopOnEntry`: If `false`, it runs until it stops at a breakpoint.
+Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey.
+
+* `useAdvancedBreakpoint`: If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled.
+
+* `useAdvancedOutput`: If set to `true`, [advanced output](#advanced-standard-output-optional) is enabled.
+
+* `maxChildren`: The maximum number of child elements to retrieve.
+Change this value if you have an array or object with more than 10000 elements
+
+* `openFileOnExit`: The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script.
 
 # Features
 ## Data inspection
 ![data-inspection](image/data-inspection.gif)
 
-You can see the data contents of the variables. However, v2 cannot see some data. Probably because of the alpha version.
+You can check the data of the variables.
 
-If `VariableName` is requested by another function, it means the name displayed by this function. Note that unlike AutoHotkey, it is case sensitive. e.g. `variable`, `obj.field`, `obj["spaced key"]`, ` arr[0]`
 
-However, `<base>` is given an alias of `base`.
-That is, the following Variable Names are treated the same.
+If you see `VariableName` in this document, it's the name of the variable displayed by this feature. Note that unlike AutoHotkey, this is case sensitive. This means that `var` and `Var` are treated as different variables. This is a specification of the debugger. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`
+
+As a reminder, you can write `<base>` as `base`. That is, the following two are treated as the same thing.
 * `instance.<base>`
 * `instance.base`
 
-Note. `A_DebuggerName` is added at the start of debugging, following Scite4AutoHotkey. This allows you to execute certain code only while you are debugging.
+Note: You can find an unfamiliar variable called `A_DebuggerName` This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
 
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
 
-The value of the variable can be rewritten. (Primitive value only)
-Specifically, the following types are supported.
-* `String` e.g `"string"`
+The value of the variable can be overridden by a primitive value.
+
+The following values are supported.
+* ` ` e.g `"string"`
 * `Number`
-    * `Integer`: Treated as a `intger`. e.g. `123`
-    * `Float`: Treated as a `string`. v2 is an `intger`. e.g. `123.456`
-    * `Hex`: Converted to intger and treated as `integer`. e.g. `0x123`
-    * `Scientific`: Treated as a `string`. Converted to `float` in v2. e.g. `3.0e+5`
+    * `Integer`: e.g. `123`
+    * `Float`: v1 treats it as a string, v2 treats it as a `Float`. e.g. `123.456`
+    * `Hex`: It will be converted to decimal before writing. That is, if the value is `0x123`, it is written as `291`. The type is treated as `Integer` e.g. `0x123`
+    * `Scientific`: In v1, it is treated as a string.
+On v2, it is converted to `Float`. So, `3.0e3` is written as `3000.0`. e.g. `3.0e3`, `3.0e+5`.
 
 ### Data inspection when hover
 ![data-inspection-when-hover](image/data-inspection-when-hover.gif)
 
-You can see the data displayed in the [data inspection](#data-inspection) by hovering over the variable.
-However, the correspondence is only dot notation like `obj.field`.
-Bracket notation like `arr[1]` is not supported by the vscode specification.
+You can see the data by hovering over the name of the variable.
+
+If you want to see the data of an object, you can use the It should be a member access syntax like `obj.field`.
+
+The item access syntax, such as `arr[1]` and `obj["spaced key"]`, is Due to the specification of vscode, it is not supported.
 
 ## Call stack
 ![call-stack](image/call-stack.gif)
 
-You can check or change the variables for each stack.
+You can see the current call stack.
+
+You can also click to display the variables of that hierarchy in the [data inspection](#data-inspection).
 
 ## Breakpoints
-You can learn the basics [here](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
+You can learn the basics of breakpoint [here](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
 
 ## Advanced breakpoints (Optional)
 ### Before use
-**This feature is experimental and subject to change.
-Also note that Condition evaluation is slow.**
-Therefore it is off by default.
+**This feature is a preview version and the specifications are subject to change.
+Also, please note that evaluating expressions and retrieving variables take some time.**
 
-In addition, there are the following restrictions.
-* Set an Advanced Breakpoint and cross that line with step ins, outs, and overs.
-At this time, even if the result of the condition is false, it will be forcibly stopped.
-This is due to a design limitation.
+The following restrictions apply.
+* Step-in, out, and over will force a stop if the advanced breakpoint is passed
 
 ### How to enable
-`useAdvancedBreakpoint` to `true` in launch.json.
-```json
-{
-    ...
-    "useAdvancedBreakpoint": true
-    ...
-}
-```
+`useAdvancedBreakpoint` to `true` in launch.json. See [here](#customize-the-launch-configuration) for details.
 
 ### Conditional breakpoint
 ![conditional-breakpoint](image/conditional-breakpoint.gif)
@@ -172,15 +178,15 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Rules
 * `Value`: `VariableName` or `Primitive`
-* `VariableName` Property name displayed in [data inspection](#data-inspection)  Note that the case must match. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
-* `Primitive` AutoHotkey primitives. e.g. `"string"`, `123`, `123.456`, `0x123`
+* `VariableName` Variable name displayed in [data inspection](#data-inspection). Please note that it is case sensitive. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `Primitive` Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 * `Operator`
     * `=` Equal ignore case
     * `==` Equal case sensitive
     * `!=` Not equal ignore case
     * `!==` Not equal case sensitive
-    * `~=` Compare with regular expression (AutoHotkey like). e.g. `123 ~= "O)\d+"`
-        * Note. Regular expression like AutoHotkey is converted to JavaScript regular expression. for that reason I cannot use some feature such as `(?R)`. But in most cases you won't mind.
+    * `~=` Compare with regular expression (AutoHotkey like). e.g. `"Jhon" ~= "i)j.*"`
+        * Note: That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript regexp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp) . This means that PCRE-specific features such as (?R) are not available.
     * `>` Greater than
     * `>=` Greater than or equal
     * `<` Less than
@@ -191,72 +197,75 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Grammer
 ```md
-# You don't need to enter anything in `{}`
-# The inside of `[]` can be omitted.
+# You don't need to enter anything in {}. It is written for the purpose of explanation
+# You can omit anything in []
 
-{NumberOfHits} [Operator] Intger
+{NumberOfHits} [Operator] Integer
 ```
 
 e.g. `= 30`, `<= 30`
 
 ##### Rules
-* `NumberOfHits` Number of breakpoint hits (no need to enter)
-* `Operator` If omitted, it is equivalent to `>=`
-    * `= or ==` Same as `NumberOfHits == Intger`
-    * `>` Same as `NumberOfHits > Intger`
-    * `>=` Same as `NumberOfHits >= Intger`
-    * `<` Same as `NumberOfHits < Intger`
-    * `<=` Same as `NumberOfHits <= Intger`
-    * `%` Equivalent to `Mod(NumberOfHits, Intger) == 0`
-* `Intger` e.g. `30`
+* `NumberOfHits` Number of hits to breakpoints (not required to be entered)
+* `Operator` If omitted, it is equivalent to `>=`.
+    * `= or ==` Same as `NumberOfHits == Integer`
+    * `>` Same as `NumberOfHits > Integer`
+    * `>=` Same as `NumberOfHits >= Integer`
+    * `<` Same as `NumberOfHits < Integer`
+    * `<=` Same as `NumberOfHits <= Integer`
+    * `%` Equivalent to `Mod(NumberOfHits, Integer) == 0`
+* `Integer` e.g. `30`
 
 ### Log point
 ![log-point](image/log-point.gif)
 
-Print a message to standard output. If you set a message, it will not stop at the breakpoint.
-If the condition is set, the message is output only when the condition is passed.
+The log point does not stop, unlike at the break point.
+Instead, they print their contents to standard output.
+This can be useful if you don't want to put the code for the output in a script.
 
-By describing like `{VariableName}`, the value of the variable can be output. The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
+You can embed the value of a variable by enclosing the `VariableName` in braces. For more information on `VariableName`, see [data inspection](#data-inspection). e.g. `count: {A_Index}`, `name: {person.name}`
 
-If you want to show the curly braces, you can escape it by prefixing it with `\` like `\{` or `\}`.
-
-e.g. `count: {A_Index}`, `name: {person.name}`
+If you want to output `{`, use `\{`.
 
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
 
-Only `VariableName` is supported.
-The `VariableName` must exactly match the name displayed in the [data inspection](#data-inspection).
+Only `VariableName` is supported. Expressions are not supported. For more information on `VariableName`, see [data inspection](#data-inspection).
 
 ## Loaded scripts
 ![loaded-scripts](image/loaded-scripts.gif)
 
-Shows the files that are actually loaded.
+You can see the external script being loaded.
 
-Supports both explicit loading using `#Include` and implicit loading of [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib)
+It supports both explicit loading using `#Include` and implicit loading using [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib).
 
 ## Standard output
-Supports standard output. You can output a string to the [debug console panel](https://code.visualstudio.com/docs/editor/debugging) using the following function or command.
+Messages output to standard output are displayed in the [debug console panel](https://code.visualstudio.com/docs/editor/debugging).
+
+There are several ways to output a message to the standard output.
 * [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
 * [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
 * [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
 
 ### About error message
-There are two types of error messages in AutoHotkey: load-time error and runtime error.
+There are two types of error messages in AutoHotkey: loadtime error and runtime error.
 
-The load-time error outputs the file path, whereas the runtime error does not output the path.
-Moreover, it is a little inconvenient specification such as displaying a message box regardless of the setting of [ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm).
+A loadtime error will result in a file path being output, while a runtime error will result in No output. Also, regardless of the [ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm) setting, I get a message box. So the runtime error is a bit inconvenient.
 
-If you want all errors to be the same as load-time error, add the [this code](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) to your script.
+If you want to fix it, add [this code](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) to your script.
+
+This code will suppress the runtime error message box and make the output the same as the loadtime error.
 
 ### Advanced standard output (Optional)
-**This feature is experimental and subject to change.**
+**This feature is a preview version and the specifications are subject to change. Also, please note that evaluating expressions and retrieving variables take some time.**
 
-Output method can be made equivalent to [Log point](#log-point) by enabling `useAdvancedOutput`.
-This is useful when you want to output an object.
+`useAdvancedBreakpoint` to `true` in launch.json. See [here](#customize-the-launch-configuration) for details.
+
+Make the output specifications the same as the [log point](#log-point).
+This is useful if you want to output an object.
 
 # Change log
 See [CHANGELOG](CHANGELOG.md)
 
 # Issues
-If you have issues you can report [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
+If you find a bug, you can report it [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)(you need a Github account).

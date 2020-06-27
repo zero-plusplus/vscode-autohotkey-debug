@@ -584,7 +584,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     catch (error) {
       this.sendErrorResponse(response, {
         id: args.variablesReference,
-        format: 'Execution of the command failed. Users will not normally see this message',
+        format: 'Command execution failed. This message is not normally displayed.',
       } as DebugProtocol.Message);
     }
   }
