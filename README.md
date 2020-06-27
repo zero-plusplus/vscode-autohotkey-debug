@@ -48,9 +48,6 @@ The following features cannot be implemented due to specifications.
 ### About AutoHotkey_H
 It should be possible to debug [AutoHotkey_H](https://hotkeyit.github.io/v2/), but I'm not familiar with it so I can't guarantee it will work.
 
-Note, however, that there are differences between the AutoHotkey debugger and the AutoHotkey_H debugger in the source code, so there may be some inherent bugs.
-I'm not familiar with  so I can't guarantee it, but it should be possible to debug without problems.
-
 # Installation
 1. Install [AutoHotkey](https://www.autohotkey.com/)
 2. Install an extension to support AutoHotkey (the famous ` slevesque.vscode-autohotkey`)
