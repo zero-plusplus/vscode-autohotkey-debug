@@ -70,17 +70,17 @@ Some noteworthy settings are described below.
 If you specify a relative path, the installation directory for AutoHotkey will be the current directory.
 You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
 
-* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but used to set each extension. runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `. ah2`.
+* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`.
 If the `runtime` is set, it takes precedence
 
 * `runtimeArgs`: **Most people don't need to change this setting. If you set it wrong, debugging may fail.** Arguments to pass to AutoHotkey.exe. You can see a description of the argument [here](https://www.autohotkey.com/docs/Scripts.htm#cmd), described as a Switch. However, `/debug` will be ignored
 
-* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but used to set each extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`.
+* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`.
 If the `runtimeArgs` is set, it takes precedence
 
 * `port`: You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each.
 If the configured port is in use, a confirmation message will be displayed asking if you want to use another port.
-If you want to suppress this message, you should declare the range of ports you can use, such as `9000-9010`
+If you want to suppress this message, you should declare the range of ports you can use, such as `"9000-9010"`
 
 * `program`: The absolute path to the script you want to debug
 
@@ -121,7 +121,7 @@ Note: You can find an unfamiliar variable called `A_DebuggerName` This is a vari
 The value of the variable can be overridden by a primitive value.
 
 The following values are supported.
-* ` ` e.g `"string"`
+* `String` e.g `"foo"`
 * `Number`
     * `Integer`: e.g. `123`
     * `Float`: v1 treats it as a string, v2 treats it as a `Float`. e.g. `123.456`
