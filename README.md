@@ -21,6 +21,7 @@ You need to edit the launch.json as soon as possible.
 * 1.4.3 - 2020-06-27
     * Changed: Rewritten the document using the DeepL translate
     * Fix: The output in the logpoint does not contain line feeds.
+    * Fix: The output ends in `"\0"`
 
 * 1.4.2 - 2020-06-26
     * Changed: [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` of launch.json has been extended to include

@@ -19,6 +19,7 @@ Mainly bug fixes and processing improvements.
 
 ### Fixed
 * The output in the logpoint does not contain line feeds.
+* The output ends in `"\0"`
 
 ## [1.4.2] - 2020-06-26
 ### Changed
