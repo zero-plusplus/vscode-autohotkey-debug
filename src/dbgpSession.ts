@@ -534,7 +534,10 @@ export class Session extends EventEmitter {
       else if (xml.stream) {
         const { type } = xml.stream.attributes;
         if (xml.stream.content) {
-          const data = Buffer.from(xml.stream.content, 'base64').toString('utf8');
+          const data = Buffer
+            .from(xml.stream.content, 'base64')
+            .toString('utf8')
+            .replace('\0', '');
           this.emit(type, data);
         }
       }
