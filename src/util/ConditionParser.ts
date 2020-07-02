@@ -22,7 +22,7 @@ export const createParser = function(version: 1 | 2): P.Language {
           : P.regex(/(?:`"|[^"\n])*/ui),
         P.string('"'),
       ).map((result) => {
-        const unescaped = result[1]
+        const convertedEscape = result[1]
           .replace(version === 1 ? /""/gu : /`"/gu, '"')
           .replace(/(?<=`)(,|%|`|;|::)/giu, '$1')
           .replace(/`n/gu, '\n')
@@ -34,7 +34,7 @@ export const createParser = function(version: 1 | 2): P.Language {
           .replace(/`f/gu, '\f');
         return {
           type: 'String',
-          value: unescaped,
+          value: convertedEscape,
         };
       });
     },
@@ -44,7 +44,7 @@ export const createParser = function(version: 1 | 2): P.Language {
         P.regex(/(?:`'|[^'\n])*/ui),
         P.string(`'`),
       ).map((result) => {
-        const unescaped = result[1]
+        const convertedEscape = result[1]
           .replace(/`'/gu, '\'')
           .replace(/(?<=`)(,|%|`|;|::)/giu, '$1')
           .replace(/`n/gu, '\n')
@@ -56,7 +56,7 @@ export const createParser = function(version: 1 | 2): P.Language {
           .replace(/`f/gu, '\f');
         return {
           type: 'String',
-          value: unescaped,
+          value: convertedEscape,
         };
       });
     },
