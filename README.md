@@ -18,6 +18,10 @@ This is to prevent it from being misinterpreted as a file extension.
 You need to edit the launch.json as soon as possible.
 
 ### Update
+* 1.4.4 - 2020-07-02
+    * Fixed: Advanced breakpoint only bug
+        * [#19](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/19) v2 only bug. Single quotation string doesn't work
+        * Escape sequences do not work
 * 1.4.3 - 2020-06-27
     * Changed: Rewritten the document using the DeepL translate
     * Fix: The output in the logpoint does not contain line feeds.
