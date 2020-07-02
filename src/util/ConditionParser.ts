@@ -22,9 +22,19 @@ export const createParser = function(version: 1 | 2): P.Language {
           : P.regex(/(?:`"|[^"\n])*/ui),
         P.string('"'),
       ).map((result) => {
+        const unescaped = result[1]
+          .replace(version === 1 ? /""/gu : /`"/gu, '"')
+          .replace(/(?<=`)(,|%|`|;|::)/giu, '$1')
+          .replace(/`n/gu, '\n')
+          .replace(/`r/gu, '\r')
+          .replace(/`b/gu, '\b')
+          .replace(/`t/gu, '\t')
+          .replace(/`v/gu, '\v')
+          .replace(/`a/gu, '\x07')
+          .replace(/`f/gu, '\f');
         return {
           type: 'String',
-          value: result[1],
+          value: unescaped,
         };
       });
     },
@@ -34,9 +44,19 @@ export const createParser = function(version: 1 | 2): P.Language {
         P.regex(/(?:`'|[^'\n])*/ui),
         P.string(`'`),
       ).map((result) => {
+        const unescaped = result[1]
+          .replace('`\'', '\'')
+          .replace(/(?<=`)(,|%|`|;|::)/giu, '$1')
+          .replace(/`n/gu, '\n')
+          .replace(/`r/gu, '\r')
+          .replace(/`b/gu, '\b')
+          .replace(/`t/gu, '\t')
+          .replace(/`v/gu, '\v')
+          .replace(/`a/gu, '\x07')
+          .replace(/`f/gu, '\f');
         return {
           type: 'String',
-          value: result[1],
+          value: unescaped,
         };
       });
     },
