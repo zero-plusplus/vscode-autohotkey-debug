@@ -8,8 +8,8 @@ demo()
     static staticVar := "Static"
 
     ; Overwrite global var
-	globalVar := "Local"
-	SuperGlobalVar := "Local"
+    globalVar := "Local"
+    SuperGlobalVar := "Local"
 
     ; Primitives
     str_empty := ""
@@ -44,9 +44,9 @@ demo()
     mp := Map("key", "value", [1, 2, 3], "value2")
     buf := BufferAlloc(50)
 
-	circular := {}
-	circular.circular := circular
-	instance := Clazz.new()
+    circular := {}
+    circular.circular := circular
+    instance := Clazz.new()
     instance.property := "overwrite"
     instance.method()
 }

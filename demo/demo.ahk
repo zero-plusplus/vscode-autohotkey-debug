@@ -8,8 +8,8 @@ demo()
     static staticVar := "Static"
 
     ; Overwrite global var
-	globalVar := "Local"
-	SuperGlobalVar := "Local"
+    globalVar := "Local"
+    SuperGlobalVar := "Local"
 
     ; Primitives
     str_empty := ""
@@ -41,9 +41,9 @@ demo()
     obj := { str: str, int: int, arr: arr }
     obj_specialkey := { [1, 2, 3]: "value", "spaced key": "value2"}
 
-	circular := {}
-	circular.circular := circular
-	instance := new Clazz()
+    circular := {}
+    circular.circular := circular
+    instance := new Clazz()
     instance.property := "overwrite"
     instance.method()
 }
