@@ -10,12 +10,29 @@ export const createParser = function(version: 1 | 2): P.Language {
       return P.whitespace;
     },
     StringLiteral(rules) {
+      return version === 1
+        ? rules.StringDoubleLiteral
+        : P.alt(rules.StringDoubleLiteral, rules.StringSingleLiteral);
+    },
+    StringDoubleLiteral(rules) {
       return P.seq(
         P.string('"'),
         version === 1
           ? P.regex(/(?:""|[^"\n])*/ui)
           : P.regex(/(?:`"|[^"\n])*/ui),
         P.string('"'),
+      ).map((result) => {
+        return {
+          type: 'String',
+          value: result[1],
+        };
+      });
+    },
+    StringSingleLiteral(rules) {
+      return P.seq(
+        P.string(`'`),
+        P.regex(/(?:`'|[^'\n])*/ui),
+        P.string(`'`),
       ).map((result) => {
         return {
           type: 'String',
