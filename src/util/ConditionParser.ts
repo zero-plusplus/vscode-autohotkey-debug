@@ -45,7 +45,7 @@ export const createParser = function(version: 1 | 2): P.Language {
         P.string(`'`),
       ).map((result) => {
         const unescaped = result[1]
-          .replace('`\'', '\'')
+          .replace(/`'/gu, '\'')
           .replace(/(?<=`)(,|%|`|;|::)/giu, '$1')
           .replace(/`n/gu, '\n')
           .replace(/`r/gu, '\r')
