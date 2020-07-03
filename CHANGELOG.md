@@ -13,9 +13,13 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.4.5] - 2020-07-03
+### Fixed
+* Conditional breakpoint only bug. Some escape sequences do not work
+
 ## [1.4.4] - 2020-07-02
 ### Fixed
-* Advanced breakpoint only bug
+* Conditional breakpoint only bug
     * [#19](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/19) v2 only bug. Single quotation string doesn't work
     * Escape sequences do not work
 
@@ -167,6 +171,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.4..v1.4.5
 [1.4.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.3..v1.4.4
 [1.4.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.2..v1.4.3
 [1.4.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.1..v1.4.2
