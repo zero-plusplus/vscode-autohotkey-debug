@@ -18,13 +18,13 @@ export const createParser = function(version: 1 | 2): P.Language {
       return P.seq(
         P.string('"'),
         version === 1
-          ? P.regex(/(?:""|[^"\n])*/ui)
-          : P.regex(/(?:`"|[^"\n])*/ui),
+          ? P.regex(/(?:``|""|[^"\n])*/ui)
+          : P.regex(/(?:``|`"|[^"\n])*/ui),
         P.string('"'),
       ).map((result) => {
         const convertedEscape = result[1]
           .replace(version === 1 ? /""/gu : /`"/gu, '"')
-          .replace(/(?<=`)(,|%|`|;|::)/giu, '$1')
+          .replace(version === 1 ? /`(,|%|`|;|:)/gu : /`(`|;|:|\{)/gu, '$1')
           .replace(/`n/gu, '\n')
           .replace(/`r/gu, '\r')
           .replace(/`b/gu, '\b')
@@ -41,12 +41,12 @@ export const createParser = function(version: 1 | 2): P.Language {
     StringSingleLiteral(rules) {
       return P.seq(
         P.string(`'`),
-        P.regex(/(?:`'|[^'\n])*/ui),
+        P.regex(/(?:``|`'|[^'\n])*/ui),
         P.string(`'`),
       ).map((result) => {
         const convertedEscape = result[1]
           .replace(/`'/gu, '\'')
-          .replace(/(?<=`)(,|%|`|;|::)/giu, '$1')
+          .replace(/`(`|;|:|\{)/gu, '$1')
           .replace(/`n/gu, '\n')
           .replace(/`r/gu, '\r')
           .replace(/`b/gu, '\b')
