@@ -645,7 +645,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       version: this.ahkVersion,
     });
 
-    const sources: DebugProtocol.Source[] = [];
+    const sources: DebugProtocol.Source[] = [ { name: path.basename(this.config.program), path: this.config.program } as DebugProtocol.Source ];
     await Promise.all(resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]).map(async(filePath): Promise<void> => {
       return new Promise((resolve) => {
         stat(filePath, (err, stats) => {
