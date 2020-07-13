@@ -18,27 +18,19 @@ This is to prevent it from being misinterpreted as a file extension.
 You need to edit the launch.json as soon as possible.
 
 ### Update
+* 1.4.6 - 2020-07-13
+    * Change: Process the file information output by [#Warn](https://www.autohotkey.com/docs/commands/_Warn.htm) so that vscode can recognize it as a link
+    * Fixed: In Loaded Scripts
+        * The commented [#Include](https://www.autohotkey.com/docs/commands/_Include.htm) directive is loaded. If that fails to load, the debug UI goes wrong
+        * The script itself is not displayed
+
 * 1.4.5 - 2020-07-03
     * Fixed: Conditional breakpoint only bug. Some escape sequences do not work
+
 * 1.4.4 - 2020-07-02
     * Fixed: Conditional breakpoint only bug
         * [#19](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/19) v2 only bug. Single quotation string doesn't work
         * Escape sequences do not work
-* 1.4.3 - 2020-06-27
-    * Changed: Rewritten the document using the DeepL translate
-    * Fix: The output in the logpoint does not contain line feeds.
-    * Fix: The output ends in `"\0"`
-
-* 1.4.2 - 2020-06-26
-    * Changed: [#17](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/17) The `port` of launch.json has been extended to include
-    * Fixed: [#16](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/16) The link to `Advanced breakpoint` is broken in README (`Details` from vscode)
-It is now possible to declare a range of ports to be used.  This allows you to suppress confirmation messages.
-
-* 1.4.1 - 2020-06-23
-    * Fix: v1 only bug; you can rewrite a variable with Integer scientific notation. It is not allowed in v1
-    * Fix: v1 only. Cannot use `<base>` in watch expression
-    * Fix: The icon will remain in the system tray when the debug is finished
-    * Fix: [#15](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/15) v2-a112 only bug. Rewrote the error message to treat the path as a link containing a line number, but `a112` Then it won't work.
 
 See [CHANGELOG](CHANGELOG.md) for details.
 

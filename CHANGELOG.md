@@ -13,6 +13,15 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.4.6] - 2020-07-13
+### Changed
+* Process the file information output by [#Warn](https://www.autohotkey.com/docs/commands/_Warn.htm) so that vscode can recognize it as a link
+
+### Fixed
+* In Loaded Scripts
+    * The commented [#Include](https://www.autohotkey.com/docs/commands/_Include.htm) directive is loaded. If that fails to load, the debug UI goes wrong
+    * The script itself is not displayed
+
 ## [1.4.5] - 2020-07-03
 ### Fixed
 * Conditional breakpoint only bug. Some escape sequences do not work
@@ -171,6 +180,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.5..v1.4.6
 [1.4.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.4..v1.4.5
 [1.4.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.3..v1.4.4
 [1.4.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.2..v1.4.3
