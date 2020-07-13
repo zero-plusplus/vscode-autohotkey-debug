@@ -147,16 +147,16 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.sendEvent(new TerminatedEvent());
         }
       });
-      ahkProcess.stdout.on('data', (chunkData: string | Buffer) => {
-        const data = String(chunkData);
+      ahkProcess.stdout.on('data', (data: string | Buffer) => {
+        const fixedData = this.fixPathOfRuntimeError(String(data));
         if (this.session && this.config.useAdvancedOutput) {
-          this.printLogMessage(data, 'stdout');
+          this.printLogMessage(fixedData, 'stdout');
           return;
         }
-        this.sendEvent(new OutputEvent(data, 'stdout'));
+        this.sendEvent(new OutputEvent(fixedData, 'stdout'));
       });
-      ahkProcess.stderr.on('data', (chunkData: Buffer) => {
-        const fixedData = this.fixPathOfRuntimeError(String(chunkData));
+      ahkProcess.stderr.on('data', (data: Buffer) => {
+        const fixedData = this.fixPathOfRuntimeError(String(data));
         if (this.session && this.config.useAdvancedOutput) {
           this.printLogMessage(fixedData, 'stderr');
           return;
@@ -645,12 +645,13 @@ export class AhkDebugSession extends LoggingDebugSession {
       version: this.ahkVersion,
     });
 
-    const sources: DebugProtocol.Source[] = [];
+    const sources: DebugProtocol.Source[] = [ { name: path.basename(this.config.program), path: this.config.program } as DebugProtocol.Source ];
     await Promise.all(resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]).map(async(filePath): Promise<void> => {
       return new Promise((resolve) => {
         stat(filePath, (err, stats) => {
           if (err) {
             // sources.push({ name: 'Failed to read' });
+            resolve();
             return;
           }
 
@@ -701,7 +702,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     return null;
   }
   private fixPathOfRuntimeError(errorMessage: string): string {
-    return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/u, `$1:$2`);
+    return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2`);
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
     if (response.status === 'stopped') {

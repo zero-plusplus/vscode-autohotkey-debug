@@ -1,4 +1,5 @@
 ﻿#SingleInstance Force
+#Warn All, StdOut
 globalVar := "Global"
 global SuperGlobalVar := "SuperGlobal"
 
