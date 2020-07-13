@@ -651,6 +651,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         stat(filePath, (err, stats) => {
           if (err) {
             // sources.push({ name: 'Failed to read' });
+            resolve();
             return;
           }
 

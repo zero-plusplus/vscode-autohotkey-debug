@@ -198,7 +198,7 @@
     ]
   },
   "dependencies": {
-    "@zero-plusplus/ahk-include-path-resolver": "^1.0.5",
+    "@zero-plusplus/ahk-include-path-resolver": "^1.0.7",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
     "is-port-taken": "^0.0.3",
