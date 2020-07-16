@@ -1,21 +1,19 @@
 # Before reading
 Please read the following first.
-* This document has been translated from Japanese to English using DeepL Translate.
+* This document has been translated from Japanese to English using DeepL Translate
 
 * **This extension will not work alone.**
 A separate extension that supports the AutoHotkey language is required(The most famous is slevesque.vscode-autohotkey). If you are using AutoHotkey v2, another extension that supports it required. (For example, `dudelmoser.vscode-autohotkey2`)
 
-* Please report any bugs or feature requests in [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)(Github account is required).
+* Please report any bugs or feature requests in [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)(Github account is required)
 
-* Before you update, please look at the News below this first. It may contain important information.
-Also, there may be a fatal bug in the new version. If this is the case, please refer to [CHANGELOG](CHANGELOG.md) to downgrade it.
+* Before you update, please look at the News below this first. It may contain important information. Also, there may be a fatal bug in the new version. If this is the case, please refer to [CHANGELOG](CHANGELOG.md) to downgrade it
 
 # News
 ### Important Notices
 * This is a notification for people who debug using launch.json. As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to `autohotkey`. This is to prevent it from being misinterpreted as a file extension. You need to edit the launch.json as soon as possible
 
-* The specification that `VariableName` is case sensitive was my mistake, not the AutoHotkey debugger's.
-This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
+* The specification that `VariableName` is case sensitive was my mistake, not a mistake in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
 * `1.4.7` - 2020-07-16
@@ -69,17 +67,13 @@ Some noteworthy settings are described below.
 If you specify a relative path, the installation directory for AutoHotkey will be the current directory.
 You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
 
-* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`.
-If the `runtime` is set, it takes precedence
+* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`. If the `runtime` is set, it takes precedence
 
 * `runtimeArgs`: **Most people don't need to change this setting. If you set it wrong, debugging may fail.** Arguments to pass to AutoHotkey.exe. You can see a description of the argument [here](https://www.autohotkey.com/docs/Scripts.htm#cmd), described as a Switch. However, `/debug` will be ignored
 
-* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`.
-If the `runtimeArgs` is set, it takes precedence
+* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`. If the `runtimeArgs` is set, it takes precedence
 
-* `port`: You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each.
-If the configured port is in use, a confirmation message will be displayed asking if you want to use another port.
-If you want to suppress this message, you should declare the range of ports you can use, such as `"9000-9010"`
+* `port`: You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each. If the configured port is in use, a confirmation message will be displayed asking if you want to use another port. If you want to suppress this message, you should declare the range of ports you can use, such as `"9000-9010"`
 
 * `program`: The absolute path to the script you want to debug
 
@@ -87,17 +81,15 @@ If you want to suppress this message, you should declare the range of ports you 
 
 * `env`: Environment variable to be set during debugging; if set to null, it will be treated as an empty string
 
-* `stopOnEntry`: If `false`, it runs until it stops at a breakpoint.
-Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey.
+* `stopOnEntry`: If `false`, it runs until it stops at a breakpoint. Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey
 
-* `useAdvancedBreakpoint`: If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled.
+* `useAdvancedBreakpoint`: If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled
 
-* `useAdvancedOutput`: If set to `true`, [advanced output](#advanced-standard-output-optional) is enabled.
+* `useAdvancedOutput`: If set to `true`, [advanced output](#advanced-standard-output-optional) is enabled
 
-* `maxChildren`: The maximum number of child elements to retrieve.
-Change this value if you have an array or object with more than 10000 elements
+* `maxChildren`: The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
-* `openFileOnExit`: The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script.
+* `openFileOnExit`: The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
 
 # Features
 ## Data inspection
@@ -125,7 +117,7 @@ The following values are supported.
     * `Integer`: e.g. `123`
     * `Float`: v1 treats it as a string, v2 treats it as a `Float`. e.g. `123.456`
     * `Hex`: It will be converted to decimal before writing. That is, if the value is `0x123`, it is written as `291`. The type is treated as `Integer` e.g. `0x123`
-    * `Scientific`: In v1, it is treated as a string.
+    * `Scientific`: In v1, it is treated as a string
 On v2, it is converted to `Float`. So, `3.0e3` is written as `3000.0`. e.g. `3.0e3`, `3.0e+5`.
 
 ### Data inspection when hover
@@ -149,8 +141,7 @@ You can learn the basics of breakpoint [here](https://code.visualstudio.com/docs
 
 ## Advanced breakpoints (Optional)
 ### Before use
-**This feature is a preview version and the specifications are subject to change.
-Also, please note that evaluating expressions and retrieving variables take some time.**
+**This feature is a preview version and the specifications are subject to change. Also, please note that evaluating expressions and retrieving variables take some time.**
 
 The following restrictions apply.
 * Step-in, out, and over will force a stop if the advanced breakpoint is passed
@@ -181,7 +172,7 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
     * `!=` Not equal ignore case
     * `!==` Not equal case sensitive
     * `~=` Compare with regular expression (AutoHotkey like). e.g. `"Jhon" ~= "i)j.*"`
-        * Note: That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript regexp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp) . This means that PCRE-specific features such as (?R) are not available.
+        * Note: That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript regexp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp) . This means that PCRE-specific features such as (?R) are not available
     * `>` Greater than
     * `>=` Greater than or equal
     * `<` Less than
@@ -202,7 +193,7 @@ e.g. `= 30`, `<= 30`
 
 ##### Rules
 * `NumberOfHits` Number of hits to breakpoints (not required to be entered)
-* `Operator` If omitted, it is equivalent to `>=`.
+* `Operator` If omitted, it is equivalent to `>=`
     * `= or ==` Same as `NumberOfHits == Integer`
     * `>` Same as `NumberOfHits > Integer`
     * `>=` Same as `NumberOfHits >= Integer`
