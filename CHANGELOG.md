@@ -17,8 +17,8 @@ Mainly bug fixes and processing improvements.
 ### Changed
 ### Fixed
 * launch.json warns that `program` is not specified
-* Corrections to the document
-    * VariableName is not case insensitive. I used to write that it was case sensitive.
+* Document
+    * Corrected the description of `VariableName`
 
 ## [1.4.6] - 2020-07-13
 ### Changed

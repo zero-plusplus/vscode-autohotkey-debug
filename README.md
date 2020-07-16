@@ -12,19 +12,16 @@ Also, there may be a fatal bug in the new version. If this is the case, please r
 
 # News
 ### Important Notices
-This is a notification for people who debug using launch.json.
-As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to `autohotkey`.
-This is to prevent it from being misinterpreted as a file extension.
-You need to edit the launch.json as soon as possible.
+* This is a notification for people who debug using launch.json. As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to `autohotkey`. This is to prevent it from being misinterpreted as a file extension. You need to edit the launch.json as soon as possible
 
-### Correction
-* I wrote that `VariableName` is case sensitive, but in fact it is not. That is, `variable` and `VARIABLE` are treated as the same variable
+* The specification that `VariableName` is case sensitive was my mistake, not the AutoHotkey debugger's.
+This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
 * `1.4.7` - 2020-07-16
     * Fixed: launch.json warns that `program` is not specified
-    * Fixed: Corrections to the document
-        * VariableName is not case insensitive. I used to write that it was case sensitive.
+    * Fixed: Document
+        * Corrected the description of `VariableName`
 
 * `1.4.6` - 2020-07-13
     * Change: Process the file information output by [#Warn](https://www.autohotkey.com/docs/commands/_Warn.htm) so that vscode can recognize it as a link
@@ -109,7 +106,7 @@ Change this value if you have an array or object with more than 10000 elements
 You can check the data of the variables.
 
 
-If you see `VariableName` in this document, it's the name of the variable displayed by this feature. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`
+If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is not case sensitive. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`
 
 As a reminder, you can write `<base>` as `base`. That is, the following two are treated as the same thing.
 * `instance.<base>`
