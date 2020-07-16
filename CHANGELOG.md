@@ -13,6 +13,13 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.4.7] - 2020-07-16
+### Changed
+### Fixed
+* launch.json warns that `program` is not specified
+* Corrections to the document
+    * VariableName is not case insensitive. I used to write that it was case sensitive.
+
 ## [1.4.6] - 2020-07-13
 ### Changed
 * Process the file information output by [#Warn](https://www.autohotkey.com/docs/commands/_Warn.htm) so that vscode can recognize it as a link
@@ -180,6 +187,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.6..v1.4.7
 [1.4.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.5..v1.4.6
 [1.4.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.4..v1.4.5
 [1.4.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.3..v1.4.4
