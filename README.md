@@ -17,6 +17,9 @@ As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to `a
 This is to prevent it from being misinterpreted as a file extension.
 You need to edit the launch.json as soon as possible.
 
+### Correction
+* I wrote that `VariableName` is case sensitive, but in fact it is not. That is, `variable` and `VARIABLE` are treated as the same variable
+
 ### Update
 * 1.4.6 - 2020-07-13
     * Change: Process the file information output by [#Warn](https://www.autohotkey.com/docs/commands/_Warn.htm) so that vscode can recognize it as a link
@@ -106,7 +109,7 @@ Change this value if you have an array or object with more than 10000 elements
 You can check the data of the variables.
 
 
-If you see `VariableName` in this document, it's the name of the variable displayed by this feature. Note that unlike AutoHotkey, this is case sensitive. This means that `var` and `Var` are treated as different variables. This is a specification of the debugger. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`
+If you see `VariableName` in this document, it's the name of the variable displayed by this feature. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`
 
 As a reminder, you can write `<base>` as `base`. That is, the following two are treated as the same thing.
 * `instance.<base>`
@@ -173,7 +176,7 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Rules
 * `Value`: `VariableName` or `Primitive`
-* `VariableName` Variable name displayed in [data inspection](#data-inspection). Please note that it is case sensitive. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `VariableName` Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 * `Primitive` Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 * `Operator`
     * `=` Equal ignore case
