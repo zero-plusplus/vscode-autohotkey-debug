@@ -21,19 +21,19 @@ You need to edit the launch.json as soon as possible.
 * I wrote that `VariableName` is case sensitive, but in fact it is not. That is, `variable` and `VARIABLE` are treated as the same variable
 
 ### Update
-* 1.4.6 - 2020-07-13
+* `1.4.7` - 2020-07-16
+    * Fixed: launch.json warns that `program` is not specified
+    * Fixed: Corrections to the document
+        * VariableName is not case insensitive. I used to write that it was case sensitive.
+
+* `1.4.6` - 2020-07-13
     * Change: Process the file information output by [#Warn](https://www.autohotkey.com/docs/commands/_Warn.htm) so that vscode can recognize it as a link
     * Fixed: In Loaded Scripts
         * The commented [#Include](https://www.autohotkey.com/docs/commands/_Include.htm) directive is loaded. If that fails to load, the debug UI goes wrong
         * The script itself is not displayed
 
-* 1.4.5 - 2020-07-03
+* `1.4.5` - 2020-07-03
     * Fixed: Conditional breakpoint only bug. Some escape sequences do not work
-
-* 1.4.4 - 2020-07-02
-    * Fixed: Conditional breakpoint only bug
-        * [#19](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/19) v2 only bug. Single quotation string doesn't work
-        * Escape sequences do not work
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
