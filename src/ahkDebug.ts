@@ -702,7 +702,24 @@ export class AhkDebugSession extends LoggingDebugSession {
     return null;
   }
   private fixPathOfRuntimeError(errorMessage: string): string {
-    return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2`);
+    if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
+      const line = parseInt(errorMessage.match(/--->\t(?<line>\d+):/u)!.groups!.line, 10);
+      let fixed = errorMessage;
+      if (-1 < errorMessage.search(/^Error:\s{2}/gmu)) {
+        fixed = errorMessage
+          .replace(/^(Error:\s{2})/gmu, `${this.config.program}:${line} : ==> `)
+          .replace(/\n(Specifically:)/u, '     $1');
+      }
+      else if (-1 < errorMessage.search(/^Error in #include file /u)) {
+        fixed = errorMessage
+          .replace(/Error in #include file "(.+)":\n\s*(.+)/gmu, `$1:${line} : ==> $2`)
+          .replace(/\n(Specifically:)/u, '     $1');
+      }
+      return fixed
+        .substr(0, fixed.indexOf('Line#'))
+        .replace(/\s+$/u, '');
+    }
+    return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
     if (response.status === 'stopped') {
