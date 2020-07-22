@@ -170,6 +170,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     const createServer = (): void => {
       const disposeConnection = (error?: Error): void => {
         if (error) {
+          if (!this.isSessionStopped && this.ahkProcess) {
+            this.ahkProcess.kill();
+            this.isSessionStopped = true;
+          }
           this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
         }
         this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
