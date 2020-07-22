@@ -170,6 +170,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     const createServer = (): void => {
       const disposeConnection = (error?: Error): void => {
         if (error) {
+          if (!this.isSessionStopped && this.ahkProcess) {
+            this.ahkProcess.kill();
+            this.isSessionStopped = true;
+          }
           this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
         }
         this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
@@ -313,6 +317,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
+    await this.session!.sendFeatureSetCommand('max_depth', 1);
     await this.session!.sendStdoutCommand('redirect');
     await this.session!.sendStderrCommand('redirect');
     await this.session!.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code');
@@ -546,10 +551,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference);
     let fullName = args.name;
     let context: dbgp.Context;
-    if (objectProperty) {
+    if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
+      const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
       const name = args.name.startsWith('[') ? args.name : `.${args.name}`;
       fullName = `${objectProperty.fullName}${name}`;
       context = objectProperty.context;
@@ -702,7 +707,24 @@ export class AhkDebugSession extends LoggingDebugSession {
     return null;
   }
   private fixPathOfRuntimeError(errorMessage: string): string {
-    return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2`);
+    if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
+      const line = parseInt(errorMessage.match(/--->\t(?<line>\d+):/u)!.groups!.line, 10);
+      let fixed = errorMessage;
+      if (-1 < errorMessage.search(/^Error:\s{2}/gmu)) {
+        fixed = errorMessage
+          .replace(/^(Error:\s{2})/gmu, `${this.config.program}:${line} : ==> `)
+          .replace(/\n(Specifically:)/u, '     $1');
+      }
+      else if (-1 < errorMessage.search(/^Error in #include file /u)) {
+        fixed = errorMessage
+          .replace(/Error in #include file "(.+)":\n\s*(.+)/gmu, `$1:${line} : ==> $2`)
+          .replace(/\n(Specifically:)/u, '     $1');
+      }
+      return fixed
+        .substr(0, fixed.indexOf('Line#'))
+        .replace(/\s+$/u, '');
+    }
+    return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
     if (response.status === 'stopped') {

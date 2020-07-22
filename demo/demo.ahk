@@ -44,23 +44,31 @@ demo()
 
     circular := {}
     circular.circular := circular
+
     instance := new Clazz()
     instance.property := "overwrite"
     instance.method()
 }
 class Clazz
 {
-    static field_static := "static field"
-    field_instance := "instance field"
-    static _field_baking := "baking field"
+    ; static
+    static staticField := "static field"
+
+    ; property
+    _property_baking := "baking"
     property[] {
         get {
-            return this._field_baking
+            return this._property_baking
         }
         set {
-            return this._field_baking := value
+            return this._property_baking := value
         }
     }
+
+    ; instance field
+    field := "instance field"
+
+    ; method
     method()
     {
         FileAppend Called method!`n, *

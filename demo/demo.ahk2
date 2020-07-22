@@ -46,22 +46,39 @@ demo()
 
     circular := {}
     circular.circular := circular
+
     instance := Clazz.new()
     instance.property := "overwrite"
     instance.method()
 }
 class Clazz
 {
-    static field_static := "static field"
-    field_instance := "instance field"
-    static _field_baking := "baking field"
-    property[] {
+    static staticField := "static field"
+    static _staticField_baking := "baking"
+    static staticProperty[] {
         get {
-            return this._field_baking
+            return this._staticField_baking
         }
         set {
-            return this._field_baking := value
+            return this._staticField_baking := value
         }
+    }
+
+    field := "instance field"
+    _property_baking := "baking"
+    property[] {
+        get {
+            return this._property_baking
+        }
+        set {
+            return this._property_baking := value
+        }
+    }
+
+    ; method
+    static staticMethod()
+    {
+        FileAppend("Called static method!`n", "*")
     }
     method()
     {
