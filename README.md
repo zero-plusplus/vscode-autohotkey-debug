@@ -16,6 +16,12 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.4.8` - 2020-07-16
+    * Changed: Add links to files in some runtime error messages
+    * Fixed: Debugging does not end normally when some errors occur
+    * Fixed: Optimization of data inspect. Previously, the same data was retrieved multiple times
+    * Fixed: [#24](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/24). v2 only bug. An error occurs when checking a [property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) with data inspect
+
 * `1.4.7` - 2020-07-16
     * Fixed: launch.json warns that `program` is not specified
     * Fixed: Document
@@ -26,9 +32,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: In Loaded Scripts
         * The commented [#Include](https://www.autohotkey.com/docs/commands/_Include.htm) directive is loaded. If that fails to load, the debug UI goes wrong
         * The script itself is not displayed
-
-* `1.4.5` - 2020-07-03
-    * Fixed: Conditional breakpoint only bug. Some escape sequences do not work
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
