@@ -547,10 +547,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference);
     let fullName = args.name;
     let context: dbgp.Context;
-    if (objectProperty) {
+    if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
+      const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
       const name = args.name.startsWith('[') ? args.name : `.${args.name}`;
       fullName = `${objectProperty.fullName}${name}`;
       context = objectProperty.context;
