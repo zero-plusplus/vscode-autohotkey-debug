@@ -13,6 +13,10 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.4.9] - 2020-07-27
+### Fixed
+* Some runtime error output does not include a newline at the end of the output. Occurred in 1.4.8
+
 ## [1.4.8] - 2020-07-16 [YANKED]
 ### Changed
 * Add links to files in some runtime error messages
@@ -199,6 +203,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.9]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.8..v1.4.9
 [1.4.8]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.7..v1.4.8
 [1.4.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.6..v1.4.7
 [1.4.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.5..v1.4.6
