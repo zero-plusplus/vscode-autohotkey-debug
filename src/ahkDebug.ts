@@ -711,18 +711,15 @@ export class AhkDebugSession extends LoggingDebugSession {
       const line = parseInt(errorMessage.match(/--->\t(?<line>\d+):/u)!.groups!.line, 10);
       let fixed = errorMessage;
       if (-1 < errorMessage.search(/^Error:\s{2}/gmu)) {
-        fixed = errorMessage
-          .replace(/^(Error:\s{2})/gmu, `${this.config.program}:${line} : ==> `)
-          .replace(/\n(Specifically:)/u, '     $1');
+        fixed = errorMessage.replace(/^(Error:\s{2})/gmu, `${this.config.program}:${line} : ==> `);
       }
       else if (-1 < errorMessage.search(/^Error in #include file /u)) {
-        fixed = errorMessage
-          .replace(/Error in #include file "(.+)":\n\s*(.+)/gmu, `$1:${line} : ==> $2`)
-          .replace(/\n(Specifically:)/u, '     $1');
+        fixed = errorMessage.replace(/Error in #include file "(.+)":\n\s*(.+)/gmu, `$1:${line} : ==> $2`);
       }
-      return fixed
+      return `${fixed
+        .replace(/\n(Specifically:)/u, '     $1')
         .substr(0, fixed.indexOf('Line#'))
-        .replace(/\s+$/u, '');
+        .replace(/\s+$/u, '')}\n`;
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }

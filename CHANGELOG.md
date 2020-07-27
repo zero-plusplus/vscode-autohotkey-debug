@@ -13,7 +13,11 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
-## [1.4.8] - 2020-07-16
+## [1.4.9] - 2020-07-27
+### Fixed
+* Some runtime error output does not include a newline at the end of the output. Occurred in 1.4.8
+
+## [1.4.8] - 2020-07-16 [YANKED]
 ### Changed
 * Add links to files in some runtime error messages
 
@@ -21,6 +25,9 @@ Mainly bug fixes and processing improvements.
 * Debugging does not end normally when some errors occur
 * Optimization of data inspect. Previously, the same data was retrieved multiple times
 * [#24](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/24) v2 only bug. An error occurs when checking a [property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) with data inspect
+
+### Security
+* [#23](https://github.com/zero-plusplus/vscode-autohotkey-debug/pull/23) Update vulnerable packages(lodash)
 
 ## [1.4.7] - 2020-07-16
 ### Changed
@@ -196,6 +203,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.9]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.8..v1.4.9
 [1.4.8]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.7..v1.4.8
 [1.4.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.6..v1.4.7
 [1.4.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.5..v1.4.6
