@@ -19,7 +19,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * `1.4.9` - 2020-07-27
     * Fixed: Some runtime error output does not include a newline at the end of the output. Occurred in 1.4.8
 
-* `1.4.8` - 2020-07-16 [YANKED]
+* `1.4.8` - 2020-07-22 [YANKED]
     * Changed: Add links to files in some runtime error messages
     * Fixed: Debugging does not end normally when some errors occur
     * Fixed: Optimization of data inspect. Previously, the same data was retrieved multiple times

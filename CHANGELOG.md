@@ -17,7 +17,7 @@ Mainly bug fixes and processing improvements.
 ### Fixed
 * Some runtime error output does not include a newline at the end of the output. Occurred in 1.4.8
 
-## [1.4.8] - 2020-07-16 [YANKED]
+## [1.4.8] - 2020-07-22 [YANKED]
 ### Changed
 * Add links to files in some runtime error messages
 
