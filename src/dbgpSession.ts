@@ -193,13 +193,18 @@ export class ObjectProperty extends Property {
         return index;
       }
     }
+
+    const isEmptyArrayInV2 = this.className === 'Array';
+    if (isEmptyArrayInV2) {
+      return 0;
+    }
     return null;
   }
   public get displayValue(): string {
     const maxIndex = this.maxIndex;
     const isArray = maxIndex !== null;
-    let value = maxIndex
-      ? `${this.className}(${maxIndex}) [`
+    let value = isArray
+      ? `${this.className}(${maxIndex!}) [`
       : `${this.className} {`;
 
     for (let i = 0; i < this.children.length; i++) {
@@ -208,11 +213,18 @@ export class ObjectProperty extends Property {
         value += '…';
         break;
       }
+      if (property.name === '<base>') {
+        continue;
+      }
 
       const displayValue = property instanceof ObjectProperty
         ? property.className
         : property.displayValue;
       if (isArray) {
+        if (!property.isIndex) {
+          continue;
+        }
+
         value += `${displayValue}, `;
         continue;
       }
