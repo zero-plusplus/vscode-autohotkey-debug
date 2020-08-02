@@ -13,6 +13,12 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.4.10] - 2020-08-02
+### Fixed
+* A bug in data inspect
+    * The overview of objects within an object is not displayed correctly. Occurred in 1.4.8
+    * Chunking does not work when opening an array of 101 or more in an object. Occurred in 1.4.8
+
 ## [1.4.9] - 2020-07-27
 ### Fixed
 * Some runtime error output does not include a newline at the end of the output. Occurred in 1.4.8
@@ -203,6 +209,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.4.10]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.9..v1.4.10
 [1.4.9]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.8..v1.4.9
 [1.4.8]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.7..v1.4.8
 [1.4.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.6..v1.4.7
