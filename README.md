@@ -37,6 +37,7 @@ See [CHANGELOG](CHANGELOG.md) for details.
 # Overview
 This extension was designed to be upwardly compatible with the SciTE4AutoHotkey debug adapter.
 So you can use all of it's features as well as new features such as conditional breakpoints.
+It also runs asynchronously, so it runs very fast. Best of all, VSCode's debug UI is great!
 
 See [`Features`](#features) for more information.
 
