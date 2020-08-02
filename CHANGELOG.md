@@ -13,7 +13,7 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
-## [1.4.10] - 2020-08-02
+## [1.4.10] - 2020-08-03
 ### Changed
 * The object summary to show only the elements that are actually enumerated (i.e. the base property is not shown)
 

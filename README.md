@@ -16,7 +16,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
-* `1.4.10` - 2020-08-02
+* `1.4.10` - 2020-08-03
     * Changed: The object summary to show only the elements that are actually enumerated (i.e. the base property is not shown)
     * Fixed: A bug in data inspect
         * The summary of objects within an object is not displayed correctly. Occurred in 1.4.8
