@@ -17,8 +17,9 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
 * `1.4.10` - 2020-08-02
+    * Changed: The object summary to show only the elements that are actually enumerated (i.e. the base property is not shown)
     * Fixed: A bug in data inspect
-        * The overview of objects within an object is not displayed correctly. Occurred in 1.4.8
+        * The summary of objects within an object is not displayed correctly. Occurred in 1.4.8
         * Chunking does not work when opening an array of 101 or more in an object. Occurred in 1.4.8
 
 * `1.4.9` - 2020-07-27

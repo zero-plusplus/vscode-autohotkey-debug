@@ -14,6 +14,9 @@ Mainly bug fixes and processing improvements.
 
 ## [Released]
 ## [1.4.10] - 2020-08-02
+### Changed
+* The object summary to show only the elements that are actually enumerated (i.e. the base property is not shown)
+
 ### Fixed
 * A bug in data inspect
     * The overview of objects within an object is not displayed correctly. Occurred in 1.4.8
