@@ -179,43 +179,53 @@ export abstract class Property {
   }
 }
 export class ObjectProperty extends Property {
+  public hasChildren: boolean;
   public className: string;
   public children: Property[] = [];
-  public maxIndex?: number;
   public address: number;
   public page: number;
   public pageSize: number;
-  public isSparseArray = false;
-  public get isArray(): boolean {
-    if (this.isSparseArray) {
-      return false;
+  public get maxIndex(): number | null {
+    for (let reverseIndex = this.children.length - 1; 0 < reverseIndex; reverseIndex--) {
+      const property = this.children[reverseIndex];
+      const index = property.index;
+      if (index !== null) {
+        return index;
+      }
     }
-    return typeof this.maxIndex !== 'undefined';
+
+    const isEmptyArrayInV2 = this.className === 'Array';
+    if (isEmptyArrayInV2) {
+      return 0;
+    }
+    return null;
   }
   public get displayValue(): string {
-    let indexCount = 1;
-    let value = this.isArray
-      ? `${this.className}(${this.maxIndex!}) [`
+    const maxIndex = this.maxIndex;
+    const isArray = maxIndex !== null;
+    let value = isArray
+      ? `${this.className}(${maxIndex!}) [`
       : `${this.className} {`;
-    for (const property of this.children) {
-      if (50 < value.length) {
+
+    for (let i = 0; i < this.children.length; i++) {
+      const property = this.children[i];
+      if (100 <= i) {
         value += '…';
         break;
+      }
+      if (property.name === '<base>') {
+        continue;
       }
 
       const displayValue = property instanceof ObjectProperty
         ? property.className
         : property.displayValue;
-      if (this.isArray) {
-        if (property.isIndex) {
-          if (property.index === indexCount) {
-            value += `${displayValue}, `;
-            indexCount++;
-            continue;
-          }
-          this.isSparseArray = true;
-          return this.displayValue;
+      if (isArray) {
+        if (!property.isIndex) {
+          continue;
         }
+
+        value += `${displayValue}, `;
         continue;
       }
 
@@ -226,36 +236,24 @@ export class ObjectProperty extends Property {
     }
 
     value = rtrim(value, ', ');
-    value += this.isArray ? ']' : '}';
+    value += isArray ? ']' : '}';
     return value;
   }
   constructor(propertyNode: XmlNode, context: Context) {
     super(propertyNode, context);
-    const { classname, address, page, pagesize } = propertyNode.attributes;
+    const { classname, address, page, pagesize, children } = propertyNode.attributes;
 
+    this.hasChildren = Boolean(parseInt(children, 10));
     this.className = classname;
     this.address = parseInt(address, 10);
     this.page = parseInt(page, 10);
     this.pageSize = parseInt(pagesize, 10);
 
     if (propertyNode.property) {
-      let maxIndex = -1;
       const properties = Array.isArray(propertyNode.property) ? propertyNode.property : [ propertyNode.property ];
       properties.forEach((propertyNode) => {
-        const match = propertyNode.attributes.name.match(/\[(?<index>\d+)\]/u);
-        if (match?.groups) {
-          const currentIndex = parseInt(match.groups.index, 10);
-          if (maxIndex < currentIndex) {
-            maxIndex = currentIndex;
-          }
-        }
-
         this.children.push(Property.from(propertyNode, context));
       });
-
-      if (-1 < maxIndex) {
-        this.maxIndex = maxIndex;
-      }
     }
   }
 }

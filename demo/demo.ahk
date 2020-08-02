@@ -33,7 +33,7 @@ demo()
 
     ; Objects
     arr_empty := []
-    arr := [str, int]
+    arr := [str, int, Util_CreateBigArray()]
     arr_big := Util_CreateBigArray()
     arr_like := { 1: str, 2: int, size: 2}
     arr_sparse := { 1: str, 3: int }

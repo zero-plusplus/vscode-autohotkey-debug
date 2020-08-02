@@ -451,8 +451,14 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     else if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
       const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
-      const { children } = (await this.session!.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName)).properties[0] as dbgp.ObjectProperty;
-      properties = children;
+
+      const loadedChildren = objectProperty.hasChildren && 0 < objectProperty.children.length;
+      if (!loadedChildren) {
+        const { children } = (await this.session!.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName)).properties[0] as dbgp.ObjectProperty;
+        objectProperty.children = children;
+      }
+
+      properties = objectProperty.children;
     }
     else if (this.logObjectPropertiesByVariablesReference.has(args.variablesReference)) {
       const objectProperty = this.logObjectPropertiesByVariablesReference.get(args.variablesReference);
@@ -486,8 +492,16 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         variablesReference = this.variablesReferenceCounter++;
         this.objectPropertiesByVariablesReference.set(variablesReference, objectProperty);
-        if (objectProperty.isArray) {
-          const maxIndex = objectProperty.maxIndex!;
+
+        const loadedChildren = objectProperty.hasChildren && 0 < objectProperty.children.length;
+        if (!loadedChildren) {
+          // eslint-disable-next-line no-await-in-loop
+          const { children } = (await this.session!.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName)).properties[0] as dbgp.ObjectProperty;
+          objectProperty.children = children;
+        }
+
+        const maxIndex = objectProperty.maxIndex;
+        if (maxIndex !== null) {
           if (100 < maxIndex) {
             indexedVariables = maxIndex;
             namedVariables = 1;
@@ -495,9 +509,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
 
-      const name = property.name;
       variables.push({
-        name,
+        name: property.name,
         type: property.type,
         value: property.displayValue,
         variablesReference,

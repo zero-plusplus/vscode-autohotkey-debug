@@ -16,6 +16,12 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.4.10` - 2020-08-02
+    * Changed: The object summary to show only the elements that are actually enumerated (i.e. the base property is not shown)
+    * Fixed: A bug in data inspect
+        * The summary of objects within an object is not displayed correctly. Occurred in 1.4.8
+        * Chunking does not work when opening an array of 101 or more in an object. Occurred in 1.4.8
+
 * `1.4.9` - 2020-07-27
     * Fixed: Some runtime error output does not include a newline at the end of the output. Occurred in 1.4.8
 
@@ -25,11 +31,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: Optimization of data inspect. Previously, the same data was retrieved multiple times
     * Fixed: [#24](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/24). v2 only bug. An error occurs when checking a [property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) with data inspect
     * Security: [#23](https://github.com/zero-plusplus/vscode-autohotkey-debug/pull/23) Update vulnerable packages(lodash)
-
-* `1.4.7` - 2020-07-16
-    * Fixed: launch.json warns that `program` is not specified
-    * Fixed: Document
-        * Corrected the description of `VariableName`
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
