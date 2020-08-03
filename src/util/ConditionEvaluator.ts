@@ -87,7 +87,7 @@ export class ConditionalEvaluator {
       const expression = parsed.value.value;
 
       let primitiveValue;
-      if (expression.type === 'LogicalExpression') {
+      if (expression.type === 'BinaryExpression') {
         const [ a, , operatorType, , b ] = expression.value;
         const getValue = async(value): Promise<string | number | null> => {
           if (value.type === 'PropertyName') {

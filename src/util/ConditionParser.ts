@@ -187,7 +187,7 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     Expression(rules) {
       return P.alt(
-        rules.LogicalExpression,
+        rules.BinaryExpression,
         rules.Value,
       ).map((result) => {
         return {
@@ -196,7 +196,7 @@ export const createParser = function(version: 1 | 2): P.Language {
         };
       });
     },
-    LogicalExpression(rules) {
+    BinaryExpression(rules) {
       return P.seq(
         rules.Value,
         rules._,
@@ -205,7 +205,7 @@ export const createParser = function(version: 1 | 2): P.Language {
         rules.Value,
       ).map((result) => {
         return {
-          type: 'LogicalExpression',
+          type: 'BinaryExpression',
           value: result,
         };
       });
