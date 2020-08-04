@@ -133,8 +133,8 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     Identifer(rules) {
       return version === 1
-        ? P.regex(/[^\s.!<>="[\]]+/ui)
-        : P.regex(/[^\s.!<>=$@"[\]]+/ui);
+        ? P.regex(/[\w#@$]+/ui)
+        : P.regex(/[\w]+/ui);
     },
     PropertyAccesor(rules) {
       return P.seq(
