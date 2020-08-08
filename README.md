@@ -167,18 +167,31 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Rules
 * `Value`: `VariableName` or `Primitive`
+
 * `VariableName` Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+
 * `Primitive` Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
+
 * `Operator`
+
     * `=` Equal ignore case
+
     * `==` Equal case sensitive
+
     * `!=` Not equal ignore case
+
     * `!==` Not equal case sensitive
+
     * `~=` Compare with regular expression (AutoHotkey like). e.g. `"Jhon" ~= "i)j.*"`
+
         * Note: That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript regexp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp) . This means that PCRE-specific features such as (?R) are not available
+
     * `>` Greater than
+
     * `>=` Greater than or equal
+
     * `<` Less than
+
     * `<=` Less than or equal
 
 ### Hit count breakpoint
@@ -196,13 +209,21 @@ e.g. `= 30`, `<= 30`
 
 ##### Rules
 * `NumberOfHits` Number of hits to breakpoints (not required to be entered)
+
 * `Operator` If omitted, it is equivalent to `>=`
+
     * `= or ==` Same as `NumberOfHits == Integer`
+
     * `>` Same as `NumberOfHits > Integer`
+
     * `>=` Same as `NumberOfHits >= Integer`
+
     * `<` Same as `NumberOfHits < Integer`
+
     * `<=` Same as `NumberOfHits <= Integer`
+
     * `%` Equivalent to `Mod(NumberOfHits, Integer) == 0`
+
 * `Integer` e.g. `30`
 
 ### Log point
