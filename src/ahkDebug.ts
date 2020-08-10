@@ -168,18 +168,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.ahkProcess = ahkProcess;
     };
     const createServer = (): void => {
-      const disposeConnection = (error?: Error): void => {
-        if (error) {
-          if (!this.isSessionStopped && this.ahkProcess) {
-            this.ahkProcess.kill();
-            this.isSessionStopped = true;
-          }
-          this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
-        }
-        this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-        this.sendEvent(new TerminatedEvent());
-      };
-
       this.server = net.createServer()
         .listen(args.port, args.hostname)
         .on('connection', (socket) => {
@@ -201,8 +189,23 @@ export class AhkDebugSession extends LoggingDebugSession {
               .on('warning', (warning: string) => {
                 this.sendEvent(new OutputEvent(`${warning}\n`));
               })
-              .on('error', disposeConnection)
-              .on('close', disposeConnection)
+              .on('error', (error?: Error) => {
+                if (error) {
+                  if (!this.isSessionStopped && this.ahkProcess) {
+                    this.ahkProcess.kill();
+                    this.isSessionStopped = true;
+                  }
+                  this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
+                }
+
+                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                this.sendEvent(new TerminatedEvent());
+              })
+              .on('close', () => {
+                this.isSessionStopped = true;
+                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                this.sendEvent(new TerminatedEvent());
+              })
               .on('stdout', (data) => {
                 if (this.session && this.config.useAdvancedOutput) {
                   this.printLogMessage(data, 'stdout');
