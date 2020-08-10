@@ -587,6 +587,9 @@ export class Session extends EventEmitter {
   public async sendStopCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.sendCommand('stop'));
   }
+  public async sendDetachCommand(): Promise<ContinuationResponse> {
+    return new ContinuationResponse(await this.sendCommand('detach'));
+  }
   public async sendStepIntoCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.sendCommand('step_into'));
   }
