@@ -21,8 +21,10 @@ demo()
         line 3
     )"
     int := 123
+    int_like := "123"
     int_negative := -123
     float := 123.456
+    float_like := "123.456"
     float_negative := -123.456
     hex := 0x123
     hex_negative := -0x123
@@ -44,14 +46,18 @@ demo()
     mp := Map("key", "value", [1, 2, 3], "value2")
     buf := BufferAlloc(50)
 
+    fatArrow := () => "fatArrow"
+    closure := () => fatArrow
+
     circular := {}
     circular.circular := circular
+    enum := obj.ownMethods()
 
     instance := Clazz.new()
     instance.property := "overwrite"
     instance.method()
 }
-class Clazz
+class Clazz extends ClazzBase
 {
     static staticField := "static field"
     static _staticField_baking := "baking"
@@ -84,4 +90,7 @@ class Clazz
     {
         FileAppend("Called method!`n", "*")
     }
+}
+class ClazzBase
+{
 }

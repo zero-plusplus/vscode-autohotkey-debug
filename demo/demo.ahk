@@ -22,8 +22,10 @@ demo()
         line 3
     )"
     int := 123
+    int_like := "123"
     int_negative := -123
     float := 123.456
+    float_like := "123.456"
     float_negative := -123.456
     hex := 0x123
     hex_negative := -0x123
@@ -49,7 +51,7 @@ demo()
     instance.property := "overwrite"
     instance.method()
 }
-class Clazz
+class Clazz extends ClazzBase
 {
     ; static
     static staticField := "static field"
@@ -73,4 +75,7 @@ class Clazz
     {
         FileAppend Called method!`n, *
     }
+}
+class ClazzBase
+{
 }
