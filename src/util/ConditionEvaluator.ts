@@ -81,7 +81,30 @@ export class ConditionalEvaluator {
     this.session = session;
     this.parser = createParser(version);
   }
-  public async eval(expression: string): Promise<boolean> {
+  public async eval(expressions: string): Promise<boolean> {
+    let result = false;
+
+    const matches = [ ...expressions.matchAll(/(?<expression>[^&|]+)(?<operator>&&|\|\|)?/gui) ];
+    for (const match of matches) {
+      const expression = match.groups?.expression;
+      if (expression) {
+        const operator = match?.groups?.operator;
+
+        // eslint-disable-next-line no-await-in-loop
+        const evaledResult = await this.evalExpression(expression.trim());
+        if (evaledResult && operator === '||') {
+          return true;
+        }
+        else if (!evaledResult && operator === '&&') {
+          return false;
+        }
+        
+        result = evaledResult;
+      }
+    }
+    return result;
+  }
+  public async evalExpression(expression: string): Promise<boolean> {
     const parsed = this.parser.Expression.parse(expression);
     if ('value' in parsed) {
       const expression = parsed.value.value;

@@ -156,11 +156,13 @@ The following restrictions apply.
 ![conditional-breakpoint](image/conditional-breakpoint.gif)
 
 #### Condition expresion
+Note: This is a limited implementation as I am not familiar with parser and evaluation process.
+
 ##### Grammer
 ```md
 # The inside of `[]` can be omitted.
 
-Value [Operator Value]
+Expression1 [LogicalOperator1 Expression2, LogicalOperator2 Expression3...]
 ```
 
 e.g.
@@ -174,12 +176,20 @@ e.g.
 
 * `"field" in Object`, `keyName not in Object`
 
+* `Object is Fowl || "wing" in Object && "beak" in Object`
+
 ##### Rules
+* `Expression` :　`Value [Operator Value]`
+
 * `Value` :　`VariableName` or `Primitive`
 
 * `VariableName` :　Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 
 * `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
+
+* `LogicalOperator` Specify expressions on the left and right
+    * `&&` :　Returns false if the left expression is false. If not, return right
+    * `||` :　Returns true if the left expression is true. If not, return right
 
 * `Operator` :　The `is` or `in` operator must have at least one space before and after it
 
