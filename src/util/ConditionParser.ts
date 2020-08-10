@@ -199,9 +199,7 @@ export const createParser = function(version: 1 | 2): P.Language {
     BinaryExpression(rules) {
       return P.seq(
         rules.Value,
-        rules._,
         rules.Operator,
-        rules._,
         rules.Value,
       ).map((result) => {
         return {
@@ -212,19 +210,38 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     Operator(rules) {
       return P.alt(
-        P.string('=='),
-        P.string('='),
-        P.string('!=='),
-        P.string('!='),
-        P.string('<='),
-        P.string('<'),
-        P.string('>='),
-        P.string('>'),
-        P.string('~='),
+        rules.ComparisonOperator,
+        rules.IsOperator,
+      );
+    },
+    ComparisonOperator(rules) {
+      return P.seq(
+        rules._,
+        P.alt(
+          P.string('==='),
+          P.string('=='),
+          P.string('='),
+          P.string('!=='),
+          P.string('!='),
+          P.string('<='),
+          P.string('<'),
+          P.string('>='),
+          P.string('>'),
+          P.string('~='),
+        ),
+        rules._,
       ).map((result) => {
         return {
-          type: 'Operator',
-          value: result,
+          type: 'ComparisonOperator',
+          value: result[1],
+        };
+      });
+    },
+    IsOperator(rules) {
+      return P.regex(/\s+(is not|is)\s+/ui).map((result) => {
+        return {
+          type: 'IsOperator',
+          value: result.toLowerCase().trim(),
         };
       });
     },

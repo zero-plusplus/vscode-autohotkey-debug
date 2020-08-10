@@ -163,7 +163,13 @@ The following restrictions apply.
 Value [Operator Value]
 ```
 
-e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
+e.g.
+* `A_Index == 30`
+* `20 <= person.age`
+* `person.name ~= "i)J.*"`
+* `variable is "string"`
+* `object is "object:Func"`
+* `instance is ClassObject`
 
 ##### Rules
 * `Value` :　`VariableName` or `Primitive`
@@ -194,24 +200,37 @@ e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
     * `<=` :　Less than or equal
 
+    * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive. Also note that there must be one or more spaces before and after `is [not]`. e.g. `variable is "string"`, `variable is "number:like"`, `variable is not "object:Func"`, `variable is ClassObject`
 
-    * `==` Equal case sensitive
+        * The five basic types are as follows. These can be checked by hovering over the variable names in [data inspection](#data-inspection)
 
-    * `!=` Not equal ignore case
+            * `"undefined"` :　Check for uninitialized variable
 
-    * `!==` Not equal case sensitive
+            * `"string"` :　e.g. `"str"`
 
-    * `~=` Compare with regular expression (AutoHotkey like). e.g. `"Jhon" ~= "i)j.*"`
+            * `"integer"` or `"int"` :　e.g. `123`
 
-        * Note: That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript regexp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp) . This means that PCRE-specific features such as (?R) are not available
+            * `"float"` :　e.g. `123.456`
 
-    * `>` Greater than
+            * `"object"` :　All values other than the primitive values. e.g. `{}`, `[]`
 
-    * `>=` Greater than or equal
+        * Composite types
 
-    * `<` Less than
+            * `"number"` :　Composite types of integer and float
 
-    * `<=` Less than or equal
+            * `"primitive"` :　Composite types of string, integer and float
+
+        * More detailed type check
+
+            * `"integer:like"` or `"int:like"` : Checks if the value can be converted to an integer or an integer. e.g. `123`, `"123"`
+
+            * `"float:like"` or `"int:like"` : Checks if the value can be converted to a float or a float. e.g. `123.456`, `"123.456"`
+
+            * `"number:like"` :　Composite types of integer:like and float:like
+
+            * `"object:ClassName"` :　Checks if an object is a specific class name. `Classname` can be checked by checking the `__class` field in [data inspection](#data-inspection), or by the value of a variable holding the object(It is displayed next to the name of the variable. e.g. `ClassName {...}`). Some `ClassName`, such as `Func` and `Property`, can be checked only by the latter
+
+        * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an object
 
 ### Hit count breakpoint
 ![hit-count-breakpoint](image/hit-count-breakpoint.gif)

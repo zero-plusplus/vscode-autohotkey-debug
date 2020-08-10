@@ -638,6 +638,13 @@ export class Session extends EventEmitter {
     }
     return null;
   }
+  public async fetchLatestPropertyWithoutChildren(propertyName: string): Promise<Property | null> {
+    await this.sendFeatureSetCommand('max_depth', 0);
+    const response = await this.fetchLatestProperty(propertyName);
+    await this.sendFeatureSetCommand('max_depth', 1);
+
+    return response;
+  }
   public async close(): Promise<void> {
     this.removeAllListeners();
     return new Promise<void>((resolve, reject) => {
