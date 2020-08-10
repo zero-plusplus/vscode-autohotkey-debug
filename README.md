@@ -66,33 +66,33 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
 
 Some noteworthy settings are described below.
 
-* `runtime`: The path to AutoHotkey.exe.
+* `runtime` :　The path to AutoHotkey.exe.
 If you specify a relative path, the installation directory for AutoHotkey will be the current directory.
 You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
 
-* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`. If the `runtime` is set, it takes precedence
+* `runtime_v1`, `runtime_v2` :　Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`. If the `runtime` is set, it takes precedence
 
-* `runtimeArgs`: **Most people don't need to change this setting. If you set it wrong, debugging may fail.** Arguments to pass to AutoHotkey.exe. You can see a description of the argument [here](https://www.autohotkey.com/docs/Scripts.htm#cmd), described as a Switch. However, `/debug` will be ignored
+* `runtimeArgs` :　**Most people don't need to change this setting. If you set it wrong, debugging may fail.** Arguments to pass to AutoHotkey.exe. You can see a description of the argument [here](https://www.autohotkey.com/docs/Scripts.htm#cmd), described as a Switch. However, `/debug` will be ignored
 
-* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`. If the `runtimeArgs` is set, it takes precedence
+* `runtimeArgs_v1`, `runtimeArgs_v2` :　Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`. If the `runtimeArgs` is set, it takes precedence
 
-* `port`: You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each. If the configured port is in use, a confirmation message will be displayed asking if you want to use another port. If you want to suppress this message, you should declare the range of ports you can use, such as `"9000-9010"`
+* `port` :　You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each. If the configured port is in use, a confirmation message will be displayed asking if you want to use another port. If you want to suppress this message, you should declare the range of ports you can use, such as `"9000-9010"`
 
-* `program`: The absolute path to the script you want to debug
+* `program` :　The absolute path to the script you want to debug
 
-* `args`: Arguments to be passed to `program`
+* `args` :　Arguments to be passed to `program`
 
-* `env`: Environment variable to be set during debugging; if set to null, it will be treated as an empty string
+* `env` :　Environment variable to be set during debugging; if set to null, it will be treated as an empty string
 
-* `stopOnEntry`: If `false`, it runs until it stops at a breakpoint. Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey
+* `stopOnEntry` :　If `false`, it runs until it stops at a breakpoint. Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey
 
-* `useAdvancedBreakpoint`: If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled
+* `useAdvancedBreakpoint` :　If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled
 
-* `useAdvancedOutput`: If set to `true`, [advanced output](#advanced-standard-output-optional) is enabled
+* `useAdvancedOutput` :　If set to `true`, [advanced output](#advanced-standard-output-optional) is enabled
 
-* `maxChildren`: The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
+* `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
-* `openFileOnExit`: The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
+* `openFileOnExit` :　The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
 
 # Features
 ## Data inspection
@@ -115,12 +115,12 @@ Note: You can find an unfamiliar variable called `A_DebuggerName` This is a vari
 The value of the variable can be overridden by a primitive value.
 
 The following values are supported.
-* `String` e.g `"foo"`
+* `String` :　e.g `"foo"`
 * `Number`
-    * `Integer`: e.g. `123`
-    * `Float`: v1 treats it as a string, v2 treats it as a `Float`. e.g. `123.456`
-    * `Hex`: It will be converted to decimal before writing. That is, if the value is `0x123`, it is written as `291`. The type is treated as `Integer` e.g. `0x123`
-    * `Scientific`: In v1, it is treated as a string
+    * `Integer` :　e.g. `123`
+    * `Float` :　v1 treats it as a string, v2 treats it as a `Float`. e.g. `123.456`
+    * `Hex` :　It will be converted to decimal before writing. That is, if the value is `0x123`, it is written as `291`. The type is treated as `Integer` e.g. `0x123`
+    * `Scientific` :　In v1, it is treated as a string
 On v2, it is converted to `Float`. So, `3.0e3` is written as `3000.0`. e.g. `3.0e3`, `3.0e+5`.
 
 ### Data inspection when hover
@@ -166,15 +166,34 @@ Value [Operator Value]
 e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
 
 ##### Rules
-* `Value`: `VariableName` or `Primitive`
+* `Value` :　`VariableName` or `Primitive`
 
-* `VariableName` Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `VariableName` :　Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 
-* `Primitive` Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
+* `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 
 * `Operator`
 
-    * `=` Equal ignore case
+    * `=` :　Equal ignore case
+
+    * `==` :　Equal case sensitive
+
+    * `!=` :　Not equal ignore case
+
+    * `!==` :　Not equal case sensitive
+
+    * `~=` :　Compare with regular expression (AutoHotkey like). e.g. `"Jhon" ~= "i)j.*"`
+
+        * Note: That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript regexp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp). This means that PCRE-specific features such as (?R) are not available
+
+    * `>` :　Greater than
+
+    * `>=` :　Greater than or equal
+
+    * `<` :　Less than
+
+    * `<=` :　Less than or equal
+
 
     * `==` Equal case sensitive
 
@@ -212,19 +231,19 @@ e.g. `= 30`, `<= 30`
 
 * `Operator` If omitted, it is equivalent to `>=`
 
-    * `= or ==` Same as `NumberOfHits == Integer`
+    * `= or ==` :　Same as `NumberOfHits == Integer`
 
-    * `>` Same as `NumberOfHits > Integer`
+    * `>` :　Same as `NumberOfHits > Integer`
 
-    * `>=` Same as `NumberOfHits >= Integer`
+    * `>=` :　Same as `NumberOfHits >= Integer`
 
-    * `<` Same as `NumberOfHits < Integer`
+    * `<` :　Same as `NumberOfHits < Integer`
 
-    * `<=` Same as `NumberOfHits <= Integer`
+    * `<=` :　Same as `NumberOfHits <= Integer`
 
-    * `%` Equivalent to `Mod(NumberOfHits, Integer) == 0`
+    * `%` :　Equivalent to `Mod(NumberOfHits, Integer) == 0`
 
-* `Integer` e.g. `30`
+* `Integer` :　e.g. `30`
 
 ### Log point
 ![log-point](image/log-point.gif)
