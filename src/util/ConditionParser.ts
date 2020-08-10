@@ -212,6 +212,7 @@ export const createParser = function(version: 1 | 2): P.Language {
       return P.alt(
         rules.ComparisonOperator,
         rules.IsOperator,
+        rules.InOperator,
       );
     },
     ComparisonOperator(rules) {
@@ -241,6 +242,14 @@ export const createParser = function(version: 1 | 2): P.Language {
       return P.regex(/\s+(is not|is)\s+/ui).map((result) => {
         return {
           type: 'IsOperator',
+          value: result.toLowerCase().trim(),
+        };
+      });
+    },
+    InOperator(rules) {
+      return P.regex(/\s+(not in|in)\s+/ui).map((result) => {
+        return {
+          type: 'InOperator',
           value: result.toLowerCase().trim(),
         };
       });

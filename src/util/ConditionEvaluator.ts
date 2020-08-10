@@ -112,69 +112,80 @@ export class ConditionalEvaluator {
             return operator(_a, _b);
           }
         }
-        else if (operatorType.type === 'IsOperator') {
+        else if ([ 'IsOperator', 'InOperator' ].includes(operatorType.type)) {
           const negativeMode = -1 < operatorType.value.search(/not/ui);
           const valueA = await this.evalValue(a);
           const valueB = await this.evalValue(b);
 
           let result = false;
-          if (valueA instanceof dbgp.ObjectProperty && valueB instanceof dbgp.ObjectProperty) {
-            let baseName = `${valueA.fullName}.base`;
-            let baseClassNameProperty = await this.session.fetchLatestPropertyWithoutChildren(`${baseName}.__class`);
-            while (baseClassNameProperty !== null) {
-              // eslint-disable-next-line no-await-in-loop
-              baseClassNameProperty = await this.session.fetchLatestPropertyWithoutChildren(`${baseName}.__class`);
-              if (baseClassNameProperty instanceof dbgp.PrimitiveProperty) {
-                if (valueB.fullName === baseClassNameProperty.value) {
+          if (operatorType.type === 'IsOperator') {
+            if (valueA instanceof dbgp.ObjectProperty && valueB instanceof dbgp.ObjectProperty) {
+              let baseName = `${valueA.fullName}.base`;
+              let baseClassNameProperty = await this.session.fetchLatestPropertyWithoutChildren(`${baseName}.__class`);
+              while (baseClassNameProperty !== null) {
+                // eslint-disable-next-line no-await-in-loop
+                baseClassNameProperty = await this.session.fetchLatestPropertyWithoutChildren(`${baseName}.__class`);
+                if (baseClassNameProperty instanceof dbgp.PrimitiveProperty) {
+                  if (valueB.fullName === baseClassNameProperty.value) {
+                    result = true;
+                    break;
+                  }
+                }
+
+                baseName += '.base';
+              }
+            }
+            else if (valueA instanceof dbgp.Property && (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string')) {
+              const typeName = String(valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB)
+                .toLowerCase()
+                .replace(/(?<=\b)int(?=\b)/ui, 'integer');
+
+              if (valueA.type === typeName) {
+                result = true;
+              }
+              else if (typeName === 'primitive') {
+                if ([ 'string', 'integer', 'float' ].includes(valueA.type)) {
                   result = true;
-                  break;
                 }
               }
-
-              baseName += '.base';
+              else if (typeName === 'number') {
+                if ([ 'integer', 'float' ].includes(valueA.type)) {
+                  result = true;
+                }
+              }
+              else if (valueA instanceof dbgp.ObjectProperty && typeName.startsWith('object:')) {
+                const className = typeName.match(/^object:(.*)$/ui)![1];
+                if (className.toLowerCase() === valueA.className.toLowerCase()) {
+                  result = true;
+                }
+              }
+              else if (valueA instanceof dbgp.PrimitiveProperty) {
+                const isIntegerLike = !Number.isNaN(parseInt(valueA.value, 10));
+                const isFloatLike = isIntegerLike && valueA.value.includes('.');
+                const isNumberLike = isIntegerLike || isFloatLike;
+                if (typeName === 'integer:like' && isIntegerLike) {
+                  result = true;
+                }
+                else if (typeName === 'float:like' && isFloatLike) {
+                  result = true;
+                }
+                else if (typeName === 'number:like' && isNumberLike) {
+                  result = true;
+                }
+              }
             }
-          }
-          else if (valueA instanceof dbgp.Property && (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string')) {
-            const typeName = String(valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB)
-              .toLowerCase()
-              .replace(/(?<=\b)int(?=\b)/ui, 'integer');
-
-            if (valueA.type === typeName) {
+            else if (valueA === null && valueB === 'undefined') {
               result = true;
             }
-            else if (typeName === 'primitive') {
-              if ([ 'string', 'integer', 'float' ].includes(valueA.type)) {
-                result = true;
-              }
-            }
-            else if (typeName === 'number') {
-              if ([ 'integer', 'float' ].includes(valueA.type)) {
-                result = true;
-              }
-            }
-            else if (valueA instanceof dbgp.ObjectProperty && typeName.startsWith('object:')) {
-              const className = typeName.match(/^object:(.*)$/ui)![1];
-              if (className.toLowerCase() === valueA.className.toLowerCase()) {
-                result = true;
-              }
-            }
-            else if (valueA instanceof dbgp.PrimitiveProperty) {
-              const isIntegerLike = !Number.isNaN(parseInt(valueA.value, 10));
-              const isFloatLike = isIntegerLike && valueA.value.includes('.');
-              const isNumberLike = isIntegerLike || isFloatLike;
-              if (typeName === 'integer:like' && isIntegerLike) {
-                result = true;
-              }
-              else if (typeName === 'float:like' && isFloatLike) {
-                result = true;
-              }
-              else if (typeName === 'number:like' && isNumberLike) {
-                result = true;
-              }
-            }
           }
-          else if (valueA === null && valueB === 'undefined') {
-            result = true;
+          else if (operatorType.type === 'InOperator' && valueB instanceof dbgp.ObjectProperty) {
+            if (valueA instanceof dbgp.PrimitiveProperty || typeof valueA === 'string') {
+              const keyName = valueA instanceof dbgp.PrimitiveProperty ? valueA.value : valueA;
+              const property = await this.session.fetchLatestPropertyWithoutChildren(`${valueB.fullName}.${keyName}`);
+              if (property !== null) {
+                result = true;
+              }
+            }
           }
 
           if (negativeMode) {

@@ -165,11 +165,14 @@ Value [Operator Value]
 
 e.g.
 * `A_Index == 30`
+
 * `20 <= person.age`
+
 * `person.name ~= "i)J.*"`
-* `variable is "string"`
-* `object is "object:Func"`
-* `instance is ClassObject`
+
+* `variable is "string"`, `object is "object:Func"`, `instance is ClassObject`
+
+* `"field" in Object`, `keyName not in Object`
 
 ##### Rules
 * `Value` :　`VariableName` or `Primitive`
@@ -178,7 +181,7 @@ e.g.
 
 * `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 
-* `Operator`
+* `Operator` :　The `is` or `in` operator must have at least one space before and after it
 
     * `=` :　Equal ignore case
 
@@ -200,7 +203,7 @@ e.g.
 
     * `<=` :　Less than or equal
 
-    * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive. Also note that there must be one or more spaces before and after `is [not]`. e.g. `variable is "string"`, `variable is "number:like"`, `variable is not "object:Func"`, `variable is ClassObject`
+    * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive. e.g. `variable is "string"`, `variable is "number:like"`, `variable is not "object:Func"`, `variable is ClassObject`
 
         * The five basic types are as follows. These can be checked by hovering over the variable names in [data inspection](#data-inspection)
 
@@ -231,6 +234,8 @@ e.g.
             * `"object:ClassName"` :　Checks if an object is a specific class name. `Classname` can be checked by checking the `__class` field in [data inspection](#data-inspection), or by the value of a variable holding the object(It is displayed next to the name of the variable. e.g. `ClassName {...}`). Some `ClassName`, such as `Func` and `Property`, can be checked only by the latter
 
         * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an object
+
+    * `[not] in` :　Check if the object owns or inherits a particular field. Left side is `Primitive` or `VariableName`, and the right side is `VariableName`
 
 ### Hit count breakpoint
 ![hit-count-breakpoint](image/hit-count-breakpoint.gif)
