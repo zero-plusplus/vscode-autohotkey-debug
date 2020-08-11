@@ -238,7 +238,6 @@ export const createParser = function(version: 1 | 2): P.Language {
       return P.seq(
         rules._,
         P.alt(
-          P.string('==='),
           P.string('=='),
           P.string('='),
           P.string('!=='),
