@@ -172,6 +172,8 @@ e.g.
 
 * `person.name ~= "i)J.*"`
 
+* `100 < countof list`
+
 * `variable is "string"`, `object is "object:Func"`, `instance is ClassObject`
 
 * `"field" in Object`, `keyName not in Object`
@@ -189,13 +191,17 @@ e.g.
 
 * `Operator`
 
-    * `LogicalOperator` :　Specify `Expression` on the left and right
+    * Prefix operators :　 Unlike other operators, it is specify before `Value`. Note that it is not case sensitive and requires at least one trailing space. e.g. `countof list`
+
+        * `countof` :　If `Value` is a primitive value, the number of characters is returned. In the case of an object, it returns the number of elements. However, in the case of an array, it returns the length
+
+    * Logical operators :　Specify `Expression` on the left and right
 
         * `&&` :　Returns false if the left expression is false. If not, return right
 
         * `||` :　Returns true if the left expression is true. If not, return right
 
-    * `ComparisonOperator` :　Specify `Value` on the left and right. The `is` or `in` operator must have at least one space before and after it
+    * Comparison operators :　Specify `Value` on the left and right. The `is` or `in` operator must have at least one space before and after it
 
         * `=` :　Equal ignore case
 

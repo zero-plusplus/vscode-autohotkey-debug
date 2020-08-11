@@ -187,9 +187,25 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     Value(rules) {
       return P.alt(
-        rules.Primitive,
-        rules.RegexpLiteral,
-        rules.PropertyName,
+        P.seq(
+          P.alt(rules.CountofOperator),
+          P.alt(
+            rules.Primitive,
+            rules.RegexpLiteral,
+            rules.PropertyName,
+          ),
+        ).map((result) => {
+          return {
+            type: result[1].type,
+            value: result[1].value,
+            extraInfo: result[0].value,
+          };
+        }),
+        P.alt(
+          rules.Primitive,
+          rules.RegexpLiteral,
+          rules.PropertyName,
+        ),
       );
     },
     Primitive(rules) {
@@ -272,6 +288,15 @@ export const createParser = function(version: 1 | 2): P.Language {
           value: result.toLowerCase().trim(),
         };
       });
+    },
+    CountofOperator(rules) {
+      return P.regex(/countof\s+/ui)
+        .map((result) => {
+          return {
+            type: 'CountofOperator',
+            value: result.toLowerCase().trim(),
+          };
+        });
     },
   });
 };

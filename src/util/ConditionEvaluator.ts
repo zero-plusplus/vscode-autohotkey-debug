@@ -229,14 +229,15 @@ export class ConditionalEvaluator {
         }
       }
       else if (expression.type === 'PropertyName') {
-        const propertyName = expression.value;
-        const property = await this.session.fetchLatestPropertyWithoutChildren(propertyName);
+        const property = await this.evalProperty(expression);
         if (property instanceof dbgp.PrimitiveProperty) {
           primitiveValue = property.value;
         }
-        else {
-          const objectProperty = property as dbgp.ObjectProperty;
-          primitiveValue = String(objectProperty.address);
+        else if (property instanceof dbgp.ObjectProperty) {
+          primitiveValue = String(property.address);
+        }
+        else if (typeof property === 'string') {
+          primitiveValue = property;
         }
       }
       else if (expression.type === 'Primitive') {
@@ -264,23 +265,52 @@ export class ConditionalEvaluator {
     }
     return false;
   }
+  private async evalProperty(parsed): Promise<string | dbgp.Property | null> {
+    if (!('type' in parsed || 'value' in parsed)) {
+      return null;
+    }
+
+    const propertyName = parsed.value;
+    if (parsed?.extraInfo === 'countof') {
+      const property = await this.session.fetchLatestProperty(propertyName);
+      if (property instanceof dbgp.ObjectProperty) {
+        const maxIndex = property.maxIndex;
+        if (maxIndex) {
+          return String(maxIndex);
+        }
+        const children = property.children.filter((element) => element.name !== '<base>');
+        return String(children.length);
+      }
+      else if (property instanceof dbgp.PrimitiveProperty) {
+        return String(property.value.length);
+      }
+      return null;
+    }
+    return this.session.fetchLatestPropertyWithoutChildren(propertyName);
+  }
   private async evalValue(parsed): Promise<string | dbgp.Property | null> {
     if (!('type' in parsed || 'value' in parsed)) {
       return null;
     }
 
     if (parsed.type === 'PropertyName') {
-      const propertyName = parsed.value;
-      const property = await this.session.fetchLatestPropertyWithoutChildren(propertyName);
-      return property;
+      return this.evalProperty(parsed);
     }
     else if (parsed.type === 'Primitive') {
       const primitive = parsed.value;
       if (primitive.type === 'String') {
+        if (parsed?.extraInfo === 'countof') {
+          const value = String(primitive.value);
+          return String(value.length);
+        }
         return String(primitive.value);
       }
 
       const number = primitive.value;
+      if (parsed?.extraInfo === 'countof') {
+        const value = String(number.value);
+        return String(value.length);
+      }
       if (number.type === 'Hex') {
         return String(parseInt(number.value, 16));
       }
