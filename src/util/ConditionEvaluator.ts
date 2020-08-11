@@ -230,7 +230,7 @@ export class ConditionalEvaluator {
       }
       else if (expression.type === 'PropertyName') {
         const propertyName = expression.value;
-        const property = await this.session.fetchLatestProperty(propertyName);
+        const property = await this.session.fetchLatestPropertyWithoutChildren(propertyName);
         if (property instanceof dbgp.PrimitiveProperty) {
           primitiveValue = property.value;
         }
