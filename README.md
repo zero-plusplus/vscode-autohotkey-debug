@@ -162,7 +162,7 @@ Note: This is a limited implementation as I am not familiar with parser and eval
 ```md
 # The inside of `[]` can be omitted.
 
-Expression1 [LogicalOperator1 Expression2, LogicalOperator2 Expression3...]
+Expression1 [Operator Expression2, Operator2 Expression3...]
 ```
 
 e.g.
@@ -187,65 +187,67 @@ e.g.
 
 * `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 
-* `LogicalOperator` Specify expressions on the left and right
-    * `&&` :　Returns false if the left expression is false. If not, return right
-    * `||` :　Returns true if the left expression is true. If not, return right
+* `Operator`
 
-* `Operator` :　The `is` or `in` operator must have at least one space before and after it
+    * `LogicalOperator` :　Specify `Expression` on the left and right
 
-    * `=` :　Equal ignore case
+        * `&&` :　Returns false if the left expression is false. If not, return right
 
-    * `==` :　Equal case sensitive
+        * `||` :　Returns true if the left expression is true. If not, return right
 
-    * `!=` :　Not equal ignore case
+    * `ComparisonOperator` :　Specify `Value` on the left and right. The `is` or `in` operator must have at least one space before and after it
 
-    * `!==` :　Not equal case sensitive
+        * `=` :　Equal ignore case
 
-    * `~=` :　Compare with regular expression (AutoHotkey like). e.g. `"Jhon" ~= "i)j.*"`
+        * `==` :　Equal case sensitive
 
-        * Note: That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript regexp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp). This means that PCRE-specific features such as (?R) are not available
+        * `!=` :　Not equal ignore case
 
-    * `>` :　Greater than
+        * `!==` :　Not equal case sensitive
 
-    * `>=` :　Greater than or equal
+        * `~=` :　Compare with AutoHotkey like regular expression. e.g. `"Jhon" ~= "i)j.*"`. **Note**: That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript regexp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp). This means that PCRE-specific features such as (?R) are not available
 
-    * `<` :　Less than
+        * `>` :　Greater than
 
-    * `<=` :　Less than or equal
+        * `>=` :　Greater than or equal
 
-    * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive. e.g. `variable is "string"`, `variable is "number:like"`, `variable is not "object:Func"`, `variable is ClassObject`
+        * `<` :　Less than
 
-        * The five basic types are as follows. These can be checked by hovering over the variable names in [data inspection](#data-inspection)
+        * `<=` :　Less than or equal
 
-            * `"undefined"` :　Check for uninitialized variable
+        * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive. e.g. `variable is "string"`, `variable is "number:like"`, `variable is not "object:Func"`, `variable is ClassObject`
 
-            * `"string"` :　e.g. `"str"`
+            * The five basic types are as follows. These can be checked by hovering over the variable names in [data inspection](#data-inspection)
 
-            * `"integer"` or `"int"` :　e.g. `123`
+                * `"undefined"` :　Check for uninitialized variable
 
-            * `"float"` :　e.g. `123.456`
+                * `"string"` :　e.g. `"str"`
 
-            * `"object"` :　All values other than the primitive values. e.g. `{}`, `[]`
+                * `"integer"` or `"int"` :　e.g. `123`
 
-        * Composite types
+                * `"float"` :　e.g. `123.456`
 
-            * `"number"` :　Composite types of integer and float
+                * `"object"` :　All values other than the primitive values. e.g. `{}`, `[]`
 
-            * `"primitive"` :　Composite types of string, integer and float
+            * Composite types
 
-        * More detailed type check
+                * `"number"` :　Composite types of integer and float
 
-            * `"integer:like"` or `"int:like"` : Checks if the value can be converted to an integer or an integer. e.g. `123`, `"123"`
+                * `"primitive"` :　Composite types of string, integer and float
 
-            * `"float:like"` or `"int:like"` : Checks if the value can be converted to a float or a float. e.g. `123.456`, `"123.456"`
+            * More detailed type check
 
-            * `"number:like"` :　Composite types of integer:like and float:like
+                * `"integer:like"` or `"int:like"` : Checks if the value can be converted to an integer or an integer. e.g. `123`, `"123"`
 
-            * `"object:ClassName"` :　Checks if an object is a specific class name. `Classname` can be checked by checking the `__class` field in [data inspection](#data-inspection), or by the value of a variable holding the object(It is displayed next to the name of the variable. e.g. `ClassName {...}`). Some `ClassName`, such as `Func` and `Property`, can be checked only by the latter
+                * `"float:like"` or `"int:like"` : Checks if the value can be converted to a float or a float. e.g. `123.456`, `"123.456"`
 
-        * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an object
+                * `"number:like"` :　Composite types of integer:like and float:like
 
-    * `[not] in` :　Check if the object owns or inherits a particular field. Left side is `Primitive` or `VariableName`, and the right side is `VariableName`
+                * `"object:ClassName"` :　Checks if an object is a specific class name. `Classname` can be checked by checking the `__class` field in [data inspection](#data-inspection), or by the value of a variable holding the object(It is displayed next to the name of the variable. e.g. `ClassName {...}`). Some `ClassName`, such as `Func` and `Property`, can be checked only by the latter
+
+            * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an object
+
+        * `[not] in` :　Check if the object owns or inherits a particular field. Left side is `Primitive` or `VariableName`, and the right side is `VariableName`
 
 ### Hit count breakpoint
 ![hit-count-breakpoint](image/hit-count-breakpoint.gif)
