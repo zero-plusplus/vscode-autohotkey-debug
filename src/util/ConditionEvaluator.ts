@@ -74,6 +74,7 @@ const comparisonOperators: { [key: string]: Operator} = {
   '!=': not(equalsIgnoreCase),
   '!==': not(equals),
   '~=': regexCompare,
+  '!~': not(regexCompare),
   '<': inequality('<'),
   '<=': inequality('<='),
   '>': inequality('>'),
@@ -118,7 +119,7 @@ export class ConditionalEvaluator {
       let primitiveValue;
       if (expression.type === 'BinaryExpression') {
         const [ a, operatorType, b ] = expression.value;
-        if ([ a.type, b.type ].includes('RegExp') && ![ '~=' ].includes(operatorType.value)) {
+        if ([ a.type, b.type ].includes('RegExp') && ![ '~=', '!~' ].includes(operatorType.value)) {
           return false;
         }
 

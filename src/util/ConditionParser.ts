@@ -248,6 +248,7 @@ export const createParser = function(version: 1 | 2): P.Language {
           P.string('>='),
           P.string('>'),
           P.string('~='),
+          P.string('!~'),
         ),
         rules._,
       ).map((result) => {
