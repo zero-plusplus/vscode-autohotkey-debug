@@ -1,4 +1,6 @@
 import * as createPcre from 'pcre-to-regexp';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import regexParser = require('regex-parser');
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
 
@@ -39,7 +41,11 @@ const inequality = (sign: string): Operator => {
     return false;
   };
 };
-const ahkRegexToJsRegex = function(ahkRegex): RegExp {
+const ahkRegexToJsRegex = function(ahkRegex: string): RegExp {
+  if (ahkRegex.startsWith('/')) {
+    return regexParser(ahkRegex);
+  }
+
   const match = ahkRegex.match(/(?<flags>.+)\)(?<pattern>.+)/ui);
   let flags: string, pattern: string;
   if (match?.groups) {
@@ -98,7 +104,7 @@ export class ConditionalEvaluator {
         else if (!evaledResult && operator === '&&') {
           return false;
         }
-        
+
         result = evaledResult;
       }
     }
@@ -112,6 +118,10 @@ export class ConditionalEvaluator {
       let primitiveValue;
       if (expression.type === 'BinaryExpression') {
         const [ a, operatorType, b ] = expression.value;
+        if ([ a.type, b.type ].includes('RegExp') && ![ '~=' ].includes(operatorType.value)) {
+          return false;
+        }
+
         if (operatorType.type === 'ComparisonOperator') {
           const operator = comparisonOperators[operatorType.value];
           const getValue = async(parsed): Promise<string | number | null> => {
@@ -274,6 +284,9 @@ export class ConditionalEvaluator {
         return String(parseInt(number.value, 16));
       }
       return String(number.value);
+    }
+    else if (parsed.type === 'RegExp') {
+      return String(parsed.value);
     }
 
     return null;

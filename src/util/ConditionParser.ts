@@ -131,6 +131,24 @@ export const createParser = function(version: 1 | 2): P.Language {
         };
       });
     },
+    RegexpLiteral(rules) {
+      return P.seq(
+        P.string('/'),
+        P.regex(/(\/|[^/])+(?=\/)/u),
+        P.alt(
+          P.seq(
+            P.string('/'),
+            P.regex(/([gimsuy]+)(?=\b)/u),
+          ).map((result) => result.join('')),
+          P.string('/'),
+        ),
+      ).map((result) => {
+        return {
+          type: 'RegExp',
+          value: result.join(''),
+        };
+      });
+    },
     Identifer(rules) {
       return version === 1
         ? P.regex(/[\w#@$]+/ui)
@@ -170,6 +188,7 @@ export const createParser = function(version: 1 | 2): P.Language {
     Value(rules) {
       return P.alt(
         rules.Primitive,
+        rules.RegexpLiteral,
         rules.PropertyName,
       );
     },
