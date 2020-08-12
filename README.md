@@ -116,10 +116,15 @@ The value of the variable can be overridden by a primitive value.
 
 The following values are supported.
 * `String` :　e.g `"foo"`
+
 * `Number`
+
     * `Integer` :　e.g. `123`
+
     * `Float` :　v1 treats it as a string, v2 treats it as a `Float`. e.g. `123.456`
+
     * `Hex` :　It will be converted to decimal before writing. That is, if the value is `0x123`, it is written as `291`. The type is treated as `Integer` e.g. `0x123`
+
     * `Scientific` :　In v1, it is treated as a string
 On v2, it is converted to `Float`. So, `3.0e3` is written as `3000.0`. e.g. `3.0e3`, `3.0e+5`.
 
