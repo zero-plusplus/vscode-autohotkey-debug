@@ -615,18 +615,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (!stackFrame) {
         throw Error('Error: Could not get stack frame');
       }
-      const { contexts } = await this.session!.sendContextNamesCommand(stackFrame);
 
-      let property: dbgp.Property | undefined;
-      for await (const context of contexts) {
-        const { properties } = await this.session!.sendPropertyGetCommand(context, propertyName);
-
-        if (properties[0].type !== 'undefined') {
-          property = properties[0];
-          break;
-        }
-      }
-      if (!property) {
+      const property = await this.session!.fetchLatestProperty(propertyName);
+      if (property === null) {
         throw Error('not available');
       }
 
