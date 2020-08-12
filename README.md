@@ -82,7 +82,7 @@ You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolde
 
 * `runtimeArgs` :　**Most people don't need to change this setting. If you set it wrong, debugging may fail.** Arguments to pass to AutoHotkey.exe. You can see a description of the argument [here](https://www.autohotkey.com/docs/Scripts.htm#cmd), described as a Switch. However, `/debug` will be ignored
 
-* `runtimeArgs_v1`, `runtimeArgs_v2` :　Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`. If the `runtimeArgs` is set, it takes precedence
+* `runtimeArgs_v1`, `runtimeArgs_v2` :　Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `.ah2`. If the `runtimeArgs` is set, it takes precedence
 
 * `port` :　You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each. If the configured port is in use, a confirmation message will be displayed asking if you want to use another port. If you want to suppress this message, you should declare the range of ports you can use, such as `"9000-9010"`
 
@@ -240,9 +240,9 @@ e.g.
 
         * `<=` :　Less than or equal
 
-        * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive. e.g. `variable is "string"`, `variable is "number:like"`, `variable is not "object:Func"`, `variable is ClassObject`
+        * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive.
 
-            * The five basic types are as follows. These can be checked by hovering over the variable names in [data inspection](#data-inspection)
+            * The five basic types are as follows. These can be checked by hovering over the variable names in [data inspection](#data-inspection). e.g. `variable is "string"`, `variable is not "undefined"`
 
                 * `"undefined"` :　Check for uninitialized variable
 
@@ -254,25 +254,25 @@ e.g.
 
                 * `"object"` :　All values other than the primitive values. e.g. `{}`, `[]`
 
-            * Composite types
+            * Composite types. e.g. `variable is "number"`
 
                 * `"number"` :　Composite types of integer and float
 
                 * `"primitive"` :　Composite types of string, integer and float
 
-            * More detailed type check
+            * More detailed type check. e.g. `variable is "number:like"`, `variable is not "object:Func"`
 
-                * `"integer:like"` or `"int:like"` : Checks if the value can be converted to an integer or an integer. e.g. `123`, `"123"`
+                * `"integer:like"` or `"int:like"` :　Checks if the value can be converted to an integer or an integer. e.g. `123`, `"123"`
 
-                * `"float:like"` or `"int:like"` : Checks if the value can be converted to a float or a float. e.g. `123.456`, `"123.456"`
+                * `"float:like"` or `"int:like"` :　Checks if the value can be converted to a float or a float. e.g. `123.456`, `"123.456"`
 
                 * `"number:like"` :　Composite types of integer:like and float:like
 
                 * `"object:ClassName"` :　Checks if an object is a specific class name. `Classname` can be checked by checking the `__class` field in [data inspection](#data-inspection), or by the value of a variable holding the object(It is displayed next to the name of the variable. e.g. `ClassName {...}`). Some `ClassName`, such as `Func` and `Property`, can be checked only by the latter
 
-            * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an object
+            * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an class object. e.g. `instance is ClassObject`
 
-        * `[not] in` :　Check if the object owns or inherits a particular field. Left side is `Primitive` or `VariableName`, and the right side is `VariableName`
+        * `[not] in` :　Check if the object owns or inherits a particular field. Left side is `Primitive` or `VariableName`, and the right side is `VariableName`. e.g. `"key" in Object`, `"key" not in Object`
 
 ### Hit count breakpoint
 ![hit-count-breakpoint](image/hit-count-breakpoint.gif)
