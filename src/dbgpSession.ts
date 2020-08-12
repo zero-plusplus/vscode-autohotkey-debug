@@ -166,8 +166,8 @@ export abstract class Property {
 
     this.context = context;
     this.facet = facet as PropertyFacet;
-    this.fullName = fullname.replace(/<base>/ug, 'base');
-    this.name = name.replace(/<base>/ug, 'base');
+    this.fullName = fullname;
+    this.name = name;
     this.type = type as PropertyType;
     this.size = parseInt(size, 10);
   }
@@ -579,12 +579,12 @@ export class Session extends EventEmitter {
   }
   public async sendPropertyGetCommand(context: Context, name: string): Promise<PropertyGetResponse> {
     return new PropertyGetResponse(
-      await this.sendCommand('property_get', `-n ${name} -c ${context.id} -d ${context.stackFrame.level}`),
+      await this.sendCommand('property_get', `-n ${name.replace(/<base>/ug, 'base')} -c ${context.id} -d ${context.stackFrame.level}`),
       context,
     );
   }
   public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: string; data: string }): Promise<PropertySetResponse> {
-    return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName} -t ${property.typeName}`, property.data));
+    return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName.replace(/<base>/ug, 'base')} -t ${property.typeName}`, property.data));
   }
   public async sendRunCommand(): Promise<ContinuationResponse> {
     return new ContinuationResponse(await this.sendCommand('run'));

@@ -104,7 +104,8 @@ If you see `VariableName` in this document, it's the name of the variable displa
 
 Objects are accessed the same way as in the actual script. For example, in v1, `obj.field` and `obj["field"]` are equivalent.
 
-Note: You can find an unfamiliar variable called `A_DebuggerName` This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
+Although the `<base>` field is named only in the debugger, it is OK to specify it as `obj.base` as in the actual script.
+
 
 #### Known Issues
 * Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0-99]`. The AutoHotkey array starts at 1 and should be `[1-100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment.
