@@ -13,6 +13,26 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.5.0] - 2020-08-12
+### Added
+* Operators in conditional breakpoint
+    * The following operators are now available
+        * `!~`
+        * `is`
+        * `in`
+        * `&&`
+        * `||`
+        * `countof`
+
+### Changed
+* Conditional breakpoint
+    * JavaScript RegExp is now available with the `~=` operator
+    * Make `VariableName` parsing more accurate
+
+### Fixed
+* The exit process fails with some errors
+* In some cases, the `<base>` field of an instance cannot be read-write correctly
+
 ## [1.4.10] - 2020-08-03
 ### Changed
 * The object summary to show only the elements that are actually enumerated (i.e. the base property is not shown)
@@ -212,6 +232,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.5.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.10..v1.5.0
 [1.4.10]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.9..v1.4.10
 [1.4.9]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.8..v1.4.9
 [1.4.8]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.7..v1.4.8

@@ -131,10 +131,28 @@ export const createParser = function(version: 1 | 2): P.Language {
         };
       });
     },
+    RegexpLiteral(rules) {
+      return P.seq(
+        P.string('/'),
+        P.regex(/(\/|[^/])+(?=\/)/u),
+        P.alt(
+          P.seq(
+            P.string('/'),
+            P.regex(/([gimsuy]+)(?=\b)/u),
+          ).map((result) => result.join('')),
+          P.string('/'),
+        ),
+      ).map((result) => {
+        return {
+          type: 'RegExp',
+          value: result.join(''),
+        };
+      });
+    },
     Identifer(rules) {
       return version === 1
-        ? P.regex(/[^\s.!<>="[\]]+/ui)
-        : P.regex(/[^\s.!<>=$@"[\]]+/ui);
+        ? P.regex(/[\w#@$]+/ui)
+        : P.regex(/[\w]+/ui);
     },
     PropertyAccesor(rules) {
       return P.seq(
@@ -169,8 +187,25 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     Value(rules) {
       return P.alt(
-        rules.Primitive,
-        rules.PropertyName,
+        P.seq(
+          P.alt(rules.CountofOperator),
+          P.alt(
+            rules.Primitive,
+            rules.RegexpLiteral,
+            rules.PropertyName,
+          ),
+        ).map((result) => {
+          return {
+            type: result[1].type,
+            value: result[1].value,
+            extraInfo: result[0].value,
+          };
+        }),
+        P.alt(
+          rules.Primitive,
+          rules.RegexpLiteral,
+          rules.PropertyName,
+        ),
       );
     },
     Primitive(rules) {
@@ -187,7 +222,7 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     Expression(rules) {
       return P.alt(
-        rules.LogicalExpression,
+        rules.BinaryExpression,
         rules.Value,
       ).map((result) => {
         return {
@@ -196,37 +231,72 @@ export const createParser = function(version: 1 | 2): P.Language {
         };
       });
     },
-    LogicalExpression(rules) {
+    BinaryExpression(rules) {
       return P.seq(
         rules.Value,
-        rules._,
         rules.Operator,
-        rules._,
         rules.Value,
       ).map((result) => {
         return {
-          type: 'LogicalExpression',
+          type: 'BinaryExpression',
           value: result,
         };
       });
     },
     Operator(rules) {
       return P.alt(
-        P.string('=='),
-        P.string('='),
-        P.string('!=='),
-        P.string('!='),
-        P.string('<='),
-        P.string('<'),
-        P.string('>='),
-        P.string('>'),
-        P.string('~='),
+        rules.ComparisonOperator,
+        rules.IsOperator,
+        rules.InOperator,
+      );
+    },
+    ComparisonOperator(rules) {
+      return P.seq(
+        rules._,
+        P.alt(
+          P.string('=='),
+          P.string('='),
+          P.string('!=='),
+          P.string('!='),
+          P.string('<='),
+          P.string('<'),
+          P.string('>='),
+          P.string('>'),
+          P.string('~='),
+          P.string('!~'),
+        ),
+        rules._,
       ).map((result) => {
         return {
-          type: 'Operator',
-          value: result,
+          type: 'ComparisonOperator',
+          value: result[1],
         };
       });
+    },
+    IsOperator(rules) {
+      return P.regex(/\s+(is not|is)\s+/ui).map((result) => {
+        return {
+          type: 'IsOperator',
+          value: result.toLowerCase().trim(),
+        };
+      });
+    },
+    InOperator(rules) {
+      return P.regex(/\s+(not in|in)\s+/ui).map((result) => {
+        return {
+          type: 'InOperator',
+          value: result.toLowerCase().trim(),
+        };
+      });
+    },
+    CountofOperator(rules) {
+      return P.regex(/countof\s+/ui)
+        .map((result) => {
+          return {
+            type: 'CountofOperator',
+            value: result.toLowerCase().trim(),
+          };
+        });
     },
   });
 };

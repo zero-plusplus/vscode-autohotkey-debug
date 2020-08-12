@@ -16,6 +16,21 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.5.0` - 2020-08-13
+    * Added: Operators in conditional breakpoint
+        * The following operators are now available
+            * `!~`
+            * `is`
+            * `in`
+            * `&&`
+            * `||`
+            * `countof`
+    * Changed: Conditional breakpoint
+        * JavaScript RegExp is now available with the `~=` operator
+        * Make `VariableName` parsing more accurate
+    * Fixed: The exit process fails with some errors
+    * Fixed: In some cases, the `<base>` field of an instance cannot be obtained correctly
+
 * `1.4.10` - 2020-08-03
     * Changed: The object summary to show only the elements that are actually enumerated (i.e. the base property is not shown)
     * Fixed: A bug in data inspect
@@ -24,13 +39,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 * `1.4.9` - 2020-07-27
     * Fixed: Some runtime error output does not include a newline at the end of the output. Occurred in 1.4.8
-
-* `1.4.8` - 2020-07-22 [YANKED]
-    * Changed: Add links to files in some runtime error messages
-    * Fixed: Debugging does not end normally when some errors occur
-    * Fixed: Optimization of data inspect. Previously, the same data was retrieved multiple times
-    * Fixed: [#24](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/24). v2 only bug. An error occurs when checking a [property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) with data inspect
-    * Security: [#23](https://github.com/zero-plusplus/vscode-autohotkey-debug/pull/23) Update vulnerable packages(lodash)
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -66,33 +74,33 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
 
 Some noteworthy settings are described below.
 
-* `runtime`: The path to AutoHotkey.exe.
+* `runtime` :　The path to AutoHotkey.exe.
 If you specify a relative path, the installation directory for AutoHotkey will be the current directory.
 You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
 
-* `runtime_v1`, `runtime_v2`: Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`. If the `runtime` is set, it takes precedence
+* `runtime_v1`, `runtime_v2` :　Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`. If the `runtime` is set, it takes precedence
 
-* `runtimeArgs`: **Most people don't need to change this setting. If you set it wrong, debugging may fail.** Arguments to pass to AutoHotkey.exe. You can see a description of the argument [here](https://www.autohotkey.com/docs/Scripts.htm#cmd), described as a Switch. However, `/debug` will be ignored
+* `runtimeArgs` :　**Most people don't need to change this setting. If you set it wrong, debugging may fail.** Arguments to pass to AutoHotkey.exe. You can see a description of the argument [here](https://www.autohotkey.com/docs/Scripts.htm#cmd), described as a Switch. However, `/debug` will be ignored
 
-* `runtimeArgs_v1`, `runtimeArgs_v2`: Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`. If the `runtimeArgs` is set, it takes precedence
+* `runtimeArgs_v1`, `runtimeArgs_v2` :　Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `. ah2`. If the `runtimeArgs` is set, it takes precedence
 
-* `port`: You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each. If the configured port is in use, a confirmation message will be displayed asking if you want to use another port. If you want to suppress this message, you should declare the range of ports you can use, such as `"9000-9010"`
+* `port` :　You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each. If the configured port is in use, a confirmation message will be displayed asking if you want to use another port. If you want to suppress this message, you should declare the range of ports you can use, such as `"9000-9010"`
 
-* `program`: The absolute path to the script you want to debug
+* `program` :　The absolute path to the script you want to debug
 
-* `args`: Arguments to be passed to `program`
+* `args` :　Arguments to be passed to `program`
 
-* `env`: Environment variable to be set during debugging; if set to null, it will be treated as an empty string
+* `env` :　Environment variable to be set during debugging; if set to null, it will be treated as an empty string
 
-* `stopOnEntry`: If `false`, it runs until it stops at a breakpoint. Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey
+* `stopOnEntry` :　If `false`, it runs until it stops at a breakpoint. Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey
 
-* `useAdvancedBreakpoint`: If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled
+* `useAdvancedBreakpoint` :　If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled
 
-* `useAdvancedOutput`: If set to `true`, [advanced output](#advanced-standard-output-optional) is enabled
+* `useAdvancedOutput` :　If set to `true`, [advanced output](#advanced-standard-output-optional) is enabled
 
-* `maxChildren`: The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
+* `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
-* `openFileOnExit`: The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
+* `openFileOnExit` :　The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
 
 # Features
 ## Data inspection
@@ -100,14 +108,17 @@ You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolde
 
 You can check the data of the variables.
 
+If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is not case sensitive. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`.
 
-If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is not case sensitive. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`
+Objects are accessed the same way as in the actual script. For example, in v1, `obj.field` and `obj["field"]` are equivalent.
 
-As a reminder, you can write `<base>` as `base`. That is, the following two are treated as the same thing.
-* `instance.<base>`
-* `instance.base`
+Although the `<base>` field is named only in the debugger, it is OK to specify it as `obj.base` as in the actual script.
 
-Note: You can find an unfamiliar variable called `A_DebuggerName` This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
+#### About A_DebuggerName
+This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
+
+#### Known Issues
+* Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0-99]`. The AutoHotkey array starts at 1 and should be `[1-100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment.
 
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
@@ -115,12 +126,17 @@ Note: You can find an unfamiliar variable called `A_DebuggerName` This is a vari
 The value of the variable can be overridden by a primitive value.
 
 The following values are supported.
-* `String` e.g `"foo"`
+* `String` :　e.g `"foo"`
+
 * `Number`
-    * `Integer`: e.g. `123`
-    * `Float`: v1 treats it as a string, v2 treats it as a `Float`. e.g. `123.456`
-    * `Hex`: It will be converted to decimal before writing. That is, if the value is `0x123`, it is written as `291`. The type is treated as `Integer` e.g. `0x123`
-    * `Scientific`: In v1, it is treated as a string
+
+    * `Integer` :　e.g. `123`
+
+    * `Float` :　v1 treats it as a string, v2 treats it as a `Float`. e.g. `123.456`
+
+    * `Hex` :　It will be converted to decimal before writing. That is, if the value is `0x123`, it is written as `291`. The type is treated as `Integer` e.g. `0x123`
+
+    * `Scientific` :　In v1, it is treated as a string
 On v2, it is converted to `Float`. So, `3.0e3` is written as `3000.0`. e.g. `3.0e3`, `3.0e+5`.
 
 ### Data inspection when hover
@@ -156,30 +172,107 @@ The following restrictions apply.
 ![conditional-breakpoint](image/conditional-breakpoint.gif)
 
 #### Condition expresion
+Note: This is a limited implementation as I am not familiar with parser and evaluation process.
+
 ##### Grammer
 ```md
 # The inside of `[]` can be omitted.
 
-Value [Operator Value]
+Expression1 [Operator Expression2, Operator2 Expression3...]
 ```
 
-e.g. `A_Index == 30`, `20 <= person.age`, `person.name ~= "i)J.*"`
+e.g.
+* `A_Index == 30`
+
+* `20 <= person.age`
+
+* `person.name ~= "i)J.*"`
+
+* `100 < countof list`
+
+* `variable is "string"`, `object is "object:Func"`, `instance is ClassObject`
+
+* `"field" in Object`, `keyName not in Object`
+
+* `Object is Fowl || "wing" in Object && "beak" in Object`
 
 ##### Rules
-* `Value`: `VariableName` or `Primitive`
-* `VariableName` Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
-* `Primitive` Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
+* `Expression` :　`Value [Operator Value]`
+
+* `Value` :　`VariableName` or `Primitive`
+
+* `VariableName` :　Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+
+* `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
+
 * `Operator`
-    * `=` Equal ignore case
-    * `==` Equal case sensitive
-    * `!=` Not equal ignore case
-    * `!==` Not equal case sensitive
-    * `~=` Compare with regular expression (AutoHotkey like). e.g. `"Jhon" ~= "i)j.*"`
-        * Note: That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript regexp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp) . This means that PCRE-specific features such as (?R) are not available
-    * `>` Greater than
-    * `>=` Greater than or equal
-    * `<` Less than
-    * `<=` Less than or equal
+
+    * Prefix operators :　 Unlike other operators, it is specify before `Value`. Note that it is not case sensitive and requires at least one trailing space. e.g. `countof list`
+
+        * `countof` :　If `Value` is a primitive value, the number of characters is returned. In the case of an object, it returns the number of elements. However, in the case of an array, it returns the length
+
+    * Logical operators :　Specify `Expression` on the left and right
+
+        * `&&` :　Returns false if the left expression is false. If not, return right
+
+        * `||` :　Returns true if the left expression is true. If not, return right
+
+    * Comparison operators :　Specify `Value` on the left and right. The `is` or `in` operator must have at least one space before and after it
+
+        * `=` :　Equal ignore case
+
+        * `==` :　Equal case sensitive
+
+        * `!=` :　Not equal ignore case
+
+        * `!==` :　Not equal case sensitive
+
+        * `~=` :　Compare with [AutoHotkey like RegEx](https://www.autohotkey.com/docs/misc/RegEx-QuickRef.htm) or [Javascript RegExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions). e.g. `name ~= "i)j.*"`, `name ~= /j.*/i`
+            * **Note** :　That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript RegExp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp). This means that PCRE-specific features such as (?R) are not available
+
+        * `!~` :　The negate version of the `~=` operator
+
+        * `>` :　Greater than
+
+        * `>=` :　Greater than or equal
+
+        * `<` :　Less than
+
+        * `<=` :　Less than or equal
+
+        * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive. e.g. `variable is "string"`, `variable is "number:like"`, `variable is not "object:Func"`, `variable is ClassObject`
+
+            * The five basic types are as follows. These can be checked by hovering over the variable names in [data inspection](#data-inspection)
+
+                * `"undefined"` :　Check for uninitialized variable
+
+                * `"string"` :　e.g. `"str"`
+
+                * `"integer"` or `"int"` :　e.g. `123`
+
+                * `"float"` :　e.g. `123.456`
+
+                * `"object"` :　All values other than the primitive values. e.g. `{}`, `[]`
+
+            * Composite types
+
+                * `"number"` :　Composite types of integer and float
+
+                * `"primitive"` :　Composite types of string, integer and float
+
+            * More detailed type check
+
+                * `"integer:like"` or `"int:like"` : Checks if the value can be converted to an integer or an integer. e.g. `123`, `"123"`
+
+                * `"float:like"` or `"int:like"` : Checks if the value can be converted to a float or a float. e.g. `123.456`, `"123.456"`
+
+                * `"number:like"` :　Composite types of integer:like and float:like
+
+                * `"object:ClassName"` :　Checks if an object is a specific class name. `Classname` can be checked by checking the `__class` field in [data inspection](#data-inspection), or by the value of a variable holding the object(It is displayed next to the name of the variable. e.g. `ClassName {...}`). Some `ClassName`, such as `Func` and `Property`, can be checked only by the latter
+
+            * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an object
+
+        * `[not] in` :　Check if the object owns or inherits a particular field. Left side is `Primitive` or `VariableName`, and the right side is `VariableName`
 
 ### Hit count breakpoint
 ![hit-count-breakpoint](image/hit-count-breakpoint.gif)
@@ -196,14 +289,22 @@ e.g. `= 30`, `<= 30`
 
 ##### Rules
 * `NumberOfHits` Number of hits to breakpoints (not required to be entered)
+
 * `Operator` If omitted, it is equivalent to `>=`
-    * `= or ==` Same as `NumberOfHits == Integer`
-    * `>` Same as `NumberOfHits > Integer`
-    * `>=` Same as `NumberOfHits >= Integer`
-    * `<` Same as `NumberOfHits < Integer`
-    * `<=` Same as `NumberOfHits <= Integer`
-    * `%` Equivalent to `Mod(NumberOfHits, Integer) == 0`
-* `Integer` e.g. `30`
+
+    * `= or ==` :　Same as `NumberOfHits == Integer`
+
+    * `>` :　Same as `NumberOfHits > Integer`
+
+    * `>=` :　Same as `NumberOfHits >= Integer`
+
+    * `<` :　Same as `NumberOfHits < Integer`
+
+    * `<=` :　Same as `NumberOfHits <= Integer`
+
+    * `%` :　Equivalent to `Mod(NumberOfHits, Integer) == 0`
+
+* `Integer` :　e.g. `30`
 
 ### Log point
 ![log-point](image/log-point.gif)
