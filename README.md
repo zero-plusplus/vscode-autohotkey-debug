@@ -101,11 +101,11 @@ You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolde
 You can check the data of the variables.
 
 
-If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is not case sensitive. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`
+If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is not case sensitive. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`.
 
-As a reminder, you can write `<base>` as `base`. That is, the following two are treated as the same thing.
-* `instance.<base>`
-* `instance.base`
+Objects are accessed the same way as in the actual script. For example, in v1, `obj.field` and `obj["field"]` are equivalent.
+
+Although the `<base>` field is named only in the debugger, it is OK to specify it as `obj.base` as in the actual script.
 
 Note: You can find an unfamiliar variable called `A_DebuggerName` This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
 
