@@ -450,13 +450,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     else if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
       const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
-
-      const loadedChildren = objectProperty.hasChildren && 0 < objectProperty.children.length;
-      if (!loadedChildren) {
-        const { children } = (await this.session!.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName)).properties[0] as dbgp.ObjectProperty;
-        objectProperty.children = children;
-      }
-
       properties = objectProperty.children;
     }
     else if (this.logObjectPropertiesByVariablesReference.has(args.variablesReference)) {
