@@ -166,8 +166,8 @@ export abstract class Property {
 
     this.context = context;
     this.facet = facet as PropertyFacet;
-    this.fullName = fullname;
-    this.name = name;
+    this.fullName = fullname.replace(/<base>/ug, 'base');
+    this.name = name.replace(/<base>/ug, 'base');
     this.type = type as PropertyType;
     this.size = parseInt(size, 10);
   }
