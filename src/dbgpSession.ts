@@ -504,7 +504,7 @@ export class SourceResponse extends Response {
   }
 }
 export class Session extends EventEmitter {
-  public static singleton: Session;
+  public readonly DEFAULT_DEPTH = 1;
   public readonly id: number = 1;
   private readonly socket: Socket;
   private readonly pendingCommands = new Map<number, Command>();
@@ -519,7 +519,15 @@ export class Session extends EventEmitter {
 
     this.on('message', (xml: XmlDocument) => {
       if (xml.init) {
-        this.emit('init', new InitPacket(xml.init));
+        const initPacket = new InitPacket(xml.init);
+        Promise.all([
+          this.sendFeatureSetCommand('max_depth', this.DEFAULT_DEPTH),
+          this.sendStdoutCommand('redirect'),
+          this.sendStderrCommand('redirect'),
+          this.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code'),
+        ]).then(() => {
+          this.emit('init', initPacket);
+        });
       }
       else if (xml.response) {
         const transactionId = parseInt(xml.response.attributes.transaction_id, 10);
@@ -644,7 +652,7 @@ export class Session extends EventEmitter {
   public async fetchLatestPropertyWithoutChildren(propertyName: string): Promise<Property | null> {
     await this.sendFeatureSetCommand('max_depth', 0);
     const response = await this.fetchLatestProperty(propertyName);
-    await this.sendFeatureSetCommand('max_depth', 1);
+    await this.sendFeatureSetCommand('max_depth', this.DEFAULT_DEPTH);
 
     return response;
   }
