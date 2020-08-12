@@ -109,6 +109,9 @@ As a reminder, you can write `<base>` as `base`. That is, the following two are 
 
 Note: You can find an unfamiliar variable called `A_DebuggerName` This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
 
+#### Known Issues
+* Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0-99]`. The AutoHotkey array starts at 1 and should be `[1-100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment.
+
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
 
