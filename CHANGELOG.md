@@ -13,7 +13,7 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
-## [1.5.0] - 2020-08-12
+## [1.5.0] - 2020-08-13
 ### Added
 * Operators in conditional breakpoint
     * The following operators are now available
