@@ -646,6 +646,36 @@ export class Session extends EventEmitter {
       if (property.type !== 'undefined') {
         return property;
       }
+      if (!propertyName.includes('.')) {
+        continue;
+      }
+
+      // The sendPropertyGetCommand does not get some data, such as Func and Property, that exists in the prototype chain. Therefore, you need to search the prototype chain manually.
+      let baseName = `${
+        propertyName.split('.')
+          .slice(0, -1)
+          .join('.')
+      }.base`;
+      const keyName = String(propertyName.split('.').pop());
+      for (let i = 0, LIMIT = 100; i < LIMIT; i++) {
+        // eslint-disable-next-line no-await-in-loop
+        const response = await this.sendPropertyGetCommand(context, baseName);
+
+        const baseProperty = response.properties[0];
+        if (baseProperty instanceof ObjectProperty) {
+          // eslint-disable-next-line no-await-in-loop
+          const response = await this.sendPropertyGetCommand(context, `${baseName}.${keyName}`);
+          const property = response.properties[0];
+          if (property.type !== 'undefined') {
+            return property;
+          }
+
+          baseName += '.base';
+          continue;
+        }
+
+        break;
+      }
     }
     return null;
   }
