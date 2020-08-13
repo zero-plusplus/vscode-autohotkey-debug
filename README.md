@@ -109,9 +109,10 @@ You can also omit the extension. e.g. `v2/AutoHotkey`, `${workspaceFolder}/AutoH
 
 You can check the data of the variables.
 
-If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is not case sensitive. e.g. `variable`, `object.field`, `obj["spaced key"]`, `array[1]`.
+#### About VariableName
+If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is case-insensitive.
 
-Objects are accessed the same way as in the actual script. For example, in v1, `obj.field` and `obj["field"]` are equivalent.
+The object's child elements are the same as in the running script, and can be specified in dot syntax or array index syntax. Which method is available depends on the version of AutoHotkey, v1 can use either method. e.g. `obj.field`, `obj["field"]`, `arr[1]`
 
 Although the `<base>` field is named only in the debugger, it is OK to specify it as `obj.base` as in the actual script.
 
