@@ -32,6 +32,7 @@ Mainly bug fixes and processing improvements.
 ### Fixed
 * The exit process fails with some errors
 * In some cases, the `<base>` field of an instance cannot be read-write correctly
+* v1 only bug. Where some variables cannot be obtained with conditional breakpoint and watch expression
 
 ## [1.4.10] - 2020-08-03
 ### Changed

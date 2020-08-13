@@ -30,6 +30,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
         * Make `VariableName` parsing more accurate
     * Fixed: The exit process fails with some errors
     * Fixed: In some cases, the `<base>` field of an instance cannot be obtained correctly
+    * Fixed: v1 only bug. Where some variables cannot be obtained with conditional breakpoint and watch expression
 
 * `1.4.10` - 2020-08-03
     * Changed: The object summary to show only the elements that are actually enumerated (i.e. the base property is not shown)
