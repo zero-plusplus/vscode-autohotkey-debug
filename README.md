@@ -3,7 +3,7 @@ Please read the following first.
 * This document has been translated from Japanese to English using DeepL Translate
 
 * **This extension will not work alone.**
-A separate extension that supports the AutoHotkey language is required(The most famous is slevesque.vscode-autohotkey). If you are using AutoHotkey v2, another extension that supports it required. (For example, `dudelmoser.vscode-autohotkey2`)
+A separate extension that supports the AutoHotkey language is required(The most famous is slevesque.vscode-autohotkey). If you are using AutoHotkey v2, another extension that supports it required. (e.g. `dudelmoser.vscode-autohotkey2`)
 
 * Please report any bugs or feature requests in [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)(Github account is required)
 
@@ -76,7 +76,7 @@ Some noteworthy settings are described below.
 
 * `runtime` :　The path to AutoHotkey.exe.
 If you specify a relative path, the installation directory for AutoHotkey will be the current directory.
-You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
+You can also omit the extension. e.g. `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
 
 * `runtime_v1`, `runtime_v2` :　Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`. If the `runtime` is set, it takes precedence
 
@@ -108,7 +108,7 @@ You can also omit the extension. For example, `v2/AutoHotkey`, `${workspaceFolde
 
 You can check the data of the variables.
 
-If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is not case sensitive. For example, `variable`, `object.field`, `obj["spaced key"]`, `array[1]`.
+If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is not case sensitive. e.g. `variable`, `object.field`, `obj["spaced key"]`, `array[1]`.
 
 Objects are accessed the same way as in the actual script. For example, in v1, `obj.field` and `obj["field"]` are equivalent.
 
@@ -268,7 +268,7 @@ e.g.
 
                 * `"number:like"` :　Composite types of integer:like and float:like
 
-                * `"object:ClassName"` :　Checks if an object is a specific class name. `Classname` can be checked by checking the `__class` field in [data inspection](#data-inspection), or by the value of a variable holding the object(It is displayed next to the name of the variable. e.g. `ClassName {...}`). Some `ClassName`, such as `Func` and `Property`, can be checked only by the latter
+                * `"object:ClassName"` :　Checks whether an object is a particular `ClassName`. You can check the `ClassName` by looking at the value of the variable holding the object in [data inspection](#data-inspection)(e.g. `ClassName {...} `). Note that the `ClassName` here is not the same as the value of the `__class` field.
 
             * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an class object. e.g. `instance is ClassObject`
 
