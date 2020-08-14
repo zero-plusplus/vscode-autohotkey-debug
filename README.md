@@ -118,9 +118,6 @@ Although the `<base>` field is named only in the debugger, it is OK to specify i
 #### About A_DebuggerName
 This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
 
-#### Known Issues
-* Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0..99]`. The AutoHotkey array starts at 1 and should be `[1..100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment
-
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
 
@@ -371,6 +368,11 @@ This is useful if you want to output an object.
 
 # Change log
 See [CHANGELOG](CHANGELOG.md)
+
+# Known issues
+* [Data inspection](#data-inspection) bug. Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0..99]`. The AutoHotkey array starts at 1 and should be `[1..100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment
+
+* v2 only bug. Trying to get a [property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) with a conditional breakpoint or a watch expression, etc will cause a critical error
 
 # Development support
 ## About source code contributes
