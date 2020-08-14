@@ -206,6 +206,27 @@ export class ConditionalEvaluator {
                 else if (typeName === 'number:like' && isNumberLike) {
                   result = true;
                 }
+                else if (typeName === 'string:alpha' && -1 < valueA.value.search(/^[a-zA-Z]+$/u)) {
+                  result = true;
+                }
+                else if (typeName === 'string:alnum' && -1 < valueA.value.search(/^[a-zA-Z0-9]+$/u)) {
+                  result = true;
+                }
+                else if (typeName === 'string:upper' && -1 < valueA.value.search(/^[A-Z]+$/u)) {
+                  result = true;
+                }
+                else if (typeName === 'string:lower' && -1 < valueA.value.search(/^[a-z]+$/u)) {
+                  result = true;
+                }
+                else if (typeName === 'string:space' && -1 < valueA.value.search(/^\s+$/u)) {
+                  result = true;
+                }
+                else if (typeName === 'string:hex' && -1 < valueA.value.search(/^0x[0-9a-fA-F]+$/u)) {
+                  result = true;
+                }
+                else if (typeName === 'string:time' && !Number.isNaN(Date.parse(valueA.value))) {
+                  result = true;
+                }
               }
             }
             else if (valueA === null && valueB === 'undefined') {
