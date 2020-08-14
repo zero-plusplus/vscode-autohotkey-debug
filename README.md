@@ -174,13 +174,13 @@ The following restrictions apply.
 ![conditional-breakpoint](image/conditional-breakpoint.gif)
 
 #### Condition expresion
-Note: This is a limited implementation as I am not familiar with parser and evaluation process.
+Note: I am not familiar with the parser and evaluation of expressions, so this is a minimal implementation.
 
 ##### Grammer
 ```md
 # The inside of `[]` can be omitted.
 
-Expression1 [Operator Expression2, Operator2 Expression3...]
+Expression1 [LogicalOperator Expression2, LogicalOperator2 Expression3...]
 ```
 
 e.g.
@@ -196,7 +196,7 @@ e.g.
 
 * `"field" in Object`, `keyName not in Object`
 
-* `Object is Fowl || "wing" in Object && "beak" in Object`
+* `object is Fowl || "wing" in object && "beak" in object`
 
 ##### Rules
 * `Expression` :　`Value [Operator Value]`
