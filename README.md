@@ -75,9 +75,7 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
 
 Some noteworthy settings are described below.
 
-* `runtime` :　The path to AutoHotkey.exe.
-If you specify a relative path, the installation directory for AutoHotkey will be the current directory.
-You can also omit the extension. e.g. `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
+* `runtime` :　The path to AutoHotkey.exe. If you specify a relative path, the installation directory for AutoHotkey will be the current directory. You can also omit the extension. e.g. `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
 
 * `runtime_v1`, `runtime_v2` :　Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`. If the `runtime` is set, it takes precedence
 
@@ -120,7 +118,7 @@ Although the `<base>` field is named only in the debugger, it is OK to specify i
 This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
 
 #### Known Issues
-* Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0-99]`. The AutoHotkey array starts at 1 and should be `[1-100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment.
+* Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0..99]`. The AutoHotkey array starts at 1 and should be `[1..100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment
 
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
@@ -180,7 +178,7 @@ Note: I am not familiar with the parser and evaluation of expressions, so this i
 ```md
 # The inside of `[]` can be omitted.
 
-Expression1 [LogicalOperator Expression2, LogicalOperator2 Expression3...]
+Expression1 [LogicalOperator1 Expression2, LogicalOperator2 Expression3...]
 ```
 
 e.g.
@@ -230,7 +228,7 @@ e.g.
         * `!==` :　Not equal case sensitive
 
         * `~=` :　Compare with [AutoHotkey like RegEx](https://www.autohotkey.com/docs/misc/RegEx-QuickRef.htm) or [Javascript RegExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions). e.g. `name ~= "i)j.*"`, `name ~= /j.*/i`
-            * **Note** :　That this is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript RegExp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp). This means that PCRE-specific features such as (?R) are not available
+            * **Note** :　`AutoHotkey like RegEx` is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript RegExp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp). This means that PCRE-specific features such as (?R) are not available
 
         * `!~` :　The negate version of the `~=` operator
 
@@ -242,7 +240,7 @@ e.g.
 
         * `<=` :　Less than or equal
 
-        * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive.
+        * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive
 
             * The five basic types are as follows. These can be checked by hovering over the variable names in [data inspection](#data-inspection). e.g. `variable is "string"`, `variable is not "undefined"`
 
@@ -266,11 +264,11 @@ e.g.
 
                 * `"integer:like"` or `"int:like"` :　Checks if the value can be converted to an integer or an integer. e.g. `123`, `"123"`
 
-                * `"float:like"` or `"int:like"` :　Checks if the value can be converted to a float or a float. e.g. `123.456`, `"123.456"`
+                * `"float:like"` or `"int:like"` :　Checks if the value can be converted to a float and not integer, or a float. Returns false if the value is an integer. e.g. `123.456`, `"123.456"`
 
                 * `"number:like"` :　Composite types of integer:like and float:like
 
-                * `"object:ClassName"` :　Checks whether an object is a particular `ClassName`. You can check the `ClassName` by looking at the value of the variable holding the object in [data inspection](#data-inspection)(e.g. `ClassName {...} `). Note that the `ClassName` here is not the same as the value of the `__class` field.
+                * `"object:ClassName"` :　Checks whether an object is a particular `ClassName`. You can check the `ClassName` by looking at the value of the variable holding the object in [data inspection](#data-inspection)(e.g. `ClassName {...} `). Note that the `ClassName` here is not the same as the value of the `__class` field
 
             * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an class object. e.g. `instance is ClassObject`
 
