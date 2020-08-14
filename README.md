@@ -5,9 +5,9 @@ Please read the following first.
 * **This extension will not work alone.**
 A separate extension that supports the AutoHotkey language is required(The most famous is slevesque.vscode-autohotkey). If you are using AutoHotkey v2, another extension that supports it required. (e.g. `dudelmoser.vscode-autohotkey2`)
 
-* Please report any bugs or feature requests in [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)(Github account is required)
-
 * Before you update, please look at the News below this first. It may contain important information. Also, there may be a fatal bug in the new version. If this is the case, please refer to [CHANGELOG](CHANGELOG.md) to downgrade it
+
+* To support the developers (bug reports, sponsorship, etc.), see [here](#development-support)
 
 # News
 ### Important Notices
@@ -359,5 +359,17 @@ This is useful if you want to output an object.
 # Change log
 See [CHANGELOG](CHANGELOG.md)
 
-# Issues
-If you find a bug, you can report it [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)(you need a Github account).
+# Development support
+## About source code contributes
+I am currently not accepting contributions.
+
+I understand that this is a folly to throw away the strength of open-source software, but I believe that I should do all the implementation because the development of this extension includes the purpose of measuring my skills as a programmer.
+
+## About bug reports and feature requests
+It is accepted on [Github issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues). (Github account required). Basically, I will reply to you by the same day or the next day, so feel free to report.
+
+## About GitHub Sponsors
+I am looking for [GitHub Sponsors](https://github.com/sponsors/zero-plusplus) for $1-$100 per month. However, please note the following
+
+1. There is no rewards for sponsors. This is because development is a priority.
+2. I will not stop development just because I don't have a sponsor. So there is no need to be forced to become a sponsor
