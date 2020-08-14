@@ -30,6 +30,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
         * Make `VariableName` parsing more accurate
     * Fixed: The exit process fails with some errors
     * Fixed: In some cases, the `<base>` field of an instance cannot be obtained correctly
+    * Fixed: Fail to parse hexadecimal numbers starting from 0 as in `0x012` with conditional breakpoints and variable writing, etc
     * Fixed: v1 only bug. Where some variables cannot be obtained with conditional breakpoint and watch expression
 
 * `1.4.10` - 2020-08-03

@@ -102,7 +102,7 @@ export const createParser = function(version: 1 | 2): P.Language {
     HexLiteral(rules) {
       return P.seq(
         P.alt(rules.NegativeOperator, P.string('')),
-        P.regex(/0x(?:[1-9a-f][0-9a-f]+|[0-9a-f])/ui),
+        P.regex(/0x(?:[0-9a-f]+)/ui),
       ).map((result) => {
         return {
           type: 'Hex',
