@@ -372,7 +372,7 @@ See [CHANGELOG](CHANGELOG.md)
 # Known issues
 * [Data inspection](#data-inspection) bug. Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0..99]`. The AutoHotkey array starts at 1 and should be `[1..100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment
 
-* v2 only bug. Trying to get a [property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) with a conditional breakpoint or a watch expression, etc will cause a critical error
+* v2 only bug. Trying to get a [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) with a conditional breakpoint or a watch expression, etc will cause a critical error
 
 # Development support
 ## About source code contributes
