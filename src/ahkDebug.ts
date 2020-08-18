@@ -827,61 +827,45 @@ export class AhkDebugSession extends LoggingDebugSession {
       return event;
     };
 
-    const regex = /(?<!\\)\{(?<variableName>(?:\\\{|\\\}|[^{}\n])+?)(?<!\\)\}/gu;
-    let message = '';
-    if (logMessage.search(regex) === -1) {
+    const variableRegex = /(?<!\\)\{(?<variableName>(?:\\\{|\\\}|[^{}\n])+?)(?<!\\)\}/gu;
+    if (logMessage.search(variableRegex) === -1) {
       this.sendEvent(createOutputEvent(logMessage));
       return;
     }
 
-    const { stackFrames } = await this.session!.sendStackGetCommand();
-    const { contexts } = await this.session!.sendContextNamesCommand(stackFrames[0]);
-    let currentIndex = 0;
-    for await (const match of logMessage.matchAll(regex)) {
+    let message = '', currentIndex = 0;
+    for await (const match of logMessage.matchAll(variableRegex)) {
       if (typeof match.index === 'undefined') {
         break;
       }
       if (typeof match.groups === 'undefined') {
         break;
       }
+
       const { variableName } = match.groups;
-
-      for await (const context of contexts) {
-        let property: dbgp.Property;
-        try {
-          const { properties } = await this.session!.sendPropertyGetCommand(context, variableName);
-          property = properties[0];
-        }
-        catch (error) {
-          continue;
-        }
-
-        if (property.type === 'undefined') {
-          continue;
-        }
-
-        if (property instanceof dbgp.ObjectProperty) {
-          if (currentIndex < match.index) {
-            message += logMessage.slice(currentIndex, match.index);
-          }
-          if (message) {
-            this.sendEvent(new OutputEvent(unescapeLogMessage(message), logCategory));
-            message = '';
-          }
-
-          const objectProperty = property;
-          const variablesReference = this.variablesReferenceCounter++;
-          this.logObjectPropertiesByVariablesReference.set(variablesReference, objectProperty);
-          this.sendEvent(createOutputEvent(objectProperty.displayValue, variablesReference));
-        }
-        else {
-          const primitiveProperty = property as dbgp.PrimitiveProperty;
-          message += logMessage.slice(currentIndex, match.index) + primitiveProperty.value;
-        }
-
-        currentIndex = match[0].length + match.index;
+      const property = await this.session!.fetchLatestProperty(variableName);
+      if (property === null) {
         break;
       }
+
+      if (property instanceof dbgp.ObjectProperty) {
+        if (currentIndex < match.index) {
+          message += logMessage.slice(currentIndex, match.index);
+        }
+        if (message) {
+          this.sendEvent(new OutputEvent(unescapeLogMessage(message), logCategory));
+          message = '';
+        }
+
+        const variablesReference = this.variablesReferenceCounter++;
+        this.logObjectPropertiesByVariablesReference.set(variablesReference, property);
+        this.sendEvent(createOutputEvent(property.displayValue, variablesReference));
+      }
+      else if (property instanceof dbgp.PrimitiveProperty) {
+        message += logMessage.slice(currentIndex, match.index) + property.value;
+      }
+
+      currentIndex = match[0].length + match.index;
     }
 
     if (currentIndex < logMessage.length) {
