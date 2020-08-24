@@ -126,11 +126,20 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): Promise<void> {
     this.config = args;
-    const lunchScript = (): void => {
-      if (!pathExistsSync(this.config.runtime)) {
-        throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
-      }
 
+    if (!pathExistsSync(this.config.runtime)) {
+      throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
+    }
+
+    const portUsed = await isPortTaken(this.config.port, this.config.hostname);
+    if (portUsed) {
+      if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
+        this.sendEvent(new TerminatedEvent());
+        return;
+      }
+    }
+
+    try {
       const runtimeArgs = [ ...this.config.runtimeArgs, `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ];
       this.sendEvent(new OutputEvent(`${this.config.runtime} ${runtimeArgs.join(' ')}\n`, 'console'));
       const ahkProcess = spawn(
@@ -164,10 +173,8 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         this.sendEvent(new OutputEvent(fixedData, 'stderr'));
       });
-
       this.ahkProcess = ahkProcess;
-    };
-    const createServer = (): void => {
+
       this.server = net.createServer()
         .listen(args.port, args.hostname)
         .on('connection', (socket) => {
@@ -229,19 +236,6 @@ export class AhkDebugSession extends LoggingDebugSession {
             this.sendEvent(new TerminatedEvent());
           }
         });
-    };
-
-    const portUsed = await isPortTaken(this.config.port, this.config.hostname);
-    if (portUsed) {
-      if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
-        this.sendEvent(new TerminatedEvent());
-        return;
-      }
-    }
-
-    try {
-      createServer();
-      lunchScript();
     }
     catch (error) {
       const message = {
