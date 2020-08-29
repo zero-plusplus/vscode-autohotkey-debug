@@ -13,6 +13,10 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
+## [1.x.x] - 2020-xx-xx
+### Fixed
+* [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
+
 ## [1.5.0] - 2020-08-14
 ### Added
 * Operators in conditional breakpoint
@@ -234,6 +238,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.x.x]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.5.0..v1.x.x
 [1.5.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.10..v1.5.0
 [1.4.10]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.9..v1.4.10
 [1.4.9]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.8..v1.4.9

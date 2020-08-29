@@ -16,6 +16,9 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.x.x` - 2020-xx-xx
+    * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
+
 * `1.5.0` - 2020-08-14
     * Added: Operators in conditional breakpoint
         * The following operators are now available

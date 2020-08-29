@@ -781,7 +781,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     if (matchCondition) {
-      if (typeof logMessage === 'undefined') {
+      if (typeof logMessage === 'undefined' || logMessage === '') {
         let stopReason = 'conditional breakpoint';
         if (typeof condition === 'undefined' && typeof hitCondition === 'undefined') {
           stopReason = 'breakpoint';
