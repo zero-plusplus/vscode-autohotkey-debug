@@ -300,18 +300,31 @@ export class PropertySetResponse extends Response {
   }
 }
 export type ContinuationStatus = 'starting' | 'break' | 'running' | 'stopped';
-export type ContinuationReason = 'ok' | 'error';
+export type ContinuationExitReason = 'ok' | 'error';
+export type ContinuationStopReason = 'step' | 'breakpoint' | 'pause';
 export class ContinuationResponse extends Response {
-  public commandName: ContinuationCommandName;
-  public reason: ContinuationReason;
+  public exitReason: ContinuationExitReason;
+  public stopReason: ContinuationStopReason;
   public status: ContinuationStatus;
   constructor(response: XmlNode) {
     super(response);
-    const { command, status, reason } = response.attributes;
 
-    this.commandName = command as ContinuationCommandName;
-    this.reason = reason as ContinuationReason;
-    this.status = status as ContinuationStatus;
+    const status = response.attributes.status ? response.attributes.status as ContinuationStatus : 'break';
+    const exitReason = response.attributes.reason ? response.attributes.reason as ContinuationExitReason : 'ok';
+    let stopReason: ContinuationStopReason;
+    if (this.commandName.startsWith('step')) {
+      stopReason = 'step';
+    }
+    else if (this.commandName === 'break') {
+      stopReason = 'pause';
+    }
+    else {
+      stopReason = 'breakpoint';
+    }
+
+    this.exitReason = exitReason;
+    this.stopReason = stopReason;
+    this.status = status;
   }
 }
 export class Context {

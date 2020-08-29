@@ -712,10 +712,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
 
-      const stopReason = response.commandName.startsWith('step')
-        ? 'step'
-        : 'breakpoint';
-      this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
+      this.sendEvent(new StoppedEvent(response.stopReason, this.session!.id));
     }
   }
   private async checkAdvancedBreakpoint(breakpoint: dbgp.Breakpoint, forceStop = false): Promise<void> {
