@@ -11,12 +11,13 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 # News
 ### Important Notices
-* This is a notification for people who debug using launch.json. As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to `autohotkey`. This is to prevent it from being misinterpreted as a file extension. You need to edit the launch.json as soon as possible
+* Advanced output has been removed. See [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) for details.
 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
 * `1.x.x` - 2020-xx-xx
+    * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
 
 * `1.5.0` - 2020-08-14
@@ -41,9 +42,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: A bug in data inspect
         * The summary of objects within an object is not displayed correctly. Occurred in 1.4.8
         * Chunking does not work when opening an array of 101 or more in an object. Occurred in 1.4.8
-
-* `1.4.9` - 2020-07-27
-    * Fixed: Some runtime error output does not include a newline at the end of the output. Occurred in 1.4.8
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -98,8 +96,6 @@ Some noteworthy settings are described below.
 * `stopOnEntry` :　If `false`, it runs until it stops at a breakpoint. Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey
 
 * `useAdvancedBreakpoint` :　If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled
-
-* `useAdvancedOutput` :　If set to `true`, [advanced output](#advanced-standard-output-optional) is enabled
 
 * `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
@@ -360,14 +356,6 @@ A loadtime error will result in a file path being output, while a runtime error 
 If you want to fix it, add [this code](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) to your script.
 
 This code will suppress the runtime error message box and make the output the same as the loadtime error.
-
-### Advanced standard output (Optional)
-**This feature is a preview version and the specifications are subject to change. Also, please note that evaluating expressions and retrieving variables take some time.**
-
-`useAdvancedBreakpoint` to `true` in launch.json. See [here](#customize-the-launch-configuration) for details.
-
-Make the output specifications the same as the [log point](#log-point).
-This is useful if you want to output an object.
 
 # Change log
 See [CHANGELOG](CHANGELOG.md)

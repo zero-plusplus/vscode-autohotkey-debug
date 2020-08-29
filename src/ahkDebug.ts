@@ -37,7 +37,6 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   permittedPortRange: number[];
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
-  useAdvancedOutput: boolean;
   openFileOnExit: string;
 }
 export class AhkDebugSession extends LoggingDebugSession {
@@ -158,19 +157,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       });
       ahkProcess.stdout.on('data', (data: string | Buffer) => {
         const fixedData = this.fixPathOfRuntimeError(String(data));
-        if (this.session && this.config.useAdvancedOutput) {
-          this.printLogMessage(fixedData, 'stdout');
-          return;
-        }
         this.sendEvent(new OutputEvent(fixedData, 'stdout'));
       });
       ahkProcess.stderr.on('data', (data: Buffer) => {
         const fixedData = this.fixPathOfRuntimeError(String(data));
-        if (this.session && this.config.useAdvancedOutput) {
-          this.printLogMessage(fixedData, 'stderr');
-          return;
-        }
-
         this.sendEvent(new OutputEvent(fixedData, 'stderr'));
       });
       this.ahkProcess = ahkProcess;
@@ -214,18 +204,10 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendEvent(new TerminatedEvent());
               })
               .on('stdout', (data) => {
-                if (this.session && this.config.useAdvancedOutput) {
-                  this.printLogMessage(data, 'stdout');
-                  return;
-                }
                 this.sendEvent(new OutputEvent(data, 'stdout'));
               })
               .on('stderr', (data) => {
                 const fixedData = this.fixPathOfRuntimeError(String(data));
-                if (this.session && this.config.useAdvancedOutput) {
-                  this.printLogMessage(fixedData, 'stderr');
-                  return;
-                }
                 this.sendEvent(new OutputEvent(fixedData, 'stderr'));
               });
 

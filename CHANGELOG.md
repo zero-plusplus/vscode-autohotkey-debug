@@ -14,6 +14,9 @@ Mainly bug fixes and processing improvements.
 
 ## [Released]
 ## [1.x.x] - 2020-xx-xx
+### Changed
+* [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
+
 ### Fixed
 * [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
 
