@@ -20,8 +20,8 @@ const inequality = (sign: string): Operator => {
     if (containsObjectAddress) {
       return false;
     }
-    const _a = parseInt(a, 10);
-    const _b = parseInt(b, 10);
+    const _a = parseFloat(a);
+    const _b = parseFloat(b);
     if (Number.isNaN(_a) || Number.isNaN(_b)) {
       return false;
     }
