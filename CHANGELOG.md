@@ -16,6 +16,7 @@ Mainly bug fixes and processing improvements.
 ## [1.x.x] - 2020-xx-xx
 ### Changed
 * [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
+* [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) MetaVariables are now available in several features
 
 ### Fixed
 * [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it

@@ -4,6 +4,7 @@ import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import { rtrim } from 'underscore.string';
+import * as convertHrTime from 'convert-hrtime';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -47,10 +48,9 @@ export class InitPacket {
     this.fileUri = fileuri;
   }
 }
-export type ContinuationCommandName = 'run' | 'step_into' | 'step_over' | 'step_out' | 'break' | 'stop' | 'detach';
+export type ContinuationCommandName = 'run' | 'step_into' | 'step_over' | 'step_out' | 'break' | 'stop' | 'detach' | 'status';
 export type CommandName =
   ContinuationCommandName |
-  'status' |
   'stack_get' | 'stack_depth' | 'context_get' | 'context_names' |
   'property_get' | 'property_set' | 'property_value' |
   'feature_get' | 'feature_set' |
@@ -302,13 +302,20 @@ export class PropertySetResponse extends Response {
 export type ContinuationStatus = 'starting' | 'break' | 'running' | 'stopped';
 export type ContinuationExitReason = 'ok' | 'error';
 export type ContinuationStopReason = 'step' | 'breakpoint' | 'pause';
+export interface ContinuationExecuteTime {
+  ns: number;
+  ms: number;
+  s: number;
+}
 export class ContinuationResponse extends Response {
   public exitReason: ContinuationExitReason;
   public stopReason: ContinuationStopReason;
   public status: ContinuationStatus;
-  constructor(response: XmlNode) {
+  public executeTime: ContinuationExecuteTime;
+  constructor(response: XmlNode, executeTime: ContinuationExecuteTime) {
     super(response);
 
+    this.executeTime = executeTime;
     const status = response.attributes.status ? response.attributes.status as ContinuationStatus : 'break';
     const exitReason = response.attributes.reason ? response.attributes.reason as ContinuationExitReason : 'ok';
     let stopReason: ContinuationStopReason;
@@ -584,9 +591,6 @@ export class Session extends EventEmitter {
       this.write(command_str);
     });
   }
-  public async sendStatusCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('status'));
-  }
   public async sendStackGetCommand(): Promise<StackGetResponse> {
     return new StackGetResponse(await this.sendCommand('stack_get'));
   }
@@ -596,29 +600,44 @@ export class Session extends EventEmitter {
       context,
     );
   }
+  public async sendContinuationCommand(commandName: ContinuationCommandName): Promise<ContinuationResponse> {
+    const startTime = process.hrtime();
+    const response = await this.sendCommand(commandName);
+    const diff = convertHrTime(process.hrtime(startTime));
+
+    const executeTime = {
+      ns: diff.nanoseconds,
+      ms: diff.milliseconds,
+      s: diff.seconds,
+    } as ContinuationExecuteTime;
+    return new ContinuationResponse(response, executeTime);
+  }
   public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: string; data: string }): Promise<PropertySetResponse> {
     return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName.replace(/<base>/ug, 'base')} -t ${property.typeName}`, property.data));
   }
   public async sendRunCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('run'));
+    return this.sendContinuationCommand('run');
   }
   public async sendBreakCommand(): Promise<Response> {
-    return new Response(await this.sendCommand('break'));
+    return this.sendContinuationCommand('break');
   }
   public async sendStopCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('stop'));
+    return this.sendContinuationCommand('stop');
   }
   public async sendDetachCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('detach'));
+    return this.sendContinuationCommand('detach');
   }
   public async sendStepIntoCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('step_into'));
+    return this.sendContinuationCommand('step_into');
   }
   public async sendStepOutCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('step_out'));
+    return this.sendContinuationCommand('step_out');
   }
   public async sendStepOverCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('step_over'));
+    return this.sendContinuationCommand('step_over');
+  }
+  public async sendStatusCommand(): Promise<ContinuationResponse> {
+    return this.sendContinuationCommand('status');
   }
   public async sendContextNamesCommand(stackFrame: StackFrame): Promise<ContextNamesResponse> {
     return new ContextNamesResponse(await this.sendCommand('context_names'), stackFrame);

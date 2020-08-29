@@ -17,6 +17,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
 * `1.x.x` - 2020-xx-xx
+    * Changed: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) MetaVariables are now available in several features
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
 
@@ -100,6 +101,37 @@ Some noteworthy settings are described below.
 * `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
 * `openFileOnExit` :　The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
+
+# MetaVariable
+Some features make use of the information available to the debugger adapter. This is called `MetaVariable`.
+
+When used, enclose the name of the `MetaVariable` in curly brackets. It is not case sensitive. e.g. `{MetaVariableName}`
+
+The available MetaVariables are listed below.
+
+* `{file}` :　Current file name. Equivalent to [A_LineFile](https://www.autohotkey.com/docs/Variables.htm#LineFile).
+
+* `{line}` :　Current line number. Equivalent to [A_LineNumber](https://www.autohotkey.com/docs/Variables.htm#LineNumber).
+
+* `{condition}` :　 Condition of the breakpoint
+
+* `{hitCondition]` :　Condition of the hit breakpoint
+
+* `{logMessage}` :　Message of the log point
+
+* `{executeTime_ns}`
+
+* `{executeTime_ms}`
+
+* `{executeTime_s}` :　Time taken to execute. The suffix indicates the unit of measurement: `ns`(nanosecond), `ms`(millisecond), `s`(second).
+
+The following is available if `useProcessUsageData` is enabled
+
+* `{usageCpu}` :　Current CPU usage (Unit: %)
+
+* `{usageMemory_B}`
+
+* `{usageMemory_MB}` :　Current memory usage. The suffix indicates the unit of measurement: `B`(byte), MB(megabyte)
 
 # Features
 ## Data inspection
@@ -199,6 +231,8 @@ e.g.
 * `Value` :　`VariableName` or `Primitive`
 
 * `VariableName` :　Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+
+* `MetaVariableName` :　Please Look at [MetaVariableName](#MetaVariableName)
 
 * `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 
@@ -324,14 +358,20 @@ The log point does not stop, unlike at the break point.
 Instead, they print their contents to standard output.
 This can be useful if you don't want to put the code for the output in a script.
 
-You can embed the value of a variable by enclosing the `VariableName` in braces. For more information on `VariableName`, see [data inspection](#data-inspection). e.g. `count: {A_Index}`, `name: {person.name}`
+You can embed the value of a variable by enclosing the `VariableName` or `MetaVariable` in braces.
+
+For more information on `VariableName`, see [data inspection](#data-inspection). You can read more about the metavariables [here](#MetaVariable).
+
+ e.g. `count: {A_Index}`, `name: {person.name}`, `{{executeTime_s}}`
 
 If you want to output `{`, use `\{`.
 
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
 
-Only `VariableName` is supported. Expressions are not supported. For more information on `VariableName`, see [data inspection](#data-inspection).
+`VariableName` or `MetaVariableName` are supported. Expressions are not supported.
+
+For more information on `VariableName`, see [data inspection](#data-inspection). You can read more about the metavariables [here](#MetaVariable).
 
 ## Loaded scripts
 ![loaded-scripts](image/loaded-scripts.gif)

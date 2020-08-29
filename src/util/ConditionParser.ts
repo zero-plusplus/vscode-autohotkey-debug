@@ -185,6 +185,18 @@ export const createParser = function(version: 1 | 2): P.Language {
         };
       });
     },
+    MetaVariable(rules) {
+      return P.seq(
+        P.string('{'),
+        P.regex(/[\w_]+/u),
+        P.string('}'),
+      ).map((result) => {
+        return {
+          type: 'MetaVariable',
+          value: result[1],
+        };
+      });
+    },
     Value(rules) {
       return P.alt(
         P.seq(
@@ -193,6 +205,7 @@ export const createParser = function(version: 1 | 2): P.Language {
             rules.Primitive,
             rules.RegexpLiteral,
             rules.PropertyName,
+            rules.MetaVariable,
           ),
         ).map((result) => {
           return {
@@ -205,6 +218,7 @@ export const createParser = function(version: 1 | 2): P.Language {
           rules.Primitive,
           rules.RegexpLiteral,
           rules.PropertyName,
+          rules.MetaVariable,
         ),
       );
     },

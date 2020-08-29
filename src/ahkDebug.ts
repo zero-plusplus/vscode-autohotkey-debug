@@ -5,7 +5,7 @@ import {
   ChildProcessWithoutNullStreams,
   spawn,
 } from 'child_process';
-import { window, workspace } from 'vscode';
+import * as vscode from 'vscode';
 import {
   InitializedEvent,
   LoggingDebugSession,
@@ -21,10 +21,14 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { sync as pathExistsSync } from 'path-exists';
 import * as isPortTaken from 'is-port-taken';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
+import * as pidusage from 'pidusage';
+import ByteConverter from '@wtfcode/byte-converter';
+import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { Parser, createParser } from './util/ConditionParser';
 import { ConditionalEvaluator } from './util/ConditionEvaluator';
 import * as dbgp from './dbgpSession';
 
+const byteConverter = new ByteConverter();
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
   program: string;
   runtime: string;
@@ -37,6 +41,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   permittedPortRange: number[];
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
+  useProcessUsageData: boolean;
   openFileOnExit: string;
 }
 export class AhkDebugSession extends LoggingDebugSession {
@@ -55,6 +60,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private readonly breakpoints: { [key: string]: dbgp.Breakpoint | undefined} = {};
   private conditionalEvaluator!: ConditionalEvaluator;
+  private currentStackFrames: dbgp.StackFrame[] | null = null;
+  private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
   constructor() {
     super('autohotkey-debug.txt');
 
@@ -106,8 +113,8 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (this.config.openFileOnExit !== null) {
       if (pathExistsSync(this.config.openFileOnExit)) {
-        const doc = await workspace.openTextDocument(this.config.openFileOnExit);
-        window.showTextDocument(doc);
+        const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
+        vscode.window.showTextDocument(doc);
       }
       else {
         const message = {
@@ -116,7 +123,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         } as DebugProtocol.Message;
         // For some reason, the error message could not be displayed by the following method.
         // this.sendErrorResponse(response, message);
-        window.showErrorMessage(message.format);
+        vscode.window.showErrorMessage(message.format);
       }
     }
 
@@ -295,62 +302,62 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
-    await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
     this.sendResponse(response);
+    await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
+
     if (this.config.stopOnEntry) {
-      const dbgpResponse = await this.session!.sendStepIntoCommand();
-      this.checkContinuationStatus(dbgpResponse);
+      const result = await this.session!.sendContinuationCommand('step_into');
+      this.checkContinuationStatus(result);
       return;
     }
 
-    this.session!.sendRunCommand().then((dbgpResponse) => {
-      if (this.config.useAdvancedBreakpoint) {
-        this.checkContinuationStatus(dbgpResponse, !this.config.stopOnEntry);
-        return;
-      }
-
-      this.checkContinuationStatus(dbgpResponse);
-    });
+    const result = await this.session!.sendContinuationCommand('run');
+    if (this.config.useAdvancedBreakpoint) {
+      this.checkContinuationStatus(result, !this.config.stopOnEntry);
+      return;
+    }
+    this.checkContinuationStatus(result);
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
-    const dbgpResponse = await this.session!.sendRunCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+    const result = await this.session!.sendContinuationCommand('run');
+    this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
-    const dbgpResponse = await this.session!.sendStepOverCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint, true);
+    const result = await this.session!.sendContinuationCommand('step_over');
+    this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint, true);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
-    const dbgpResponse = await this.session!.sendStepIntoCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint, true);
+    const result = await this.session!.sendContinuationCommand('step_into');
+    this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint, true);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
-    const dbgpResponse = await this.session!.sendStepOutCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint, true);
+    const result = await this.session!.sendContinuationCommand('step_out');
+    this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint, true);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
-    await this.session!.sendBreakCommand();
-    this.sendEvent(new StoppedEvent('pause', this.session!.id));
     this.sendResponse(response);
+
+    const result = await this.session!.sendContinuationCommand('break');
+    this.checkContinuationStatus(result);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };
     this.sendResponse(response);
   }
-  protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): Promise<void> {
+  protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): void {
     const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
     const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
     const endFrame = startFrame + maxLevels;
 
-    const { stackFrames: allStackFrames } = await this.session!.sendStackGetCommand();
+    const allStackFrames: dbgp.StackFrame[] = this.currentStackFrames!; // The most recent stack frame is always retrieved by checkContinuationStatus, which is executed immediately before, so you won't get a null.
     const stackFrames = allStackFrames.slice(startFrame, endFrame);
 
     if (0 < stackFrames.length) {
@@ -583,9 +590,23 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (!args.frameId) {
         throw Error('Error: Cannot evaluate code without a session');
       }
-      const parsed = this.ahkParser.PropertyName.parse(propertyName);
-      if (!parsed.status) {
-        throw Error('Error: Only the property name is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`');
+
+      const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
+      if (metaVariableParsed.status) {
+        const metaVariableName = metaVariableParsed.value.value;
+        if (this.currentMetaVariables?.has(metaVariableName)) {
+          response.body = {
+            result: this.currentMetaVariables.get(metaVariableName)!,
+            variablesReference: 0,
+          };
+          this.sendResponse(response);
+        }
+        throw Error('not available');
+      }
+
+      const propertyNameParsed = this.ahkParser.PropertyName.parse(propertyName);
+      if (!propertyNameParsed.status) {
+        throw Error('Error: Only the property name or meta variable is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`, `{metaVariableName}`');
       }
       const stackFrame = this.stackFramesByFrameId.get(args.frameId);
       if (!stackFrame) {
@@ -654,7 +675,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (!this.config.permittedPortRange.includes(this.config.port)) {
       const message = `Port number \`${originalPort}\` is already in use. Would you like to start debugging using \`${this.config.port}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
-      const result = await window.showInformationMessage(message, { modal: true }, 'Yes');
+      const result = await vscode.window.showInformationMessage(message, { modal: true }, 'Yes');
       if (typeof result === 'undefined') {
         return false;
       }
@@ -662,20 +683,10 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     return true;
   }
-  private async getCurrentBreakpoint(): Promise<dbgp.Breakpoint | null> {
-    let stackFrame: dbgp.StackFrame;
-    try {
-      const { stackFrames } = await this.session!.sendStackGetCommand();
-      stackFrame = stackFrames[0];
-    }
-    catch (error) {
-      return null;
-    }
-
+  private getCurrentBreakpoint(stackFrame: dbgp.StackFrame): dbgp.Breakpoint | null {
     const { fileUri, line } = stackFrame;
     const filePath = this.convertDebuggerPathToClient(fileUri);
-    const breakpoint = this.breakpoints[`${filePath.toLowerCase()}${line}`];
-
+    const breakpoint = this.breakpoints[`${filePath.toLowerCase()}${String(line)}`];
     if (breakpoint) {
       return breakpoint;
     }
@@ -704,28 +715,53 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(new TerminatedEvent());
     }
     else if (response.status === 'break') {
+      const { stackFrames } = await this.session!.sendStackGetCommand();
+      this.currentStackFrames = stackFrames;
+
+      const stackFrame = stackFrames[0];
+      const breakpoint = this.getCurrentBreakpoint(stackFrame);
+
+      const metaVariables = new CaseInsensitiveMap<string, string>();
+      if (response.commandName !== 'break') {
+        this.currentMetaVariables = metaVariables;
+      }
+      metaVariables.set('file', this.convertDebuggerPathToClient(stackFrame.fileUri));
+      metaVariables.set('line', String(stackFrame.line));
+      metaVariables.set('executeTime_ns', String(response.executeTime.ns));
+      metaVariables.set('executeTime_ms', String(response.executeTime.ms));
+      metaVariables.set('executeTime_s', String(response.executeTime.s));
+      if (this.config.useProcessUsageData) {
+        const usage = await pidusage(this.ahkProcess!.pid);
+        metaVariables.set('usageCpu', String(usage.cpu));
+        metaVariables.set('usageMemory_B', String(usage.memory));
+        metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
+      }
+
       if (checkExtraBreakpoint) {
-        const breakpoint = await this.getCurrentBreakpoint();
-        if (breakpoint) {
-          await this.checkAdvancedBreakpoint(breakpoint, forceStop);
-          return;
+        if (breakpoint?.advancedData) {
+          breakpoint.advancedData.counter++;
+          metaVariables.set('condition', breakpoint.advancedData.condition ?? '');
+          metaVariables.set('hitCondition', breakpoint.advancedData.hitCondition ?? '');
+          metaVariables.set('hitCount', breakpoint.advancedData.counter ? String(breakpoint.advancedData.counter) : '-1');
+          metaVariables.set('logMessage', breakpoint.advancedData.logMessage ?? '');
         }
+
+        await this.checkAdvancedBreakpoint(metaVariables, forceStop);
+        return;
       }
 
       this.sendEvent(new StoppedEvent(response.stopReason, this.session!.id));
     }
   }
-  private async checkAdvancedBreakpoint(breakpoint: dbgp.Breakpoint, forceStop = false): Promise<void> {
-    if (!breakpoint.advancedData) {
-      return;
-    }
-    breakpoint.advancedData.counter++;
-
-    const { condition, hitCondition, logMessage, counter } = breakpoint.advancedData;
+  private async checkAdvancedBreakpoint(metaVariables: CaseInsensitiveMap<string, string>, forceStop = false): Promise<void> {
+    const condition = metaVariables.get('condition');
+    const hitCondition = metaVariables.get('hitCondition');
+    const hitCount = metaVariables.has('hitCount') ? parseInt(metaVariables.get('hitCount')!, 10) : -1;
+    const logMessage = metaVariables.get('logMessage');
 
     let conditionResult = false, hitConditionResult = false;
     if (condition) {
-      conditionResult = await this.conditionalEvaluator.eval(condition);
+      conditionResult = await this.conditionalEvaluator.eval(condition, metaVariables);
     }
     if (hitCondition) {
       const match = hitCondition.match(/^(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)$/u);
@@ -741,10 +777,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
 
         const code = _operator === '%'
-          ? `(${counter % parseInt(number, 10)} === 0)`
-          : `${counter} ${_operator} ${number}`;
+          ? `(${hitCount % parseInt(number, 10)} === 0)`
+          : `${hitCount} ${_operator} ${number}`;
         try {
-          hitConditionResult = await this.conditionalEvaluator.eval(code);
+          hitConditionResult = await this.conditionalEvaluator.eval(code, metaVariables);
         }
         catch {
         }
@@ -769,7 +805,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
-      await this.printLogMessage(logMessage, 'stdout', breakpoint, true);
+      await this.printLogMessage(metaVariables, 'stdout', true);
     }
 
     if (forceStop) {
@@ -780,34 +816,56 @@ export class AhkDebugSession extends LoggingDebugSession {
     const response = await this.session!.sendRunCommand();
     await this.checkContinuationStatus(response, true);
   }
-  private async printLogMessage(logMessage: string, logCategory: string, breakpoint: dbgp.Breakpoint | null = null, newline = false): Promise<void> {
+  private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory: string, newline = false): Promise<void> {
+    let metaVariables: CaseInsensitiveMap<string, string>;
+    if (typeof messageOrmetaVariables === 'string') {
+      metaVariables = new CaseInsensitiveMap<string, string>();
+      metaVariables.set('logMessage', messageOrmetaVariables);
+    }
+    else {
+      metaVariables = messageOrmetaVariables;
+    }
+
+    const logMessage = metaVariables.get('logMessage') ?? '';
+    const results = await this.formatLog(logMessage, metaVariables);
+    for (let i = 0; i < results.length; i++) {
+      const messageOrProperty = results[i];
+      if (typeof messageOrProperty === 'string') {
+        const message = newline && i === results.length - 1
+          ? `${messageOrProperty}\n`
+          : `${messageOrProperty}`;
+        this.sendEvent(new OutputEvent(message, logCategory));
+      }
+      else {
+        const property = messageOrProperty;
+        const variablesReference = this.variablesReferenceCounter++;
+        this.logObjectPropertiesByVariablesReference.set(variablesReference, property);
+
+        const event = new OutputEvent(property.displayValue, logCategory) as DebugProtocol.OutputEvent;
+        event.body.variablesReference = variablesReference;
+        if (metaVariables.has('file')) {
+          event.body.source = { path: metaVariables.get('file') };
+        }
+        if (metaVariables.has('line')) {
+          event.body.line = parseInt(metaVariables.get('line')!, 10);
+        }
+        this.sendEvent(event);
+      }
+    }
+  }
+  private async formatLog(format: string, metaVariables?: CaseInsensitiveMap<string, string>): Promise<Array<string | dbgp.ObjectProperty>> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
-    const createOutputEvent = (message: string, variablesReference: number | null = null): DebugProtocol.OutputEvent => {
-      let unescapedMessage = unescapeLogMessage(message);
-      if (newline) {
-        unescapedMessage += '\n';
-      }
-      const event = new OutputEvent(unescapedMessage, logCategory) as DebugProtocol.OutputEvent;
-      if (variablesReference) {
-        event.body.variablesReference = variablesReference;
-      }
-      if (breakpoint) {
-        event.body.source = { path: breakpoint.fileUri };
-        event.body.line = breakpoint.line;
-      }
-      return event;
-    };
 
-    const variableRegex = /(?<!\\)\{(?<variableName>(?:\\\{|\\\}|[^{}\n])+?)(?<!\\)\}/gu;
-    if (logMessage.search(variableRegex) === -1) {
-      this.sendEvent(createOutputEvent(logMessage));
-      return;
+    const variableRegex = /(?<!\\)\{(?<variableName>(?:\{?)?(?:\\\{|\\\}|[^{}\n])+?(?:\})?)(?<!\\)\}/gu;
+    if (format.search(variableRegex) === -1) {
+      return [ format ];
     }
 
+    const results: Array<string | dbgp.ObjectProperty> = [];
     let message = '', currentIndex = 0;
-    for await (const match of logMessage.matchAll(variableRegex)) {
+    for await (const match of format.matchAll(variableRegex)) {
       if (typeof match.index === 'undefined') {
         break;
       }
@@ -815,37 +873,48 @@ export class AhkDebugSession extends LoggingDebugSession {
         break;
       }
 
+      if (currentIndex < match.index) {
+        message += format.slice(currentIndex, match.index);
+      }
+
       const { variableName } = match.groups;
-      const property = await this.session!.fetchLatestProperty(variableName);
-      if (property === null) {
-        break;
-      }
-
-      if (property instanceof dbgp.ObjectProperty) {
-        if (currentIndex < match.index) {
-          message += logMessage.slice(currentIndex, match.index);
+      if (-1 < variableName.search(variableRegex)) {
+        const metaVariableName = variableName.match(new RegExp(variableRegex.source, 'u'))?.groups?.variableName ?? '';
+        if (metaVariables?.has(metaVariableName)) {
+          message += metaVariables.get(metaVariableName)!;
         }
-        if (message) {
-          this.sendEvent(new OutputEvent(unescapeLogMessage(message), logCategory));
-          message = '';
+        else {
+          message += match[0];
         }
-
-        const variablesReference = this.variablesReferenceCounter++;
-        this.logObjectPropertiesByVariablesReference.set(variablesReference, property);
-        this.sendEvent(createOutputEvent(property.displayValue, variablesReference));
       }
-      else if (property instanceof dbgp.PrimitiveProperty) {
-        message += logMessage.slice(currentIndex, match.index) + property.value;
+      else {
+        const property = await this.session!.fetchLatestProperty(variableName);
+
+        if (property) {
+          if (property instanceof dbgp.ObjectProperty) {
+            if (message !== '') {
+              results.push(unescapeLogMessage(message));
+              message = '';
+            }
+
+            results.push(property);
+          }
+          else if (property instanceof dbgp.PrimitiveProperty) {
+            message += property.value;
+          }
+        }
+        else {
+          message += match[0];
+        }
       }
 
       currentIndex = match[0].length + match.index;
     }
 
-    if (currentIndex < logMessage.length) {
-      message += logMessage.slice(currentIndex);
+    if (currentIndex < format.length) {
+      message += format.slice(currentIndex);
     }
-    if (message) {
-      this.sendEvent(createOutputEvent(message));
-    }
+    results.push(unescapeLogMessage(message));
+    return results;
   }
 }

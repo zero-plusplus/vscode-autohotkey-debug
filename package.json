@@ -159,6 +159,11 @@
                 "description": "Note: This is an experimental feature. Execution speed may be slow. Whether to enable Conditional Breakpoint / Hit Count Breakpoint / Log point",
                 "default": false
               },
+              "useProcessUsageData": {
+                "type": "boolean",
+                "description": "Add a process usage data to a MetaVariable. note that setting it to true will slow down the step execution by a factor of several.",
+                "default": false
+              },
               "openFileOnExit": {
                 "type": "string",
                 "description": "The absolute path of the file to open when the debugger exits.  If you want to turn this feature off, set it to null or omit it.",
@@ -189,13 +194,16 @@
     ]
   },
   "dependencies": {
+    "@wtfcode/byte-converter": "^1.7.11",
     "@zero-plusplus/ahk-include-path-resolver": "^1.0.7",
+    "convert-hrtime": "^3.0.0",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
     "is-port-taken": "^0.0.3",
     "parsimmon": "^1.13.0",
     "path-exists": "^4.0.0",
     "pcre-to-regexp": "^1.1.0",
+    "pidusage": "^2.0.21",
     "regex-parser": "^2.2.11",
     "underscore": "^1.10.2",
     "underscore.string": "^3.3.5",
@@ -203,10 +211,12 @@
     "vscode-debugprotocol": "^1.40.0"
   },
   "devDependencies": {
+    "@types/convert-hrtime": "^3.0.2",
     "@types/he": "^1.1.1",
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
     "@types/parsimmon": "^1.10.1",
+    "@types/pidusage": "^2.0.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
     "@types/vscode": "^1.45.0",

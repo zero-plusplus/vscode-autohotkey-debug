@@ -12,6 +12,7 @@
             "args": [],
             "stopOnEntry": false,
             "useAdvancedBreakpoint": true,
+            "useProcessUsageData": false,
             "internalConsoleOptions": "openOnSessionStart"
         },
         {

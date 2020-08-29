@@ -56,6 +56,13 @@
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
   integrity sha512-rr+OQyAjxze7GgWrSaJwydHStIhHq2lvY3BOC2Mj7KnzI7XK0Uw1TOOdI9lDoajEbSWLiYgoo4f1R51erQfhPQ==
 
+"@types/convert-hrtime@^3.0.2":
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/@types/convert-hrtime/-/convert-hrtime-3.0.2.tgz#83bd94c2337329e89a5d94cb86a7618d63fb8195"
+  integrity sha512-Vp5XAhp2XuzQQF+3vM4o7i8BDovr4Lhcg5hEGa772mrX0HUvDm+NWYn+enO5dBjsIEB+NBEPCn7+A6+lzPkmmQ==
+  dependencies:
+    convert-hrtime "*"
+
 "@types/eslint-visitor-keys@^1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@types/eslint-visitor-keys/-/eslint-visitor-keys-1.0.0.tgz#1ee30d79544ca84d68d4b3cdb0af4f205663dd2d"
@@ -109,6 +116,11 @@
   version "1.10.1"
   resolved "https://registry.yarnpkg.com/@types/parsimmon/-/parsimmon-1.10.1.tgz#d46015ad91128fce06a1a688ab39a2516507f740"
   integrity sha512-MoF2IC9oGSgArJwlxdst4XsvWuoYfNUWtBw0kpnCi6K05kV+Ecl7siEeJ40tgCbI9uqEMGQL/NlPMRv6KVkY5Q==
+
+"@types/pidusage@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@types/pidusage/-/pidusage-2.0.1.tgz#45eb309be947dcfa177957ef662ce2a0a2311d48"
+  integrity sha512-tYYcz/+5v/EGYT83C0pIXrJGOiVBLksQvxgJboG4nGqx/gZTvq0Ro4SkAjECqMk7L4Ww58VWB4j48qeYh4/YJg==
 
 "@types/underscore.string@^0.0.38":
   version "0.0.38"
@@ -174,6 +186,11 @@
     lodash "^4.17.15"
     semver "^6.3.0"
     tsutils "^3.17.1"
+
+"@wtfcode/byte-converter@^1.7.11":
+  version "1.7.11"
+  resolved "https://registry.yarnpkg.com/@wtfcode/byte-converter/-/byte-converter-1.7.11.tgz#6c03fd0a3466568fa31797ddb94828d423085539"
+  integrity sha512-4XrNSg5YvF2AbuZpdn/gAPD0/f9QZZYsYWkk7yWmhnkw9bkFDxSEhWSYJKU1zAwG63ZbvqdYdEHvGbbL3v7jcw==
 
 "@zero-plusplus/ahk-include-path-resolver@^1.0.7":
   version "1.0.7"
@@ -467,6 +484,11 @@ concat-map@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
   integrity sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=
+
+convert-hrtime@*, convert-hrtime@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/convert-hrtime/-/convert-hrtime-3.0.0.tgz#62c7593f5809ca10be8da858a6d2f702bcda00aa"
+  integrity sha512-7V+KqSvMiHp8yWDuwfww06XleMWVVB9b9tURBx+G7UTADuo5hYPuowKloz4OzOqbPezxgo+fdQ1522WzPG4OeA==
 
 cosmiconfig@^6.0.0:
   version "6.0.0"
@@ -1617,6 +1639,13 @@ picomatch@^2.0.4, picomatch@^2.0.5, picomatch@^2.2.1:
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-2.2.2.tgz#21f333e9b6b8eaff02468f5146ea406d345f4dad"
   integrity sha512-q0M/9eZHzmr0AulXyPwNfZjtwZ/RBZlbN3K3CErVrk50T2ASYI7Bye0EvekFY3IP1Nt2DHu0re+V2ZHIpMkuWg==
 
+pidusage@^2.0.21:
+  version "2.0.21"
+  resolved "https://registry.yarnpkg.com/pidusage/-/pidusage-2.0.21.tgz#7068967b3d952baea73e57668c98b9eaa876894e"
+  integrity sha512-cv3xAQos+pugVX+BfXpHsbyz/dLzX+lr44zNMsYiGxUw+kV5sgQCIcLd1z+0vq+KyC7dJ+/ts2PsfgWfSC3WXA==
+  dependencies:
+    safe-buffer "^5.2.1"
+
 pkg-dir@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/pkg-dir/-/pkg-dir-4.2.0.tgz#f099133df7ede422e81d1d8448270eeb3e4261f3"
@@ -1753,6 +1782,11 @@ rxjs@^6.5.3:
   integrity sha512-WfQI+1gohdf0Dai/Bbmk5L5ItH5tYqm3ki2c5GdWhKjalzjg93N3avFjVStyZZz+A2Em+ZxKH5bNghw9UeylGQ==
   dependencies:
     tslib "^1.9.0"
+
+safe-buffer@^5.2.1:
+  version "5.2.1"
+  resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.2.1.tgz#1eaf9fa9bdb1fdd4ec75f58f9cdb4e6b7827eec6"
+  integrity sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==
 
 safe-buffer@~5.2.0:
   version "5.2.0"

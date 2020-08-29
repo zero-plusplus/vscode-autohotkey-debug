@@ -3,6 +3,7 @@ import * as createPcre from 'pcre-to-regexp';
 import regexParser = require('regex-parser');
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
+import { CaseInsensitiveMap } from '../util/CaseInsensitiveMap';
 
 type Operator = (a, b) => boolean;
 const not = (predicate): Operator => (a, b): boolean => !predicate(a, b);
@@ -88,7 +89,7 @@ export class ConditionalEvaluator {
     this.session = session;
     this.parser = createParser(version);
   }
-  public async eval(expressions: string): Promise<boolean> {
+  public async eval(expressions: string, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
     let result = false;
 
     const matches = [ ...expressions.matchAll(/(?<expression>[^&|]+)(?<operator>&&|\|\|)?/gui) ];
@@ -98,7 +99,7 @@ export class ConditionalEvaluator {
         const operator = match?.groups?.operator;
 
         // eslint-disable-next-line no-await-in-loop
-        const evaledResult = await this.evalExpression(expression.trim());
+        const evaledResult = await this.evalExpression(expression.trim(), metaVariables);
         if (evaledResult && operator === '||') {
           return true;
         }
@@ -111,7 +112,7 @@ export class ConditionalEvaluator {
     }
     return result;
   }
-  public async evalExpression(expression: string): Promise<boolean> {
+  public async evalExpression(expression: string, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
     const parsed = this.parser.Expression.parse(expression);
     if ('value' in parsed) {
       const expression = parsed.value.value;
@@ -126,7 +127,7 @@ export class ConditionalEvaluator {
         if (operatorType.type === 'ComparisonOperator') {
           const operator = comparisonOperators[operatorType.value];
           const getValue = async(parsed): Promise<string | number | null> => {
-            const value = await this.evalValue(parsed);
+            const value = await this.evalValue(parsed, metaVariables);
             if (typeof value === 'string') {
               return value;
             }
@@ -148,8 +149,8 @@ export class ConditionalEvaluator {
         }
         else if ([ 'IsOperator', 'InOperator' ].includes(operatorType.type)) {
           const negativeMode = -1 < operatorType.value.search(/not/ui);
-          const valueA = await this.evalValue(a);
-          const valueB = await this.evalValue(b);
+          const valueA = await this.evalValue(a, metaVariables);
+          const valueB = await this.evalValue(b, metaVariables);
 
           let result = false;
           if (operatorType.type === 'IsOperator') {
@@ -249,6 +250,11 @@ export class ConditionalEvaluator {
           return result;
         }
       }
+      else if (expression.type === 'MetaVariable') {
+        if (metaVariables.has(expression.value)) {
+          primitiveValue = metaVariables.get(expression.value)!;
+        }
+      }
       else if (expression.type === 'PropertyName') {
         const property = await this.evalProperty(expression);
         if (property instanceof dbgp.PrimitiveProperty) {
@@ -309,12 +315,18 @@ export class ConditionalEvaluator {
     }
     return this.session.fetchLatestPropertyWithoutChildren(propertyName);
   }
-  private async evalValue(parsed): Promise<string | dbgp.Property | null> {
+  private async evalValue(parsed, metaVariables: CaseInsensitiveMap<string, string>): Promise<string | dbgp.Property | null> {
     if (!('type' in parsed || 'value' in parsed)) {
       return null;
     }
 
-    if (parsed.type === 'PropertyName') {
+    if (parsed.type === 'MetaVariable') {
+      if (metaVariables.has(parsed.value)) {
+        return metaVariables.get(parsed.value)!;
+      }
+      return null;
+    }
+    else if (parsed.type === 'PropertyName') {
       return this.evalProperty(parsed);
     }
     else if (parsed.type === 'Primitive') {
