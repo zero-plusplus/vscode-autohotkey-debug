@@ -934,6 +934,21 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
+    const filePath = metaVarialbes.has('file') ? metaVarialbes.get('file')! : '';
+
+    // If you open an already open document with `openTextDocument`, the highlighting may disappear at the time of the break, so you get it in two steps >>>
+    let document = vscode.workspace.textDocuments.find((document) => {
+      return document.fileName.toLowerCase() === filePath.toLowerCase();
+    });
+    if (typeof document === 'undefined') {
+      document = await vscode.workspace.openTextDocument(filePath);
+    }
+    // <<<
+
+    if (typeof document === 'undefined') {
+      return;
+    }
+
     const format = this.config.usePerfTips;
     let message = '';
     for (const messageOrProperty of await this.formatLog(format, metaVarialbes)) {
@@ -942,8 +957,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    const filePath = metaVarialbes.has('file') ? metaVarialbes.get('file')! : '';
-    const line_0base = metaVarialbes.has('line') ? parseInt(metaVarialbes.get('line')!, 10) - 1 : -1;
     const decorationType = vscode.window.createTextEditorDecorationType({
       after: {
         fontStyle: 'italic',
@@ -953,7 +966,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     });
     this.perfTipsDecorationTypes.push(decorationType);
 
-    const document = await vscode.workspace.openTextDocument(filePath);
+    const line_0base = metaVarialbes.has('line') ? parseInt(metaVarialbes.get('line')!, 10) - 1 : -1;
     const textLine = document.lineAt(line_0base);
     const startPosition = textLine.range.end;
     const endPosition = new vscode.Position(line_0base, textLine.range.end.character + message.length - 1);
