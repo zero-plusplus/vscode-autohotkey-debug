@@ -100,6 +100,8 @@ Some noteworthy settings are described below.
 
 * `useAdvancedBreakpoint` :　If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled
 
+* `useProcessUsageData` :　Add process usage data to the metavariable. See [MetaVariable](#MetaVariable) for details. Note that if it is true, debugging performance is slow because it takes time to get the data
+
 * `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
 * `openFileOnExit` :　The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
