@@ -391,9 +391,11 @@ You can use it by setting `usePerfTips` to `true` in launch.json.
 
 As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time
 
+Display more information when `useProcessUsageData` is `true`.
+
 If you specify a `string` in `usePerfTips`, you can customize what is displayed. You can embed `MetaVariable` and AutoHotkey variables as well as [log point](#log-point)
 
-Display more information when `useProcessUsageData` is `true`.
+Note: If you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other.
 
 ## Standard output
 Messages output to standard output are displayed in the [debug console panel](https://code.visualstudio.com/docs/editor/debugging).
