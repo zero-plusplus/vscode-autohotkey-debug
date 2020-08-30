@@ -813,8 +813,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const response = await this.session!.sendRunCommand();
-    await this.checkContinuationStatus(response, true);
+    const result = await this.session!.sendContinuationCommand('run');
+    await this.checkContinuationStatus(result, true);
   }
   private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory: string, newline = false): Promise<void> {
     let metaVariables: CaseInsensitiveMap<string, string>;
