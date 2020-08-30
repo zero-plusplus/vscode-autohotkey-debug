@@ -157,11 +157,9 @@ export class AhkDebugSession extends LoggingDebugSession {
           env: args.env,
         },
       );
-      ahkProcess.on('exit', (exitCode) => {
-        if (!(exitCode === null || exitCode === 0)) {
-          this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, 'stderr'));
-          this.sendEvent(new TerminatedEvent());
-        }
+      ahkProcess.on('close', (exitCode) => {
+        this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, 'stderr'));
+        this.sendEvent(new TerminatedEvent());
       });
       ahkProcess.stdout.on('data', (data: string | Buffer) => {
         const fixedData = this.fixPathOfRuntimeError(String(data));
@@ -204,12 +202,10 @@ export class AhkDebugSession extends LoggingDebugSession {
                 }
 
                 this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-                this.sendEvent(new TerminatedEvent());
               })
               .on('close', () => {
                 this.isSessionStopped = true;
                 this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-                this.sendEvent(new TerminatedEvent());
               })
               .on('stdout', (data) => {
                 this.sendEvent(new OutputEvent(data, 'stdout'));
@@ -717,7 +713,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
     if (response.status === 'stopped') {
       this.isSessionStopped = true;
-      this.sendEvent(new TerminatedEvent());
     }
     else if (response.status === 'break') {
       const { stackFrames } = await this.session!.sendStackGetCommand();
