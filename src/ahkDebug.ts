@@ -601,6 +601,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             variablesReference: 0,
           };
           this.sendResponse(response);
+          return;
         }
         throw Error('not available');
       }
