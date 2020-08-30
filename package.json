@@ -164,6 +164,14 @@
                 "description": "Add a process usage data to a MetaVariable. note that setting it to true will slow down the step execution by a factor of several.",
                 "default": false
               },
+              "usePerfTips": {
+                "type": [
+                  "boolean",
+                  "string"
+                ],
+                "description": "If set to true, execute time will be displayed inline. You can change what is displayed by specifying a string. See the README for details.",
+                "default": false
+              },
               "openFileOnExit": {
                 "type": "string",
                 "description": "The absolute path of the file to open when the debugger exits.  If you want to turn this feature off, set it to null or omit it.",

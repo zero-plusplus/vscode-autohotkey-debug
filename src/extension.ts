@@ -38,9 +38,16 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtimeArgs_v2: [ '/ErrorStdOut' ],
       useAdvancedBreakpoint: false,
       useProcessUsageData: false,
+      usePerfTips: false,
       openFileOnExit: null,
     };
     defaults(config, defaultConfig);
+
+    if (config.usePerfTips === true) {
+      config.usePerfTips = config.useProcessUsageData
+        ? `{{executeTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory`
+        : '{{executeTime_s}}s elapsed';
+    }
 
     if (typeof config.port === 'string') {
       if (config.port.match(/^\d+$/u)) {

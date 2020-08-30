@@ -42,6 +42,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
   useProcessUsageData: boolean;
+  usePerfTips: false | string;
   openFileOnExit: string;
 }
 export class AhkDebugSession extends LoggingDebugSession {
@@ -63,6 +64,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private conditionalEvaluator!: ConditionalEvaluator;
   private currentStackFrames: dbgp.StackFrame[] | null = null;
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
+  private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   constructor() {
     super('autohotkey-debug.txt');
 
@@ -100,6 +102,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.clearPerfTipsDecorations();
+
     if (this.session) {
       if (this.ahkProcess) {
         if (!this.isSessionStopped) {
@@ -712,6 +716,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
+    this.clearPerfTipsDecorations();
+
     if (response.status === 'stopped') {
       this.isSessionStopped = true;
     }
@@ -752,6 +758,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       this.sendEvent(new StoppedEvent(response.stopReason, this.session!.id));
+      this.displayPerfTips(metaVariables);
     }
   }
   private async checkAdvancedBreakpoint(metaVariables: CaseInsensitiveMap<string, string>, forceStop = false): Promise<void> {
@@ -803,6 +810,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           stopReason = 'breakpoint';
         }
         this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
+        this.displayPerfTips(metaVariables);
         return;
       }
 
@@ -811,6 +819,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (forceStop) {
       this.sendEvent(new StoppedEvent('force stop', this.session!.id));
+      this.displayPerfTips(metaVariables);
       return;
     }
 
@@ -919,5 +928,49 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     results.push(unescapeLogMessage(message));
     return results;
+  }
+  private async displayPerfTips(metaVarialbes: CaseInsensitiveMap<string, string>): Promise<void> {
+    if (!this.config.usePerfTips) {
+      return;
+    }
+
+    const format = this.config.usePerfTips;
+    let message = '';
+    for (const messageOrProperty of await this.formatLog(format, metaVarialbes)) {
+      if (typeof messageOrProperty === 'string') {
+        message += messageOrProperty;
+      }
+    }
+
+    const filePath = metaVarialbes.has('file') ? metaVarialbes.get('file')! : '';
+    const line_0base = metaVarialbes.has('line') ? parseInt(metaVarialbes.get('line')!, 10) - 1 : -1;
+    const decorationType = vscode.window.createTextEditorDecorationType({
+      after: {
+        fontStyle: 'italic',
+        color: 'gray',
+        contentText: ` ${message}`,
+      },
+    });
+    this.perfTipsDecorationTypes.push(decorationType);
+
+    const document = await vscode.workspace.openTextDocument(filePath);
+    const textLine = document.lineAt(line_0base);
+    const startPosition = textLine.range.end;
+    const endPosition = new vscode.Position(line_0base, textLine.range.end.character + message.length - 1);
+    const decoration = { range: new vscode.Range(startPosition, endPosition) } as vscode.DecorationOptions;
+
+    const editor = await vscode.window.showTextDocument(document);
+    editor.setDecorations(decorationType, [ decoration ]);
+  }
+  private clearPerfTipsDecorations(): void {
+    if (!this.config.usePerfTips) {
+      return;
+    }
+
+    for (const editor of vscode.window.visibleTextEditors) {
+      for (const decorationTypes of this.perfTipsDecorationTypes) {
+        editor.setDecorations(decorationTypes, []);
+      }
+    }
   }
 }

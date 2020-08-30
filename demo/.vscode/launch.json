@@ -13,6 +13,8 @@
             "stopOnEntry": false,
             "useAdvancedBreakpoint": true,
             "useProcessUsageData": false,
+            "usePerfTips": true,
+            "openFileOnExit": "${file}",
             "internalConsoleOptions": "openOnSessionStart"
         },
         {

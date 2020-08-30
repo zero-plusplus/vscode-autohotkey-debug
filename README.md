@@ -16,7 +16,8 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
-* `1.x.x` - 2020-xx-xx
+* `1.6.0` - 2020-xx-xx
+    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add PerfTips
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Changed: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) MetaVariables are now available in several features
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
@@ -102,6 +103,8 @@ Some noteworthy settings are described below.
 
 * `useProcessUsageData` :　Add process usage data to the metavariable. See [MetaVariable](#MetaVariable) for details. Note that if it is true, debugging performance is slow because it takes time to get the data
 
+* `usePerfTips` :　If true, when debugging is break, exectue time is displayed on the current line. You can change what you see by specifying a string. See [PerfTips](#PerfTips) for more details.
+
 * `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
 * `openFileOnExit` :　The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
@@ -124,17 +127,14 @@ The available MetaVariables are listed below.
 * `{logMessage}` :　Message of the log point
 
 * `{executeTime_ns}`
-
 * `{executeTime_ms}`
-
-* `{executeTime_s}` :　Time taken to execute. The suffix indicates the unit of measurement: `ns`(nanosecond), `ms`(millisecond), `s`(second).
+* `{executeTime_s}` :　Time taken to execute. The suffix indicates the unit of measurement: `ns`(nanosecond), `ms`(millisecond), `s`(second). Note that by specification, this will be slower than the actual execute time
 
 The following is available if `useProcessUsageData` is enabled
 
 * `{usageCpu}` :　Current CPU usage (Unit: %)
 
 * `{usageMemory_B}`
-
 * `{usageMemory_MB}` :　Current memory usage. The suffix indicates the unit of measurement: `B`(byte), MB(megabyte)
 
 # Features
@@ -383,6 +383,17 @@ For more information on `VariableName`, see [data inspection](#data-inspection).
 You can see the external script being loaded.
 
 It supports both explicit loading using `#Include` and implicit loading using [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib).
+
+## PerfTips
+![perftips](image/perftips.gif)
+
+You can use it by setting `usePerfTips` to `true` in launch.json.
+
+As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time
+
+If you specify a `string` in `usePerfTips`, you can customize what is displayed. You can embed `MetaVariable` and AutoHotkey variables as well as [log point](#log-point)
+
+Display more information when `useProcessUsageData` is `true`.
 
 ## Standard output
 Messages output to standard output are displayed in the [debug console panel](https://code.visualstudio.com/docs/editor/debugging).
