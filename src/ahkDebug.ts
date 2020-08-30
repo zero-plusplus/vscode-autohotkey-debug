@@ -45,6 +45,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   openFileOnExit: string;
 }
 export class AhkDebugSession extends LoggingDebugSession {
+  private isPaused = false;
   private isSessionStopped = false;
   private server?: net.Server;
   private session?: dbgp.Session;
@@ -320,31 +321,35 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
-
+    this.isPaused = false;
     const result = await this.session!.sendContinuationCommand('run');
     this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
+    this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_over');
     this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint, true);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
+    this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_into');
     this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint, true);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
+    this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_out');
     this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint, true);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
+    this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('break');
     this.checkContinuationStatus(result);
   }
@@ -813,7 +818,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const result = await this.session!.sendContinuationCommand('run');
+    const result = this.isPaused
+      ? await this.session!.sendContinuationCommand('break')
+      : await this.session!.sendContinuationCommand('run');
     await this.checkContinuationStatus(result, true);
   }
   private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory: string, newline = false): Promise<void> {
