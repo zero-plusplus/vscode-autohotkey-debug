@@ -43,10 +43,22 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     };
     defaults(config, defaultConfig);
 
-    if (config.usePerfTips === true) {
-      config.usePerfTips = config.useProcessUsageData
+    if (config.usePerfTips) {
+      const defaultFormat = config.useProcessUsageData
         ? `{{executeTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory`
         : '{{executeTime_s}}s elapsed';
+      const defaultUsePerfTips = {
+        fontColor: 'gray',
+        fontStyle: 'italic',
+        format: defaultFormat,
+      };
+
+      if (typeof config.usePerfTips === 'object') {
+        defaults(config.usePerfTips, defaultUsePerfTips);
+      }
+      else {
+        config.usePerfTips = defaultUsePerfTips;
+      }
     }
 
     if (typeof config.port === 'string') {

@@ -42,7 +42,11 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
   useProcessUsageData: boolean;
-  usePerfTips: false | string;
+  usePerfTips: false | {
+    fontColor: string;
+    fontStyle: string;
+    format: string;
+  };
   openFileOnExit: string;
 }
 export class AhkDebugSession extends LoggingDebugSession {
@@ -934,7 +938,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const format = this.config.usePerfTips;
+    const { format } = this.config.usePerfTips;
     let message = '';
     for (const messageOrProperty of await this.formatLog(format, metaVarialbes)) {
       if (typeof messageOrProperty === 'string') {
@@ -946,8 +950,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     const line_0base = metaVarialbes.has('line') ? parseInt(metaVarialbes.get('line')!, 10) - 1 : -1;
     const decorationType = vscode.window.createTextEditorDecorationType({
       after: {
-        fontStyle: 'italic',
-        color: 'gray',
+        fontStyle: this.config.usePerfTips.fontStyle,
+        color: this.config.usePerfTips.fontColor,
         contentText: ` ${message}`,
       },
     });

@@ -103,7 +103,10 @@ Some noteworthy settings are described below.
 
 * `useProcessUsageData` :　Add process usage data to the metavariable. See [MetaVariable](#MetaVariable) for details. Note that if you enable this setting, step-execution is slow
 
-* `usePerfTips` :　If true, when debugging is break, exectue time is displayed on the current line. You can change what you see by specifying a string. See [PerfTips](#PerfTips) for more details.
+* `usePerfTips` :　You can enable/disable [PerfTips](#PerfTips).If true, when debugging is break, exectue time is displayed on the current line. Specify a string to change what is displayed, or an object to change more specific settings. If you set the string, it is the same as setting the `usePerfTips.format`.
+    * `usePerfTips.format` :　Content to be displayed. You can use the MetaVariable and AutoHotkey variables. In that case, use `{{MetaVariableName}}` and `{AutoHotkeyVariableName}`. Default: `{{executeTime_s}}s elapsed`
+    * `usePerfTips.fontColor` :　Set the [color](https://developer.mozilla.org/en-US/docs/Web/CSS/color) of CSS.
+    * `usePerfTips.fontStyle` :　Set the [font-style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) of CSS.
 
 * `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
@@ -387,13 +390,12 @@ It supports both explicit loading using `#Include` and implicit loading using [f
 ## PerfTips
 ![perftips](image/perftips.gif)
 
-You can use it by setting `usePerfTips` to `true` in launch.json.
+You can use it by setting `usePerfTips` in launch.json.
+For more information on setting it up, see [here](#customize-the-launch-configuration).
 
 As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time
 
-Display more information when `useProcessUsageData` is `true`.
-
-If you specify a `string` in `usePerfTips`, you can customize what is displayed. You can embed `MetaVariable` and AutoHotkey variables as well as [log point](#log-point)
+Display more information when `useProcessUsageData` is `true`. Note, however, that this will slow down the step-execution.
 
 Note: If you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other.
 
