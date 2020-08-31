@@ -101,7 +101,7 @@ Some noteworthy settings are described below.
 
 * `useAdvancedBreakpoint` :　If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled
 
-* `useProcessUsageData` :　Add process usage data to the metavariable. See [MetaVariable](#MetaVariable) for details. Note that if it is true, debugging performance is slow because it takes time to get the data
+* `useProcessUsageData` :　Add process usage data to the metavariable. See [MetaVariable](#MetaVariable) for details. Note that if you enable this setting, step-execution is slow
 
 * `usePerfTips` :　If true, when debugging is break, exectue time is displayed on the current line. You can change what you see by specifying a string. See [PerfTips](#PerfTips) for more details.
 
