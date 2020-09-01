@@ -68,6 +68,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private conditionalEvaluator!: ConditionalEvaluator;
   private currentStackFrames: dbgp.StackFrame[] | null = null;
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
+  private metaVariablesWhenNotBreak: CaseInsensitiveMap<string, string> | null = null;
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   constructor() {
     super('autohotkey-debug.txt');
@@ -733,14 +734,22 @@ export class AhkDebugSession extends LoggingDebugSession {
       const breakpoint = this.getCurrentBreakpoint(stackFrame);
 
       const metaVariables = new CaseInsensitiveMap<string, string>();
-      if (response.commandName !== 'break') {
-        this.currentMetaVariables = metaVariables;
-      }
       metaVariables.set('file', this.convertDebuggerPathToClient(stackFrame.fileUri));
       metaVariables.set('line', String(stackFrame.line));
-      metaVariables.set('executeTime_ns', String(response.executeTime.ns));
-      metaVariables.set('executeTime_ms', String(response.executeTime.ms));
-      metaVariables.set('executeTime_s', String(response.executeTime.s));
+
+      if (this.metaVariablesWhenNotBreak) {
+        const executeTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ns')!) + response.executeTime.ns;
+        const executeTime_ms = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ms')!) + response.executeTime.ms;
+        const executeTime_s = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_s')!) + response.executeTime.s;
+        metaVariables.set('executeTime_ns', String(executeTime_ns).slice(0, 10));
+        metaVariables.set('executeTime_ms', String(executeTime_ms).slice(0, 10));
+        metaVariables.set('executeTime_s', String(executeTime_s.toFixed(8)).slice(0, 10));
+      }
+      else {
+        metaVariables.set('executeTime_ns', String(response.executeTime.ns).slice(0, 10));
+        metaVariables.set('executeTime_ms', String(response.executeTime.ms).slice(0, 10));
+        metaVariables.set('executeTime_s', String(response.executeTime.s.toFixed(8)).slice(0, 10));
+      }
       if (this.config.useProcessUsageData) {
         const usage = await pidusage(this.ahkProcess!.pid);
         metaVariables.set('usageCpu', String(usage.cpu));
@@ -758,11 +767,16 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
 
         await this.checkAdvancedBreakpoint(metaVariables, forceStop);
-        return;
+      }
+      else {
+        this.metaVariablesWhenNotBreak = null;
+        this.sendEvent(new StoppedEvent(response.stopReason, this.session!.id));
+        this.displayPerfTips(metaVariables);
       }
 
-      this.sendEvent(new StoppedEvent(response.stopReason, this.session!.id));
-      this.displayPerfTips(metaVariables);
+      if (response.commandName !== 'break') {
+        this.currentMetaVariables = metaVariables;
+      }
     }
   }
   private async checkAdvancedBreakpoint(metaVariables: CaseInsensitiveMap<string, string>, forceStop = false): Promise<void> {
@@ -813,6 +827,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         if (typeof condition === 'undefined' && typeof hitCondition === 'undefined') {
           stopReason = 'breakpoint';
         }
+        this.metaVariablesWhenNotBreak = null;
         this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
         this.displayPerfTips(metaVariables);
         return;
@@ -822,14 +837,22 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     if (forceStop) {
+      this.metaVariablesWhenNotBreak = null;
       this.sendEvent(new StoppedEvent('force stop', this.session!.id));
       this.displayPerfTips(metaVariables);
       return;
     }
 
-    const result = this.isPaused
-      ? await this.session!.sendContinuationCommand('break')
-      : await this.session!.sendContinuationCommand('run');
+    this.metaVariablesWhenNotBreak = metaVariables;
+
+    let result: dbgp.ContinuationResponse;
+    if (this.isPaused) {
+      result = await this.session!.sendContinuationCommand('break');
+    }
+    else {
+      this.metaVariablesWhenNotBreak = null;
+      result = await this.session!.sendContinuationCommand('run');
+    }
     await this.checkContinuationStatus(result, true);
   }
   private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory: string, newline = false): Promise<void> {
