@@ -756,27 +756,26 @@ export class AhkDebugSession extends LoggingDebugSession {
         metaVariables.set('usageMemory_B', String(usage.memory));
         metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
       }
-
-      if (checkExtraBreakpoint) {
-        if (breakpoint?.advancedData) {
-          breakpoint.advancedData.counter++;
-          metaVariables.set('condition', breakpoint.advancedData.condition ?? '');
-          metaVariables.set('hitCondition', breakpoint.advancedData.hitCondition ?? '');
-          metaVariables.set('hitCount', breakpoint.advancedData.counter ? String(breakpoint.advancedData.counter) : '-1');
-          metaVariables.set('logMessage', breakpoint.advancedData.logMessage ?? '');
-        }
-
-        await this.checkAdvancedBreakpoint(metaVariables, forceStop);
-      }
-      else {
-        this.metaVariablesWhenNotBreak = null;
-        this.sendEvent(new StoppedEvent(response.stopReason, this.session!.id));
-        this.displayPerfTips(metaVariables);
-      }
-
       if (response.commandName !== 'break') {
         this.currentMetaVariables = metaVariables;
+
+        if (checkExtraBreakpoint) {
+          if (breakpoint?.advancedData) {
+            breakpoint.advancedData.counter++;
+            metaVariables.set('condition', breakpoint.advancedData.condition ?? '');
+            metaVariables.set('hitCondition', breakpoint.advancedData.hitCondition ?? '');
+            metaVariables.set('hitCount', breakpoint.advancedData.counter ? String(breakpoint.advancedData.counter) : '-1');
+            metaVariables.set('logMessage', breakpoint.advancedData.logMessage ?? '');
+          }
+
+          await this.checkAdvancedBreakpoint(metaVariables, forceStop);
+          return;
+        }
       }
+
+      this.metaVariablesWhenNotBreak = null;
+      this.sendEvent(new StoppedEvent(response.stopReason, this.session!.id));
+      this.displayPerfTips(metaVariables);
     }
   }
   private async checkAdvancedBreakpoint(metaVariables: CaseInsensitiveMap<string, string>, forceStop = false): Promise<void> {
