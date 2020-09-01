@@ -125,7 +125,7 @@ The available MetaVariables are listed below.
 
 * `{condition}` :　 Condition of the breakpoint
 
-* `{hitCondition]` :　Condition of the hit breakpoint
+* `{hitCondition}` :　Condition of the hit breakpoint
 
 * `{logMessage}` :　Message of the log point
 
