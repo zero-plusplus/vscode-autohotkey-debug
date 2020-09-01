@@ -186,7 +186,7 @@ export class ObjectProperty extends Property {
   public page: number;
   public pageSize: number;
   public get maxIndex(): number | null {
-    for (let reverseIndex = this.children.length - 1; 0 < reverseIndex; reverseIndex--) {
+    for (let reverseIndex = this.children.length - 1; 0 <= reverseIndex; reverseIndex--) {
       const property = this.children[reverseIndex];
       const index = property.index;
       if (index !== null) {
