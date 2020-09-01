@@ -17,6 +17,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
 * `1.6.0` - 2020-xx-xx
+    * Added: [#13] (https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
     * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add PerfTips
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Changed: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) MetaVariables are now available in several features
@@ -73,6 +74,8 @@ It should be possible to debug [AutoHotkey_H](https://hotkeyit.github.io/v2/), b
 1. Open a file with the extension `ahk`, `ahk2` or `ah2`.
 2. Place the breakpoints where you want them
 3. Press `F5`
+
+If you want to run without debugging, choose `Run -> Run Without Debugging` from the menu or press `Ctrl + F5`.
 
 # Customize the launch configuration
 If you want to change the settings of the debugger, you need to edit the `launch.json` file.

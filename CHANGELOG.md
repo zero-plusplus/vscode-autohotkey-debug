@@ -15,6 +15,7 @@ Mainly bug fixes and processing improvements.
 ## [Released]
 ## [1.x.x] - 2020-xx-xx
 ### Added
+* [#13] (https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
 * [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add PerfTips
 
 ### Changed

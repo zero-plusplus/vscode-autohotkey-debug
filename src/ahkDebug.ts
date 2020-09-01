@@ -147,16 +147,22 @@ export class AhkDebugSession extends LoggingDebugSession {
       throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
     }
 
-    const portUsed = await isPortTaken(this.config.port, this.config.hostname);
-    if (portUsed) {
-      if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
-        this.sendEvent(new TerminatedEvent());
-        return;
-      }
-    }
-
     try {
-      const runtimeArgs = [ ...this.config.runtimeArgs, `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ];
+      const runtimeArgs: string[] = [];
+      if (!args.noDebug) {
+        const portUsed = await isPortTaken(this.config.port, this.config.hostname);
+        if (portUsed) {
+          if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
+            this.sendEvent(new TerminatedEvent());
+            return;
+          }
+        }
+
+        runtimeArgs.push(`/Debug=${String(args.hostname)}:${String(args.port)}`);
+      }
+      runtimeArgs.push(...this.config.runtimeArgs);
+      runtimeArgs.push(`${args.program}`);
+      runtimeArgs.push(...args.args);
       this.sendEvent(new OutputEvent(`${this.config.runtime} ${runtimeArgs.join(' ')}\n`, 'console'));
       const ahkProcess = spawn(
         this.config.runtime,
