@@ -123,6 +123,8 @@ The available MetaVariables are listed below.
 
 * `{line}` :　Current line number. Equivalent to [A_LineNumber](https://www.autohotkey.com/docs/Variables.htm#LineNumber).
 
+* `{hitCount}` :　 hit count of breakpoint
+
 * `{condition}` :　 Condition of the breakpoint
 
 * `{hitCondition}` :　Condition of the hit breakpoint
@@ -328,6 +330,11 @@ e.g.
 
 ### Hit count breakpoint
 ![hit-count-breakpoint](image/hit-count-breakpoint.gif)
+
+Break the script when the breakpoint reaches a certain hit count.
+
+You can check your hit count by using [PerfTips](#PerfTips).
+Specifically, set the `usePerfTips` in launch.json to `hitCount: {{hitCount}}`.
 
 ##### Grammer
 ```md
