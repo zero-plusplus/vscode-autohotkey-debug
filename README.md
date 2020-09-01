@@ -23,6 +23,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
     * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
     * Fixed: [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an advanced breakpoint
+    * Fixed: If the error code is 0, output category is stderr
 
 * `1.5.0` - 2020-08-14
     * Added: Operators in conditional breakpoint
