@@ -53,11 +53,14 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         format: defaultFormat,
       };
 
-      if (typeof config.usePerfTips === 'object') {
-        defaults(config.usePerfTips, defaultUsePerfTips);
+      if (config.usePerfTips === true) {
+        config.usePerfTips = defaultUsePerfTips;
       }
       else {
-        config.usePerfTips = defaultUsePerfTips;
+        if (typeof config.usePerfTips === 'string') {
+          config.usePerfTips = { format: config.usePerfTips };
+        }
+        defaults(config.usePerfTips, defaultUsePerfTips);
       }
     }
 
