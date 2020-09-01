@@ -332,8 +332,8 @@ e.g.
 
         * `[not] in` :　Check if the object owns or inherits a particular field. Left side is `Primitive` or `VariableName`, and the right side is `VariableName`. e.g. `"key" in Object`, `"key" not in Object`
 
-### Hit count breakpoint
-![hit-count-breakpoint](image/hit-count-breakpoint.gif)
+### Hit Conditional Breakpoint
+![hit-conditional-breakpoint](image/hit-conditional-breakpoint.gif)
 
 Break the script when the breakpoint reaches a certain hit count.
 
