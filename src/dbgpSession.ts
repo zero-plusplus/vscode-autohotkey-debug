@@ -657,8 +657,8 @@ export class Session extends EventEmitter {
   public async sendBreakpointSetCommand(fileUri: string, line: number): Promise<BreakpointSetResponse> {
     return new BreakpointSetResponse(await this.sendCommand('breakpoint_set', `-t line -f ${fileUri} -n ${line}`));
   }
-  public async sendBreakpointRemoveCommand(breakpoint: Breakpoint): Promise<Response> {
-    return new Response(await this.sendCommand('breakpoint_remove', `-d ${String(breakpoint.id)}`));
+  public async sendBreakpointRemoveCommand(id: number): Promise<Response> {
+    return new Response(await this.sendCommand('breakpoint_remove', `-d ${id}`));
   }
   public async sendBreakpointListCommand(): Promise<BreakpointListResponse> {
     return new BreakpointListResponse(await this.sendCommand('breakpoint_list'));

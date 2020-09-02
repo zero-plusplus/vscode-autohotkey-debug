@@ -270,7 +270,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return false;
       })
       .map(async(dbgpBreakpoint) => {
-        return this.session!.sendBreakpointRemoveCommand(dbgpBreakpoint);
+        return this.session!.sendBreakpointRemoveCommand(dbgpBreakpoint.id);
       }));
 
     const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
