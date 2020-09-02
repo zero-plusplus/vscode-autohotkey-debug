@@ -747,23 +747,26 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (hitCondition) {
       const match = hitCondition.match(/^(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)$/u);
       if (match?.groups) {
-        const { operator, number } = match.groups;
+        const { operator = '>=' } = match.groups;
+        const number = parseInt(match.groups.number, 10);
 
-        let _operator = operator;
-        if (typeof _operator === 'undefined') {
-          _operator = '>=';
+        if (operator === '=' || operator === '==') {
+          hitConditionResult = hitCount === number;
         }
-        else if (_operator === '=') {
-          _operator = '==';
+        else if (operator === '>') {
+          hitConditionResult = hitCount > number;
         }
-
-        const code = _operator === '%'
-          ? `(${hitCount % parseInt(number, 10)} === 0)`
-          : `${hitCount} ${_operator} ${number}`;
-        try {
-          hitConditionResult = await this.conditionalEvaluator.eval(code, metaVariables);
+        else if (operator === '>=') {
+          hitConditionResult = hitCount >= number;
         }
-        catch {
+        else if (operator === '<') {
+          hitConditionResult = hitCount < number;
+        }
+        else if (operator === '<=') {
+          hitConditionResult = hitCount <= number;
+        }
+        else if (operator === '%') {
+          hitConditionResult = hitCount % number === 0;
         }
       }
     }
