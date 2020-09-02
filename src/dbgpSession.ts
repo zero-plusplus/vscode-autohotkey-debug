@@ -446,23 +446,14 @@ export class Breakpoint {
   }
 }
 export class BreakpointGetResponse extends Response {
-  public id: number;
-  public type: BreakpointType;
-  public state: BreakpointState;
-  public fileUri: string;
-  public line: number;
+  public breakpoint: Breakpoint;
   constructor(response: XmlNode) {
     super(response);
     if (typeof response.breakpoint === 'undefined') {
       throw Error('');
     }
-    const { id, filename, lineno, state, type } = response.breakpoint.attributes;
 
-    this.id = parseInt(id, 10);
-    this.type = type as BreakpointType;
-    this.state = state as BreakpointState;
-    this.fileUri = filename;
-    this.line = parseInt(lineno, 10);
+    this.breakpoint = new Breakpoint(response.breakpoint);
   }
 }
 export class BreakpointSetResponse extends Response {

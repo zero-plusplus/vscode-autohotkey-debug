@@ -279,7 +279,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         .map(async(vscodeBreakpoint, index) => {
           try {
             const { id } = await this.session!.sendBreakpointSetCommand(this.convertClientPathToDebugger(filePath), vscodeBreakpoint.line);
-            const { fileUri, line } = await this.session!.sendBreakpointGetCommand(id);
+            const { fileUri, line } = (await this.session!.sendBreakpointGetCommand(id)).breakpoint;
 
             const dbgpBreakpoint = this.breakpoints[`${filePath}${line}`];
             if (dbgpBreakpoint?.advancedData) {
