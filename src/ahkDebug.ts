@@ -18,11 +18,13 @@ import {
   ThreadEvent,
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
+import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import * as isPortTaken from 'is-port-taken';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import * as pidusage from 'pidusage';
 import ByteConverter from '@wtfcode/byte-converter';
+import { BreakpointManager } from './util/BreakpointManager';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { Parser, createParser } from './util/ConditionParser';
 import { ConditionalEvaluator } from './util/ConditionEvaluator';
@@ -64,7 +66,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private variablesReferenceCounter = 1;
   private readonly objectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
-  private readonly breakpoints: { [key: string]: dbgp.Breakpoint | undefined} = {};
+  private breakpointManager?: BreakpointManager;
   private conditionalEvaluator!: ConditionalEvaluator;
   private currentStackFrames: dbgp.StackFrame[] | null = null;
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
@@ -76,23 +78,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.setDebuggerColumnsStartAt1(true);
     this.setDebuggerLinesStartAt1(true);
     this.setDebuggerPathFormat('uri');
-  }
-  public convertClientPathToDebugger(filePath: string): string {
-    const fileUri = super.convertClientPathToDebugger(filePath).replace('file:///', '');
-    const isUnc = path.parse(fileUri).root === '';
-    if (isUnc) {
-      return `\\\\${fileUri}`;
-    }
-    return fileUri;
-  }
-  public convertDebuggerPathToClient(fileUri: string): string {
-    const filePath = super.convertDebuggerPathToClient(fileUri);
-
-    const isUnc = filePath.startsWith('\\');
-    if (isUnc) {
-      return `\\${filePath}`;
-    }
-    return filePath;
   }
   protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
     response.body = {
@@ -231,6 +216,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendEvent(new OutputEvent(fixedData, 'stderr'));
               });
 
+            this.breakpointManager = new BreakpointManager(this.session);
             this.sendEvent(new ThreadEvent('Session started.', this.session.id));
           }
           catch (error) {
@@ -253,63 +239,36 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
     const filePath = args.source.path ?? '';
-    const dbgpBreakpoint = (await this.session!.sendBreakpointListCommand()).breakpoints;
+    const fileUri = URI.file(filePath).toString();
 
     // Clear dbgp breakpoints from current file
-    await Promise.all(dbgpBreakpoint
-      .filter((dbgpBreakpoint) => {
-        // (breakpoint.fileUri === fileUri) is not Equals.
-        // breakpoint.fileUri: file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"
-        // fileUri:            file:///w:/project/vscode-autohotkey-debug/demo/demo.ahk
-        const _filePath = this.convertDebuggerPathToClient(dbgpBreakpoint.fileUri);
-        if (filePath.toLowerCase() === _filePath.toLowerCase()) {
-          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-          delete this.breakpoints[`${filePath.toLowerCase()}${dbgpBreakpoint.line}`];
-          return true;
-        }
-        return false;
-      })
-      .map(async(dbgpBreakpoint) => {
-        return this.session!.sendBreakpointRemoveCommand(dbgpBreakpoint.id);
-      }));
+    await this.breakpointManager!.unregisterBreakpoints(fileUri); const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
 
-    const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
-    if (args.breakpoints) {
-      await Promise.all(args.breakpoints
-        .map(async(vscodeBreakpoint, index) => {
-          try {
-            const { id } = await this.session!.sendBreakpointSetCommand(this.convertClientPathToDebugger(filePath), vscodeBreakpoint.line);
-            const { fileUri, line } = (await this.session!.sendBreakpointGetCommand(id)).breakpoint;
+    const requestedBreakpoints = args.breakpoints ?? [];
+    await Promise.all(requestedBreakpoints.map(async(requestedBreakpoint): Promise<void> => {
+      const { condition, hitCondition, logMessage } = requestedBreakpoint;
 
-            const dbgpBreakpoint = this.breakpoints[`${filePath}${line}`];
-            if (dbgpBreakpoint?.advancedData) {
-              dbgpBreakpoint.advancedData.condition = vscodeBreakpoint.condition;
-              dbgpBreakpoint.advancedData.hitCondition = vscodeBreakpoint.hitCondition;
-              dbgpBreakpoint.advancedData.logMessage = vscodeBreakpoint.logMessage;
-            }
-            else {
-              this.breakpoints[`${filePath.toLowerCase()}${line}`] = new dbgp.Breakpoint(fileUri, line, {
-                counter: 0,
-                condition: vscodeBreakpoint.condition,
-                hitCondition: vscodeBreakpoint.hitCondition,
-                logMessage: vscodeBreakpoint.logMessage,
-              });
-            }
-
-            vscodeBreakpoints[index] = {
-              id,
-              line,
-              verified: true,
-            };
-          }
-          catch (error) {
-            vscodeBreakpoints[index] = {
-              verified: false,
-              message: error.message,
-            };
-          }
-        }));
-    }
+      const advancedData = {
+        counter: 0,
+        condition,
+        hitCondition,
+        logMessage,
+      } as dbgp.BreakpointAdvancedData;
+      try {
+        const actualBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, requestedBreakpoint.line, advancedData);
+        vscodeBreakpoints.push({
+          id: actualBreakpoint.id,
+          line: actualBreakpoint.line,
+          verified: true,
+        });
+      }
+      catch (error) {
+        vscodeBreakpoints.push({
+          verified: false,
+          message: error.message,
+        });
+      }
+    }));
 
     response.body = { breakpoints: vscodeBreakpoints };
     this.sendResponse(response);
@@ -701,15 +660,6 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     return true;
   }
-  private getCurrentBreakpoint(stackFrame: dbgp.StackFrame): dbgp.Breakpoint | null {
-    const { fileUri, line } = stackFrame;
-    const filePath = this.convertDebuggerPathToClient(fileUri);
-    const breakpoint = this.breakpoints[`${filePath.toLowerCase()}${String(line)}`];
-    if (breakpoint) {
-      return breakpoint;
-    }
-    return null;
-  }
   private fixPathOfRuntimeError(errorMessage: string): string {
     if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
       const line = parseInt(errorMessage.match(/--->\t(?<line>\d+):/u)!.groups!.line, 10);
@@ -735,14 +685,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     else if (response.status === 'break') {
       const { stackFrames } = await this.session!.sendStackGetCommand();
+      const { fileUri, line } = stackFrames[0];
       this.currentStackFrames = stackFrames;
 
-      const stackFrame = stackFrames[0];
-      const breakpoint = this.getCurrentBreakpoint(stackFrame);
-
       const metaVariables = new CaseInsensitiveMap<string, string>();
-      metaVariables.set('file', this.convertDebuggerPathToClient(stackFrame.fileUri));
-      metaVariables.set('line', String(stackFrame.line));
+      metaVariables.set('file', URI.parse(fileUri).fsPath);
+      metaVariables.set('line', String(line));
 
       if (this.metaVariablesWhenNotBreak) {
         const executeTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ns')!) + response.executeTime.ns;
@@ -767,6 +715,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.currentMetaVariables = metaVariables;
 
         if (checkExtraBreakpoint) {
+          const breakpoint = this.breakpointManager!.getBreakpoints(fileUri, line)[0];
           if (breakpoint?.advancedData) {
             breakpoint.advancedData.counter++;
             metaVariables.set('condition', breakpoint.advancedData.condition ?? '');

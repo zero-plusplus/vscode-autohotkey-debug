@@ -242,7 +242,8 @@
     "underscore": "^1.10.2",
     "underscore.string": "^3.3.5",
     "vscode-debugadapter": "^1.40.0",
-    "vscode-debugprotocol": "^1.40.0"
+    "vscode-debugprotocol": "^1.40.0",
+    "vscode-uri": "^2.1.2"
   },
   "devDependencies": {
     "@types/convert-hrtime": "^3.0.2",
