@@ -188,7 +188,7 @@ On v2, it is converted to `Float`. So, `3.0e3` is written as `3000.0`. e.g. `3.0
 
 You can see the data by hovering over the name of the variable.
 
-If you want to see the data of an object, you can use the It should be a member access syntax like `obj.field`.
+Only variables, and fields that use the member access syntax (e.g. `object.field`) are supported.
 
 Due to the specification of vscode, item access syntax is not supported e.g. `arr[1]` and `obj["spaced key"]`.
 
