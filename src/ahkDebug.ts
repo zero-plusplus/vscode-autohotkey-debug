@@ -172,58 +172,62 @@ export class AhkDebugSession extends LoggingDebugSession {
       });
       this.ahkProcess = ahkProcess;
 
-      this.server = net.createServer()
-        .listen(args.port, args.hostname)
-        .on('connection', (socket) => {
-          try {
-            this.session = new dbgp.Session(socket)
-              .on('init', (initPacket: dbgp.InitPacket) => {
-                if (typeof this.session === 'undefined') {
-                  return;
-                }
-                this.session.sendFeatureGetCommand('language_version').then((response) => {
-                  this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
-                  this.ahkParser = createParser(this.ahkVersion);
-                  this.conditionalEvaluator = new ConditionalEvaluator(this.session!, this.ahkVersion);
-
-                  // Request breakpoints from VS Code
-                  this.sendEvent(new InitializedEvent());
-                });
-              })
-              .on('warning', (warning: string) => {
-                this.sendEvent(new OutputEvent(`${warning}\n`));
-              })
-              .on('error', (error?: Error) => {
-                if (error) {
-                  if (!this.isSessionStopped && this.ahkProcess) {
-                    this.ahkProcess.kill();
-                    this.isSessionStopped = true;
+      this.server = await new Promise((resolve, reject) => {
+        const server = net.createServer();
+        server
+          .listen(args.port, args.hostname)
+          .on('connection', (socket) => {
+            try {
+              this.session = new dbgp.Session(socket)
+                .on('init', (initPacket: dbgp.InitPacket) => {
+                  if (typeof this.session === 'undefined') {
+                    return;
                   }
-                  this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
-                }
+                  this.session.sendFeatureGetCommand('language_version').then((response) => {
+                    this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
+                    this.ahkParser = createParser(this.ahkVersion);
+                    this.conditionalEvaluator = new ConditionalEvaluator(this.session!, this.ahkVersion);
 
-                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-              })
-              .on('close', () => {
-                this.isSessionStopped = true;
-                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-              })
-              .on('stdout', (data) => {
-                this.sendEvent(new OutputEvent(data, 'stdout'));
-              })
-              .on('stderr', (data) => {
-                const fixedData = this.fixPathOfRuntimeError(String(data));
-                this.sendEvent(new OutputEvent(fixedData, 'stderr'));
-              });
+                    // Request breakpoints from VS Code
+                    this.sendEvent(new InitializedEvent());
+                  });
+                })
+                .on('warning', (warning: string) => {
+                  this.sendEvent(new OutputEvent(`${warning}\n`));
+                })
+                .on('error', (error?: Error) => {
+                  if (error) {
+                    if (!this.isSessionStopped && this.ahkProcess) {
+                      this.ahkProcess.kill();
+                      this.isSessionStopped = true;
+                    }
+                    this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
+                  }
 
-            this.breakpointManager = new BreakpointManager(this.session);
-            this.sendEvent(new ThreadEvent('Session started.', this.session.id));
-          }
-          catch (error) {
-            this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
-            this.sendEvent(new TerminatedEvent());
-          }
-        });
+                  this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                })
+                .on('close', () => {
+                  this.isSessionStopped = true;
+                  this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                })
+                .on('stdout', (data) => {
+                  this.sendEvent(new OutputEvent(data, 'stdout'));
+                })
+                .on('stderr', (data) => {
+                  const fixedData = this.fixPathOfRuntimeError(String(data));
+                  this.sendEvent(new OutputEvent(fixedData, 'stderr'));
+                });
+
+              this.breakpointManager = new BreakpointManager(this.session);
+              this.sendEvent(new ThreadEvent('Session started.', this.session.id));
+              resolve(server);
+            }
+            catch (error) {
+              this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
+              reject(error);
+            }
+          });
+      });
     }
     catch (error) {
       const message = {
