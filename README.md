@@ -241,9 +241,9 @@ e.g.
 * `object is Fowl || "wing" in object && "beak" in object`
 
 ##### Rules
-* `Expression` :　`Value [Operator Value]`
+* `Expression` :　`Operand [Operator Operand]`
 
-* `Value` :　`VariableName` or `Primitive`
+* `Operand` :　`VariableName` or `Primitive`
 
 * `VariableName` :　Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 
@@ -253,9 +253,9 @@ e.g.
 
 * `Operator`
 
-    * Prefix operators :　 Unlike other operators, it is specify before `Value`. Note that it is not case sensitive and requires at least one trailing space. e.g. `countof list`
+    * Prefix operators :　 Unlike other operators, it is specify before `Operand`. Note that it is not case sensitive and requires at least one trailing space. e.g. `countof list`
 
-        * `countof` :　If `Value` is a primitive value, the number of characters is returned. In the case of an object, it returns the number of elements. However, in the case of an array, it returns the length
+        * `countof` :　If `Operand` is a primitive value, the number of characters is returned. In the case of an object, it returns the number of elements. However, in the case of an array, it returns the length
 
     * Logical operators :　Specify `Expression` on the left and right
 
@@ -263,7 +263,7 @@ e.g.
 
         * `||` :　Returns true if the left expression is true. If not, return right
 
-    * Comparison operators :　Specify `Value` on the left and right. The `is` or `in` operator must have at least one space before and after it
+    * Comparison operators :　Specify `Operand` on the left and right. The `is` or `in` operator must have at least one space before and after it
 
         * `=` :　Equal ignore case
 

@@ -197,7 +197,7 @@ export const createParser = function(version: 1 | 2): P.Language {
         };
       });
     },
-    Value(rules) {
+    Operand(rules) {
       return P.alt(
         P.seq(
           P.alt(rules.CountofOperator),
@@ -237,7 +237,7 @@ export const createParser = function(version: 1 | 2): P.Language {
     Expression(rules) {
       return P.alt(
         rules.BinaryExpression,
-        rules.Value,
+        rules.Operand,
       ).map((result) => {
         return {
           type: 'Expression',
@@ -247,9 +247,9 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     BinaryExpression(rules) {
       return P.seq(
-        rules.Value,
+        rules.Operand,
         rules.Operator,
-        rules.Value,
+        rules.Operand,
       ).map((result) => {
         return {
           type: 'BinaryExpression',
