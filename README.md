@@ -190,7 +190,7 @@ You can see the data by hovering over the name of the variable.
 
 If you want to see the data of an object, you can use the It should be a member access syntax like `obj.field`.
 
-The item access syntax, such as `arr[1]` and `obj["spaced key"]`, is Due to the specification of vscode, it is not supported.
+Due to the specification of vscode, item access syntax is not supported e.g. `arr[1]` and `obj["spaced key"]`.
 
 ## Call stack
 ![call-stack](image/call-stack.gif)
