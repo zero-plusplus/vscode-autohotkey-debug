@@ -403,6 +403,7 @@ export interface BreakpointAdvancedData {
   condition?: string;
   hitCondition?: string;
   logMessage?: string;
+  readonly?: boolean;
 }
 export type BreakpointType = 'line';
 export type BreakpointState = 'enabled' | 'disabled';

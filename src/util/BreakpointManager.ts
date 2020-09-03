@@ -74,13 +74,17 @@ export class BreakpointManager {
   }
   public async unregisterBreakpointById(id: number): Promise<void> {
     if (this.breakpointsById.has(id)) {
-      await this.session.sendBreakpointRemoveCommand(id);
-      this.breakpointsById.delete(id);
+      const breakpoint = this.breakpointsById.get(id)!;
+      if (!breakpoint.advancedData?.readonly) {
+        await this.session.sendBreakpointRemoveCommand(id);
+        this.breakpointsById.delete(id);
+      }
     }
   }
   public async unregisterBreakpoints(fileUri: string, line?: number): Promise<void> {
     const breakpoints = this.getBreakpoints(fileUri, line);
-    await Promise.all(breakpoints.map(async(breakpoint) => {
+
+    await Promise.all(breakpoints.filter((breakpoint) => breakpoint.advancedData?.readonly === false).map(async(breakpoint) => {
       await this.unregisterBreakpointById(breakpoint.id);
     }));
   }

@@ -19,6 +19,7 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
+import { range } from 'underscore';
 import { sync as pathExistsSync } from 'path-exists';
 import * as isPortTaken from 'is-port-taken';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
@@ -43,6 +44,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   permittedPortRange: number[];
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
+  useEmbeddedBreakpoint: boolean;
   useProcessUsageData: boolean;
   usePerfTips: false | {
     fontColor: string;
@@ -627,8 +629,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       version: this.ahkVersion,
     });
 
-    const sources: DebugProtocol.Source[] = [ { name: path.basename(this.config.program), path: this.config.program } as DebugProtocol.Source ];
-    await Promise.all(resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]).map(async(filePath): Promise<void> => {
+    const sources: DebugProtocol.Source[] = [];
+    const loadedScriptPathList = [ this.config.program, ...resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]) ];
+    await Promise.all(loadedScriptPathList.map(async(filePath): Promise<void> => {
       return new Promise((resolve) => {
         stat(filePath, (err, stats) => {
           if (err) {
@@ -639,11 +642,18 @@ export class AhkDebugSession extends LoggingDebugSession {
 
           if (stats.isFile()) {
             sources.push({ name: path.basename(filePath), path: filePath });
+            if (this.config.useEmbeddedBreakpoint) {
+              this.registerEmbeddedBreakpoint(filePath).then(() => {
+                resolve();
+              });
+              return;
+            }
           }
           resolve();
         });
       });
     }));
+
     response.body = { sources };
     this.sendResponse(response);
   }
@@ -663,6 +673,31 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     return true;
+  }
+  private async registerEmbeddedBreakpoint(filePath: string): Promise<void> {
+    const document = await vscode.workspace.openTextDocument(filePath);
+    const fileUri = this.convertClientPathToDebugger(filePath);
+
+    await Promise.all(range(document.lineCount).map(async(line_0base) => {
+      const textLine = document.lineAt(line_0base);
+
+      const match = textLine.text.match(/^\s*;\s*Debugger(?::(?<condition>[^\n:]*))?(?::(?<hitCondition>[^\n:]*))?(?::(?<logMessage>.+))?/ui);
+      if (match?.groups) {
+        // eslint-disable-next-line no-undefined
+        const { condition = undefined, hitCondition = undefined, logMessage = undefined } = match.groups;
+
+        const line = line_0base + 1;
+        const nextLine = line + 1;
+        const advancedData = {
+          counter: 0,
+          condition,
+          hitCondition,
+          logMessage,
+          readonly: true,
+        } as dbgp.BreakpointAdvancedData;
+        await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
+      }
+    }));
   }
   private fixPathOfRuntimeError(errorMessage: string): string {
     if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
@@ -728,7 +763,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             metaVariables.set('logMessage', breakpoint.advancedData.logMessage ?? '');
           }
 
-          await this.checkAdvancedBreakpoint(metaVariables, forceStop);
+          await this.checkAdvancedBreakpoint(metaVariables, forceStop, breakpoint.advancedData?.readonly);
           return;
         }
       }
@@ -738,7 +773,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.displayPerfTips(metaVariables);
     }
   }
-  private async checkAdvancedBreakpoint(metaVariables: CaseInsensitiveMap<string, string>, forceStop = false): Promise<void> {
+  private async checkAdvancedBreakpoint(metaVariables: CaseInsensitiveMap<string, string>, forceStop = false, hideMode = false): Promise<void> {
     const condition = metaVariables.get('condition');
     const hitCondition = metaVariables.get('hitCondition');
     const hitCount = metaVariables.has('hitCount') ? parseInt(metaVariables.get('hitCount')!, 10) : -1;
@@ -786,7 +821,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (matchCondition) {
       if (typeof logMessage === 'undefined' || logMessage === '') {
         let stopReason = 'conditional breakpoint';
-        if (typeof condition === 'undefined' && typeof hitCondition === 'undefined') {
+        if (hideMode) {
+          stopReason = 'hide breakpoint';
+        }
+        else if (typeof condition === 'undefined' && typeof hitCondition === 'undefined') {
           stopReason = 'breakpoint';
         }
         this.metaVariablesWhenNotBreak = null;

@@ -159,6 +159,11 @@
                 "description": "Note: This is an experimental feature. Execution speed may be slow. Whether to enable Conditional Breakpoint / Hit Count Breakpoint / Log point",
                 "default": false
               },
+              "useEmbeddedBreakpoint": {
+                "type": "boolean",
+                "description": "Search for embedded breakpoint markers in the source code and place invisible and unchangeable breakpoints. See the README for more information on markers. Note that enabling this feature will reduce the performance at debug launch.",
+                "default": false
+              },
               "useProcessUsageData": {
                 "type": "boolean",
                 "description": "Add a process usage data to a MetaVariable. note that setting it to true will slow down the step execution by a factor of several.",

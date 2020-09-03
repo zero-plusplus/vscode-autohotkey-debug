@@ -17,6 +17,7 @@ Mainly bug fixes and processing improvements.
 ### Added
 * [#13] (https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
 * [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add PerfTips
+* [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Add Embedded breakpoint
 
 ### Changed
 * [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output

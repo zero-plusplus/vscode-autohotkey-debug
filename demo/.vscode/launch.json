@@ -12,6 +12,7 @@
             "args": [],
             "stopOnEntry": false,
             "useAdvancedBreakpoint": true,
+            "useEmbeddedBreakpoint": false,
             "useProcessUsageData": false,
             "usePerfTips": true,
             "openFileOnExit": "${file}",

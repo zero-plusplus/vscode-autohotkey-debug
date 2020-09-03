@@ -11,7 +11,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 # News
 ### Important Notices
-* Advanced output has been removed. See [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) for details.
+* Advanced output has been removed. See [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) for details. Please use [Embedded breakpoint](#embedded-breakpoint-optional) instead
 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
@@ -19,6 +19,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * `1.6.0` - 2020-xx-xx
     * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
     * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add PerfTips
+    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Add Embedded breakpoint
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Changed: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) MetaVariables are now available in several features
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
@@ -384,6 +385,36 @@ For more information on `VariableName`, see [data inspection](#data-inspection).
  e.g. `count: {A_Index}`, `name: {person.name}`, `{{executeTime_s}}`
 
 If you want to output `{`, use `\{`.
+
+## Embedded breakpoint (Optional)
+**This feature is a preview.**
+
+To enable this feature, the `useEmbeddedBreakpoint` in launch.json must be set to `true`.
+However. note the **performance is degraded at the start of the debugging.**
+
+Search for embedded breakpoint markers in the source code and place invisible and unchangeable breakpoints.
+
+Here are the rules for breakpoint marker.
+1. A single-line comment using `;`. i.e. `/* debugger */` is ignore
+2. Only spaces are allowed before the comment. i.e. `a := "" ; debugger` is ignore
+3. The comment is followed by an optional space and a `debugger`. `debugger` is not case sensitive. i.e. These will be allowed. `;debugger`, `; debugger`, `; Debugger`
+
+Also, this feature is extended by enabling `useAdvancedBreakpoint`.
+
+Each feature of the advanced breakpoint can be set up by separating them with a colon.
+
+The order is CONDITION, HITCONDITION, and LOGPOINT, in that order.
+That is, set up as follows.
+```ahk
+; debugger:CONDITION:HITCONDITION:LOGPOINT
+```
+
+Each is optional. If you want to use feature individually, do the following.
+```ahk
+; debugger:CONDITION
+; debugger::HITCONDITION
+; debugger:::LOGPOINT
+```
 
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
