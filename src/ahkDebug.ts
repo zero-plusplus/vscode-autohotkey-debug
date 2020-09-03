@@ -347,7 +347,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         totalFrames: allStackFrames.length,
         stackFrames: stackFrames.map((stackFrame) => {
           const id = this.stackFrameIdCounter++;
-          const filePath = this.convertDebuggerPathToClient(stackFrame.fileUri);
+          const filePath = URI.parse(stackFrame.fileUri).fsPath;
           const source = {
             name: path.basename(filePath),
             path: filePath,
@@ -676,7 +676,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private async registerEmbeddedBreakpoint(filePath: string): Promise<void> {
     const document = await vscode.workspace.openTextDocument(filePath);
-    const fileUri = this.convertClientPathToDebugger(filePath);
+    const fileUri = URI.file(filePath).toString();
 
     await Promise.all(range(document.lineCount).map(async(line_0base) => {
       const textLine = document.lineAt(line_0base);
