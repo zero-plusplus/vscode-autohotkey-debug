@@ -399,7 +399,7 @@ You can see the external script being loaded.
 
 It supports both explicit loading using `#Include` and implicit loading using [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib).
 
-## PerfTips
+## PerfTips (Optional)
 ![perftips](image/perftips.gif)
 
 You can use it by setting `usePerfTips` in launch.json.
