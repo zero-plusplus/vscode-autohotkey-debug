@@ -754,8 +754,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.currentMetaVariables = metaVariables;
 
         if (checkExtraBreakpoint) {
-          const breakpoint = this.breakpointManager!.getBreakpoints(fileUri, line)[0];
-          if (breakpoint?.advancedData) {
+          const breakpoint = this.breakpointManager!.getBreakpoint(fileUri, line)!;
+          if (breakpoint.advancedData) {
             breakpoint.advancedData.counter++;
             metaVariables.set('condition', breakpoint.advancedData.condition ?? '');
             metaVariables.set('hitCondition', breakpoint.advancedData.hitCondition ?? '');

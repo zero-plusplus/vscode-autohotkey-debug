@@ -8,84 +8,87 @@ export class BreakpointManager {
     this.session = session;
   }
   public hasBreakpoint(idOrFileUri: string | number, line?: number): boolean {
-    if (typeof idOrFileUri === 'number') {
-      const id = idOrFileUri;
-      return this.breakpointsById.has(id);
+    return Boolean(this.getBreakpoint(idOrFileUri, line));
+  }
+  public getBreakpoint(idOrfileUri: number | string, line?: number): dbgp.Breakpoint | null {
+    if (typeof idOrfileUri === 'number') {
+      const id = idOrfileUri;
+      if (this.breakpointsById.has(id)) {
+        return this.breakpointsById.get(id)!;
+      }
+      return null;
     }
 
-    const fileUri = idOrFileUri;
+    if (!line) {
+      throw new TypeError('The second argument is not specified.');
+    }
+
+    const fileUri = idOrfileUri;
     for (const [ , breakpoint ] of this.breakpointsById) {
-      if (!this.equalsFileUri(fileUri, breakpoint.fileUri)) {
-        continue;
+      if (this.equalsFileUri(fileUri, breakpoint.fileUri) && line === breakpoint.line) {
+        return breakpoint;
       }
-      if (line) {
-        if (line !== breakpoint.line) {
-          continue;
-        }
-      }
-
-      return true;
     }
-    return false;
+    return null;
   }
-  public getBreakpointById(id: number): dbgp.Breakpoint | undefined {
-    return this.breakpointsById.get(id);
-  }
-  public getBreakpoints(fileUri: string, line?: number): dbgp.Breakpoint[] {
+  public getBreakpoints(fileUri: string): dbgp.Breakpoint[] {
     const breakpoints: dbgp.Breakpoint[] = [];
 
     for (const [ , breakpoint ] of this.breakpointsById) {
-      if (!this.equalsFileUri(fileUri, breakpoint.fileUri)) {
-        continue;
+      if (this.equalsFileUri(fileUri, breakpoint.fileUri)) {
+        breakpoints.push(breakpoint);
       }
-      if (line) {
-        if (line !== breakpoint.line) {
-          continue;
-        }
-      }
-
-      breakpoints.push(breakpoint);
     }
 
     return breakpoints;
   }
-  public async registerBreakpoint(fileUriOrBreakpoint: string | dbgp.Breakpoint, line?: number, advancedData?: dbgp.BreakpointAdvancedData): Promise<dbgp.Breakpoint> {
-    let fileUri: string, _line: number, _advancedData: dbgp.BreakpointAdvancedData | undefined;
-    if (fileUriOrBreakpoint instanceof dbgp.Breakpoint) {
-      const breakpoint = fileUriOrBreakpoint;
-      fileUri = breakpoint.fileUri;
-      _line = breakpoint.line;
-      _advancedData = breakpoint.advancedData;
-    }
-    else {
-      fileUri = fileUriOrBreakpoint;
-      if (!line) {
-        throw new TypeError('The second argument is not specified.');
-      }
-      _line = line;
-      _advancedData = advancedData;
-    }
-
-    const response = await this.session.sendBreakpointSetCommand(fileUri, _line);
-    const breakpoint = (await this.session.sendBreakpointGetCommand(response.id)).breakpoint;
-    breakpoint.advancedData = _advancedData;
+  public async registerBreakpoint(fileUri: string, line: number, advancedData?: dbgp.BreakpointAdvancedData): Promise<dbgp.Breakpoint> {
+    const response = await this.session.sendBreakpointSetCommand(fileUri, line);
+    const { breakpoint } = await this.session.sendBreakpointGetCommand(response.id);
+    breakpoint.advancedData = advancedData;
     this.breakpointsById.set(breakpoint.id, breakpoint);
     return breakpoint;
   }
-  public async unregisterBreakpointById(id: number): Promise<void> {
-    if (this.breakpointsById.has(id)) {
-      const breakpoint = this.breakpointsById.get(id)!;
-      if (!breakpoint.advancedData?.readonly) {
-        await this.session.sendBreakpointRemoveCommand(id);
-        this.breakpointsById.delete(id);
+  public async unregisterBreakpoint(idOrFileUriOrBreakpoint: number | string | dbgp.Breakpoint, line?: number): Promise<void> {
+    let breakpoint: dbgp.Breakpoint;
+    if (typeof idOrFileUriOrBreakpoint === 'number') {
+      const id = idOrFileUriOrBreakpoint;
+      if (!this.breakpointsById.has(id)) {
+        return;
       }
+      breakpoint = this.breakpointsById.get(id)!;
+    }
+    else if (idOrFileUriOrBreakpoint instanceof dbgp.Breakpoint) {
+      breakpoint = idOrFileUriOrBreakpoint;
+    }
+    else {
+      const fileUri = idOrFileUriOrBreakpoint;
+      if (!line) {
+        throw new TypeError('The second argument is not specified.');
+      }
+
+      if (!this.hasBreakpoint(fileUri, line)) {
+        return;
+      }
+      breakpoint = this.getBreakpoint(fileUri, line)!;
+    }
+
+    if (breakpoint.advancedData?.readonly) {
+      return;
+    }
+
+    try {
+      await this.session.sendBreakpointRemoveCommand(breakpoint.id);
+      this.breakpointsById.delete(breakpoint.id);
+    }
+    catch {
     }
   }
-  public async unregisterBreakpoints(fileUri: string, line?: number): Promise<void> {
-    const breakpoints = this.getBreakpoints(fileUri, line);
+  public async unregisterBreakpoints(fileUri: string): Promise<void> {
+    const breakpoints = this.getBreakpoints(fileUri);
 
     await Promise.all(breakpoints.filter((breakpoint) => breakpoint.advancedData?.readonly === false).map(async(breakpoint) => {
-      await this.unregisterBreakpointById(breakpoint.id);
+      await this.unregisterBreakpoint(breakpoint);
     }));
   }
   private equalsFileUri(a, b): boolean {
