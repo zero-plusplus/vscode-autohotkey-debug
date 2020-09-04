@@ -750,7 +750,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         metaVariables.set('usageMemory_B', String(usage.memory));
         metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
       }
-      if (response.commandName !== 'break') {
+      if (!(response.commandName === 'break' || response.commandName.includes('step'))) {
         this.currentMetaVariables = metaVariables;
 
         if (checkExtraBreakpoint) {
