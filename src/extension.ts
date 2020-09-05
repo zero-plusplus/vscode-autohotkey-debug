@@ -40,6 +40,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       useProcessUsageData: false,
       useEmbeddedBreakpoint: false,
       usePerfTips: false,
+      useDirectiveComment: false,
       openFileOnExit: null,
     };
     defaults(config, defaultConfig);
@@ -62,6 +63,16 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
           config.usePerfTips = { format: config.usePerfTips };
         }
         defaults(config.usePerfTips, defaultUsePerfTips);
+      }
+    }
+
+    if (config.useDirectiveComment) {
+      const defaultDirectiveComment = { breakpoint: false };
+      if (config.useDirectiveComment === true) {
+        config.useDirectiveComment = { breakpoint: true };
+      }
+      else {
+        defaults(config.useDirectiveComment, defaultDirectiveComment);
       }
     }
 

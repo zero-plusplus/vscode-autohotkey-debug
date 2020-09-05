@@ -12,7 +12,7 @@
             "args": [],
             "stopOnEntry": false,
             "useAdvancedBreakpoint": true,
-            "useEmbeddedBreakpoint": false,
+            "useDirectiveComment": false,
             "useProcessUsageData": false,
             "usePerfTips": true,
             "openFileOnExit": "${file}",

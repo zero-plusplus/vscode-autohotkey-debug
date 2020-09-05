@@ -43,6 +43,12 @@ export class BreakpointManager {
     return breakpoints;
   }
   public async registerBreakpoint(fileUri: string, line: number, advancedData?: dbgp.BreakpointAdvancedData): Promise<dbgp.Breakpoint> {
+    if (this.hasBreakpoint(fileUri, line)) {
+      const breakpoint = this.getBreakpoint(fileUri, line)!;
+      if (breakpoint.advancedData?.settedBydirective) {
+        return breakpoint;
+      }
+    }
     const response = await this.session.sendBreakpointSetCommand(fileUri, line);
     const { breakpoint } = await this.session.sendBreakpointGetCommand(response.id);
     breakpoint.advancedData = advancedData;
@@ -62,7 +68,7 @@ export class BreakpointManager {
       breakpoint = this.getBreakpoint(idOrFileUri, line)!;
     }
 
-    if (breakpoint.advancedData?.readonly) {
+    if (breakpoint.advancedData?.settedBydirective) {
       return;
     }
 
@@ -76,7 +82,10 @@ export class BreakpointManager {
   public async unregisterBreakpoints(fileUri: string): Promise<void> {
     const breakpoints = this.getBreakpoints(fileUri);
 
-    await Promise.all(breakpoints.filter((breakpoint) => breakpoint.advancedData?.readonly === false).map(async(breakpoint) => {
+    await Promise.all(breakpoints.map(async(breakpoint) => {
+      if (breakpoint.advancedData?.settedBydirective) {
+        return;
+      }
       await this.unregisterBreakpoint(breakpoint);
     }));
   }

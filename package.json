@@ -159,11 +159,6 @@
                 "description": "Note: This is an experimental feature. Execution speed may be slow. Whether to enable Conditional Breakpoint / Hit Count Breakpoint / Log point",
                 "default": false
               },
-              "useEmbeddedBreakpoint": {
-                "type": "boolean",
-                "description": "Search for embedded breakpoint markers in the source code and place invisible and unchangeable breakpoints. See the README for more information on markers. Note that enabling this feature will reduce the performance at debug launch.",
-                "default": false
-              },
               "useProcessUsageData": {
                 "type": "boolean",
                 "description": "Add a process usage data to a MetaVariable. note that setting it to true will slow down the step execution by a factor of several.",
@@ -206,6 +201,21 @@
                   }
                 },
                 "description": "If set to true, execute time will be displayed inline. You can change what is displayed by specifying a string. See the README for details.",
+                "default": false
+              },
+              "useDirectiveComment": {
+                "type": [
+                  "boolean",
+                  "object"
+                ],
+                "properties": {
+                  "breakpoint": {
+                    "type": "boolean",
+                    "description": "Hidden features. It is the basis for other directives and is not intended to be used by itself. Directs the debugger to set a breakpoint.  However, this will not appear in the UI and cannot be changed. e.g. `@Debug-Breakpoint -> MESSAGE`, `@Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE",
+                    "default": false
+                  }
+                },
+                "description": "You can send instructions to the debugger by embedding comments that follow specific rules in the source code. See the README for details. Note that enabling this feature will slow down the performance at debug launch.",
                 "default": false
               },
               "openFileOnExit": {

@@ -44,15 +44,21 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   permittedPortRange: number[];
   maxChildren: number;
   useAdvancedBreakpoint: boolean;
-  useEmbeddedBreakpoint: boolean;
   useProcessUsageData: boolean;
   usePerfTips: false | {
     fontColor: string;
     fontStyle: string;
     format: string;
   };
+  useDirectiveComment: false | {
+    breakpoint: boolean;
+    output: false | {
+      [key: string]: string;
+    };
+  };
   openFileOnExit: string;
 }
+
 export class AhkDebugSession extends LoggingDebugSession {
   private isPaused = false;
   private isSessionStopped = false;
@@ -74,6 +80,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
   private metaVariablesWhenNotBreak: CaseInsensitiveMap<string, string> | null = null;
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
+  private readonly loadedSources: string[] = [];
   constructor() {
     super('autohotkey-debug.txt');
 
@@ -282,6 +289,11 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
+
+    if (this.config.useDirectiveComment) {
+      const loadedSourcePathList = this.getAllLoadedSourcePath();
+      await this.registerDirectiveComment(loadedSourcePathList);
+    }
 
     if (this.config.stopOnEntry) {
       const result = await this.session!.sendContinuationCommand('step_into');
@@ -623,14 +635,9 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   // eslint-disable-next-line @typescript-eslint/require-await
   protected async loadedSourcesRequest(response: DebugProtocol.LoadedSourcesResponse, args: DebugProtocol.LoadedSourcesArguments, request?: DebugProtocol.Request): Promise<void> {
-    const resolver = new AhkIncludeResolver({
-      rootPath: this.config.program,
-      runtimePath: this.config.runtime,
-      version: this.ahkVersion,
-    });
+    const loadedScriptPathList = this.getAllLoadedSourcePath();
 
     const sources: DebugProtocol.Source[] = [];
-    const loadedScriptPathList = [ this.config.program, ...resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]) ];
     await Promise.all(loadedScriptPathList.map(async(filePath): Promise<void> => {
       return new Promise((resolve) => {
         stat(filePath, (err, stats) => {
@@ -642,12 +649,6 @@ export class AhkDebugSession extends LoggingDebugSession {
 
           if (stats.isFile()) {
             sources.push({ name: path.basename(filePath), path: filePath });
-            if (this.config.useEmbeddedBreakpoint) {
-              this.registerEmbeddedBreakpoint(filePath).then(() => {
-                resolve();
-              });
-              return;
-            }
           }
           resolve();
         });
@@ -674,29 +675,74 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     return true;
   }
-  private async registerEmbeddedBreakpoint(filePath: string): Promise<void> {
-    const document = await vscode.workspace.openTextDocument(filePath);
-    const fileUri = URI.file(filePath).toString();
-
-    await Promise.all(range(document.lineCount).map(async(line_0base) => {
-      const textLine = document.lineAt(line_0base);
-
-      const match = textLine.text.match(/^\s*;\s*Debugger(?::(?<condition>[^\n:]*))?(?::(?<hitCondition>[^\n:]*))?(?::(?<logMessage>.+))?/ui);
-      if (match?.groups) {
-        // eslint-disable-next-line no-undefined
-        const { condition = undefined, hitCondition = undefined, logMessage = undefined } = match.groups;
-
-        const line = line_0base + 1;
-        const nextLine = line + 1;
-        const advancedData = {
-          counter: 0,
-          condition,
-          hitCondition,
-          logMessage,
-          readonly: true,
-        } as dbgp.BreakpointAdvancedData;
-        await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
+  private getAllLoadedSourcePath(): string[] {
+    if (0 < this.loadedSources.length) {
+      return this.loadedSources;
+    }
+    const resolver = new AhkIncludeResolver({
+      rootPath: this.config.program,
+      runtimePath: this.config.runtime,
+      version: this.ahkVersion,
+    });
+    this.loadedSources.push(this.config.program);
+    this.loadedSources.push(...resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]));
+    return this.loadedSources;
+  }
+  private async registerDirectiveComment(filePathList: string[]): Promise<void> {
+    await Promise.all(filePathList.map(async(filePath) => {
+      const useDirectiveComment = this.config.useDirectiveComment;
+      if (useDirectiveComment === false) {
+        return;
       }
+
+      const document = await vscode.workspace.openTextDocument(filePath);
+      const fileUri = URI.file(filePath).toString();
+
+      await Promise.all(range(document.lineCount).map(async(line_0base) => {
+        const textLine = document.lineAt(line_0base);
+        const match = textLine.text.match(/@Debug-(?<directiveType>[\w_]+)(?::(?<params>[\w_:]+))?\s*(?=\(|\[|-|=|$)(?:\((?<condition>[^\n)]+)\))?\s*(?:\[(?<hitCondition>[^\n]+)\])?\s*(?:(?<outputOperator>->|=>)?(?<leaveLeadingSpace>\|)?(?<message>.*))?$/ui);
+        if (!match?.groups) {
+          return;
+        }
+
+        const directiveType = match.groups.directiveType.toLowerCase();
+        const {
+          condition = '',
+          hitCondition = '',
+          outputOperator,
+          message = '',
+        } = match.groups;
+        const params = match.groups.params ? match.groups.params.split(':') : '';
+        const removeLeadingSpace = match.groups.leaveLeadingSpace ? !match.groups.leaveLeadingSpace : true;
+
+        let logMessage = message;
+        if (removeLeadingSpace) {
+          logMessage = logMessage.trimLeft();
+        }
+        if (outputOperator === '=>') {
+          logMessage += '\n';
+        }
+
+        if (useDirectiveComment.breakpoint && directiveType === 'breakpoint') {
+          if (0 < params.length) {
+            return;
+          }
+
+          const line = line_0base + 1;
+          const nextLine = line + 1;
+          const advancedData = {
+            counter: 0,
+            condition,
+            hitCondition,
+            logMessage,
+            settedBydirective: true,
+          } as dbgp.BreakpointAdvancedData;
+          await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
+        }
+        else if (useDirectiveComment.output) {
+          useDirectiveComment.output;
+        }
+      }));
     }));
   }
   private fixPathOfRuntimeError(errorMessage: string): string {
@@ -760,10 +806,14 @@ export class AhkDebugSession extends LoggingDebugSession {
             metaVariables.set('condition', breakpoint.advancedData.condition ?? '');
             metaVariables.set('hitCondition', breakpoint.advancedData.hitCondition ?? '');
             metaVariables.set('hitCount', breakpoint.advancedData.counter ? String(breakpoint.advancedData.counter) : '-1');
-            metaVariables.set('logMessage', breakpoint.advancedData.logMessage ?? '');
+            let logMessage = breakpoint.advancedData.logMessage ?? '';
+            if (!(logMessage === '' || breakpoint.advancedData.settedBydirective)) {
+              logMessage += '\n';
+            }
+            metaVariables.set('logMessage', logMessage);
           }
 
-          await this.checkAdvancedBreakpoint(metaVariables, forceStop, breakpoint.advancedData?.readonly);
+          await this.checkAdvancedBreakpoint(metaVariables, forceStop, breakpoint.advancedData?.settedBydirective);
           return;
         }
       }
@@ -833,7 +883,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
-      await this.printLogMessage(metaVariables, 'stdout', true);
+      await this.printLogMessage(metaVariables, 'stdout');
     }
 
     if (forceStop) {
@@ -855,7 +905,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     await this.checkContinuationStatus(result, true);
   }
-  private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory: string, newline = false): Promise<void> {
+  private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory: string): Promise<void> {
     let metaVariables: CaseInsensitiveMap<string, string>;
     if (typeof messageOrmetaVariables === 'string') {
       metaVariables = new CaseInsensitiveMap<string, string>();
@@ -867,12 +917,9 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const logMessage = metaVariables.get('logMessage') ?? '';
     const results = await this.formatLog(logMessage, metaVariables);
-    for (let i = 0; i < results.length; i++) {
-      const messageOrProperty = results[i];
+    for (const messageOrProperty of results) {
       if (typeof messageOrProperty === 'string') {
-        const message = newline && i === results.length - 1
-          ? `${messageOrProperty}\n`
-          : `${messageOrProperty}`;
+        const message = messageOrProperty;
         this.sendEvent(new OutputEvent(message, logCategory));
       }
       else {
