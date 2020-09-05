@@ -36,7 +36,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtime_v2: 'v2/AutoHotkey.exe',
       runtimeArgs_v1: [ '/ErrorStdOut' ],
       runtimeArgs_v2: [ '/ErrorStdOut' ],
-      useAdvancedBreakpoint: false,
       useProcessUsageData: false,
       useEmbeddedBreakpoint: false,
       usePerfTips: false,

@@ -43,7 +43,6 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   port: number;
   permittedPortRange: number[];
   maxChildren: number;
-  useAdvancedBreakpoint: boolean;
   useProcessUsageData: boolean;
   usePerfTips: false | {
     fontColor: string;
@@ -302,38 +301,34 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const result = await this.session!.sendContinuationCommand('run');
-    if (this.config.useAdvancedBreakpoint) {
-      this.checkContinuationStatus(result, !this.config.stopOnEntry);
-      return;
-    }
     this.checkContinuationStatus(result);
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
     this.isPaused = false;
     const result = await this.session!.sendContinuationCommand('run');
-    this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint);
+    this.checkContinuationStatus(result);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
     this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_over');
-    this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint, true);
+    this.checkContinuationStatus(result, true);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
     this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_into');
-    this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint, true);
+    this.checkContinuationStatus(result, true);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
     this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_out');
-    this.checkContinuationStatus(result, this.config.useAdvancedBreakpoint, true);
+    this.checkContinuationStatus(result, true);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
@@ -762,7 +757,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
-  private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
+  private async checkContinuationStatus(response: dbgp.ContinuationResponse, forceStop = false): Promise<void> {
     this.clearPerfTipsDecorations();
 
     if (response.status === 'stopped') {
@@ -799,19 +794,17 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (!(response.commandName === 'break' || response.commandName.includes('step'))) {
         this.currentMetaVariables = metaVariables;
 
-        if (checkExtraBreakpoint) {
-          const breakpoint = this.breakpointManager!.getBreakpoint(fileUri, line)!;
-          if (breakpoint.advancedData) {
-            breakpoint.advancedData.counter++;
-            metaVariables.set('condition', breakpoint.advancedData.condition ?? '');
-            metaVariables.set('hitCondition', breakpoint.advancedData.hitCondition ?? '');
-            metaVariables.set('hitCount', breakpoint.advancedData.counter ? String(breakpoint.advancedData.counter) : '-1');
-            let logMessage = breakpoint.advancedData.logMessage ?? '';
-            if (!(logMessage === '' || breakpoint.advancedData.settedBydirective)) {
-              logMessage += '\n';
-            }
-            metaVariables.set('logMessage', logMessage);
+        const breakpoint = this.breakpointManager!.getBreakpoint(fileUri, line)!;
+        if (breakpoint.advancedData) {
+          breakpoint.advancedData.counter++;
+          metaVariables.set('condition', breakpoint.advancedData.condition ?? '');
+          metaVariables.set('hitCondition', breakpoint.advancedData.hitCondition ?? '');
+          metaVariables.set('hitCount', breakpoint.advancedData.counter ? String(breakpoint.advancedData.counter) : '-1');
+          let logMessage = breakpoint.advancedData.logMessage ?? '';
+          if (!(logMessage === '' || breakpoint.advancedData.settedBydirective)) {
+            logMessage += '\n';
           }
+          metaVariables.set('logMessage', logMessage);
 
           await this.checkAdvancedBreakpoint(metaVariables, forceStop, breakpoint.advancedData?.settedBydirective);
           return;
@@ -903,7 +896,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.metaVariablesWhenNotBreak = null;
       result = await this.session!.sendContinuationCommand('run');
     }
-    await this.checkContinuationStatus(result, true);
+    await this.checkContinuationStatus(result);
   }
   private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory: string): Promise<void> {
     let metaVariables: CaseInsensitiveMap<string, string>;

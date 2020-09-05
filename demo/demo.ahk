@@ -7,7 +7,7 @@ demo()
 demo()
 {
     static staticVar := "Static"
-
+    a := ""
     ; Overwrite global var
     globalVar := "Local"
     SuperGlobalVar := "Local"

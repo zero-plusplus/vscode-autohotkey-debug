@@ -154,11 +154,6 @@
                 "description": "Automatically stop after launch.",
                 "default": false
               },
-              "useAdvancedBreakpoint": {
-                "type": "boolean",
-                "description": "Note: This is an experimental feature. Execution speed may be slow. Whether to enable Conditional Breakpoint / Hit Count Breakpoint / Log point",
-                "default": false
-              },
               "useProcessUsageData": {
                 "type": "boolean",
                 "description": "Add a process usage data to a MetaVariable. note that setting it to true will slow down the step execution by a factor of several.",
