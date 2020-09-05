@@ -791,14 +791,15 @@ export class AhkDebugSession extends LoggingDebugSession {
         metaVariables.set('usageMemory_B', String(usage.memory));
         metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
       }
-      if (!(response.commandName === 'break' || response.commandName.includes('step'))) {
+      if (response.commandName !== 'break') {
         this.currentMetaVariables = metaVariables;
 
-        const breakpoint = this.breakpointManager!.getBreakpoint(fileUri, line)!;
-        if (breakpoint.advancedData) {
+        const breakpoint = this.breakpointManager!.getBreakpoint(fileUri, line);
+        if (breakpoint?.advancedData) {
           breakpoint.advancedData.counter++;
-          metaVariables.set('condition', breakpoint.advancedData.condition ?? '');
-          metaVariables.set('hitCondition', breakpoint.advancedData.hitCondition ?? '');
+          const { condition = '', hitCondition = '', settedBydirective = false } = breakpoint.advancedData;
+          metaVariables.set('condition', condition);
+          metaVariables.set('hitCondition', hitCondition);
           metaVariables.set('hitCount', breakpoint.advancedData.counter ? String(breakpoint.advancedData.counter) : '-1');
           let logMessage = breakpoint.advancedData.logMessage ?? '';
           if (!(logMessage === '' || breakpoint.advancedData.settedBydirective)) {
@@ -806,8 +807,10 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
           metaVariables.set('logMessage', logMessage);
 
-          await this.checkAdvancedBreakpoint(metaVariables, forceStop, breakpoint.advancedData?.settedBydirective);
-          return;
+          if (condition || hitCondition || logMessage) {
+            await this.checkAdvancedBreakpoint(metaVariables, forceStop, settedBydirective);
+            return;
+          }
         }
       }
 
@@ -816,7 +819,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.displayPerfTips(metaVariables);
     }
   }
-  private async checkAdvancedBreakpoint(metaVariables: CaseInsensitiveMap<string, string>, forceStop = false, hideMode = false): Promise<void> {
+  private async checkAdvancedBreakpoint(metaVariables: CaseInsensitiveMap<string, string>, forceStop, hideMode = false): Promise<void> {
     const condition = metaVariables.get('condition');
     const hitCondition = metaVariables.get('hitCondition');
     const hitCount = metaVariables.has('hitCount') ? parseInt(metaVariables.get('hitCount')!, 10) : -1;
