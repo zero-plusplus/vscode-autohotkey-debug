@@ -51,26 +51,15 @@ export class BreakpointManager {
   }
   public async unregisterBreakpoint(idOrFileUriOrBreakpoint: number | string | dbgp.Breakpoint, line?: number): Promise<void> {
     let breakpoint: dbgp.Breakpoint;
-    if (typeof idOrFileUriOrBreakpoint === 'number') {
-      const id = idOrFileUriOrBreakpoint;
-      if (!this.breakpointsById.has(id)) {
-        return;
-      }
-      breakpoint = this.breakpointsById.get(id)!;
-    }
-    else if (idOrFileUriOrBreakpoint instanceof dbgp.Breakpoint) {
+    if (idOrFileUriOrBreakpoint instanceof dbgp.Breakpoint) {
       breakpoint = idOrFileUriOrBreakpoint;
     }
     else {
-      const fileUri = idOrFileUriOrBreakpoint;
-      if (!line) {
-        throw new TypeError('The second argument is not specified.');
-      }
-
-      if (!this.hasBreakpoint(fileUri, line)) {
+      const idOrFileUri = idOrFileUriOrBreakpoint;
+      if (!this.hasBreakpoint(idOrFileUriOrBreakpoint, line)) {
         return;
       }
-      breakpoint = this.getBreakpoint(fileUri, line)!;
+      breakpoint = this.getBreakpoint(idOrFileUri, line)!;
     }
 
     if (breakpoint.advancedData?.readonly) {
