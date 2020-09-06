@@ -790,7 +790,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.stackFramesWhenStepOut = this.currentStackFrames.slice(0);
         }
         else if (response.commandName === 'step_over') {
-          this.stackFramesWhenStepOver = this.currentStackFrames.slice(0); // It is set by checkContinuationStatus
+          this.stackFramesWhenStepOver = this.currentStackFrames.slice(0);
         }
       }
 
