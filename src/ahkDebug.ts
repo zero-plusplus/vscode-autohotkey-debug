@@ -25,7 +25,11 @@ import * as isPortTaken from 'is-port-taken';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import * as pidusage from 'pidusage';
 import ByteConverter from '@wtfcode/byte-converter';
-import { BreakpointManager } from './util/BreakpointManager';
+import {
+  BreakpointAdvancedData,
+  BreakpointLogGroup,
+  BreakpointManager,
+} from './util/BreakpointManager';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { Parser, createParser } from './util/ConditionParser';
 import { ConditionalEvaluator } from './util/ConditionEvaluator';
@@ -266,7 +270,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         condition,
         hitCondition,
         logMessage,
-      } as dbgp.BreakpointAdvancedData;
+      } as BreakpointAdvancedData;
       try {
         const actualBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, requestedBreakpoint.line, advancedData);
         vscodeBreakpoints.push({
@@ -733,7 +737,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             hitCondition,
             logMessage,
             hide: true,
-          } as dbgp.BreakpointAdvancedData;
+          } as BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
         else if (useDirectiveComment.useOutputDirective) {
@@ -747,8 +751,8 @@ export class AhkDebugSession extends LoggingDebugSession {
             logMessage,
             logGroup,
             logLevel,
-            hide: true,
-          } as dbgp.BreakpointAdvancedData;
+            hidden: true,
+          } as BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
       }));
@@ -992,7 +996,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         event = new OutputEvent(message, _logCategory) as DebugProtocol.OutputEvent;
         if (metaVariables.has('logGroup')) {
-          event.body.group = metaVariables.get('logGroup')! as dbgp.LogGroup;
+          event.body.group = metaVariables.get('logGroup')! as BreakpointLogGroup;
         }
       }
       else {

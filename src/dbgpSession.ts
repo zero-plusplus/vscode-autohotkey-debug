@@ -405,16 +405,6 @@ export class FeatureSetResponse extends Response {
   }
 }
 export type BreakpointConditionType = 'condition' | 'hit' | 'log';
-export type LogGroup = 'start' | 'startCollapsed' | 'end' | undefined;
-export interface BreakpointAdvancedData {
-  counter: number;
-  condition?: string;
-  hitCondition?: string;
-  logMessage?: string;
-  logLevel?: string;
-  logGroup?: LogGroup;
-  hide?: boolean;
-}
 export type BreakpointType = 'line';
 export type BreakpointState = 'enabled' | 'disabled';
 export class Breakpoint {
@@ -424,36 +414,15 @@ export class Breakpoint {
   public fileUri: string;
   public line: number;
   public temporary?: boolean;
-  public advancedData?: BreakpointAdvancedData;
-  constructor(responseOrFileUri: XmlNode | string, line?: number, advancedData?: BreakpointAdvancedData) {
-    if (typeof responseOrFileUri === 'object') {
-      const response = responseOrFileUri;
-      const { id, type, state, filename, lineno, temporary } = response.attributes;
+  constructor(response: XmlNode) {
+    const { id, type, state, filename, lineno, temporary } = response.attributes;
 
-      this.id = parseInt(id, 10);
-      this.type = type as BreakpointType;
-      this.state = state as BreakpointState;
-      this.fileUri = filename;
-      this.line = parseInt(lineno, 10);
-      this.temporary = Boolean(parseInt(temporary, 10));
-    }
-    else if (typeof line === 'number') {
-      const fileName = responseOrFileUri;
-
-      this.id = -1;
-      this.type = 'line';
-      this.state = 'enabled';
-      this.fileUri = fileName;
-      this.line = line;
-      this.temporary = false;
-
-      if (advancedData) {
-        this.advancedData = advancedData;
-      }
-    }
-    else {
-      throw Error('The argument is invalid');
-    }
+    this.id = parseInt(id, 10);
+    this.type = type as BreakpointType;
+    this.state = state as BreakpointState;
+    this.fileUri = filename;
+    this.line = parseInt(lineno, 10);
+    this.temporary = Boolean(parseInt(temporary, 10));
   }
 }
 export class BreakpointGetResponse extends Response {
