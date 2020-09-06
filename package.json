@@ -239,7 +239,7 @@
   },
   "dependencies": {
     "@wtfcode/byte-converter": "^1.7.11",
-    "@zero-plusplus/ahk-include-path-resolver": "^1.0.7",
+    "@zero-plusplus/ahk-include-path-resolver": "^1.0.8",
     "convert-hrtime": "^3.0.0",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",

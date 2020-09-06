@@ -192,10 +192,10 @@
   resolved "https://registry.yarnpkg.com/@wtfcode/byte-converter/-/byte-converter-1.7.11.tgz#6c03fd0a3466568fa31797ddb94828d423085539"
   integrity sha512-4XrNSg5YvF2AbuZpdn/gAPD0/f9QZZYsYWkk7yWmhnkw9bkFDxSEhWSYJKU1zAwG63ZbvqdYdEHvGbbL3v7jcw==
 
-"@zero-plusplus/ahk-include-path-resolver@^1.0.7":
-  version "1.0.7"
-  resolved "https://npm.pkg.github.com/download/@zero-plusplus/ahk-include-path-resolver/1.0.7/1e98660ef0dd0502b494d4a198f14b0d9c70adf3f81edb8516c7220fa516eadf#7ff91d8d9405b0a604b95f16633e6be34e17d85c"
-  integrity sha512-ecLhigc1IIQ9usF4idvN+HBAgKUdtmObfGnjAektgRENlzHp7N0gf7NKtrG3ZLa5tVCkbJ3C6N3ELomJ3iLSeQ==
+"@zero-plusplus/ahk-include-path-resolver@^1.0.8":
+  version "1.0.8"
+  resolved "https://npm.pkg.github.com/download/@zero-plusplus/ahk-include-path-resolver/1.0.8/3770e989750b2c36b4b82c13061ccd06e0009351ac7e2e8bba82223e0e42b0bb#914913f54b06f335d4d1e05e61049f529a57bf7a"
+  integrity sha512-rAv5e8l1CtcmKSGBiDAfd/C9SQ3mG49nPJ0o+UmwMPL011ymCnI7lNDy5pczSUZA0wvZPCq6RV8y8oW44qD/1Q==
   dependencies:
     "@types/underscore" "^1.10.0"
     read-dir-deep "^7.0.1"
