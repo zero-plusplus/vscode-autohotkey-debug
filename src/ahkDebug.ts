@@ -76,6 +76,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   private currentStackFrames: dbgp.StackFrame[] | null = null;
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
   private metaVariablesWhenNotBreak: CaseInsensitiveMap<string, string> | null = null;
+  private stackFramesWhenStepOut: dbgp.StackFrame[] | null = null;
+  private stackFramesWhenStepOver: dbgp.StackFrame[] | null = null;
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   private readonly loadedSources: string[] = [];
   constructor() {
@@ -313,21 +315,21 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_over');
-    this.checkContinuationStatus(result, true);
+    this.checkContinuationStatus(result);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
     this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_into');
-    this.checkContinuationStatus(result, true);
+    this.checkContinuationStatus(result);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
 
     this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_out');
-    this.checkContinuationStatus(result, true);
+    this.checkContinuationStatus(result);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
@@ -730,7 +732,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             condition,
             hitCondition,
             logMessage,
-            settedBydirective: true,
+            hide: true,
           } as dbgp.BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
@@ -745,7 +747,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             logMessage,
             logGroup,
             logLevel,
-            settedBydirective: true,
+            hide: true,
           } as dbgp.BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
@@ -775,18 +777,29 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
-  private async checkContinuationStatus(response: dbgp.ContinuationResponse, forceStop = false): Promise<void> {
+  private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
     this.clearPerfTipsDecorations();
 
     if (response.status === 'stopped') {
       this.isSessionStopped = true;
     }
     else if (response.status === 'break') {
+      const executionByUser = this.stackFramesWhenStepOver === null && this.stackFramesWhenStepOut === null;
+      if (executionByUser && this.currentStackFrames) {
+        if (response.commandName === 'step_out') {
+          this.stackFramesWhenStepOut = this.currentStackFrames.slice(0);
+        }
+        else if (response.commandName === 'step_over') {
+          this.stackFramesWhenStepOver = this.currentStackFrames.slice(0); // It is set by checkContinuationStatus
+        }
+      }
+
       const { stackFrames } = await this.session!.sendStackGetCommand();
       const { fileUri, line } = stackFrames[0];
       this.currentStackFrames = stackFrames;
 
       const metaVariables = new CaseInsensitiveMap<string, string>();
+      this.currentMetaVariables = metaVariables;
       metaVariables.set('file', URI.parse(fileUri).fsPath);
       metaVariables.set('line', String(line));
 
@@ -809,42 +822,107 @@ export class AhkDebugSession extends LoggingDebugSession {
         metaVariables.set('usageMemory_B', String(usage.memory));
         metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
       }
-      if (response.commandName !== 'break') {
-        this.currentMetaVariables = metaVariables;
 
-        const breakpoint = this.breakpointManager!.getBreakpoint(fileUri, line);
-        if (breakpoint?.advancedData) {
-          const { advancedData } = breakpoint;
-          advancedData.counter++;
-          const { condition = '', hitCondition = '', settedBydirective = false } = breakpoint.advancedData;
-          metaVariables.set('condition', condition);
-          metaVariables.set('hitCondition', hitCondition);
-          metaVariables.set('hitCount', advancedData.counter ? String(advancedData.counter) : '-1');
-          metaVariables.set('logMessage', advancedData.logMessage ?? '');
-          metaVariables.set('logGroup', advancedData.logGroup ?? '');
-          metaVariables.set('logLevel', advancedData.logLevel ?? '');
-          if (this.config.useDirectiveComment && Array.isArray(this.config.useDirectiveComment.useOutputDirective)) {
-            metaVariables.set('logLevels', this.config.useDirectiveComment.useOutputDirective.join(' '));
-          }
+      let stop = true, stopReason = String(response.stopReason);
+      const breakpoint = this.breakpointManager!.getBreakpoint(fileUri, line);
+      if (breakpoint?.advancedData) {
+        breakpoint.advancedData.counter++;
 
-          if (condition || hitCondition || advancedData.logMessage || advancedData.logGroup) {
-            await this.checkAdvancedBreakpoint(metaVariables, forceStop, settedBydirective);
-            return;
+        const {
+          counter,
+          condition = '',
+          hitCondition = '',
+          logGroup = '',
+          logMessage = '',
+          logLevel = '',
+        } = breakpoint.advancedData;
+
+        metaVariables.set('condition', condition);
+        metaVariables.set('hitCondition', hitCondition);
+        metaVariables.set('hitCount', counter ? String(counter) : '-1');
+        metaVariables.set('logMessage', logMessage);
+        metaVariables.set('logGroup', logGroup);
+        metaVariables.set('logLevel', logLevel);
+        if (this.config.useDirectiveComment && Array.isArray(this.config.useDirectiveComment.useOutputDirective)) {
+          metaVariables.set('logLevels', this.config.useDirectiveComment.useOutputDirective.join(' '));
+        }
+
+        if (condition || hitCondition || logMessage || logGroup) {
+          stop = false;
+          if (await this.evalCondition(metaVariables)) {
+            if (logGroup || logMessage) {
+              this.printLogMessage(metaVariables);
+            }
+            else {
+              stop = true;
+              stopReason = 'conditional breakpoint';
+            }
           }
         }
       }
 
-      this.metaVariablesWhenNotBreak = null;
-      this.sendEvent(new StoppedEvent(response.stopReason, this.session!.id));
-      this.displayPerfTips(metaVariables);
+      if (this.stackFramesWhenStepOut && this.currentStackFrames.length < this.stackFramesWhenStepOut.length) {
+        this.stackFramesWhenStepOut = null;
+        stop = true;
+      }
+      else if (this.stackFramesWhenStepOver && this.stackFramesWhenStepOver.length === this.currentStackFrames.length) {
+        stop = true;
+      }
+      else if ([ 'step_into', 'break' ].includes(response.commandName)) {
+        stop = true;
+      }
+
+      let stepOverExecute = false, stepOutExecute = false;
+      if (this.stackFramesWhenStepOver && this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
+        this.stackFramesWhenStepOver = null;
+        stop = false;
+        stepOverExecute = true;
+      }
+      else if (this.stackFramesWhenStepOut && this.stackFramesWhenStepOut.length === 1) {
+        if (this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
+          this.stackFramesWhenStepOut = null;
+          stop = false;
+          stepOutExecute = true;
+        }
+      }
+
+      if (stop) {
+        this.sendStoppedEvent(stopReason, metaVariables);
+        return;
+      }
+
+      let result: dbgp.ContinuationResponse;
+      if (stepOverExecute) {
+        result = await this.session!.sendContinuationCommand('step_over');
+      }
+      else if (stepOutExecute) {
+        result = await this.session!.sendContinuationCommand('step_out');
+      }
+      else if (this.stackFramesWhenStepOut || this.stackFramesWhenStepOver) {
+        this.metaVariablesWhenNotBreak = null;
+        result = await this.session!.sendContinuationCommand('step_out');
+      }
+      else if (this.isPaused) {
+        result = await this.session!.sendContinuationCommand('break');
+      }
+      else {
+        this.metaVariablesWhenNotBreak = null;
+        result = await this.session!.sendContinuationCommand('run');
+      }
+      await this.checkContinuationStatus(result);
     }
   }
-  private async checkAdvancedBreakpoint(metaVariables: CaseInsensitiveMap<string, string>, forceStop, hideMode = false): Promise<void> {
+  private sendStoppedEvent(stopReason: string, metaVariables: CaseInsensitiveMap<string, string>): void {
+    this.metaVariablesWhenNotBreak = null;
+    this.stackFramesWhenStepOut = null;
+    this.stackFramesWhenStepOver = null;
+    this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
+    this.displayPerfTips(metaVariables);
+  }
+  private async evalCondition(metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
     const condition = metaVariables.get('condition');
     const hitCondition = metaVariables.get('hitCondition');
     const hitCount = metaVariables.has('hitCount') ? parseInt(metaVariables.get('hitCount')!, 10) : -1;
-    const logMessage = metaVariables.get('logMessage');
-    const logGroup = metaVariables.get('logGroup') ?? '';
 
     let conditionResult = false, hitConditionResult = false;
     if (condition) {
@@ -877,7 +955,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    let matchCondition = true;
+    let matchCondition = false;
     if (condition && hitCondition) {
       matchCondition = conditionResult && hitConditionResult;
     }
@@ -885,42 +963,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       matchCondition = conditionResult || hitConditionResult;
     }
 
-    if (matchCondition) {
-      if (logGroup === '' && logMessage === '') {
-        let stopReason = 'conditional breakpoint';
-        if (hideMode) {
-          stopReason = 'hide breakpoint';
-        }
-        else if (typeof condition === 'undefined' && typeof hitCondition === 'undefined') {
-          stopReason = 'breakpoint';
-        }
-        this.metaVariablesWhenNotBreak = null;
-        this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
-        this.displayPerfTips(metaVariables);
-        return;
-      }
-
-      await this.printLogMessage(metaVariables, 'stdout');
-    }
-
-    if (forceStop) {
-      this.metaVariablesWhenNotBreak = null;
-      this.sendEvent(new StoppedEvent('force stop', this.session!.id));
-      this.displayPerfTips(metaVariables);
-      return;
-    }
-
-    this.metaVariablesWhenNotBreak = metaVariables;
-
-    let result: dbgp.ContinuationResponse;
-    if (this.isPaused) {
-      result = await this.session!.sendContinuationCommand('break');
-    }
-    else {
-      this.metaVariablesWhenNotBreak = null;
-      result = await this.session!.sendContinuationCommand('run');
-    }
-    await this.checkContinuationStatus(result);
+    return matchCondition;
   }
   private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory?: string): Promise<void> {
     let metaVariables: CaseInsensitiveMap<string, string>;

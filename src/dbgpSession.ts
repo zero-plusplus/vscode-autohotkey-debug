@@ -97,7 +97,7 @@ export class DbgpError extends Error {
 }
 export class Response {
   public transactionId: number;
-  public commandName: string;
+  public commandName: CommandName;
   constructor(response: XmlNode) {
     const { transaction_id, command } = response.attributes;
 
@@ -140,7 +140,14 @@ export class StackGetResponse extends Response {
     }
   }
 }
+export class StackDepthResponse extends Response {
+  public depth: number;
+  constructor(response: XmlNode) {
+    super(response);
 
+    this.depth = parseInt(response.attributes.depth, 10);
+  }
+}
 type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll';
 type PropertyType = 'undefined' | 'string' | 'integer' | 'float' | 'object';
 export abstract class Property {
@@ -406,7 +413,7 @@ export interface BreakpointAdvancedData {
   logMessage?: string;
   logLevel?: string;
   logGroup?: LogGroup;
-  settedBydirective?: boolean;
+  hide?: boolean;
 }
 export type BreakpointType = 'line';
 export type BreakpointState = 'enabled' | 'disabled';
@@ -586,8 +593,14 @@ export class Session extends EventEmitter {
       this.write(command_str);
     });
   }
-  public async sendStackGetCommand(): Promise<StackGetResponse> {
+  public async sendStackGetCommand(depth?: number): Promise<StackGetResponse> {
+    if (depth) {
+      return new StackGetResponse(await this.sendCommand('stack_get', `-d ${depth - 1}`));
+    }
     return new StackGetResponse(await this.sendCommand('stack_get'));
+  }
+  public async sendStackDepthCommand(): Promise<StackDepthResponse> {
+    return new StackDepthResponse(await this.sendCommand('stack_depth'));
   }
   public async sendPropertyGetCommand(context: Context, name: string): Promise<PropertyGetResponse> {
     return new PropertyGetResponse(
