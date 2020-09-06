@@ -398,11 +398,14 @@ export class FeatureSetResponse extends Response {
   }
 }
 export type BreakpointConditionType = 'condition' | 'hit' | 'log';
+export type LogGroup = 'start' | 'startCollapsed' | 'end' | undefined;
 export interface BreakpointAdvancedData {
   counter: number;
   condition?: string;
   hitCondition?: string;
   logMessage?: string;
+  logLevel?: string;
+  logGroup?: LogGroup;
   settedBydirective?: boolean;
 }
 export type BreakpointType = 'line';

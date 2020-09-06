@@ -11,7 +11,8 @@ demo()
     ; Overwrite global var
     globalVar := "Local"
     SuperGlobalVar := "Local"
-
+    ; @Debug-Output => test
+    a := ""
     ; Primitives
     str_empty := ""
     str := "string"

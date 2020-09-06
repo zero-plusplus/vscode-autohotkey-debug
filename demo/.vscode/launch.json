@@ -11,7 +11,7 @@
             "program": "${file}",
             "args": [],
             "stopOnEntry": false,
-            "useDirectiveComment": false,
+            "useDirectiveComment": true,
             "useProcessUsageData": false,
             "usePerfTips": true,
             "openFileOnExit": "${file}",

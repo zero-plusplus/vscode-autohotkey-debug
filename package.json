@@ -208,6 +208,24 @@
                     "type": "boolean",
                     "description": "Hidden features. It is the basis for other directives and is not intended to be used by itself. Directs the debugger to set a breakpoint.  However, this will not appear in the UI and cannot be changed. e.g. `@Debug-Breakpoint -> MESSAGE`, `@Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE",
                     "default": false
+                  },
+                  "useOutputDirective": {
+                    "type": [
+                      "boolean",
+                      "string",
+                      "array"
+                    ],
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "INFO",
+                        "WARN",
+                        "ERROR",
+                        "FATAL"
+                      ]
+                    },
+                    "description": "Directs the debugger to output a message. See the README for details.",
+                    "default": false
                   }
                 },
                 "description": "You can send instructions to the debugger by embedding comments that follow specific rules in the source code. See the README for details. Note that enabling this feature will slow down the performance at debug launch.",

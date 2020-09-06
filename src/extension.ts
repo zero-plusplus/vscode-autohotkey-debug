@@ -66,12 +66,31 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     }
 
     if (config.useDirectiveComment) {
-      const defaultDirectiveComment = { breakpoint: false };
+      const defaultDirectiveComment = {
+        breakpoint: false,
+        useOutputDirective: false,
+      };
       if (config.useDirectiveComment === true) {
-        config.useDirectiveComment = { breakpoint: true };
+        config.useDirectiveComment = {
+          breakpoint: false,
+          useOutputDirective: true,
+        };
       }
       else {
         defaults(config.useDirectiveComment, defaultDirectiveComment);
+      }
+
+      if (config.useDirectiveComment.useOutputDirective) {
+        const levels = [ 'INFO', 'WARN', 'ERROR', 'FATAL' ];
+        if (config.useDirectiveComment.useOutputDirective === true) {
+          config.useDirectiveComment.useOutputDirective = levels;
+        }
+        else if (typeof config.useDirectiveComment.useOutputDirective === 'string') {
+          const index = levels.indexOf(config.useDirectiveComment.useOutputDirective.toUpperCase());
+          config.useDirectiveComment.useOutputDirective = -1 < index
+            ? levels.slice(0, index + 1)
+            : levels;
+        }
       }
     }
 

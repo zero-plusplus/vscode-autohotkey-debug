@@ -51,9 +51,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   };
   useDirectiveComment: false | {
     breakpoint: boolean;
-    output: false | {
-      [key: string]: string;
-    };
+    useOutputDirective: false | string[];
   };
   openFileOnExit: string;
 }
@@ -258,7 +256,8 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const requestedBreakpoints = args.breakpoints ?? [];
     await Promise.all(requestedBreakpoints.map(async(requestedBreakpoint): Promise<void> => {
-      const { condition, hitCondition, logMessage } = requestedBreakpoint;
+      const { condition, hitCondition } = requestedBreakpoint;
+      const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
 
       const advancedData = {
         counter: 0,
@@ -684,6 +683,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     return this.loadedSources;
   }
   private async registerDirectiveComment(filePathList: string[]): Promise<void> {
+    // const DEBUG_start = process.hrtime();
     await Promise.all(filePathList.map(async(filePath) => {
       const useDirectiveComment = this.config.useDirectiveComment;
       if (useDirectiveComment === false) {
@@ -718,13 +718,13 @@ export class AhkDebugSession extends LoggingDebugSession {
           logMessage += '\n';
         }
 
+        const line = line_0base + 1;
+        const nextLine = line + 1;
         if (useDirectiveComment.breakpoint && directiveType === 'breakpoint') {
           if (0 < params.length) {
             return;
           }
 
-          const line = line_0base + 1;
-          const nextLine = line + 1;
           const advancedData = {
             counter: 0,
             condition,
@@ -734,11 +734,29 @@ export class AhkDebugSession extends LoggingDebugSession {
           } as dbgp.BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
-        else if (useDirectiveComment.output) {
-          useDirectiveComment.output;
+        else if (useDirectiveComment.useOutputDirective) {
+          const logLevel = 0 < params.length ? params[0] : 'INFO';
+          const logGroup = 1 < params.length ? params[1] : '';
+          const condition = `{logLevels} ~= "i)\\b${logLevel}\\b"`;
+          const advancedData = {
+            counter: 0,
+            condition,
+            hitCondition,
+            logMessage,
+            logGroup,
+            logLevel,
+            settedBydirective: true,
+          } as dbgp.BreakpointAdvancedData;
+          await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
       }));
     }));
+    // const DEBUG_hrtime = process.hrtime(DEBUG_start);
+    // // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+    // // eslint-disable-next-line no-mixed-operators
+    // const DEBUG_ns = DEBUG_hrtime[0] * 1e9 + DEBUG_hrtime[1];
+    // const DEBUG_s = DEBUG_ns / 1e9;
+    // this.printLogMessage(`elapsedTime: ${DEBUG_s}s`);
   }
   private fixPathOfRuntimeError(errorMessage: string): string {
     if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
@@ -796,18 +814,20 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const breakpoint = this.breakpointManager!.getBreakpoint(fileUri, line);
         if (breakpoint?.advancedData) {
-          breakpoint.advancedData.counter++;
+          const { advancedData } = breakpoint;
+          advancedData.counter++;
           const { condition = '', hitCondition = '', settedBydirective = false } = breakpoint.advancedData;
           metaVariables.set('condition', condition);
           metaVariables.set('hitCondition', hitCondition);
-          metaVariables.set('hitCount', breakpoint.advancedData.counter ? String(breakpoint.advancedData.counter) : '-1');
-          let logMessage = breakpoint.advancedData.logMessage ?? '';
-          if (!(logMessage === '' || breakpoint.advancedData.settedBydirective)) {
-            logMessage += '\n';
+          metaVariables.set('hitCount', advancedData.counter ? String(advancedData.counter) : '-1');
+          metaVariables.set('logMessage', advancedData.logMessage ?? '');
+          metaVariables.set('logGroup', advancedData.logGroup ?? '');
+          metaVariables.set('logLevel', advancedData.logLevel ?? '');
+          if (this.config.useDirectiveComment && Array.isArray(this.config.useDirectiveComment.useOutputDirective)) {
+            metaVariables.set('logLevels', this.config.useDirectiveComment.useOutputDirective.join(' '));
           }
-          metaVariables.set('logMessage', logMessage);
 
-          if (condition || hitCondition || logMessage) {
+          if (condition || hitCondition || advancedData.logMessage || advancedData.logGroup) {
             await this.checkAdvancedBreakpoint(metaVariables, forceStop, settedBydirective);
             return;
           }
@@ -824,6 +844,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const hitCondition = metaVariables.get('hitCondition');
     const hitCount = metaVariables.has('hitCount') ? parseInt(metaVariables.get('hitCount')!, 10) : -1;
     const logMessage = metaVariables.get('logMessage');
+    const logGroup = metaVariables.get('logGroup') ?? '';
 
     let conditionResult = false, hitConditionResult = false;
     if (condition) {
@@ -865,7 +886,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     if (matchCondition) {
-      if (typeof logMessage === 'undefined' || logMessage === '') {
+      if (logGroup === '' && logMessage === '') {
         let stopReason = 'conditional breakpoint';
         if (hideMode) {
           stopReason = 'hide breakpoint';
@@ -901,7 +922,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     await this.checkContinuationStatus(result);
   }
-  private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory: string): Promise<void> {
+  private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory?: string): Promise<void> {
     let metaVariables: CaseInsensitiveMap<string, string>;
     if (typeof messageOrmetaVariables === 'string') {
       metaVariables = new CaseInsensitiveMap<string, string>();
@@ -914,25 +935,39 @@ export class AhkDebugSession extends LoggingDebugSession {
     const logMessage = metaVariables.get('logMessage') ?? '';
     const results = await this.formatLog(logMessage, metaVariables);
     for (const messageOrProperty of results) {
+      let _logCategory = logCategory ?? 'stderr';
+      if (metaVariables.has('logLevel')) {
+        const logLevel = metaVariables.get('logLevel')!.toUpperCase();
+        if ([ 'INFO', 'WARN' ].includes(logLevel)) {
+          _logCategory = 'stdout';
+        }
+      }
+
+      let event: DebugProtocol.OutputEvent;
       if (typeof messageOrProperty === 'string') {
         const message = messageOrProperty;
-        this.sendEvent(new OutputEvent(message, logCategory));
+
+        event = new OutputEvent(message, _logCategory) as DebugProtocol.OutputEvent;
+        if (metaVariables.has('logGroup')) {
+          event.body.group = metaVariables.get('logGroup')! as dbgp.LogGroup;
+        }
       }
       else {
         const property = messageOrProperty;
         const variablesReference = this.variablesReferenceCounter++;
         this.logObjectPropertiesByVariablesReference.set(variablesReference, property);
 
-        const event = new OutputEvent(property.displayValue, logCategory) as DebugProtocol.OutputEvent;
+        event = new OutputEvent(property.displayValue, _logCategory) as DebugProtocol.OutputEvent;
         event.body.variablesReference = variablesReference;
-        if (metaVariables.has('file')) {
-          event.body.source = { path: metaVariables.get('file') };
-        }
-        if (metaVariables.has('line')) {
-          event.body.line = parseInt(metaVariables.get('line')!, 10);
-        }
-        this.sendEvent(event);
       }
+
+      if (metaVariables.has('file')) {
+        event.body.source = { path: metaVariables.get('file') };
+      }
+      if (metaVariables.has('line')) {
+        event.body.line = parseInt(metaVariables.get('line')!, 10);
+      }
+      this.sendEvent(event);
     }
   }
   private async formatLog(format: string, metaVariables?: CaseInsensitiveMap<string, string>): Promise<Array<string | dbgp.ObjectProperty>> {
