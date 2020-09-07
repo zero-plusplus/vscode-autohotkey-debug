@@ -1094,8 +1094,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    const filePath = metaVarialbes.has('file') ? metaVarialbes.get('file')! : '';
-    const line_0base = metaVarialbes.has('line') ? parseInt(metaVarialbes.get('line')!, 10) - 1 : -1;
     const decorationType = vscode.window.createTextEditorDecorationType({
       after: {
         fontStyle: this.config.usePerfTips.fontStyle,
@@ -1105,7 +1103,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     });
     this.perfTipsDecorationTypes.push(decorationType);
 
+    const filePath = metaVarialbes.has('file') ? metaVarialbes.get('file')! : '';
     const document = await vscode.workspace.openTextDocument(filePath);
+    let line_0base = metaVarialbes.has('line') ? parseInt(metaVarialbes.get('line')!, 10) - 1 : -1;
+    if (line_0base === document.lineCount) {
+      line_0base--; // I don't know about the details, but if the script stops at the end of the file and it's not a blank line, then line_0base will be the value of `document.lineCount + 1`, so we'll compensate for that
+    }
+
     const textLine = document.lineAt(line_0base);
     const startPosition = textLine.range.end;
     const endPosition = new vscode.Position(line_0base, textLine.range.end.character + message.length - 1);
