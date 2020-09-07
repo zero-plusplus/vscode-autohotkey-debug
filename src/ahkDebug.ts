@@ -895,6 +895,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
+      this.metaVariablesWhenNotBreak = metaVariables;
+
       let result: dbgp.ContinuationResponse;
       if (stepOverExecute) {
         result = await this.session!.sendContinuationCommand('step_over');
@@ -903,14 +905,12 @@ export class AhkDebugSession extends LoggingDebugSession {
         result = await this.session!.sendContinuationCommand('step_out');
       }
       else if (this.stackFramesWhenStepOut || this.stackFramesWhenStepOver) {
-        this.metaVariablesWhenNotBreak = null;
         result = await this.session!.sendContinuationCommand('step_out');
       }
       else if (this.isPaused) {
         result = await this.session!.sendContinuationCommand('break');
       }
       else {
-        this.metaVariablesWhenNotBreak = null;
         result = await this.session!.sendContinuationCommand('run');
       }
       await this.checkContinuationStatus(result);
