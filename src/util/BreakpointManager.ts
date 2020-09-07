@@ -1,5 +1,6 @@
 import * as dbgp from '../dbgpSession';
 import { URI } from 'vscode-uri';
+import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 
 export type BreakpointLogGroup = 'start' | 'startCollapsed' | 'end' | undefined;
 export interface BreakpointAdvancedData {
@@ -26,44 +27,30 @@ export class Breakpoint {
 
 export class BreakpointManager {
   private readonly session: dbgp.Session;
-  private readonly breakpointsById = new Map<number, Breakpoint>();
+  private readonly breakpointsMap = new CaseInsensitiveMap<string, Breakpoint[]>();
   constructor(session: dbgp.Session) {
     this.session = session;
   }
-  public hasBreakpoint(idOrFileUri: string | number, line?: number): boolean {
-    return Boolean(this.getBreakpoint(idOrFileUri, line));
+  public hasBreakpoint(fileUri: string, line: number): boolean {
+    const key = this.createKey(fileUri, line);
+    return this.breakpointsMap.has(key);
   }
-  public getBreakpoint(idOrfileUri: number | string, line?: number): Breakpoint | null {
-    if (typeof idOrfileUri === 'number') {
-      const id = idOrfileUri;
-      if (this.breakpointsById.has(id)) {
-        return this.breakpointsById.get(id)!;
-      }
-      return null;
-    }
+  public getBreakpoints(fileUri: string, line: number): Breakpoint[] | null {
+    const targetFilePath = URI.parse(fileUri).fsPath.toLowerCase();
 
-    if (!line) {
-      throw new TypeError('The second argument is not specified.');
-    }
-
-    const fileUri = idOrfileUri;
-    for (const [ , breakpoint ] of this.breakpointsById) {
-      if (this.equalsFileUri(fileUri, breakpoint.fileUri) && line === breakpoint.line) {
-        return breakpoint;
+    for (const [ key, breakpoints ] of this.breakpointsMap) {
+      const temp = key.split(',');
+      const filePath = temp[0];
+      const _line = parseInt(temp[1], 10);
+      if (targetFilePath !== filePath) {
+        continue;
       }
+      if (line !== _line) {
+        continue;
+      }
+      return breakpoints;
     }
     return null;
-  }
-  public getBreakpoints(fileUri: string): Breakpoint[] {
-    const breakpoints: Breakpoint[] = [];
-
-    for (const [ , breakpoint ] of this.breakpointsById) {
-      if (this.equalsFileUri(fileUri, breakpoint.fileUri)) {
-        breakpoints.push(breakpoint);
-      }
-    }
-
-    return breakpoints;
   }
   public async registerBreakpoint(fileUriOrBreakpoint: string | Breakpoint, line?: number, advancedData?: BreakpointAdvancedData): Promise<Breakpoint> {
     let _fileUri: string, _line: number, _advancedData: BreakpointAdvancedData | undefined;
@@ -83,60 +70,65 @@ export class BreakpointManager {
       }
       _line = line;
       _advancedData = advancedData;
-
-      if (this.hasBreakpoint(_fileUri, _line)) {
-        const breakpoint = this.getBreakpoint(_fileUri, _line)!;
-        if (breakpoint.advancedData?.hidden) {
-          return breakpoint;
-        }
-      }
     }
+
     const response = await this.session.sendBreakpointSetCommand(_fileUri, _line);
-    const breakpoint = new Breakpoint((await this.session.sendBreakpointGetCommand(response.id)).breakpoint);
-    breakpoint.advancedData = _advancedData;
-    this.breakpointsById.set(breakpoint.id, breakpoint);
-    return breakpoint;
-  }
-  public async unregisterBreakpoint(idOrFileUriOrBreakpoint: number | string | Breakpoint, line?: number): Promise<void> {
-    let breakpoint: Breakpoint;
-    if (idOrFileUriOrBreakpoint instanceof Breakpoint) {
-      breakpoint = idOrFileUriOrBreakpoint;
+    const settedBreakpoint = new Breakpoint((await this.session.sendBreakpointGetCommand(response.id)).breakpoint, _advancedData);
+    const actualLine = settedBreakpoint.line;
+
+    let registeredBreakpoints: Breakpoint[];
+    if (this.hasBreakpoint(_fileUri, actualLine)) {
+      registeredBreakpoints = this.getBreakpoints(_fileUri, actualLine)!;
+      registeredBreakpoints.push(settedBreakpoint);
     }
     else {
-      const idOrFileUri = idOrFileUriOrBreakpoint;
-      if (!this.hasBreakpoint(idOrFileUriOrBreakpoint, line)) {
-        return;
-      }
-      breakpoint = this.getBreakpoint(idOrFileUri, line)!;
+      registeredBreakpoints = [ settedBreakpoint ];
+      const key = this.createKey(_fileUri, actualLine);
+      this.breakpointsMap.set(key, registeredBreakpoints);
     }
-
-    if (breakpoint.advancedData?.hidden) {
+    return settedBreakpoint;
+  }
+  public async unregisterBreakpoints(fileUri: string, line: number): Promise<void> {
+    const breakpoints = this.getBreakpoints(fileUri, line);
+    if (!breakpoints || breakpoints.length === 0) {
       return;
     }
 
-    try {
-      await this.session.sendBreakpointRemoveCommand(breakpoint.id);
-      this.breakpointsById.delete(breakpoint.id);
+    const id = breakpoints[0].id;
+    const key = this.createKey(fileUri, line);
+    const hiddenBreakpoints = breakpoints.filter((breakpoint) => breakpoint.advancedData?.hidden ?? false);
+    if (hiddenBreakpoints.length === 0 && this.breakpointsMap.has(key)) {
+      try {
+        await this.session.sendBreakpointRemoveCommand(id);
+        this.breakpointsMap.delete(key);
+      }
+      catch {
+      }
     }
-    catch {
+    else {
+      this.breakpointsMap.set(key, hiddenBreakpoints);
     }
   }
-  public async unregisterBreakpoints(fileUri: string): Promise<void> {
-    const breakpoints = this.getBreakpoints(fileUri);
+  public async unregisterBreakpointsInFile(fileUri: string): Promise<void> {
+    const targetFilePath = URI.parse(fileUri).fsPath.toLowerCase();
 
-    await Promise.all(breakpoints.map(async(breakpoint) => {
-      if (breakpoint.advancedData?.hidden) {
+    await Promise.all(Array.from(this.breakpointsMap.entries()).map(async([ key, breakpoints ]) => {
+      const temp = key.split(',');
+      const filePath = temp[0];
+      const line = parseInt(temp[1], 10);
+
+      if (targetFilePath !== filePath) {
         return;
       }
-      await this.unregisterBreakpoint(breakpoint);
+
+      await this.unregisterBreakpoints(fileUri, line);
     }));
   }
-  private equalsFileUri(a, b): boolean {
-    // Because the comparison may fail even if the file points to the same file, as shown below, the file path is unified
+  private createKey(fileUri: string, line: number): string {
+    // The following encoding differences have been converted to path
     // file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"
     // file:///w:/project/vscode-autohotkey-debug/demo/demo.ahk
-    const _a = URI.parse(a).fsPath.toLowerCase();
-    const _b = URI.parse(b).fsPath.toLowerCase();
-    return _a === _b;
+    const filePath = URI.parse(fileUri).fsPath;
+    return `${filePath},${line}`;
   }
 }

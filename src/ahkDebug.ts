@@ -256,12 +256,12 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
     const filePath = args.source.path ?? '';
     const fileUri = URI.file(filePath).toString();
-
-    // Clear dbgp breakpoints from current file
-    await this.breakpointManager!.unregisterBreakpoints(fileUri); const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
-
     const requestedBreakpoints = args.breakpoints ?? [];
-    await Promise.all(requestedBreakpoints.map(async(requestedBreakpoint): Promise<void> => {
+
+    await this.breakpointManager!.unregisterBreakpointsInFile(fileUri);
+
+    const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
+    for await (const requestedBreakpoint of requestedBreakpoints) {
       const { condition, hitCondition } = requestedBreakpoint;
       const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
 
@@ -273,6 +273,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       } as BreakpointAdvancedData;
       try {
         const actualBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, requestedBreakpoint.line, advancedData);
+        if (actualBreakpoint.advancedData?.hidden) {
+          continue;
+        }
+
         vscodeBreakpoints.push({
           id: actualBreakpoint.id,
           line: actualBreakpoint.line,
@@ -285,7 +289,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           message: error.message,
         });
       }
-    }));
+    }
 
     response.body = { breakpoints: vscodeBreakpoints };
     this.sendResponse(response);
@@ -802,69 +806,75 @@ export class AhkDebugSession extends LoggingDebugSession {
       const { fileUri, line } = stackFrames[0];
       this.currentStackFrames = stackFrames;
 
-      const metaVariables = new CaseInsensitiveMap<string, string>();
-      this.currentMetaVariables = metaVariables;
-      metaVariables.set('file', URI.parse(fileUri).fsPath);
-      metaVariables.set('line', String(line));
+      const conditionResults: boolean[] = [];
+      const breakpoints = this.breakpointManager!.getBreakpoints(fileUri, line) ?? [];
 
-      if (this.metaVariablesWhenNotBreak) {
-        const executeTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ns')!) + response.executeTime.ns;
-        const executeTime_ms = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ms')!) + response.executeTime.ms;
-        const executeTime_s = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_s')!) + response.executeTime.s;
-        metaVariables.set('executeTime_ns', String(executeTime_ns).slice(0, 10));
-        metaVariables.set('executeTime_ms', String(executeTime_ms).slice(0, 10));
-        metaVariables.set('executeTime_s', String(executeTime_s.toFixed(8)).slice(0, 10));
-      }
-      else {
-        metaVariables.set('executeTime_ns', String(response.executeTime.ns).slice(0, 10));
-        metaVariables.set('executeTime_ms', String(response.executeTime.ms).slice(0, 10));
-        metaVariables.set('executeTime_s', String(response.executeTime.s.toFixed(8)).slice(0, 10));
-      }
-      if (this.config.useProcessUsageData) {
-        const usage = await pidusage(this.ahkProcess!.pid);
-        metaVariables.set('usageCpu', String(usage.cpu));
-        metaVariables.set('usageMemory_B', String(usage.memory));
-        metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
-      }
+      let stopReason = String(response.stopReason), metaVariables = new CaseInsensitiveMap<string, string>();
+      for await (const breakpoint of breakpoints) {
+        const _metaVariables = new CaseInsensitiveMap<string, string>();
+        this.currentMetaVariables = _metaVariables;
+        _metaVariables.set('file', URI.parse(fileUri).fsPath);
+        _metaVariables.set('line', String(line));
 
-      let stop = true, stopReason = String(response.stopReason);
-      const breakpoint = this.breakpointManager!.getBreakpoint(fileUri, line);
-      if (breakpoint?.advancedData) {
-        breakpoint.advancedData.counter++;
-
-        const {
-          counter,
-          condition = '',
-          hitCondition = '',
-          logGroup = '',
-          logMessage = '',
-          logLevel = '',
-        } = breakpoint.advancedData;
-
-        metaVariables.set('condition', condition);
-        metaVariables.set('hitCondition', hitCondition);
-        metaVariables.set('hitCount', counter ? String(counter) : '-1');
-        metaVariables.set('logMessage', logMessage);
-        metaVariables.set('logGroup', logGroup);
-        metaVariables.set('logLevel', logLevel);
-        if (this.config.useDirectiveComment && Array.isArray(this.config.useDirectiveComment.useOutputDirective)) {
-          metaVariables.set('logLevels', this.config.useDirectiveComment.useOutputDirective.join(' '));
+        if (this.metaVariablesWhenNotBreak) {
+          const executeTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ns')!) + response.executeTime.ns;
+          const executeTime_ms = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ms')!) + response.executeTime.ms;
+          const executeTime_s = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_s')!) + response.executeTime.s;
+          _metaVariables.set('executeTime_ns', String(executeTime_ns).slice(0, 10));
+          _metaVariables.set('executeTime_ms', String(executeTime_ms).slice(0, 10));
+          _metaVariables.set('executeTime_s', String(executeTime_s.toFixed(8)).slice(0, 10));
         }
+        else {
+          _metaVariables.set('executeTime_ns', String(response.executeTime.ns).slice(0, 10));
+          _metaVariables.set('executeTime_ms', String(response.executeTime.ms).slice(0, 10));
+          _metaVariables.set('executeTime_s', String(response.executeTime.s.toFixed(8)).slice(0, 10));
+        }
+        if (this.config.useProcessUsageData) {
+          const usage = await pidusage(this.ahkProcess!.pid);
+          _metaVariables.set('usageCpu', String(usage.cpu));
+          _metaVariables.set('usageMemory_B', String(usage.memory));
+          _metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
+        }
+        if (breakpoint?.advancedData) {
+          breakpoint.advancedData.counter++;
 
-        if (condition || hitCondition || logMessage || logGroup) {
-          stop = false;
-          if (await this.evalCondition(metaVariables)) {
+          const {
+            counter,
+            condition = '',
+            hitCondition = '',
+            logGroup = '',
+            logMessage = '',
+            logLevel = '',
+          } = breakpoint.advancedData;
+
+          _metaVariables.set('condition', condition);
+          _metaVariables.set('hitCondition', hitCondition);
+          _metaVariables.set('hitCount', counter ? String(counter) : '-1');
+          _metaVariables.set('logMessage', logMessage);
+          _metaVariables.set('logGroup', logGroup);
+          _metaVariables.set('logLevel', logLevel);
+          if (this.config.useDirectiveComment && Array.isArray(this.config.useDirectiveComment.useOutputDirective)) {
+            _metaVariables.set('logLevels', this.config.useDirectiveComment.useOutputDirective.join(' '));
+          }
+
+          let conditionResult = true;
+          if (condition || hitCondition || logMessage || logGroup) {
+            conditionResult = await this.evalCondition(_metaVariables);
             if (logGroup || logMessage) {
-              this.printLogMessage(metaVariables);
-            }
-            else {
-              stop = true;
-              stopReason = 'conditional breakpoint';
+              this.printLogMessage(_metaVariables);
+              conditionResult = false;
             }
           }
+
+          if (!conditionResults.includes(true)) {
+            stopReason = 'conditional breakpoint';
+            metaVariables = _metaVariables;
+          }
+          conditionResults.push(conditionResult);
         }
       }
 
+      let stop = conditionResults.includes(true);
       if (this.stackFramesWhenStepOut && this.currentStackFrames.length < this.stackFramesWhenStepOut.length) {
         this.stackFramesWhenStepOut = null;
         stop = true;
