@@ -744,7 +744,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           } as BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
-        else if (useDirectiveComment.useOutputDirective) {
+        else if (useDirectiveComment.useOutputDirective && directiveType === 'output') {
           const logLevel = 0 < params.length ? params[0] : 'INFO';
           const logGroup = 1 < params.length ? params[1] : '';
           const condition = `{logLevels} ~= "i)\\b${logLevel}\\b"`;
