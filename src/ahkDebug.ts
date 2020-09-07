@@ -809,32 +809,38 @@ export class AhkDebugSession extends LoggingDebugSession {
       const conditionResults: boolean[] = [];
       const breakpoints = this.breakpointManager!.getBreakpoints(fileUri, line) ?? [];
 
-      let stopReason = String(response.stopReason), metaVariables = new CaseInsensitiveMap<string, string>();
+      const metaVariables = new CaseInsensitiveMap<string, string>();
+      this.currentMetaVariables = metaVariables;
+      metaVariables.set('file', URI.parse(fileUri).fsPath);
+      metaVariables.set('line', String(line));
+
+      if (this.metaVariablesWhenNotBreak) {
+        const executeTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ns')!) + response.executeTime.ns;
+        const executeTime_ms = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ms')!) + response.executeTime.ms;
+        const executeTime_s = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_s')!) + response.executeTime.s;
+        metaVariables.set('executeTime_ns', String(executeTime_ns).slice(0, 10));
+        metaVariables.set('executeTime_ms', String(executeTime_ms).slice(0, 10));
+        metaVariables.set('executeTime_s', String(executeTime_s.toFixed(8)).slice(0, 10));
+      }
+      else {
+        metaVariables.set('executeTime_ns', String(response.executeTime.ns).slice(0, 10));
+        metaVariables.set('executeTime_ms', String(response.executeTime.ms).slice(0, 10));
+        metaVariables.set('executeTime_s', String(response.executeTime.s.toFixed(8)).slice(0, 10));
+      }
+      if (this.config.useProcessUsageData) {
+        const usage = await pidusage(this.ahkProcess!.pid);
+        metaVariables.set('usageCpu', String(usage.cpu));
+        metaVariables.set('usageMemory_B', String(usage.memory));
+        metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
+      }
+
+      let stopReason = String(response.stopReason);
       for await (const breakpoint of breakpoints) {
         const _metaVariables = new CaseInsensitiveMap<string, string>();
-        this.currentMetaVariables = _metaVariables;
-        _metaVariables.set('file', URI.parse(fileUri).fsPath);
-        _metaVariables.set('line', String(line));
+        for (const [ key, value ] of metaVariables) {
+          _metaVariables.set(key, value);
+        }
 
-        if (this.metaVariablesWhenNotBreak) {
-          const executeTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ns')!) + response.executeTime.ns;
-          const executeTime_ms = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ms')!) + response.executeTime.ms;
-          const executeTime_s = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_s')!) + response.executeTime.s;
-          _metaVariables.set('executeTime_ns', String(executeTime_ns).slice(0, 10));
-          _metaVariables.set('executeTime_ms', String(executeTime_ms).slice(0, 10));
-          _metaVariables.set('executeTime_s', String(executeTime_s.toFixed(8)).slice(0, 10));
-        }
-        else {
-          _metaVariables.set('executeTime_ns', String(response.executeTime.ns).slice(0, 10));
-          _metaVariables.set('executeTime_ms', String(response.executeTime.ms).slice(0, 10));
-          _metaVariables.set('executeTime_s', String(response.executeTime.s.toFixed(8)).slice(0, 10));
-        }
-        if (this.config.useProcessUsageData) {
-          const usage = await pidusage(this.ahkProcess!.pid);
-          _metaVariables.set('usageCpu', String(usage.cpu));
-          _metaVariables.set('usageMemory_B', String(usage.memory));
-          _metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
-        }
         if (breakpoint?.advancedData) {
           breakpoint.advancedData.counter++;
 
@@ -868,7 +874,6 @@ export class AhkDebugSession extends LoggingDebugSession {
 
           if (!conditionResults.includes(true)) {
             stopReason = 'conditional breakpoint';
-            metaVariables = _metaVariables;
           }
           conditionResults.push(conditionResult);
         }
