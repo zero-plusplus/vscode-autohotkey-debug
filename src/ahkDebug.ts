@@ -747,10 +747,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         else if (useDirectiveComment.useOutputDirective && directiveType === 'output') {
           const logLevel = 0 < params.length ? params[0] : 'INFO';
           const logGroup = 1 < params.length ? params[1] : '';
-          const condition = `{logLevels} ~= "i)\\b${logLevel}\\b"`;
+          const newCondition = `{logLevels} ~= "i)\\b${logLevel}\\b" && ${condition}`;
           const advancedData = {
             counter: 0,
-            condition,
+            condition: newCondition,
             hitCondition,
             logMessage,
             logGroup,
@@ -866,7 +866,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           let conditionResult = true;
           if (condition || hitCondition || logMessage || logGroup) {
             conditionResult = await this.evalCondition(_metaVariables);
-            if (logGroup || logMessage) {
+            if (conditionResult && (logGroup || logMessage)) {
               this.printLogMessage(_metaVariables);
               conditionResult = false;
             }
