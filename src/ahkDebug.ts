@@ -54,7 +54,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     format: string;
   };
   useDirectiveComment: false | {
-    breakpoint: boolean;
+    useBreakpointDirective: boolean;
     useOutputDirective: false | string[];
   };
   openFileOnExit: string;
@@ -730,7 +730,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const line = line_0base + 1;
         const nextLine = line + 1;
-        if (useDirectiveComment.breakpoint && directiveType === 'breakpoint') {
+        if (useDirectiveComment.useBreakpointDirective && directiveType === 'breakpoint') {
           if (0 < params.length) {
             return;
           }

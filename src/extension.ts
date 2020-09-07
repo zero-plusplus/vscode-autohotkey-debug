@@ -67,12 +67,12 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
 
     if (config.useDirectiveComment) {
       const defaultDirectiveComment = {
-        breakpoint: false,
+        useBreakpointDirective: false,
         useOutputDirective: false,
       };
       if (config.useDirectiveComment === true) {
         config.useDirectiveComment = {
-          breakpoint: false,
+          useBreakpointDirective: false,
           useOutputDirective: true,
         };
       }

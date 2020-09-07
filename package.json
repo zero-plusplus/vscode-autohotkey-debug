@@ -204,7 +204,7 @@
                   "object"
                 ],
                 "properties": {
-                  "breakpoint": {
+                  "useBreakpointDirective": {
                     "type": "boolean",
                     "description": "Hidden features. It is the basis for other directives and is not intended to be used by itself. Directs the debugger to set a breakpoint.  However, this will not appear in the UI and cannot be changed. e.g. `@Debug-Breakpoint -> MESSAGE`, `@Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE",
                     "default": false
