@@ -13,7 +13,7 @@ Mainly bug fixes and processing improvements.
 ---
 
 ## [Released]
-## [1.x.x] - 2020-xx-xx
+## [1.6.0] - 2020-xx-xx
 ### Added
 * [#13] (https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
 * [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add PerfTips
@@ -28,6 +28,7 @@ Mainly bug fixes and processing improvements.
 * [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
 * [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an advanced breakpoint
 * [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit Conditonal Breakpoint's `%` operator is not working
+* [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
 * If the error code is 0, output category is stderr
 
 ## [1.5.0] - 2020-08-14

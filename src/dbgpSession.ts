@@ -173,8 +173,8 @@ export abstract class Property {
 
     this.context = context;
     this.facet = facet as PropertyFacet;
-    this.fullName = fullname;
-    this.name = name;
+    this.fullName = fullname.replace(/<base>/gui, 'base');
+    this.name = name.replace('<base>', 'base');
     this.type = type as PropertyType;
     this.size = parseInt(size, 10);
   }
@@ -220,7 +220,7 @@ export class ObjectProperty extends Property {
         value += '…';
         break;
       }
-      if (property.name === '<base>') {
+      if (property.name === 'base') {
         continue;
       }
 
@@ -590,7 +590,7 @@ export class Session extends EventEmitter {
     return new ContinuationResponse(response, executeTime);
   }
   public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: string; data: string }): Promise<PropertySetResponse> {
-    return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName.replace(/<base>/ug, 'base')} -t ${property.typeName}`, property.data));
+    return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName} -t ${property.typeName}`, property.data));
   }
   public async sendRunCommand(): Promise<ContinuationResponse> {
     return this.sendContinuationCommand('run');

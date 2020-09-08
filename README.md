@@ -26,6 +26,8 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
     * Fixed: [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an advanced breakpoint
     * Fixed: [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit Conditonal Breakpoint's `%` operator is not working
+    * Fixed: [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
+
     * Fixed: If the error code is 0, output category is stderr
 
 * `1.5.0` - 2020-08-14
@@ -158,8 +160,6 @@ You can check the data of the variables.
 If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is case-insensitive.
 
 The object's child elements are the same as in the running script, and can be specified in dot syntax or array index syntax. Which method is available depends on the version of AutoHotkey, v1 can use either method. e.g. `obj.field`, `obj["field"]`, `arr[1]`
-
-Although the `<base>` field is named only in the debugger, it is OK to specify it as `obj.base` as in the actual script.
 
 #### About A_DebuggerName
 This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
