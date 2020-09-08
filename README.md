@@ -18,8 +18,9 @@ A separate extension that supports the AutoHotkey language is required(The most 
 ### Update
 * `1.6.0` - 2020-xx-xx
     * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
-    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add PerfTips
-    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Add Embedded breakpoint
+    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Support PerfTips
+    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Support Embedded breakpoint
+    * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support IntelliSense, which is only available for debugging
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Changed: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) MetaVariables are now available in several features
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
@@ -115,6 +116,8 @@ Some noteworthy settings are described below.
     * `usePerfTips.format` :　Content to be displayed. You can use the MetaVariable and AutoHotkey variables. In that case, use `{{MetaVariableName}}` and `{AutoHotkeyVariableName}`. Default: `{{executeTime_s}}s elapsed`
     * `usePerfTips.fontColor` :　Set the [color](https://developer.mozilla.org/en-US/docs/Web/CSS/color) of CSS.
     * `usePerfTips.fontStyle` :　Set the [font-style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) of CSS.
+
+* `useIntellisense` :　If true, [IntelliSense](https://code.visualstudio.com/docs/editor/intellisense) is enabled. Because it uses the variable information in the debugger, it is only available for debugging. In v2, when you get a dynamic property, the script is executed. So be aware that an error may occur and the script may stop
 
 * `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
@@ -429,6 +432,18 @@ For more information on `VariableName`, see [data inspection](#data-inspection).
 You can see the external script being loaded.
 
 It supports both explicit loading using `#Include` and implicit loading using [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib).
+
+## Intellisense (Optional)
+![intellisense](image/intellisense.gif)
+
+**Note that this is only available for debugging. Also in v2, getting a dynamic property can cause an error as the script is executed.**
+
+You can use this by setting `useIntellisense` to `true` in launch.json.
+
+The variables that are displayed in the data inspect will be suggested.
+Therefore, variables that have not yet been evaluated are not proposed.
+
+This is a limited feature, but can be very useful for editing the source code while debugging.
 
 ## PerfTips (Optional)
 ![perftips](image/perftips.gif)

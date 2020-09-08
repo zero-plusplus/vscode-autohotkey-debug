@@ -5,6 +5,7 @@ import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import { rtrim } from 'underscore.string';
 import * as convertHrTime from 'convert-hrtime';
+import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -501,6 +502,9 @@ export class Session extends EventEmitter {
   private readonly pendingCommands = new Map<number, Command>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
+  public get closed(): boolean {
+    return !this.socket.writable;
+  }
   constructor(socket: Socket) {
     super();
     this.socket = socket
@@ -688,12 +692,35 @@ export class Session extends EventEmitter {
     }
     return null;
   }
+  public async fetchLatestProperties(): Promise<Property[]> {
+    const { stackFrames } = await this.sendStackGetCommand();
+    const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
+
+    const propertyMap = new CaseInsensitiveMap<string, Property>();
+    for await (const context of contexts) {
+      const { properties } = await this.sendContextGetCommand(context);
+      properties.forEach((property) => {
+        if (propertyMap.has(property.fullName)) {
+          return;
+        }
+        propertyMap.set(property.fullName, property);
+      });
+    }
+    return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
+  }
   public async fetchLatestPropertyWithoutChildren(propertyName: string): Promise<Property | null> {
     await this.sendFeatureSetCommand('max_depth', 0);
-    const response = await this.fetchLatestProperty(propertyName);
+    const property = await this.fetchLatestProperty(propertyName);
     await this.sendFeatureSetCommand('max_depth', this.DEFAULT_DEPTH);
 
-    return response;
+    return property;
+  }
+  public async fetchLatestPropertiesWithoutChildren(): Promise<Property[]> {
+    await this.sendFeatureSetCommand('max_depth', 0);
+    const properties = await this.fetchLatestProperties();
+    await this.sendFeatureSetCommand('max_depth', this.DEFAULT_DEPTH);
+
+    return properties;
   }
   public async close(): Promise<void> {
     this.removeAllListeners();

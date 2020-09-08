@@ -15,9 +15,10 @@ Mainly bug fixes and processing improvements.
 ## [Released]
 ## [1.6.0] - 2020-xx-xx
 ### Added
-* [#13] (https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
+* [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
 * [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add PerfTips
 * [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Add Embedded breakpoint
+* [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support IntelliSense, which is only available for debugging
 
 ### Changed
 * [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output

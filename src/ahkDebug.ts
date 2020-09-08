@@ -33,6 +33,7 @@ import {
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { Parser, createParser } from './util/ConditionParser';
 import { ConditionalEvaluator } from './util/ConditionEvaluator';
+import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 
 const byteConverter = new ByteConverter();
@@ -170,6 +171,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         },
       );
       ahkProcess.on('close', (exitCode) => {
+        this.isSessionStopped = true;
         const category = exitCode === 0 ? 'console' : 'stderr';
         this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
         this.sendEvent(new TerminatedEvent());
@@ -196,6 +198,8 @@ export class AhkDebugSession extends LoggingDebugSession {
                   }
                   this.session.sendFeatureGetCommand('language_version').then((response) => {
                     this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
+                    completionItemProvider.ahkVersion = this.ahkVersion;
+                    completionItemProvider.session = this.session ?? null;
                     this.ahkParser = createParser(this.ahkVersion);
                     this.conditionalEvaluator = new ConditionalEvaluator(this.session!, this.ahkVersion);
 
@@ -423,7 +427,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
     let properties: dbgp.Property[] = [];
-
     if (this.contextByVariablesReference.has(args.variablesReference)) {
       const context = this.contextByVariablesReference.get(args.variablesReference)!;
       properties = (await this.session!.sendContextGetCommand(context)).properties;

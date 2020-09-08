@@ -11,9 +11,11 @@ import {
   ProviderResult,
   WorkspaceFolder,
   debug,
+  languages,
   window,
 } from 'vscode';
 import { defaults, range } from 'underscore';
+import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
@@ -184,7 +186,8 @@ export const activate = function(context: ExtensionContext): void {
   const provider = new AhkConfigurationProvider();
 
   context.subscriptions.push(debug.registerDebugConfigurationProvider('ahk', provider));
-
   context.subscriptions.push(debug.registerDebugConfigurationProvider('autohotkey', provider));
   context.subscriptions.push(debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
+
+  context.subscriptions.push(languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2', 'autohotkey' ], completionItemProvider, '.'));
 };
