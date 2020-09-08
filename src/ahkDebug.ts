@@ -184,9 +184,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       });
       this.ahkProcess = ahkProcess;
 
-      this.server = await new Promise((resolve, reject) => {
-        const server = net.createServer();
-        server
+      await new Promise((resolve, reject) => {
+        this.server = net.createServer()
           .listen(args.port, args.hostname)
           .on('connection', (socket) => {
             try {
@@ -232,7 +231,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
               this.breakpointManager = new BreakpointManager(this.session);
               this.sendEvent(new ThreadEvent('Session started.', this.session.id));
-              resolve(server);
+              resolve();
             }
             catch (error) {
               this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
