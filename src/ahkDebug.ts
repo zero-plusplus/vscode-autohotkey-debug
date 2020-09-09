@@ -988,16 +988,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     return matchCondition;
   }
-  private async printLogMessage(messageOrmetaVariables: string | CaseInsensitiveMap<string, string>, logCategory?: string): Promise<void> {
-    let metaVariables: CaseInsensitiveMap<string, string>;
-    if (typeof messageOrmetaVariables === 'string') {
-      metaVariables = new CaseInsensitiveMap<string, string>();
-      metaVariables.set('logMessage', messageOrmetaVariables);
-    }
-    else {
-      metaVariables = messageOrmetaVariables;
-    }
-
+  private async printLogMessage(metaVariables: CaseInsensitiveMap<string, string>, logCategory?: string): Promise<void> {
     const logMessage = metaVariables.get('logMessage') ?? '';
     const results = await this.formatLog(logMessage, metaVariables);
     for (const messageOrProperty of results) {
