@@ -379,7 +379,7 @@ export class ContextGetResponse extends Response {
     }
   }
 }
-export type FeatureGetName = 'language_supports_threads' | 'language_name' | 'language_version' | 'encoding' | 'protocol_version' | 'supports_async' | 'breakpoint_types';
+export type FeatureGetName = 'language_supports_threads' | 'language_name' | 'language_version' | 'encoding' | 'protocol_version' | 'supports_async' | 'breakpoint_types' | 'multiple_sessions' | FeatureSetName;
 export class FeatureGetResponse extends Response {
   public featureName: FeatureGetName;
   public supported: boolean;
