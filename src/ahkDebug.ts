@@ -866,12 +866,14 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
 
           let conditionResult = true;
-          if (condition || hitCondition || logMessage || logGroup) {
+          if (condition || hitCondition) {
             conditionResult = await this.evalCondition(_metaVariables);
-            if (conditionResult && (logGroup || logMessage)) {
-              this.printLogMessage(_metaVariables);
-              conditionResult = false;
-            }
+          }
+
+          const logMode = logGroup || logMessage;
+          if (conditionResult && logMode) {
+            this.printLogMessage(_metaVariables);
+            conditionResult = false;
           }
 
           if (!conditionResults.includes(true)) {
