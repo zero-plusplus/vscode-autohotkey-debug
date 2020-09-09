@@ -6,7 +6,7 @@ import * as he from 'he';
 import { rtrim } from 'underscore.string';
 import * as convertHrTime from 'convert-hrtime';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { equalsIgnoreCase } from './util/stringUtils';
+import { equalsIgnoreCase, startsWithIgnoreCase } from './util/stringUtils';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -749,6 +749,30 @@ export class Session extends EventEmitter {
       });
     }
     return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
+  }
+  public async fetchSuggestList(searchText: string): Promise<Property[]> {
+    const filterCallback = (property: Property): boolean => startsWithIgnoreCase(property.fullName, searchText);
+    if (!searchText.includes('.')) {
+      const properties = await this.fetchLatestProperties();
+      if (searchText === '') {
+        return properties;
+      }
+      return properties.filter(filterCallback);
+    }
+
+    const parentName = searchText.split('.').slice(0, -1).join('.');
+    const property = await this.safeFetchLatestProperty(parentName);
+    if (property === null) {
+      return [];
+    }
+    else if (property instanceof ObjectProperty) {
+      return property.children.filter(filterCallback);
+    }
+    else if (startsWithIgnoreCase(property.fullName, searchText)) {
+      return [ property ];
+    }
+
+    return [];
   }
   public async close(): Promise<void> {
     this.removeAllListeners();
