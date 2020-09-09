@@ -614,7 +614,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         throw Error('Error: Could not get stack frame');
       }
 
-      const property = await this.session!.fetchLatestProperty(propertyName);
+      const property = await this.session!.safeFetchLatestProperty(propertyName);
       if (property === null) {
         throw Error('not available');
       }
@@ -1069,7 +1069,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else {
-        const property = await this.session!.fetchLatestProperty(variableName);
+        const property = await this.session!.safeFetchLatestProperty(variableName);
 
         if (property) {
           if (property instanceof dbgp.ObjectProperty) {

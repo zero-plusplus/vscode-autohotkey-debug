@@ -244,7 +244,7 @@ export class ConditionalEvaluator {
           else if (operatorType.type === 'InOperator' && valueB instanceof dbgp.ObjectProperty) {
             if (valueA instanceof dbgp.PrimitiveProperty || typeof valueA === 'string') {
               const keyName = valueA instanceof dbgp.PrimitiveProperty ? valueA.value : valueA;
-              const property = await this.session.fetchLatestProperty(`${valueB.fullName}.${keyName}`, 0);
+              const property = await this.session.safeFetchLatestProperty(`${valueB.fullName}.${keyName}`);
               if (property !== null) {
                 result = true;
               }
@@ -306,7 +306,7 @@ export class ConditionalEvaluator {
 
     const propertyName = parsed.value;
     if (parsed?.extraInfo === 'countof') {
-      const property = await this.session.fetchLatestProperty(propertyName);
+      const property = await this.session.safeFetchLatestProperty(propertyName);
       if (property instanceof dbgp.ObjectProperty) {
         const maxIndex = property.maxIndex;
         if (maxIndex) {
@@ -320,7 +320,7 @@ export class ConditionalEvaluator {
       }
       return null;
     }
-    return this.session.fetchLatestProperty(propertyName, 0);
+    return this.session.safeFetchLatestProperty(propertyName);
   }
   private async evalValue(parsed, metaVariables: CaseInsensitiveMap<string, string>): Promise<string | dbgp.Property | null> {
     if (!('type' in parsed || 'value' in parsed)) {

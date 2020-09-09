@@ -6,6 +6,7 @@ import * as he from 'he';
 import { rtrim } from 'underscore.string';
 import * as convertHrTime from 'convert-hrtime';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
+import { equalsIgnoreCase } from './util/stringUtils';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -698,6 +699,38 @@ export class Session extends EventEmitter {
 
         break;
       }
+    }
+    return null;
+  }
+  public async safeFetchLatestProperty(propertyName: string, maxDepth?: number): Promise<Property | null> {
+    const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
+    if (!propertyName.includes('.')) {
+      return this.fetchLatestProperty(propertyName, _maxDepth);
+    }
+
+    const propertyPathArray = propertyName.split('.');
+    const topProperty = (await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth)) as ObjectProperty;
+
+    let property: Property = topProperty;
+    for (let i = 1; i < propertyPathArray.length; i++) {
+      if (property instanceof PrimitiveProperty) {
+        if (equalsIgnoreCase(propertyName, property.fullName)) {
+          return property;
+        }
+        continue;
+      }
+
+      const name = propertyPathArray[i];
+      const objectProperty = property as ObjectProperty;
+      const child = objectProperty.children.find((property) => equalsIgnoreCase(name, property.name));
+      if (!child) {
+        return null;
+      }
+
+      if (equalsIgnoreCase(propertyName, child.fullName)) {
+        return child;
+      }
+      property = child;
     }
     return null;
   }
