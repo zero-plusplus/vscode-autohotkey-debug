@@ -575,11 +575,14 @@ export class Session extends EventEmitter {
   public async sendStackDepthCommand(): Promise<StackDepthResponse> {
     return new StackDepthResponse(await this.sendCommand('stack_depth'));
   }
-  public async sendPropertyGetCommand(context: Context, name: string): Promise<PropertyGetResponse> {
-    return new PropertyGetResponse(
-      await this.sendCommand('property_get', `-n ${name.replace(/<base>/ug, 'base')} -c ${context.id} -d ${context.stackFrame.level}`),
-      context,
-    );
+  public async sendPropertyGetCommand(context: Context, name: string, maxDepth?: number): Promise<PropertyGetResponse> {
+    const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
+
+    this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
+    const dbgpResponse = await this.sendCommand('property_get', `-n ${name.replace(/<base>/ug, 'base')} -c ${context.id} -d ${context.stackFrame.level}`);
+    this.sendFeatureSetCommand('max_depth', maxDepth_backup);
+
+    return new PropertyGetResponse(dbgpResponse, context);
   }
   public async sendContinuationCommand(commandName: ContinuationCommandName): Promise<ContinuationResponse> {
     const startTime = process.hrtime();
@@ -623,8 +626,14 @@ export class Session extends EventEmitter {
   public async sendContextNamesCommand(stackFrame: StackFrame): Promise<ContextNamesResponse> {
     return new ContextNamesResponse(await this.sendCommand('context_names'), stackFrame);
   }
-  public async sendContextGetCommand(context: Context): Promise<ContextGetResponse> {
-    return new ContextGetResponse(await this.sendCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`), context);
+  public async sendContextGetCommand(context: Context, maxDepth?: number): Promise<ContextGetResponse> {
+    const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
+
+    this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
+    const dbgpResponse = await this.sendCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`);
+    this.sendFeatureSetCommand('max_depth', maxDepth_backup);
+
+    return new ContextGetResponse(dbgpResponse, context);
   }
   public async sendFeatureGetCommand(featureName: FeatureGetName): Promise<FeatureGetResponse> {
     return new FeatureGetResponse(await this.sendCommand('feature_get', `-n ${featureName}`));
@@ -650,11 +659,11 @@ export class Session extends EventEmitter {
   public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
   }
-  public async fetchLatestProperty(propertyName: string): Promise<Property | null> {
+  public async fetchLatestProperty(propertyName: string, maxDepth?: number): Promise<Property | null> {
     const { stackFrames } = await this.sendStackGetCommand();
     const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
     for await (const context of contexts) {
-      const { properties } = await this.sendPropertyGetCommand(context, propertyName);
+      const { properties } = await this.sendPropertyGetCommand(context, propertyName, maxDepth);
       const property = properties[0];
       if (property.type !== 'undefined') {
         return property;
@@ -692,13 +701,13 @@ export class Session extends EventEmitter {
     }
     return null;
   }
-  public async fetchLatestProperties(): Promise<Property[]> {
+  public async fetchLatestProperties(maxDepth?: number): Promise<Property[]> {
     const { stackFrames } = await this.sendStackGetCommand();
     const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
 
     const propertyMap = new CaseInsensitiveMap<string, Property>();
     for await (const context of contexts) {
-      const { properties } = await this.sendContextGetCommand(context);
+      const { properties } = await this.sendContextGetCommand(context, maxDepth);
       properties.forEach((property) => {
         if (propertyMap.has(property.fullName)) {
           return;
@@ -707,20 +716,6 @@ export class Session extends EventEmitter {
       });
     }
     return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
-  }
-  public async fetchLatestPropertyWithoutChildren(propertyName: string): Promise<Property | null> {
-    await this.sendFeatureSetCommand('max_depth', 0);
-    const property = await this.fetchLatestProperty(propertyName);
-    await this.sendFeatureSetCommand('max_depth', this.DEFAULT_DEPTH);
-
-    return property;
-  }
-  public async fetchLatestPropertiesWithoutChildren(): Promise<Property[]> {
-    await this.sendFeatureSetCommand('max_depth', 0);
-    const properties = await this.fetchLatestProperties();
-    await this.sendFeatureSetCommand('max_depth', this.DEFAULT_DEPTH);
-
-    return properties;
   }
   public async close(): Promise<void> {
     this.removeAllListeners();
