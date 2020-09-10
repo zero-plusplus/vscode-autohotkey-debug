@@ -207,7 +207,7 @@ See [here](https://code.visualstudio.com/docs/editor/debugging#_advanced-breakpo
 ### Conditional breakpoint
 ![conditional-breakpoint](image/conditional-breakpoint.gif)
 
-#### Conditional expresion
+#### Condition expresion
 I am not familiar with the parser and evaluation of expressions, so this is a minimal implementation.
 
 ##### Grammer
