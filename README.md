@@ -162,7 +162,7 @@ You can check the data of the variables.
 #### About VariableName
 If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is case-insensitive.
 
-The object's child elements are the same as in the running script, and can be specified in dot syntax or array index syntax. Which method is available depends on the version of AutoHotkey, v1 can use either method. e.g. `obj.field`, `obj["field"]`, `arr[1]`
+The object's child elements are the same as in the running script, and can be specified in dot syntax or array indexing syntax. Which method is available depends on the version of AutoHotkey, v1 can use either method. e.g. `obj.field`, `obj["field"]`, `arr[1]`
 
 #### About A_DebuggerName
 This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
@@ -193,7 +193,7 @@ You can see the data by hovering over the name of the variable.
 
 Only variables, and fields that use the member access syntax (e.g. `object.field`) are supported.
 
-Due to the specification of vscode, item access syntax is not supported e.g. `arr[1]` and `obj["spaced key"]`.
+Due to the specification of vscode, array indexing syntax is not supported e.g. `arr[1]` and `obj["spaced key"]`.
 
 ## Call stack
 ![call-stack](image/call-stack.gif)
