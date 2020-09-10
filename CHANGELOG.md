@@ -27,6 +27,7 @@ Mainly bug fixes and processing improvements.
 
 ### Fixed
 * [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
+* [#33](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/33) Float values do not work properly at conditional breakpoint
 * [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an advanced breakpoint
 * [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit Conditonal Breakpoint's `%` operator is not working
 * [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover

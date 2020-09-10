@@ -25,6 +25,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Changed: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) MetaVariables are now available in several features
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
     * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
+    * Fixed: [#33](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/33) Float values do not work properly at conditional breakpoint
     * Fixed: [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an advanced breakpoint
     * Fixed: [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit Conditonal Breakpoint's `%` operator is not working
     * Fixed: [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
