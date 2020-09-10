@@ -31,6 +31,25 @@ export class BreakpointManager {
   constructor(session: dbgp.Session) {
     this.session = session;
   }
+  public isAdvancedBreakpoint(fileUri: string, line: number): boolean {
+    const breakpoints = this.getBreakpoints(fileUri, line);
+    if (!breakpoints) {
+      return false;
+    }
+
+    for (const breakpoint of breakpoints) {
+      const advancedData = breakpoint?.advancedData;
+      if (!advancedData) {
+        continue;
+      }
+
+      const { condition, hitCondition, logMessage, logGroup } = advancedData;
+      if (condition || hitCondition || logMessage || logGroup) {
+        return true;
+      }
+    }
+    return false;
+  }
   public hasBreakpoint(fileUri: string, line: number): boolean {
     const key = this.createKey(fileUri, line);
     return this.breakpointsMap.has(key);

@@ -836,6 +836,11 @@ export class AhkDebugSession extends LoggingDebugSession {
         metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
       }
 
+      if (this.isPaused && !this.breakpointManager!.isAdvancedBreakpoint(fileUri, line)) {
+        this.sendStoppedEvent(response.stopReason, metaVariables);
+        return;
+      }
+
       let stopReason = String(response.stopReason);
       for await (const breakpoint of breakpoints) {
         const _metaVariables = new CaseInsensitiveMap<string, string>();
