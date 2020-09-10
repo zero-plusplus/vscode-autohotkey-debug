@@ -872,7 +872,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
           const logMode = logGroup || logMessage;
           if (conditionResult && logMode) {
-            this.printLogMessage(_metaVariables);
+            await this.printLogMessage(_metaVariables);
             conditionResult = false;
           }
 
