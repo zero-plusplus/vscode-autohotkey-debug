@@ -379,36 +379,6 @@ For more information on `VariableName`, see [data inspection](#data-inspection).
 
 If you want to output `{`, use `\{`.
 
-## Embedded breakpoint (Optional)
-**This feature is a preview.**
-
-To enable this feature, the `useEmbeddedBreakpoint` in launch.json must be set to `true`.
-However. note the **performance is degraded at the start of the debugging.**
-
-Search for embedded breakpoint markers in the source code and place invisible and unchangeable breakpoints.
-
-Here are the rules for breakpoint marker.
-1. A single-line comment using `;`. i.e. `/* debugger */` is ignore
-2. Only spaces are allowed before the comment. i.e. `a := "" ; debugger` is ignore
-3. The comment is followed by an optional space and a `debugger`. `debugger` is not case sensitive. i.e. These will be allowed. `;debugger`, `; debugger`, `; Debugger`
-
-Also, this feature is extended by enabling `useAdvancedBreakpoint`.
-
-Each feature of the advanced breakpoint can be set up by separating them with a colon.
-
-The order is CONDITION, HITCONDITION, and LOGPOINT, in that order.
-That is, set up as follows.
-```ahk
-; debugger:CONDITION:HITCONDITION:LOGPOINT
-```
-
-Each is optional. If you want to use feature individually, do the following.
-```ahk
-; debugger:CONDITION
-; debugger::HITCONDITION
-; debugger:::LOGPOINT
-```
-
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
 

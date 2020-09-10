@@ -39,7 +39,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtimeArgs_v1: [ '/ErrorStdOut' ],
       runtimeArgs_v2: [ '/ErrorStdOut' ],
       useProcessUsageData: false,
-      useEmbeddedBreakpoint: false,
       usePerfTips: false,
       useDirectiveComment: false,
       openFileOnExit: null,
