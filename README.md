@@ -29,8 +29,8 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an advanced breakpoint
     * Fixed: [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit Conditonal Breakpoint's `%` operator is not working
     * Fixed: [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
-
     * Fixed: If the error code is 0, output category is stderr
+    * Fixed: Can't pause with Advanced breakpoint
 
 * `1.5.0` - 2020-08-14
     * Added: Operators in conditional breakpoint

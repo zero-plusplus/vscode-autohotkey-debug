@@ -32,6 +32,7 @@ Mainly bug fixes and processing improvements.
 * [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit Conditonal Breakpoint's `%` operator is not working
 * [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
 * If the error code is 0, output category is stderr
+* Can't pause with Advanced breakpoint
 
 ## [1.5.0] - 2020-08-14
 ### Added
