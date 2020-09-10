@@ -231,11 +231,6 @@
                 "description": "You can send instructions to the debugger by embedding comments that follow specific rules in the source code. See the README for details. Note that enabling this feature will slow down the performance at debug launch.",
                 "default": false
               },
-              "useIntellisense": {
-                "type": "boolean",
-                "description": "If true, IntelliSense is enabled. Because it uses the variable information in the debugger, it is only available for debugging. In v2, when you get a dynamic property, the script is executed. So be aware that an error may occur and the script may stop.",
-                "default": false
-              },
               "openFileOnExit": {
                 "type": "string",
                 "description": "The absolute path of the file to open when the debugger exits.  If you want to turn this feature off, set it to null or omit it.",

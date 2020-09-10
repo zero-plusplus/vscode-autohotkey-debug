@@ -117,8 +117,6 @@ Some noteworthy settings are described below.
     * `usePerfTips.fontColor` :　Set the [color](https://developer.mozilla.org/en-US/docs/Web/CSS/color) of CSS.
     * `usePerfTips.fontStyle` :　Set the [font-style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) of CSS.
 
-* `useIntellisense` :　If true, [IntelliSense](https://code.visualstudio.com/docs/editor/intellisense) is enabled. Because it uses the variable information in the debugger, it is only available for debugging. In v2, when you get a dynamic property, the script is executed. So be aware that an error may occur and the script may stop
-
 * `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
 * `openFileOnExit` :　The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
@@ -425,12 +423,10 @@ You can see the external script being loaded.
 
 It supports both explicit loading using `#Include` and implicit loading using [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib).
 
-## Intellisense (Optional)
+## Intellisense
 ![intellisense](image/intellisense.gif)
 
 **Note that this is only available for debugging.**
-
-You can use this by setting `useIntellisense` to `true` in launch.json.
 
 The variables that are displayed in the data inspect will be suggested.
 Therefore, variables that have not yet been evaluated are not proposed.
