@@ -147,7 +147,7 @@ export class BreakpointManager {
     // The following encoding differences have been converted to path
     // file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"
     // file:///w:/project/vscode-autohotkey-debug/demo/demo.ahk
-    const filePath = URI.parse(fileUri).fsPath;
+    const filePath = URI.parse(fileUri).fsPath.toLowerCase();
     return `${filePath},${line}`;
   }
 }
