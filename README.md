@@ -24,6 +24,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Changed: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) MetaVariables are now available in several features
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
+    * Changed: [#41](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/41) Remove useAdvancedBreakpoint. Advanced breakpoints are enabled by default
     * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
     * Fixed: [#33](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/33) Float values do not work properly at conditional breakpoint
     * Fixed: [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an advanced breakpoint
@@ -111,8 +112,6 @@ Some noteworthy settings are described below.
 
 * `stopOnEntry` :　If `false`, it runs until it stops at a breakpoint. Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey
 
-* `useAdvancedBreakpoint` :　If set to `true`, [advanced breakpoints](#advanced-breakpoints-optional) is enabled
-
 * `useProcessUsageData` :　Add process usage data to the metavariable. See [MetaVariable](#MetaVariable) for details. Note that if you enable this setting, step-execution is slow
 
 * `usePerfTips` :　You can enable/disable [PerfTips](#perftips-optional).If true, when debugging is break, exectue time is displayed on the current line. Specify a string to change what is displayed, or an object to change more specific settings. If you set the string, it is the same as setting the `usePerfTips.format`.
@@ -137,7 +136,7 @@ The available MetaVariables are listed below.
 
 * `{elapsedTime_ns}`
 * `{elapsedTime_ms}`
-* `{elapsedTime_s}` :　Time taken to execute. The suffix indicates the unit of measurement: `ns`(nanosecond), `ms`(millisecond), `s`(second). Note that this is not an exact execute time. The difference is especially large if you are using [Advanced breakpoint](#advanced-breakpoints-optional)
+* `{elapsedTime_s}` :　Time taken to execute. The suffix indicates the unit of measurement: `ns`(nanosecond), `ms`(millisecond), `s`(second). Note that this is not an exact execute time. The difference is especially large if you are using [Advanced breakpoint](#advanced-breakpoint)
 
 The following is available if `useProcessUsageData` is enabled.
 
@@ -198,21 +197,16 @@ You can also click to display the variables of that hierarchy in the [data inspe
 ## Breakpoints
 You can learn the basics of breakpoint [here](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
 
-## Advanced breakpoints (Optional)
-### Before use
-**This feature is a preview version and the specifications are subject to change. Also, please note that evaluating expressions and retrieving variables take some time.**
+## Advanced breakpoint
+**Note that using this feature for large loops will greatly degrade performance.**
 
-The following restrictions apply.
-* Step-in, out, and over will force a stop if the advanced breakpoint is passed
-
-### How to enable
-`useAdvancedBreakpoint` to `true` in launch.json. See [here](#customize-the-launch-configuration) for details.
+See [here](https://code.visualstudio.com/docs/editor/debugging#_advanced-breakpoint-topics) for the basics.
 
 ### Conditional breakpoint
 ![conditional-breakpoint](image/conditional-breakpoint.gif)
 
-#### Condition expresion
-Note: I am not familiar with the parser and evaluation of expressions, so this is a minimal implementation.
+#### Conditional expresion
+I am not familiar with the parser and evaluation of expressions, so this is a minimal implementation.
 
 ##### Grammer
 ```md
