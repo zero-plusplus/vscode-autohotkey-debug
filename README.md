@@ -440,6 +440,8 @@ See [CHANGELOG](CHANGELOG.md)
 
 * v2 only bug. An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection).
 
+* If there is a conditional breakpoint that returns false immediately after the start of debugging, the pause will not work until the next stop
+
 # Development support
 ## About source code contributes
 I am currently not accepting contributions.
