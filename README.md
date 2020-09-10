@@ -128,25 +128,17 @@ Some features make use of the information available to the debugger adapter. Thi
 
 When used, enclose the name of the `MetaVariable` in curly brackets. It is not case sensitive. e.g. `{MetaVariableName}`
 
+Can be used with [Conditional breakpoint](#conditional-breakpoint), [Log point](#log-point), [Watch expression](#watch-expression), etc.
+
 The available MetaVariables are listed below.
 
-* `{file}` :　Current file name. Equivalent to [A_LineFile](https://www.autohotkey.com/docs/Variables.htm#LineFile).
-
-* `{line}` :　Current line number. Equivalent to [A_LineNumber](https://www.autohotkey.com/docs/Variables.htm#LineNumber).
-
 * `{hitCount}` :　 hit count of breakpoint
-
-* `{condition}` :　 Condition of the breakpoint
-
-* `{hitCondition}` :　Condition of the hit breakpoint
-
-* `{logMessage}` :　Message of the log point
 
 * `{executeTime_ns}`
 * `{executeTime_ms}`
 * `{executeTime_s}` :　Time taken to execute. The suffix indicates the unit of measurement: `ns`(nanosecond), `ms`(millisecond), `s`(second). Note that by specification, this will be slower than the actual execute time
 
-The following is available if `useProcessUsageData` is enabled
+The following is available if `useProcessUsageData` is enabled.
 
 * `{usageCpu}` :　Current CPU usage (Unit: %)
 
