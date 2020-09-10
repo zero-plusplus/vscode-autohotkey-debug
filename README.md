@@ -335,31 +335,32 @@ You can check your hit count by using [PerfTips](#perftips-optional).
 Specifically, set the `usePerfTips` in launch.json to `hitCount: {{hitCount}}`.
 
 ##### Grammer
+It's basically a short hand with a conditional breakpoint. However, only the `%` operator will be a unique feature.
+
 ```md
 # You don't need to enter anything in {}. It is written for the purpose of explanation
 # You can omit anything in []
-
-{NumberOfHits} [Operator] Integer
+{hitCount} [Operator] Integer
 ```
 
 e.g. `= 30`, `<= 30`
 
 ##### Rules
-* `NumberOfHits` Number of hits to breakpoints (not required to be entered)
+* `hitCount` It is the same as the [MetaVariable](#metavariable) `{hitCount}`.
 
 * `Operator` If omitted, it is equivalent to `>=`
 
-    * `= or ==` :　Same as `NumberOfHits == Integer`
+    * `= or ==` :　Same as `{hitCount} == Integer`
 
-    * `>` :　Same as `NumberOfHits > Integer`
+    * `>` :　Same as `{hitCount} > Integer`
 
-    * `>=` :　Same as `NumberOfHits >= Integer`
+    * `>=` :　Same as `{hitCount} >= Integer`
 
-    * `<` :　Same as `NumberOfHits < Integer`
+    * `<` :　Same as `{hitCount} < Integer`
 
-    * `<=` :　Same as `NumberOfHits <= Integer`
+    * `<=` :　Same as `{hitCount} <= Integer`
 
-    * `%` :　Equivalent to `Mod(NumberOfHits, Integer) == 0`
+    * `%` :　This is the same as the following code in AutoHotkey. `Mod(hitCount, Integer) == 0`
 
 * `Integer` :　e.g. `30`
 
