@@ -250,7 +250,7 @@ e.g.
 
 * `VariableName` :　Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 
-* `MetaVariableName` :　Please Look at [MetaVariableName](#MetaVariableName)
+* `MetaVariableName` :　Please Look at [MetaVariable](#MetaVariable)
 
 * `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 
