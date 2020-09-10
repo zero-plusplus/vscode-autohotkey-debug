@@ -817,17 +817,17 @@ export class AhkDebugSession extends LoggingDebugSession {
       metaVariables.set('line', String(line));
 
       if (this.metaVariablesWhenNotBreak) {
-        const executeTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ns')!) + response.executeTime.ns;
-        const executeTime_ms = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_ms')!) + response.executeTime.ms;
-        const executeTime_s = parseFloat(this.metaVariablesWhenNotBreak.get('executeTime_s')!) + response.executeTime.s;
-        metaVariables.set('executeTime_ns', String(executeTime_ns).slice(0, 10));
-        metaVariables.set('executeTime_ms', String(executeTime_ms).slice(0, 10));
-        metaVariables.set('executeTime_s', String(executeTime_s.toFixed(8)).slice(0, 10));
+        const elapsedTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('elapsedTime_ns')!) + response.elapsedTime.ns;
+        const elapsedTime_ms = parseFloat(this.metaVariablesWhenNotBreak.get('elapsedTime_ms')!) + response.elapsedTime.ms;
+        const elapsedTime_s = parseFloat(this.metaVariablesWhenNotBreak.get('elapsedTime_s')!) + response.elapsedTime.s;
+        metaVariables.set('elapsedTime_ns', String(elapsedTime_ns).slice(0, 10));
+        metaVariables.set('elapsedTime_ms', String(elapsedTime_ms).slice(0, 10));
+        metaVariables.set('elapsedTime_s', String(elapsedTime_s.toFixed(8)).slice(0, 10));
       }
       else {
-        metaVariables.set('executeTime_ns', String(response.executeTime.ns).slice(0, 10));
-        metaVariables.set('executeTime_ms', String(response.executeTime.ms).slice(0, 10));
-        metaVariables.set('executeTime_s', String(response.executeTime.s.toFixed(8)).slice(0, 10));
+        metaVariables.set('elapsedTime_ns', String(response.elapsedTime.ns).slice(0, 10));
+        metaVariables.set('elapsedTime_ms', String(response.elapsedTime.ms).slice(0, 10));
+        metaVariables.set('elapsedTime_s', String(response.elapsedTime.s.toFixed(8)).slice(0, 10));
       }
       if (this.config.useProcessUsageData) {
         const usage = await pidusage(this.ahkProcess!.pid);

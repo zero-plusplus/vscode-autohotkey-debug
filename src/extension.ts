@@ -47,8 +47,8 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
 
     if (config.usePerfTips) {
       const defaultFormat = config.useProcessUsageData
-        ? `{{executeTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory`
-        : '{{executeTime_s}}s elapsed';
+        ? `{{elapsedTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory`
+        : '{{elapsedTime_s}}s elapsed';
       const defaultUsePerfTips = {
         fontColor: 'gray',
         fontStyle: 'italic',

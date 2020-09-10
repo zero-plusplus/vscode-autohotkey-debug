@@ -312,7 +312,7 @@ export class PropertySetResponse extends Response {
 export type ContinuationStatus = 'starting' | 'break' | 'running' | 'stopped';
 export type ContinuationExitReason = 'ok' | 'error';
 export type ContinuationStopReason = 'step' | 'breakpoint' | 'pause';
-export interface ContinuationExecuteTime {
+export interface ContinuationElapsedTime {
   ns: number;
   ms: number;
   s: number;
@@ -321,11 +321,11 @@ export class ContinuationResponse extends Response {
   public exitReason: ContinuationExitReason;
   public stopReason: ContinuationStopReason;
   public status: ContinuationStatus;
-  public executeTime: ContinuationExecuteTime;
-  constructor(response: XmlNode, executeTime: ContinuationExecuteTime) {
+  public elapsedTime: ContinuationElapsedTime;
+  constructor(response: XmlNode, elapsedTime: ContinuationElapsedTime) {
     super(response);
 
-    this.executeTime = executeTime;
+    this.elapsedTime = elapsedTime;
     const status = response.attributes.status ? response.attributes.status as ContinuationStatus : 'break';
     const exitReason = response.attributes.reason ? response.attributes.reason as ContinuationExitReason : 'ok';
     let stopReason: ContinuationStopReason;
@@ -592,12 +592,12 @@ export class Session extends EventEmitter {
     const response = await this.sendCommand(commandName);
     const diff = convertHrTime(process.hrtime(startTime));
 
-    const executeTime = {
+    const elapsedTime = {
       ns: diff.nanoseconds,
       ms: diff.milliseconds,
       s: diff.seconds,
-    } as ContinuationExecuteTime;
-    return new ContinuationResponse(response, executeTime);
+    } as ContinuationElapsedTime;
+    return new ContinuationResponse(response, elapsedTime);
   }
   public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: string; data: string }): Promise<PropertySetResponse> {
     return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName} -t ${property.typeName}`, property.data));

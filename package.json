@@ -166,8 +166,8 @@
                   "object"
                 ],
                 "examples": [
-                  "{{executeTime_s}}s elapsed",
-                  "{{executeTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory"
+                  "{{elapsedTime_s}}s elapsed",
+                  "{{elapsedTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory"
                 ],
                 "properties": {
                   "fontColor": {
@@ -189,10 +189,10 @@
                     "type": "string",
                     "description": "Content to be displayed. You can specify `MetaVariable` and AutoHotkey variables.",
                     "examples": [
-                      "{{executeTime_s}}s elapsed",
-                      "{{executeTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory"
+                      "{{elapsedTime_s}}s elapsed",
+                      "{{elapsedTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory"
                     ],
-                    "default": "{{executeTime_s}}s elapsed"
+                    "default": "{{elapsedTime_s}}s elapsed"
                   }
                 },
                 "description": "If set to true, execute time will be displayed inline. You can change what is displayed by specifying a string. See the README for details.",

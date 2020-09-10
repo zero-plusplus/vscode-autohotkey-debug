@@ -116,7 +116,7 @@ Some noteworthy settings are described below.
 * `useProcessUsageData` :　Add process usage data to the metavariable. See [MetaVariable](#MetaVariable) for details. Note that if you enable this setting, step-execution is slow
 
 * `usePerfTips` :　You can enable/disable [PerfTips](#perftips-optional).If true, when debugging is break, exectue time is displayed on the current line. Specify a string to change what is displayed, or an object to change more specific settings. If you set the string, it is the same as setting the `usePerfTips.format`.
-    * `usePerfTips.format` :　Content to be displayed. You can use the MetaVariable and AutoHotkey variables. In that case, use `{{MetaVariableName}}` and `{AutoHotkeyVariableName}`. Default: `{{executeTime_s}}s elapsed`
+    * `usePerfTips.format` :　Content to be displayed. You can use the MetaVariable and AutoHotkey variables. In that case, use `{{MetaVariableName}}` and `{AutoHotkeyVariableName}`. Default: `{{elapsedTime_s}}s elapsed`
     * `usePerfTips.fontColor` :　Set the [color](https://developer.mozilla.org/en-US/docs/Web/CSS/color) of CSS.
     * `usePerfTips.fontStyle` :　Set the [font-style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) of CSS.
 
@@ -135,9 +135,9 @@ The available MetaVariables are listed below.
 
 * `{hitCount}` :　 hit count of breakpoint
 
-* `{executeTime_ns}`
-* `{executeTime_ms}`
-* `{executeTime_s}` :　Time taken to execute. The suffix indicates the unit of measurement: `ns`(nanosecond), `ms`(millisecond), `s`(second). Note that by specification, this will be slower than the actual execute time
+* `{elapsedTime_ns}`
+* `{elapsedTime_ms}`
+* `{elapsedTime_s}` :　Time taken to execute. The suffix indicates the unit of measurement: `ns`(nanosecond), `ms`(millisecond), `s`(second). Note that this is not an exact execute time. The difference is especially large if you are using [Advanced breakpoint](#advanced-breakpoints-optional)
 
 The following is available if `useProcessUsageData` is enabled.
 
@@ -378,7 +378,7 @@ You can embed the value of a variable by enclosing the `VariableName` or `MetaVa
 
 For more information on `VariableName`, see [data inspection](#data-inspection). You can read more about the metavariables [here](#MetaVariable).
 
- e.g. `count: {A_Index}`, `name: {person.name}`, `{{executeTime_s}}`
+ e.g. `count: {A_Index}`, `name: {person.name}`, `{{elapsedTime_s}}`
 
 If you want to output `{`, use `\{`.
 
