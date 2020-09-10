@@ -7,6 +7,7 @@ import { rtrim } from 'underscore.string';
 import * as convertHrTime from 'convert-hrtime';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { equalsIgnoreCase, startsWithIgnoreCase } from './util/stringUtils';
+import { range } from 'underscore';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -508,6 +509,7 @@ export class Session extends EventEmitter {
   }
   constructor(socket: Socket) {
     super();
+
     this.socket = socket
       .on('data', (packet: Buffer): void => this.handlePacket(packet))
       .on('error', (error: Error) => this.emit('error', error))
@@ -703,34 +705,88 @@ export class Session extends EventEmitter {
     return null;
   }
   public async safeFetchLatestProperty(propertyName: string, maxDepth?: number): Promise<Property | null> {
+    const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    if (!propertyName.includes('.')) {
+    if (!propertyName.includes('.') || propertyName.includes('[') || ahkVersion === 1) {
       return this.fetchLatestProperty(propertyName, _maxDepth);
     }
 
-    const propertyPathArray = propertyName.split('.');
-    const topProperty = (await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth)) as ObjectProperty;
-
-    let property: Property = topProperty;
-    for (let i = 1; i < propertyPathArray.length; i++) {
-      if (property instanceof PrimitiveProperty) {
-        if (equalsIgnoreCase(propertyName, property.fullName)) {
-          return property;
+    // utils
+    const getProperty = (property: ObjectProperty, key: string): Property | null => {
+      for (const child of property.children) {
+        if (equalsIgnoreCase(key, child.name)) {
+          return child;
         }
-        continue;
       }
-
-      const name = propertyPathArray[i];
-      const objectProperty = property as ObjectProperty;
-      const child = objectProperty.children.find((property) => equalsIgnoreCase(name, property.name));
-      if (!child) {
+      return null;
+    };
+    const getInheritedProperty = async(property: Property, key: string): Promise<Property | null> => {
+      if (property instanceof PrimitiveProperty) {
         return null;
       }
 
-      if (equalsIgnoreCase(propertyName, child.fullName)) {
+      const objectProperty = property as ObjectProperty;
+      const child = getProperty(objectProperty, key);
+      if (child) {
         return child;
       }
-      property = child;
+
+      // Search prototype chain
+      const baseProperty = await this.fetchLatestProperty(`${objectProperty.fullName}.base`); // `base` field can be safely obtained
+      if (!baseProperty) {
+        return null;
+      }
+
+      let currentBaseProperty = baseProperty as ObjectProperty;
+      while (currentBaseProperty !== null) {
+        const child = getProperty(currentBaseProperty, key);
+        if (child) {
+          return child;
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        const baseProperty = await this.fetchLatestProperty(`${currentBaseProperty.fullName}.base`);
+        if (baseProperty instanceof ObjectProperty) {
+          currentBaseProperty = baseProperty;
+          continue;
+        }
+        break;
+      }
+      return null;
+    };
+    const getDeepProprety = async(property: ObjectProperty, keys: string[]): Promise<Property | null> => {
+      let currentProperty = property;
+
+      for await (const i of range(keys.length)) {
+        const key = keys[i];
+        const child = await getInheritedProperty(currentProperty, key);
+        if (child) {
+          const isLastLoop = i === keys.length - 1;
+          if (isLastLoop) {
+            return child;
+          }
+          else if (child instanceof PrimitiveProperty) {
+            return null;
+          }
+
+          currentProperty = child as ObjectProperty;
+          continue;
+        }
+        break;
+      }
+      return null;
+    };
+
+    const propertyPathArray = propertyName.split('.');
+    const topProperty = await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth);
+    if (topProperty === null || topProperty instanceof PrimitiveProperty) {
+      return null;
+    }
+    propertyPathArray.shift();
+
+    const property = await getDeepProprety(topProperty as ObjectProperty, propertyPathArray);
+    if (property) {
+      return property;
     }
     return null;
   }
