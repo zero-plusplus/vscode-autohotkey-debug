@@ -113,7 +113,7 @@ Some noteworthy settings are described below.
 
 * `useProcessUsageData` :　Add process usage data to the metavariable. See [MetaVariable](#MetaVariable) for details. Note that if you enable this setting, step-execution is slow
 
-* `usePerfTips` :　You can enable/disable [PerfTips](#PerfTips).If true, when debugging is break, exectue time is displayed on the current line. Specify a string to change what is displayed, or an object to change more specific settings. If you set the string, it is the same as setting the `usePerfTips.format`.
+* `usePerfTips` :　You can enable/disable [PerfTips](#perftips-optional).If true, when debugging is break, exectue time is displayed on the current line. Specify a string to change what is displayed, or an object to change more specific settings. If you set the string, it is the same as setting the `usePerfTips.format`.
     * `usePerfTips.format` :　Content to be displayed. You can use the MetaVariable and AutoHotkey variables. In that case, use `{{MetaVariableName}}` and `{AutoHotkeyVariableName}`. Default: `{{executeTime_s}}s elapsed`
     * `usePerfTips.fontColor` :　Set the [color](https://developer.mozilla.org/en-US/docs/Web/CSS/color) of CSS.
     * `usePerfTips.fontStyle` :　Set the [font-style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) of CSS.
@@ -333,7 +333,7 @@ e.g.
 
 Break the script when the breakpoint reaches a certain hit count.
 
-You can check your hit count by using [PerfTips](#PerfTips).
+You can check your hit count by using [PerfTips](#perftips-optional).
 Specifically, set the `usePerfTips` in launch.json to `hitCount: {{hitCount}}`.
 
 ##### Grammer
