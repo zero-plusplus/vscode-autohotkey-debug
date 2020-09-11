@@ -35,6 +35,7 @@ import { Parser, createParser } from './util/ConditionParser';
 import { ConditionalEvaluator } from './util/ConditionEvaluator';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
+import { equalsIgnoreCase } from './util/stringUtils';
 
 const byteConverter = new ByteConverter();
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
@@ -749,6 +750,18 @@ export class AhkDebugSession extends LoggingDebugSession {
         else if (useDebugDirective.useOutputDirective && directiveType === 'output') {
           const logLevels = useDebugDirective.useOutputDirective.join(' ');
           const logLevel = 0 < params.length ? params[0] : 'INFO';
+          let logGroup: string | undefined;
+          if (1 < params.length) {
+            if (equalsIgnoreCase(params[1], 'start')) {
+              logGroup = 'start';
+            }
+            else if (equalsIgnoreCase(params[1], 'startCollapsed')) {
+              logGroup = 'startCollapsed';
+            }
+            else if (equalsIgnoreCase(params[1], 'end')) {
+              logGroup = 'end';
+            }
+          }
           const newCondition = `"${logLevels}" ~= "i)\\b${logLevel}\\b"${condition ? ` && ${condition}` : ''}`;
           const advancedData = {
             counter: 0,
