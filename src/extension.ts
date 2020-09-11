@@ -40,7 +40,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtimeArgs_v2: [ '/ErrorStdOut' ],
       useProcessUsageData: false,
       usePerfTips: false,
-      useDirectiveComment: false,
+      useDebugDirective: false,
       openFileOnExit: null,
     };
     defaults(config, defaultConfig);
@@ -66,29 +66,29 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       }
     }
 
-    if (config.useDirectiveComment) {
+    if (config.useDebugDirective) {
       const defaultDirectiveComment = {
         useBreakpointDirective: false,
         useOutputDirective: false,
       };
-      if (config.useDirectiveComment === true) {
-        config.useDirectiveComment = {
+      if (config.useDebugDirective === true) {
+        config.useDebugDirective = {
           useBreakpointDirective: false,
           useOutputDirective: true,
         };
       }
       else {
-        defaults(config.useDirectiveComment, defaultDirectiveComment);
+        defaults(config.useDebugDirective, defaultDirectiveComment);
       }
 
-      if (config.useDirectiveComment.useOutputDirective) {
+      if (config.useDebugDirective.useOutputDirective) {
         const levels = [ 'INFO', 'WARN', 'ERROR', 'FATAL' ];
-        if (config.useDirectiveComment.useOutputDirective === true) {
-          config.useDirectiveComment.useOutputDirective = levels;
+        if (config.useDebugDirective.useOutputDirective === true) {
+          config.useDebugDirective.useOutputDirective = levels;
         }
-        else if (typeof config.useDirectiveComment.useOutputDirective === 'string') {
-          const index = levels.indexOf(config.useDirectiveComment.useOutputDirective.toUpperCase());
-          config.useDirectiveComment.useOutputDirective = -1 < index
+        else if (typeof config.useDebugDirective.useOutputDirective === 'string') {
+          const index = levels.indexOf(config.useDebugDirective.useOutputDirective.toUpperCase());
+          config.useDebugDirective.useOutputDirective = -1 < index
             ? levels.slice(0, index + 1)
             : levels;
         }

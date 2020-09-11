@@ -54,7 +54,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     fontStyle: string;
     format: string;
   };
-  useDirectiveComment: false | {
+  useDebugDirective: false | {
     useBreakpointDirective: boolean;
     useOutputDirective: false | string[];
   };
@@ -301,7 +301,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
 
-    if (this.config.useDirectiveComment) {
+    if (this.config.useDebugDirective) {
       const loadedSourcePathList = this.getAllLoadedSourcePath();
       await this.registerDirectiveComment(loadedSourcePathList);
     }
@@ -697,8 +697,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   private async registerDirectiveComment(filePathList: string[]): Promise<void> {
     // const DEBUG_start = process.hrtime();
     await Promise.all(filePathList.map(async(filePath) => {
-      const useDirectiveComment = this.config.useDirectiveComment;
-      if (useDirectiveComment === false) {
+      const useDebugDirective = this.config.useDebugDirective;
+      if (useDebugDirective === false) {
         return;
       }
 
@@ -732,7 +732,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const line = line_0base + 1;
         const nextLine = line + 1;
-        if (useDirectiveComment.useBreakpointDirective && directiveType === 'breakpoint') {
+        if (useDebugDirective.useBreakpointDirective && directiveType === 'breakpoint') {
           if (0 < params.length) {
             return;
           }
@@ -746,7 +746,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           } as BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
-        else if (useDirectiveComment.useOutputDirective && directiveType === 'output') {
+        else if (useDebugDirective.useOutputDirective && directiveType === 'output') {
           const logLevel = 0 < params.length ? params[0] : 'INFO';
           const logGroup = 1 < params.length ? params[1] : '';
           const newCondition = `{logLevels} ~= "i)\\b${logLevel}\\b" && ${condition}`;
@@ -866,8 +866,8 @@ export class AhkDebugSession extends LoggingDebugSession {
           _metaVariables.set('logMessage', logMessage);
           _metaVariables.set('logGroup', logGroup);
           _metaVariables.set('logLevel', logLevel);
-          if (this.config.useDirectiveComment && Array.isArray(this.config.useDirectiveComment.useOutputDirective)) {
-            _metaVariables.set('logLevels', this.config.useDirectiveComment.useOutputDirective.join(' '));
+          if (this.config.useDebugDirective && Array.isArray(this.config.useDebugDirective.useOutputDirective)) {
+            _metaVariables.set('logLevels', this.config.useDebugDirective.useOutputDirective.join(' '));
           }
 
           let conditionResult = true;

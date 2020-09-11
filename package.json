@@ -198,7 +198,7 @@
                 "description": "If set to true, execute time will be displayed inline. You can change what is displayed by specifying a string. See the README for details.",
                 "default": false
               },
-              "useDirectiveComment": {
+              "useDebugDirective": {
                 "type": [
                   "boolean",
                   "object"
