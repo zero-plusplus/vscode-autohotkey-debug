@@ -31,9 +31,13 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit Conditonal Breakpoint's `%` operator is not working
     * Fixed: [#44](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/44) Loaded files are not detected when on previous #Include line a directory is specified
     * Fixed: [#45](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/45) Loaded files are not detected when on specified  relative path by #Include
+    * Fixed: [#49](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/49) v1 only bug. `undefinedVariable == ""` returns false
     * Fixed: [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
+    * Fixed: [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51) Error occurs when getting dynamic properties by data inspect, etc
+    * Fixed: Data inspect shows an array of length 1 as `{1: value}`
     * Fixed: If the error code is 0, output category is stderr
     * Fixed: Can't pause with Advanced breakpoint
+    * Fixed: Blank line printed when outputting object
 
 * `1.5.0` - 2020-08-14
     * Added: Operators in conditional breakpoint

@@ -33,9 +33,13 @@ Mainly bug fixes and processing improvements.
 * [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit Conditonal Breakpoint's `%` operator is not working
 * [#44](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/44) Loaded files are not detected when on previous #Include line a directory is specified
 * [#45](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/45) Loaded files are not detected when on specified  relative path by #Include
+* [#49](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/49) v1 only bug. `undefinedVariable == ""` returns false
 * [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
+* [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51) Error occurs when getting dynamic properties by data inspect, etc
+* Data inspect shows an array of length 1 as `{1: value}`
 * If the error code is 0, output category is stderr
 * Can't pause with Advanced breakpoint
+* Blank line printed when outputting object
 
 ## [1.5.0] - 2020-08-14
 ### Added
