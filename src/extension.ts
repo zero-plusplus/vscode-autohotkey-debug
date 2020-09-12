@@ -82,7 +82,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       }
 
       if (config.useDebugDirective.useOutputDirective) {
-        const levels = [ 'INFO', 'WARN', 'ERROR', 'FATAL' ];
+        const levels = [ 'FATAL', 'ERROR', 'WARN', 'INFO' ];
         if (config.useDebugDirective.useOutputDirective === true) {
           config.useDebugDirective.useOutputDirective = levels;
         }
