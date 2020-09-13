@@ -57,7 +57,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   };
   useDebugDirective: false | {
     useBreakpointDirective: boolean;
-    useOutputDirective: false | string[];
+    useOutputDirective: boolean;
   };
   openFileOnExit: string;
 }
@@ -301,11 +301,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
-
-    if (this.config.useDebugDirective) {
-      const loadedSourcePathList = this.getAllLoadedSourcePath();
-      await this.registerDirectiveComment(loadedSourcePathList);
-    }
+    await this.registerDebugDirective();
 
     if (this.config.stopOnEntry) {
       const result = await this.session!.sendContinuationCommand('step_into');
@@ -695,14 +691,18 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.loadedSources.push(...resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]));
     return this.loadedSources;
   }
-  private async registerDirectiveComment(filePathList: string[]): Promise<void> {
+  private async registerDebugDirective(): Promise<void> {
+    if (!this.config.useDebugDirective) {
+      return;
+    }
+    const {
+      useBreakpointDirective,
+      useOutputDirective,
+    } = this.config.useDebugDirective;
+
+    const filePathList = this.getAllLoadedSourcePath();
     // const DEBUG_start = process.hrtime();
     await Promise.all(filePathList.map(async(filePath) => {
-      const useDebugDirective = this.config.useDebugDirective;
-      if (useDebugDirective === false) {
-        return;
-      }
-
       const document = await vscode.workspace.openTextDocument(filePath);
       const fileUri = URI.file(filePath).toString();
 
@@ -733,7 +733,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const line = line_0base + 1;
         const nextLine = line + 1;
-        if (useDebugDirective.useBreakpointDirective && directiveType === 'breakpoint') {
+        if (useBreakpointDirective && directiveType === 'breakpoint') {
           if (0 < params.length) {
             return;
           }
@@ -747,29 +747,26 @@ export class AhkDebugSession extends LoggingDebugSession {
           } as BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
-        else if (useDebugDirective.useOutputDirective && directiveType === 'output') {
-          const logLevels = useDebugDirective.useOutputDirective.join(' ');
-          const logLevel = 0 < params.length ? params[0] : 'INFO';
+        else if (useOutputDirective && directiveType === 'output') {
           let logGroup: string | undefined;
-          if (1 < params.length) {
-            if (equalsIgnoreCase(params[1], 'start')) {
+          if (0 < params.length) {
+            if (equalsIgnoreCase(params[0], 'start')) {
               logGroup = 'start';
             }
-            else if (equalsIgnoreCase(params[1], 'startCollapsed')) {
+            else if (equalsIgnoreCase(params[0], 'startCollapsed')) {
               logGroup = 'startCollapsed';
             }
-            else if (equalsIgnoreCase(params[1], 'end')) {
+            else if (equalsIgnoreCase(params[0], 'end')) {
               logGroup = 'end';
             }
           }
-          const newCondition = `"${logLevels}" ~= "i)\\b${logLevel}\\b"${condition ? ` && ${condition}` : ''}`;
+          const newCondition = condition;
           const advancedData = {
             counter: 0,
             condition: newCondition,
             hitCondition,
             logMessage,
             logGroup,
-            logLevel,
             hidden: true,
           } as BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
@@ -870,7 +867,6 @@ export class AhkDebugSession extends LoggingDebugSession {
             hitCondition = '',
             logGroup = '',
             logMessage = '',
-            logLevel = '',
           } = breakpoint.advancedData;
 
           _metaVariables.set('condition', condition);
@@ -878,10 +874,6 @@ export class AhkDebugSession extends LoggingDebugSession {
           _metaVariables.set('hitCount', counter ? String(counter) : '-1');
           _metaVariables.set('logMessage', logMessage);
           _metaVariables.set('logGroup', logGroup);
-          _metaVariables.set('logLevel', logLevel);
-          if (this.config.useDebugDirective && Array.isArray(this.config.useDebugDirective.useOutputDirective)) {
-            _metaVariables.set('logLevels', this.config.useDebugDirective.useOutputDirective.join(' '));
-          }
 
           let conditionResult = true;
           if (condition || hitCondition) {
@@ -1018,19 +1010,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     for (const messageOrProperty of results) {
-      let _logCategory = logCategory ?? 'stderr';
-      if (metaVariables.has('logLevel')) {
-        const logLevel = metaVariables.get('logLevel')!.toUpperCase();
-        if ([ 'INFO', 'WARN' ].includes(logLevel)) {
-          _logCategory = 'stdout';
-        }
-      }
-
       let event: DebugProtocol.OutputEvent;
       if (typeof messageOrProperty === 'string') {
         const message = messageOrProperty;
 
-        event = new OutputEvent(message, _logCategory) as DebugProtocol.OutputEvent;
+        event = new OutputEvent(message, logCategory) as DebugProtocol.OutputEvent;
         if (metaVariables.has('logGroup')) {
           event.body.group = metaVariables.get('logGroup')! as BreakpointLogGroup;
         }
@@ -1040,7 +1024,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         const variablesReference = this.variablesReferenceCounter++;
         this.logObjectPropertiesByVariablesReference.set(variablesReference, property);
 
-        event = new OutputEvent(property.displayValue, _logCategory) as DebugProtocol.OutputEvent;
+        event = new OutputEvent(property.displayValue, logCategory) as DebugProtocol.OutputEvent;
         event.body.variablesReference = variablesReference;
       }
 

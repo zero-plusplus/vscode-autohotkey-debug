@@ -11,7 +11,7 @@
             "program": "${file}",
             "args": [],
             "stopOnEntry": false,
-            "useDirectiveComment": true,
+            "useDebugDirective": true,
             "useProcessUsageData": false,
             "usePerfTips": true,
             "openFileOnExit": "${file}",
@@ -26,7 +26,6 @@
             "program": "${file}",
             "args": [],
             "stopOnEntry": false,
-            "useAdvancedBreakpoint": false,
             "maxChildren": 10000
         }
     ]

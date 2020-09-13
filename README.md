@@ -11,7 +11,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 # News
 ### Important Notices
-* Advanced output has been removed. See [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) for details. Please use [Embedded breakpoint](#embedded-breakpoint-optional) instead
+* Advanced output has been removed. See [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) for details. Please use [Output directive](#output-directive) instead
 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
@@ -123,6 +123,10 @@ Some noteworthy settings are described below.
     * `usePerfTips.fontColor` :　Set the [color](https://developer.mozilla.org/en-US/docs/Web/CSS/color) of CSS.
     * `usePerfTips.fontStyle` :　Set the [font-style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) of CSS.
 
+* `useDebugDirective` :　Set to true to enable the [Debug directive](#debug-directive-optional). You can configure them individually by specifying an object
+    * `useBreakpointDirective` :　Set to true to enable the [Breakpoint directive](#breakpoint-directive)
+    * `useOutputDirective` :　Set to true to enable the [Output directive](#output-directive)
+
 * `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
 
 * `openFileOnExit` :　The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
@@ -200,7 +204,7 @@ You can see the current call stack.
 
 You can also click to display the variables of that hierarchy in the [data inspection](#data-inspection).
 
-## Breakpoints
+## Breakpoint
 You can learn the basics of breakpoint [here](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
 
 ## Advanced breakpoint
@@ -382,6 +386,65 @@ For more information on `VariableName`, see [data inspection](#data-inspection).
  e.g. `count: {A_Index}`, `name: {person.name}`, `{{elapsedTime_s}}`
 
 If you want to output `{`, use `\{`.
+
+## Debug directive (Optional)
+**This is a preview version. Specifications are subject to change. Also need to search for directive comments slows down performance at startup.**
+
+You can send commands to the debugger adapter by embedding special comments into the script.
+
+Take a look at that one, as it is implemented using [Advanced breakpoint](#advanced-breakpoint).
+
+Each directive can be configured with the following rules.
+```ahk
+; @Debug-COMMAND:PARAM1:PARAM2:PARAM3...(CONDITION)[HITCONDITION] => MESSAGE
+```
+
+* `COMMAND`
+    * `Breakpoint` :　See [Breakpoint directive](#breakpoint-directive)
+    * `Output` :　See [Output directive](#output-directive)
+
+* `PARAM` :　Parameters for the command. Each is described in its own section
+
+* `CONDITION` :　See [Conditional breakpoint](#conditional-breakpoint)
+
+* `HITCONDITION` :　See [Hit conditional breakpoint](#hit-conditional-breakpoint)
+
+* `=>` :　Output operator. It must be written with the `MESSAGE`
+    * `->` :　Outputs the `MESSAGE` as it is
+    * `=>` :　A line feed code is placed at the end of the `MESSAGE`
+    * `->|` or `=>|` :　The same as for each operator, but it suppresses the automatic removal of leading whitespace
+
+* `MESSAGE` :　See [Log point](#log-point)
+
+### Breakpoint directive
+The command name is `Breakpoint`. There is no `PARAM`.
+```ahk
+; @Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE
+```
+
+Set a [breakpoint](#breakpoint) in the position of the directive.Unlike normal breakpoint, they are not displayed in the UI and cannot be changed.
+
+e.g. `; @Debug-Breakpoint(20 < person.age) => {person.name}`
+
+### Output directive
+Similar to the [Breakpoint directive](#breakpoint-directive), but limited to [Log point](#log-point). Instead, a grouping feature has been added.
+```ahk
+; @Debug-Output:GROUPING(CONDITION)[HITCONDITION] => MESSAGE
+```
+
+#### PARAM
+1. `GROUPPING` :　You can group the output. Grouped outputs can be collapsed. Be sure to close the group with `end` as it will affect all subsequent output.
+    * `start` :　Start a new group
+    * `startCollapsed` :　Same as start, but the created groups will be collapsed
+    * `end` :　Ends the group
+
+e.g. `; @Debug-Output(20 < person.age) => {person.name}`
+```ahk
+; @Debug-Output:start => {person.name}
+; @Debug-Output => name: {person.name}
+; @Debug-Output => age: {person.age}
+; @Debug-Output:end
+```
 
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
