@@ -465,7 +465,7 @@ It supports both explicit loading using `#Include` and implicit loading using [f
 
 **Note that this is only available for debugging.**
 
-The variables that are displayed in the data inspect will be suggested.
+The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
 Therefore, variables that have not yet been evaluated are not proposed.
 
 This is a limited feature, but can be very useful for editing the source code while debugging.
