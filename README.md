@@ -417,12 +417,10 @@ Each directive can be configured with the following rules.
 * `MESSAGE` :　See [Log point](#log-point)
 
 ### Breakpoint directive
-The command name is `Breakpoint`. There is no `PARAM`.
+Set a [breakpoint](#breakpoint) in the position of the directive.Unlike normal breakpoint, they are not displayed in the UI and cannot be changed.
 ```ahk
 ; @Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE
 ```
-
-Set a [breakpoint](#breakpoint) in the position of the directive.Unlike normal breakpoint, they are not displayed in the UI and cannot be changed.
 
 e.g. `; @Debug-Breakpoint(20 < person.age) => {person.name}`
 
@@ -432,19 +430,19 @@ Similar to the [Breakpoint directive](#breakpoint-directive), but limited to [Lo
 ; @Debug-Output:GROUPING(CONDITION)[HITCONDITION] => MESSAGE
 ```
 
-#### PARAM
-1. `GROUPPING` :　You can group the output. Grouped outputs can be collapsed. Be sure to close the group with `end` as it will affect all subsequent output.
-    * `start` :　Start a new group
-    * `startCollapsed` :　Same as start, but the created groups will be collapsed
-    * `end` :　Ends the group
-
-e.g. `; @Debug-Output(20 < person.age) => {person.name}`
+e.g.
 ```ahk
 ; @Debug-Output:start => {person.name}
 ; @Debug-Output => name: {person.name}
 ; @Debug-Output => age: {person.age}
 ; @Debug-Output:end
 ```
+
+#### PARAM
+1. `GROUPPING` :　You can group the output. Grouped outputs can be collapsed. Be sure to close the group with `end` as it will affect all subsequent output.
+    * `start` :　Start a new group
+    * `startCollapsed` :　Same as start, but the created groups will be collapsed
+    * `end` :　Ends the group
 
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
