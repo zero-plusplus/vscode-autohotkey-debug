@@ -18,25 +18,25 @@ A separate extension that supports the AutoHotkey language is required(The most 
 ### Update
 * `1.6.0` - 2020-xx-xx
     * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
-    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Support PerfTips
-    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Support Embedded breakpoint
-    * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support IntelliSense, which is only available for debugging
+    * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Add [MetaVariable](#metavariable). This is supported by several features.
+    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add [PerfTips](#perftips-optional)
+    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Add [Debug directive](#debug-directive-optional)
+    * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support [IntelliSense](#intellisense), which is only available for debugging
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
-    * Changed: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) MetaVariables are now available in several features
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
-    * Changed: [#41](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/41) Remove useAdvancedBreakpoint. Advanced breakpoints are enabled by default
-    * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a log point, it will not be paused until re-set it
-    * Fixed: [#33](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/33) Float values do not work properly at conditional breakpoint
-    * Fixed: [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an advanced breakpoint
-    * Fixed: [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit Conditonal Breakpoint's `%` operator is not working
+    * Changed: [#41](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/41) Remove `useAdvancedBreakpoint`. [Advanced breakpoint](#advanced-breakpoint) are enabled by default
+    * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a [Log point](#log-point), it will not be paused until re-set it
+    * Fixed: [#33](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/33) Float values do not work properly at [Conditional breakpoint](#conditional-breakpoint)
+    * Fixed: [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an [Advanced breakpoint](#advanced-breakpoint)
+    * Fixed: [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) [Hit conditional breakpoint](#hit-conditional-breakpoint)'s `%` operator is not working
     * Fixed: [#44](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/44) Loaded files are not detected when on previous #Include line a directory is specified
     * Fixed: [#45](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/45) Loaded files are not detected when on specified  relative path by #Include
     * Fixed: [#49](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/49) v1 only bug. `undefinedVariable == ""` returns false
     * Fixed: [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
     * Fixed: [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51) Error occurs when getting dynamic properties by data inspect, etc
-    * Fixed: Data inspect shows an array of length 1 as `{1: value}`
+    * Fixed: [Data inspect](#data-inspection) shows an array of length 1 as `{1: value}`
     * Fixed: If the error code is 0, output category is stderr
-    * Fixed: Can't pause with Advanced breakpoint
+    * Fixed: Can't pause with [Advanced breakpoint](#advanced-breakpoint)
     * Fixed: Blank line printed when outputting object
 
 * `1.5.0` - 2020-08-14
