@@ -403,11 +403,8 @@ I am not familiar with the parser and evaluation of expressions, so this is a mi
 ##### Grammer
 ```md
 # The inside of `[]` can be omitted.
-# `|` is or
 
-Expressions = Expression1 [LogicalOperator1 Expression2, LogicalOperator2 Expression3...]
-Expression = Operand [Operator Operand]
-Operand = VariableName | Primitive
+Expression1 [LogicalOperator1 Expression2, LogicalOperator2 Expression3...]
 ```
 
 e.g.
@@ -426,6 +423,9 @@ e.g.
 * `object is Fowl || "wing" in object && "beak" in object`
 
 ##### Rules
+* `Expression` :　`Operand [Operator Operand]`
+
+* `Operand` :　`VariableName` or `Primitive`
 
 * `VariableName` :　Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 
