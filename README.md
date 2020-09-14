@@ -433,8 +433,6 @@ If you want to output `{`, use `\{`.
 ## IntelliSense in Debugging
 ![intellisense](image/intellisense.gif)
 
-**Note that this is only available for debugging.**
-
 The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
 Therefore, variables that have not yet been evaluated are not proposed.
 
