@@ -36,6 +36,7 @@ Mainly bug fixes and processing improvements.
 * [#49](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/49) v1 only bug. `undefinedVariable == ""` returns false
 * [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
 * [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51) Error occurs when getting dynamic properties by data inspect, etc
+* [#53](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/53) Setting a string containing `&` and `|` in a conditional breakpoint always returns false
 * Data inspect shows an array of length 1 as `{1: value}`
 * If the error code is 0, output category is stderr
 * Can't pause with Advanced breakpoint

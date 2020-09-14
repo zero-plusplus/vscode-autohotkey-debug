@@ -63,6 +63,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: [#49](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/49) v1 only bug. `undefinedVariable == ""` returns false
     * Fixed: [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
     * Fixed: [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51) Error occurs when getting dynamic properties by data inspect, etc
+    * Fixed: [#53](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/53) Setting a string containing `&` and `|` in a conditional breakpoint always returns false
     * Fixed: [Data inspect](#data-inspection) shows an array of length 1 as `{1: value}`
     * Fixed: If the error code is 0, output category is stderr
     * Fixed: Can't pause with [Advanced breakpoint](#advanced-breakpoint)
@@ -402,8 +403,11 @@ I am not familiar with the parser and evaluation of expressions, so this is a mi
 ##### Grammer
 ```md
 # The inside of `[]` can be omitted.
+# `|` is or
 
-Expression1 [LogicalOperator1 Expression2, LogicalOperator2 Expression3...]
+Expressions = Expression1 [LogicalOperator1 Expression2, LogicalOperator2 Expression3...]
+Expression = Operand [Operator Operand]
+Operand = VariableName | Primitive
 ```
 
 e.g.
@@ -422,9 +426,6 @@ e.g.
 * `object is Fowl || "wing" in object && "beak" in object`
 
 ##### Rules
-* `Expression` :　`Operand [Operator Operand]`
-
-* `Operand` :　`VariableName` or `Primitive`
 
 * `VariableName` :　Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 
