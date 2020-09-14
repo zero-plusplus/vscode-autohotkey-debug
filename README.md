@@ -1,3 +1,30 @@
+# TOC
+* [Before reading](#before-reading)
+* [News](#news)
+* [Overview](#overview)
+* [Installation](#installation)
+* [Usage](#usage)
+* [Customize the launch configuration](#customize-the-launch-configuration)
+* [MetaVariable](#metavariable)
+* [Features](#features)
+    * [Data inspection](#data-inspection)
+    * [Call stack](#call-stack)
+    * [Watch expression](#watch-expression)
+    * [Loaded scripts](#loaded-scripts)
+    * [Breakpoint](#breakpoint)
+        * [Conditional breakpoint](#conditional-breakpoint)
+        * [Hit Conditional Breakpoint](#hit-conditional-breakpoint)
+        * [Log point](#log-point)
+    * [IntelliSense in Debugging](#intellisense-in-debugging)
+    * [Standard output](#standard-output)
+    * [PerfTips (Optional)](#perftips-optional)
+    * [Debug directive (Optional)](#debug-directive-optional)
+        * [Breakpoint directive](#breakpoint-directive)
+        * [Output directive](#output-directive)
+* [Change log](#change-log)
+* [Known issues](#known-issues)
+* [Development support](#development-support)
+
 # Before reading
 Please read the following first.
 * This document has been translated from Japanese to English using DeepL Translate
@@ -23,7 +50,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Add [MetaVariable](#metavariable). This is supported by several features.
     * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add [PerfTips](#perftips-optional)
     * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Add [Debug directive](#debug-directive-optional)
-    * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support [IntelliSense](#intellisense), which is only available for debugging
+    * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support [IntelliSense in Debugging](#intellisense-in-debugging), which is only available for debugging
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
     * Changed: [#41](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/41) Remove `useAdvancedBreakpoint`. [Advanced breakpoint](#advanced-breakpoint) are enabled by default
@@ -205,6 +232,20 @@ Due to the specification of vscode, array indexing syntax is not supported e.g. 
 You can see the current call stack.
 
 You can also click to display the variables of that hierarchy in the [data inspection](#data-inspection).
+
+## Watch expression
+![watch-expression](image/watch-expression.gif)
+
+`VariableName` or `MetaVariableName` are supported. Expressions are not supported.
+
+For more information on `VariableName`, see [data inspection](#data-inspection). You can read more about the metavariables [here](#MetaVariable).
+
+## Loaded scripts
+![loaded-scripts](image/loaded-scripts.gif)
+
+You can see the external script being loaded.
+
+It supports both explicit loading using `#Include` and implicit loading using [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib).
 
 ## Breakpoint
 You can learn the basics of breakpoint [here](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
@@ -389,6 +430,45 @@ For more information on `VariableName`, see [data inspection](#data-inspection).
 
 If you want to output `{`, use `\{`.
 
+## IntelliSense in Debugging
+![intellisense](image/intellisense.gif)
+
+**Note that this is only available for debugging.**
+
+The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
+Therefore, variables that have not yet been evaluated are not proposed.
+
+This is a limited feature, but can be very useful for editing the source code while debugging.
+
+## Standard output
+Messages output to standard output are displayed in the [debug console panel](https://code.visualstudio.com/docs/editor/debugging).
+
+There are several ways to output a message to the standard output.
+* [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
+* [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
+* [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
+
+### About error message
+There are two types of error messages in AutoHotkey: loadtime error and runtime error.
+
+A loadtime error will result in a file path being output, while a runtime error will result in No output. Also, regardless of the [ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm) setting, I get a message box. So the runtime error is a bit inconvenient.
+
+If you want to fix it, add [this code](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) to your script.
+
+This code will suppress the runtime error message box and make the output the same as the loadtime error.
+
+## PerfTips (Optional)
+![perftips](image/perftips.gif)
+
+You can use it by setting `usePerfTips` in launch.json.
+For more information on setting it up, see [here](#customize-the-launch-configuration).
+
+As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time
+
+Display more information when `useProcessUsageData` is `true`. Note, however, that this will slow down the step-execution.
+
+Note: If you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other.
+
 ## Debug directive (Optional)
 **This is a preview version. Specifications are subject to change. Also need to search for directive comments slows down performance at startup.**
 
@@ -445,59 +525,6 @@ e.g.
     * `start` :　Start a new group
     * `startCollapsed` :　Same as start, but the created groups will be collapsed
     * `end` :　Ends the group
-
-## Watch expression
-![watch-expression](image/watch-expression.gif)
-
-`VariableName` or `MetaVariableName` are supported. Expressions are not supported.
-
-For more information on `VariableName`, see [data inspection](#data-inspection). You can read more about the metavariables [here](#MetaVariable).
-
-## Loaded scripts
-![loaded-scripts](image/loaded-scripts.gif)
-
-You can see the external script being loaded.
-
-It supports both explicit loading using `#Include` and implicit loading using [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib).
-
-## Intellisense
-![intellisense](image/intellisense.gif)
-
-**Note that this is only available for debugging.**
-
-The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
-Therefore, variables that have not yet been evaluated are not proposed.
-
-This is a limited feature, but can be very useful for editing the source code while debugging.
-
-## PerfTips (Optional)
-![perftips](image/perftips.gif)
-
-You can use it by setting `usePerfTips` in launch.json.
-For more information on setting it up, see [here](#customize-the-launch-configuration).
-
-As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time
-
-Display more information when `useProcessUsageData` is `true`. Note, however, that this will slow down the step-execution.
-
-Note: If you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other.
-
-## Standard output
-Messages output to standard output are displayed in the [debug console panel](https://code.visualstudio.com/docs/editor/debugging).
-
-There are several ways to output a message to the standard output.
-* [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
-* [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
-* [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
-
-### About error message
-There are two types of error messages in AutoHotkey: loadtime error and runtime error.
-
-A loadtime error will result in a file path being output, while a runtime error will result in No output. Also, regardless of the [ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm) setting, I get a message box. So the runtime error is a bit inconvenient.
-
-If you want to fix it, add [this code](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) to your script.
-
-This code will suppress the runtime error message box and make the output the same as the loadtime error.
 
 # Change log
 See [CHANGELOG](CHANGELOG.md)
