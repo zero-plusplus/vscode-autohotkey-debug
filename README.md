@@ -3,9 +3,11 @@ Please read the following first.
 * This document has been translated from Japanese to English using DeepL Translate
 
 * **This extension will not work alone.**
-A separate extension that supports the AutoHotkey language is required(The most famous is slevesque.vscode-autohotkey). If you are using AutoHotkey v2, another extension that supports it required. (e.g. `dudelmoser.vscode-autohotkey2`)
+A separate extension that supports the AutoHotkey language is required(The most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2, another extension that supports it required. (e.g. `dudelmoser.vscode-autohotkey2`)
 
-* Before you update, please look at the News below this first. It may contain important information. Also, there may be a fatal bug in the new version. If this is the case, please refer to [CHANGELOG](CHANGELOG.md) to downgrade it
+* Before you update, please look at the [News](#news) below this first. It may contain important information. Also, there may be a fatal bug in the new version. If this is the case, please refer to [CHANGELOG](CHANGELOG.md) to downgrade it
+
+* If you want to know what the next version of the plan is, check out the [milestones](https://github.com/zero-plusplus/vscode-autohotkey-debug/milestones)
 
 * To support the developers (bug reports, sponsorship, etc.), see [here](#development-support)
 
