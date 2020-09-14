@@ -120,45 +120,183 @@ It should be possible to debug [AutoHotkey_H](https://hotkeyit.github.io/v2/), b
 If you want to run without debugging, choose `Run -> Run Without Debugging` from the menu or press `Ctrl + F5`.
 
 # Customize the launch configuration
-If you want to change the settings of the debugger, you need to edit the `launch.json` file.
+If you want to change the settings of the debug, you need to edit the `launch.json` file.
 You don't need to see this section if the default settings are sufficient for you.
 
 You can learn the basics of `launch.json` [here](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
 
-Some noteworthy settings are described below.
+## Basic Settings
+<table>
+<tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td>runtime</td>
+    <td>string</td>
+    <td>
+        The path to AutoHotkey.exe. If you specify a relative path, the installation directory for AutoHotkey will be the current directory. You can also omit the extension.<br />
+        e.g. <code>"v2/AutoHotkey"</code>, <code>"${workspaceFolder}/AutoHotkey"</code>
+    </td>
+</tr>
+<tr>
+    <td>runtime_v1<br />runtime_v2</td>
+    <td>string</td>
+    <td>
+        Same as <code>runtime</code>, but useful if you want to specify different settings for different extensions. <code>runtime_v1</code> corresponds to <code>.ahk</code> and <code>runtime_v2</code> corresponds to <code>.ahk2</code> or <code>.ah2</code>.
+    </td>
+</tr>
+<tr>
+    <td>runtimeArgs</td>
+    <td>arary</td>
+    <td>
+        <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. However, `/debug` will be ignored.<br />
+        e.g. <code>[ "/ErrorStdOut=UTF-8" ]</code>
+    </td>
+</tr>
+<tr>
+    <td>runtimeArgs_v1<br />runtimeArgs_v2</td>
+    <td>array</td>
+    <td>
+        Same as <code>runtimeArgs</code>, but useful if you want to specify different settings for different extensions. <code>runtimeArgs_v1</code> corresponds to <code>.ahk</code> and <code>runtimeArgs_v2</code> corresponds to <code>.ahk2</code> or <code>.ah2</code>.
+    </td>
+</tr>
+<tr>
+    <td rowspan=2>port</td>
+    <td>number</td>
+    <td>
+        A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.<br />
+        e.g. <code>9000</code>
+    </td>
+</tr>
+<tr>
+    <td>string</td>
+    <td>
+        If a port is already in use, a confirmation message appears asking if you want to use a different port. If this message is annoying, you can use the <code>"start-end"</code> format to specify a range of ports that may be used in advance.<br />
+        e.g. <code>"9000-9010"</code>
+    </td>
+</tr>
+<tr>
+    <td>program</td>
+    <td>string</td>
+    <td>The absolute path to the script you want to debug.</td>
+</tr>
+<tr>
+    <td>args</td>
+    <td>array</td>
+    <td>Arguments to be passed to <code>program</code></td>
+</tr>
+<tr>
+    <td>env</td>
+    <td>object</td>
+    <td>
+        Environment variable to be set during debugging. if set to <code>null</code>, it will be treated as an empty string.
+    </td>
+</tr>
+<tr>
+    <td>stopOnEntry</td>
+    <td>boolean</td>
+    <td>
+        If <code>false</code>, it runs until it stops at a breakpoint. Set it to <code>true</code> if you want it to stop at the first line, as in SciTE4AutoHotkey.
+    </td>
+</tr>
+<tr>
+    <td>maxChildren</td>
+    <td>number</td>
+    <td>
+        The maximum number of child elements of the object to be retrieved. Basically, there is no need to change it.
+    </td>
+</tr>
+<tr>
+    <td>openFileOnExit</td>
+    <td>string</td>
+    <td>
+        The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script.<br />
+        e.g. <code>"${file}"</code>
+    </td>
+</tr>
+</table>
 
-* `runtime` :　The path to AutoHotkey.exe. If you specify a relative path, the installation directory for AutoHotkey will be the current directory. You can also omit the extension. e.g. `v2/AutoHotkey`, `${workspaceFolder}/AutoHotkey`
-
-* `runtime_v1`, `runtime_v2` :　Similar to `runtime`, but used to set each file extension. `runtime_v1` is used for `.ahk` and `runtime_v2` for `.ahk2`, `.ah2`. If the `runtime` is set, it takes precedence
-
-* `runtimeArgs` :　**Most people don't need to change this setting. If you set it wrong, debugging may fail.** Arguments to pass to AutoHotkey.exe. You can see a description of the argument [here](https://www.autohotkey.com/docs/Scripts.htm#cmd), described as a Switch. However, `/debug` will be ignored
-
-* `runtimeArgs_v1`, `runtimeArgs_v2` :　Similar to `runtimeArgs`, but used to set each file extension. `runtimeArgs_v1` is used for `.ahk` and `runtimeArgs_v2` for `.ahk2`, `.ah2`. If the `runtimeArgs` is set, it takes precedence
-
-* `port` :　You need to assign one port to each script, so if you want to debug multiple scripts at the same time, assign different values to each. If the configured port is in use, a confirmation message will be displayed asking if you want to use another port. If you want to suppress this message, you should declare the range of ports you can use, such as `"9000-9010"`
-
-* `program` :　The absolute path to the script you want to debug
-
-* `args` :　Arguments to be passed to `program`
-
-* `env` :　Environment variable to be set during debugging; if set to null, it will be treated as an empty string
-
-* `stopOnEntry` :　If `false`, it runs until it stops at a breakpoint. Set it to `true` if you want it to stop at the first line, as in SciTE4AutoHotkey
-
-* `useProcessUsageData` :　Add process usage data to the metavariable. See [MetaVariable](#MetaVariable) for details. Note that if you enable this setting, step-execution is slow
-
-* `usePerfTips` :　You can enable/disable [PerfTips](#perftips-optional).If true, when debugging is break, exectue time is displayed on the current line. Specify a string to change what is displayed, or an object to change more specific settings. If you set the string, it is the same as setting the `usePerfTips.format`.
-    * `usePerfTips.format` :　Content to be displayed. You can use the MetaVariable and AutoHotkey variables. In that case, use `{{MetaVariableName}}` and `{AutoHotkeyVariableName}`. Default: `{{elapsedTime_s}}s elapsed`
-    * `usePerfTips.fontColor` :　Set the [color](https://developer.mozilla.org/en-US/docs/Web/CSS/color) of CSS.
-    * `usePerfTips.fontStyle` :　Set the [font-style](https://developer.mozilla.org/en-US/docs/Web/CSS/font-style) of CSS.
-
-* `useDebugDirective` :　Set to true to enable the [Debug directive](#debug-directive-optional). You can configure them individually by specifying an object
-    * `useBreakpointDirective` :　Set to true to enable the [Breakpoint directive](#breakpoint-directive)
-    * `useOutputDirective` :　Set to true to enable the [Output directive](#output-directive)
-
-* `maxChildren` :　The maximum number of child elements to retrieve. Change this value if you have an array or object with more than 10000 elements
-
-* `openFileOnExit` :　The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script
+## Advanced Settings
+<table>
+<tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td>useProcessUsageData</td>
+    <td>boolean</td>
+    <td>
+        Add process usage data to the <a href="#metavariable">MetaVariable</a>. <strong>Note that if you enable this setting, step-execution is slow.</strong>
+    </td>
+</tr>
+<tr>
+    <td rowspan=3>usePerfTips</td>
+    <td>boolean</td>
+    <td>Enable / disable <a href="#perftips-optional">PerfTips</a>.</td>
+</tr>
+<tr>
+    <td>string</td>
+    <td>
+        Short hand for setting only <code>.format</code>.<br />
+        e.g. <code>"{{elapsedTime_s}}s elapsed."</code>
+    </td>
+</tr>
+<tr>
+    <td>object</td>
+    <td>
+        Advanced settings. You can set the properties starting with <code>.</code> below.
+    </td>
+</tr>
+<tr>
+    <td><code>.format</code></td>
+    <td>string</td>
+    <td>
+        Content to be displayed. You can use the <a href="#metavariable">MetaVariable</a> and AutoHotkey variables.<br />
+        e.g. <code>"{{elapsedTime_s}}s elapsed."</code>
+    </td>
+</tr>
+<tr>
+    <td><code>.fontColor</code></td>
+    <td>string</td>
+    <td>
+        Set the <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/color">color</a> of CSS.<br />
+        e.g. <code>"gray"</code>
+    </td>
+</tr>
+<tr>
+    <td><code>.fontStyle</code></td>
+    <td>string</td>
+    <td>
+        Set the <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/font-style">font-style</a> of CSS.<br />
+        e.g. <code>"italic"</code>
+    </td>
+</tr>
+<tr>
+    <td rowspan=2>useDebugDirective</td>
+    <td>boolean</td>
+    <td>
+        Enable / disable <a href="#debug-directive-optional">Debug directive</a>.
+        <strong>Note that enabling it will degrade performance.</strong>
+    </td>
+</tr>
+<tr>
+    <td>object</td>
+    <td>Advanced settings. You can set the properties starting with <code>.</code> below.</td>
+</tr>
+<tr>
+    <td><code>.useBreakpointDirective</code></td>
+    <td>boolean</td>
+    <td>Enable / disable <a href="#breakpoint-directive">Breakpoint directive</a>.</td>
+</tr>
+<tr>
+    <td><code>.useOutputDirective</code></td>
+    <td>boolean</td>
+    <td>Enable / disable <a href="#output-directive">Output directive</a>.</td>
+</tr>
+</table>
 
 # MetaVariable
 Some features make use of the information available to the debugger adapter. This is called `MetaVariable`.
