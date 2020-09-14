@@ -46,10 +46,10 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
 * `1.6.0` - 2020-xx-xx
-    * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
-    * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Add [MetaVariable](#metavariable). This is supported by several features.
-    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add [PerfTips](#perftips-optional)
-    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Add [Debug directive](#debug-directive-optional)
+    * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support `Run Without Debugging`
+    * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support [MetaVariable](#metavariable). This is supported by several features.
+    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Support [PerfTips](#perftips-optional)
+    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Support [Debug directive](#debug-directive-optional)
     * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support [IntelliSense in Debugging](#intellisense-in-debugging), which is only available for debugging
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed

@@ -16,10 +16,10 @@ Also want to check the development status, check the [commit history](https://gi
 ## [Released]
 ## [1.6.0] - 2020-xx-xx
 ### Added
-* [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support for `Run Without Debugging`
-* [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Add MetaVariable. This is supported by several features.
-* [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Add PerfTips
-* [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Add Debug directive
+* [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support `Run Without Debugging`
+* [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support MetaVariable. This is supported by several features.
+* [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Support PerfTips
+* [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Support Debug directive
 * [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support IntelliSense, which is only available for debugging
 
 ### Changed
