@@ -42,7 +42,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 ### Important Notices
 * Advanced output has been removed. See [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) for details. Please use [Output directive](#output-directive) instead
 
-* From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop
+* From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly.
 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
@@ -102,7 +102,7 @@ This extension was designed to be upwardly compatible with the SciTE4AutoHotkey 
 So you can use all of it's features as well as new features such as conditional breakpoints.
 It also runs asynchronously, so it runs very fast. Best of all, VSCode's debug UI is great!
 
-See [`Features`](#features) for more information.
+See [Features](#features) for more information.
 
 ### Unsupported
 The following features cannot be implemented due to specifications.
@@ -155,7 +155,7 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
     <td>runtimeArgs</td>
     <td>arary</td>
     <td>
-        <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. However, `/debug` will be ignored.<br />
+        <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. However, <code>"/debug"</code> will be ignored.<br />
         e.g. <code>[ "/ErrorStdOut=UTF-8" ]</code>
     </td>
 </tr>
@@ -233,7 +233,7 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
     <td>useProcessUsageData</td>
     <td>boolean</td>
     <td>
-        Add process usage data to the <a href="#metavariable">MetaVariable</a>. <strong>Note that if you enable this setting, step-execution is slow.</strong>
+        <strong>Note that if you enable this setting, step-execution is slow.</strong> Add process usage data to the <a href="#metavariable">MetaVariable</a>.
     </td>
 </tr>
 <tr>
@@ -282,8 +282,7 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
     <td rowspan=2>useDebugDirective</td>
     <td>boolean</td>
     <td>
-        Enable / disable <a href="#debug-directive-optional">Debug directive</a>.
-        <strong>Note that enabling it will degrade performance.</strong>
+        <strong>Note that enabling it will degrade performance.</strong> Enable / disable <a href="#debug-directive-optional">Debug directive</a>.
     </td>
 </tr>
 <tr>
@@ -305,24 +304,54 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
 # MetaVariable
 Some features make use of the information available to the debugger adapter. This is called `MetaVariable`.
 
-When used, enclose the name of the `MetaVariable` in curly brackets. It is not case sensitive. e.g. `{MetaVariableName}`
+When used, enclose the name of the `MetaVariable` in curly brackets. It is not case sensitive. e.g. `{hitCount}`
 
 Can be used with [Conditional breakpoint](#conditional-breakpoint), [Log point](#log-point), [Watch expression](#watch-expression), etc.
 
 The available MetaVariables are listed below.
 
-* `{hitCount}` :　 hit count of breakpoint
+## Default MetaVarible
+<table>
+<tr>
+    <th>Name</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td>{hitCount}</td>
+    <td>hit count of breakpoint</td>
+</tr>
+<tr>
+    <td>
+        {elapsedTime_ns}<br />
+        {elapsedTime_ms}<br />
+        {elapsedTime_s}
+    </td>
+    <td>
+        Time taken to execute. The suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second). Note that this is not an exact execute time. The difference is especially large if you are using <a href="#advanced-breakpoint">Advanced breakpoint</a>
+    </td>
+</tr>
+</table>
 
-* `{elapsedTime_ns}`
-* `{elapsedTime_ms}`
-* `{elapsedTime_s}` :　Time taken to execute. The suffix indicates the unit of measurement: `ns`(nanosecond), `ms`(millisecond), `s`(second). Note that this is not an exact execute time. The difference is especially large if you are using [Advanced breakpoint](#advanced-breakpoint)
-
+## Prcess Usage MetaVarible
 The following is available if `useProcessUsageData` is enabled.
 
-* `{usageCpu}` :　Current CPU usage (Unit: %)
-
-* `{usageMemory_B}`
-* `{usageMemory_MB}` :　Current memory usage. The suffix indicates the unit of measurement: `B`(byte), MB(megabyte)
+<table>
+<tr>
+    <th>Name</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td>{usageCpu}</td>
+    <td>Current CPU usage (Unit: %)</td>
+</tr>
+<tr>
+    <td>
+        {usageMemory_B}<br />
+        {usageMemory_MB}
+    </td>
+    <td>Current memory usage. The suffix indicates the unit of measurement: <code>B</code>(byte), <code>MB</code>(megabyte)</td>
+</tr>
+</table>
 
 # Features
 ## Data inspection
@@ -430,9 +459,9 @@ e.g.
 
 * `Operand` :　`VariableName` or `Primitive`
 
-* `VariableName` :　Variable name displayed in [data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `VariableName` :　Variable name displayed in [Data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 
-* `MetaVariableName` :　Please Look at [MetaVariable](#MetaVariable)
+* `MetaVariableName` :　See [MetaVariable](#MetaVariable) for details
 
 * `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 
@@ -473,7 +502,7 @@ e.g.
 
         * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive
 
-            * The five basic types are as follows. These can be checked by hovering over the variable names in [data inspection](#data-inspection). e.g. `variable is "string"`, `variable is not "undefined"`
+            * The five basic types are as follows. These can be checked by hovering over the variable names in [Data inspection](#data-inspection). e.g. `variable is "string"`, `variable is not "undefined"`
 
                 * `"undefined"` :　Check for uninitialized variable
 
@@ -539,21 +568,21 @@ It's basically a short hand with a conditional breakpoint. However, only the `%`
 e.g. `= 30`, `<= 30`
 
 ##### Rules
-* `hitCount` It is the same as the [MetaVariable](#metavariable) `{hitCount}`.
+* `hitCount` It is the same as the [MetaVariable](#metavariable)'s `{hitCount}`.
 
 * `Operator` If omitted, it is equivalent to `>=`
 
-    * `= or ==` :　Same as `{hitCount} == Integer`
+    * `= or ==` :　Same as `{hitCount} == Integer` by [Conditional breakpoint](#conditional-breakpoint)
 
-    * `>` :　Same as `{hitCount} > Integer`
+    * `>` :　Same as `{hitCount} > Integer` by [Conditional breakpoint](#conditional-breakpoint)
 
-    * `>=` :　Same as `{hitCount} >= Integer`
+    * `>=` :　Same as `{hitCount} >= Integer` by [Conditional breakpoint](#conditional-breakpoint)
 
-    * `<` :　Same as `{hitCount} < Integer`
+    * `<` :　Same as `{hitCount} < Integer` by [Conditional breakpoint](#conditional-breakpoint)
 
-    * `<=` :　Same as `{hitCount} <= Integer`
+    * `<=` :　Same as `{hitCount} <= Integer` by [Conditional breakpoint](#conditional-breakpoint)
 
-    * `%` :　This is the same as the following code in AutoHotkey. `Mod(hitCount, Integer) == 0`
+    * `%` :　Same as `Mod(hitCount, Integer) == 0` by [AutoHotkey](https://www.autohotkey.com/docs/commands/Math.htm#Mod)
 
 * `Integer` :　e.g. `30`
 
@@ -607,7 +636,7 @@ As with Visual Studio's PerfTips, when debugging is break, the current line disp
 
 Display more information when `useProcessUsageData` is `true`. Note, however, that this will slow down the step-execution.
 
-Note: If you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other.
+Note: If you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other. But `Metavariable` are also supported by the watch expression, so you can use that instead.
 
 ## Debug directive (Optional)
 **This is a preview version. Specifications are subject to change. Also need to search for directive comments slows down performance at startup.**
