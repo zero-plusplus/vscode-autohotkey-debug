@@ -5,7 +5,7 @@
 * [Installation](#installation)
 * [Usage](#usage)
 * [Customize the launch configuration](#customize-the-launch-configuration)
-* <span style="color: red; font-size: 12px; font-style: italic;">NEW</span> [MetaVariable](#metavariable)
+* [MetaVariable](#metavariable) ***NEW***
 * [Features](#features)
     * [Data inspection](#data-inspection)
     * [Call stack](#call-stack)
@@ -15,12 +15,12 @@
         * [Conditional breakpoint](#conditional-breakpoint)
         * [Hit Conditional Breakpoint](#hit-conditional-breakpoint)
         * [Log point](#log-point)
-    * <span style="color: red; font-size: 12px; font-style: italic;">NEW</span> [IntelliSense in Debugging](#intellisense-in-debugging)
+    * [IntelliSense in Debugging](#intellisense-in-debugging) ***NEW***
     * [Standard output](#standard-output)
-    * <span style="color: red; font-size: 12px; font-style: italic;">NEW</span> [PerfTips (Optional)](#perftips-optional)
-    * <span style="color: red; font-size: 12px; font-style: italic;">NEW</span> [Debug directive (Optional)](#debug-directive-optional)
-        * <span style="color: red; font-size: 12px; font-style: italic;">NEW</span> [Breakpoint directive](#breakpoint-directive)
-        * <span style="color: red; font-size: 12px; font-style: italic;">NEW</span> [Output directive](#output-directive)
+    * [PerfTips (Optional)](#perftips-optional) ***NEW***
+    * [Debug directive (Optional)](#debug-directive-optional) ***NEW***
+        * [Breakpoint directive](#breakpoint-directive) ***NEW***
+        * [Output directive](#output-directive) ***NEW***
 * [Change log](#change-log)
 * [Known issues](#known-issues)
 * [Development support](#development-support)
@@ -41,6 +41,8 @@ A separate extension that supports the AutoHotkey language is required(The most 
 # News
 ### Important Notices
 * Advanced output has been removed. See [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) for details. Please use [Output directive](#output-directive) instead
+
+* From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop
 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
