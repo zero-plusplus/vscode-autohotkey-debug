@@ -42,14 +42,14 @@ A separate extension that supports the AutoHotkey language is required(The most 
 ### Important Notices
 * Advanced output has been removed. See [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) for details. Please use [Output directive](#output-directive) instead
 
-* From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly.
+* From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
 * The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
 * `1.6.0` - 2020-xx-xx
     * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support `Run Without Debugging`
-    * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support [MetaVariable](#metavariable). This is supported by several features.
+    * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support [MetaVariable](#metavariable). This is supported by several features
     * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Support [PerfTips](#perftips-optional)
     * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Support [Debug directive](#debug-directive-optional)
     * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support [IntelliSense in Debugging](#intellisense-in-debugging), which is only available for debugging
@@ -568,7 +568,7 @@ It's basically a short hand with a conditional breakpoint. However, only the `%`
 e.g. `= 30`, `<= 30`
 
 ##### Rules
-* `hitCount` It is the same as the [MetaVariable](#metavariable)'s `{hitCount}`.
+* `hitCount` It is the same as the [MetaVariable](#metavariable)'s `{hitCount}`
 
 * `Operator` If omitted, it is equivalent to `>=`
 
@@ -701,7 +701,7 @@ See [CHANGELOG](CHANGELOG.md)
 # Known issues
 * [Data inspection](#data-inspection) bug. Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0..99]`. The AutoHotkey array starts at 1 and should be `[1..100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment
 
-* v2 only bug. An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection).
+* v2 only bug. An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection)
 
 * If there is a conditional breakpoint that returns false immediately after the start of debugging, the pause will not work until the next stop
 
