@@ -884,7 +884,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             conditionResult = false;
           }
 
-          if (!conditionResults.includes(true)) {
+          if (!(breakpoint.hidden || conditionResults.includes(true))) {
             stopReason = 'conditional breakpoint';
           }
           conditionResults.push(conditionResult);
