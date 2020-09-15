@@ -26,6 +26,7 @@ import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import * as pidusage from 'pidusage';
 import ByteConverter from '@wtfcode/byte-converter';
 import {
+  Breakpoint,
   BreakpointAdvancedData,
   BreakpointLogGroup,
   BreakpointManager,
@@ -277,7 +278,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       } as BreakpointAdvancedData;
       try {
         const actualBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, requestedBreakpoint.line, advancedData);
-        if (actualBreakpoint.advancedData?.hidden) {
+        if (actualBreakpoint.hidden) {
           continue;
         }
 
@@ -819,12 +820,12 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.currentStackFrames = stackFrames;
 
       const conditionResults: boolean[] = [];
-      const breakpoints = this.breakpointManager!.getBreakpoints(fileUri, line) ?? [];
 
       const metaVariables = new CaseInsensitiveMap<string, string>();
       this.currentMetaVariables = metaVariables;
       metaVariables.set('file', URI.parse(fileUri).fsPath);
       metaVariables.set('line', String(line));
+      metaVariables.set('hitCount', '-1');
 
       if (this.metaVariablesWhenNotBreak) {
         const elapsedTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('elapsedTime_ns')!) + response.elapsedTime.ns;
@@ -852,32 +853,29 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       let stopReason = String(response.stopReason);
-      for await (const breakpoint of breakpoints) {
-        const _metaVariables = new CaseInsensitiveMap<string, string>();
-        for (const [ key, value ] of metaVariables) {
-          _metaVariables.set(key, value);
-        }
+      const lineBreakpoints = this.breakpointManager!.getBreakpoints(fileUri, line);
+      if (lineBreakpoints) {
+        lineBreakpoints.hitCount++;
+        metaVariables.set('hitCount', String(lineBreakpoints.hitCount));
 
-        if (breakpoint?.advancedData) {
-          breakpoint.advancedData.counter++;
+        for await (const breakpoint of lineBreakpoints) {
+          const _metaVariables = new CaseInsensitiveMap<string, string>(metaVariables.entries());
 
           const {
-            counter,
-            condition = '',
-            hitCondition = '',
-            logGroup = '',
-            logMessage = '',
-          } = breakpoint.advancedData;
+            condition,
+            hitCondition,
+            logGroup,
+            logMessage,
+          } = breakpoint;
 
           _metaVariables.set('condition', condition);
           _metaVariables.set('hitCondition', hitCondition);
-          _metaVariables.set('hitCount', counter ? String(counter) : '-1');
           _metaVariables.set('logMessage', logMessage);
           _metaVariables.set('logGroup', logGroup);
 
           let conditionResult = true;
           if (condition || hitCondition) {
-            conditionResult = await this.evalCondition(_metaVariables);
+            conditionResult = await this.evalCondition(breakpoint, _metaVariables);
           }
 
           const logMode = logGroup || logMessage;
@@ -952,10 +950,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
     this.displayPerfTips(metaVariables);
   }
-  private async evalCondition(metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
-    const condition = metaVariables.get('condition');
-    const hitCondition = metaVariables.get('hitCondition');
-    const hitCount = metaVariables.has('hitCount') ? parseInt(metaVariables.get('hitCount')!, 10) : -1;
+  private async evalCondition(breakpoint: Breakpoint, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
+    const { condition, hitCondition } = breakpoint;
+    const hitCount = parseInt(metaVariables.get('hitCount')!, 10);
 
     let conditionResult = false, hitConditionResult = false;
     if (condition) {

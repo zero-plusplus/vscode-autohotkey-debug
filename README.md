@@ -318,7 +318,7 @@ The available MetaVariables are listed below.
 </tr>
 <tr>
     <td>{hitCount}</td>
-    <td>hit count of breakpoint</td>
+    <td>hit count of breakpoint. For step execution, it is set to <code>-1</code>.</td>
 </tr>
 <tr>
     <td>

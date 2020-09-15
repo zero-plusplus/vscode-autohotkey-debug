@@ -4,11 +4,9 @@ import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 
 export type BreakpointLogGroup = 'start' | 'startCollapsed' | 'end' | undefined;
 export interface BreakpointAdvancedData {
-  counter: number;
   condition?: string;
   hitCondition?: string;
   logMessage?: string;
-  logLevel?: string;
   logGroup?: BreakpointLogGroup;
   hidden?: boolean;
 }
@@ -16,18 +14,32 @@ export class Breakpoint {
   public id: number;
   public fileUri: string;
   public line: number;
-  public advancedData?: BreakpointAdvancedData;
+  public counter: number;
+  public condition: string;
+  public hitCondition: string;
+  public logMessage: string;
+  public logGroup: string;
+  public hidden: boolean;
   constructor(dbgpBreakpoint: dbgp.Breakpoint, advancedData?: BreakpointAdvancedData) {
     this.id = dbgpBreakpoint.id;
     this.fileUri = dbgpBreakpoint.fileUri;
     this.line = dbgpBreakpoint.line;
-    this.advancedData = advancedData;
+
+    this.counter = 0;
+    this.condition = advancedData?.condition ?? '';
+    this.hitCondition = advancedData?.hitCondition ?? '';
+    this.logMessage = advancedData?.logMessage ?? '';
+    this.logGroup = advancedData?.logGroup ?? '';
+    this.hidden = advancedData?.hidden ?? false;
   }
+}
+export class LineBreakpoints extends Array<Breakpoint> {
+  public hitCount = 0;
 }
 
 export class BreakpointManager {
   private readonly session: dbgp.Session;
-  private readonly breakpointsMap = new CaseInsensitiveMap<string, Breakpoint[]>();
+  private readonly breakpointsMap = new CaseInsensitiveMap<string, LineBreakpoints>();
   constructor(session: dbgp.Session) {
     this.session = session;
   }
@@ -38,12 +50,7 @@ export class BreakpointManager {
     }
 
     for (const breakpoint of breakpoints) {
-      const advancedData = breakpoint?.advancedData;
-      if (!advancedData) {
-        continue;
-      }
-
-      const { condition, hitCondition, logMessage, logGroup } = advancedData;
+      const { condition, hitCondition, logMessage, logGroup } = breakpoint;
       if (condition || hitCondition || logMessage || logGroup) {
         return true;
       }
@@ -54,7 +61,7 @@ export class BreakpointManager {
     const key = this.createKey(fileUri, line);
     return this.breakpointsMap.has(key);
   }
-  public getBreakpoints(fileUri: string, line: number): Breakpoint[] | null {
+  public getBreakpoints(fileUri: string, line: number): LineBreakpoints | null {
     const targetFilePath = URI.parse(fileUri).fsPath.toLowerCase();
 
     for (const [ key, breakpoints ] of this.breakpointsMap) {
@@ -75,12 +82,12 @@ export class BreakpointManager {
     let _fileUri: string, _line: number, _advancedData: BreakpointAdvancedData | undefined;
     if (fileUriOrBreakpoint instanceof Breakpoint) {
       const breakpoint = fileUriOrBreakpoint;
-      if (breakpoint.advancedData?.hidden) {
+      if (breakpoint.hidden) {
         return fileUriOrBreakpoint;
       }
       _fileUri = breakpoint.fileUri;
       _line = breakpoint.line;
-      _advancedData = breakpoint.advancedData;
+      _advancedData = breakpoint as BreakpointAdvancedData;
     }
     else {
       _fileUri = fileUriOrBreakpoint;
@@ -95,13 +102,13 @@ export class BreakpointManager {
     const settedBreakpoint = new Breakpoint((await this.session.sendBreakpointGetCommand(response.id)).breakpoint, _advancedData);
     const actualLine = settedBreakpoint.line;
 
-    let registeredBreakpoints: Breakpoint[];
+    let registeredBreakpoints: LineBreakpoints;
     if (this.hasBreakpoint(_fileUri, actualLine)) {
       registeredBreakpoints = this.getBreakpoints(_fileUri, actualLine)!;
       registeredBreakpoints.push(settedBreakpoint);
     }
     else {
-      registeredBreakpoints = [ settedBreakpoint ];
+      registeredBreakpoints = new LineBreakpoints(settedBreakpoint);
       const key = this.createKey(_fileUri, actualLine);
       this.breakpointsMap.set(key, registeredBreakpoints);
     }
@@ -115,7 +122,7 @@ export class BreakpointManager {
 
     const id = breakpoints[0].id;
     const key = this.createKey(fileUri, line);
-    const hiddenBreakpoints = breakpoints.filter((breakpoint) => breakpoint.advancedData?.hidden ?? false);
+    const hiddenBreakpoints = breakpoints.filter((breakpoint) => breakpoint.hidden);
     if (hiddenBreakpoints.length === 0 && this.breakpointsMap.has(key)) {
       try {
         await this.session.sendBreakpointRemoveCommand(id);
@@ -125,7 +132,7 @@ export class BreakpointManager {
       }
     }
     else {
-      this.breakpointsMap.set(key, hiddenBreakpoints);
+      this.breakpointsMap.set(key, new LineBreakpoints(...hiddenBreakpoints));
     }
   }
   public async unregisterBreakpointsInFile(fileUri: string): Promise<void> {
