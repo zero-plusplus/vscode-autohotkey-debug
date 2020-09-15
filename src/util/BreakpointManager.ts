@@ -14,7 +14,6 @@ export class Breakpoint {
   public id: number;
   public fileUri: string;
   public line: number;
-  public counter: number;
   public condition: string;
   public hitCondition: string;
   public logMessage: string;
@@ -25,7 +24,6 @@ export class Breakpoint {
     this.fileUri = dbgpBreakpoint.fileUri;
     this.line = dbgpBreakpoint.line;
 
-    this.counter = 0;
     this.condition = advancedData?.condition ?? '';
     this.hitCondition = advancedData?.hitCondition ?? '';
     this.logMessage = advancedData?.logMessage ?? '';

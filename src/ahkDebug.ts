@@ -271,7 +271,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
 
       const advancedData = {
-        counter: 0,
         condition,
         hitCondition,
         logMessage,
@@ -740,7 +739,6 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
 
           const advancedData = {
-            counter: 0,
             condition,
             hitCondition,
             logMessage,
@@ -763,7 +761,6 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
           const newCondition = condition;
           const advancedData = {
-            counter: 0,
             condition: newCondition,
             hitCondition,
             logMessage,
