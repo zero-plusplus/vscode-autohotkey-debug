@@ -62,6 +62,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   };
   openFileOnExit: string;
 }
+type LogCategory = 'console' | 'stdout' | 'stderr';
 
 export class AhkDebugSession extends LoggingDebugSession {
   private isPaused = false;
@@ -875,7 +876,8 @@ export class AhkDebugSession extends LoggingDebugSession {
 
           const logMode = logGroup || logMessage;
           if (conditionResult && logMode) {
-            await this.printLogMessage(_metaVariables);
+            const logCategory = 'stderr' as LogCategory;
+            await this.printLogMessage(_metaVariables, logCategory);
             conditionResult = false;
           }
 
@@ -990,7 +992,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     return matchCondition;
   }
-  private async printLogMessage(metaVariables: CaseInsensitiveMap<string, string>, logCategory?: string): Promise<void> {
+  private async printLogMessage(metaVariables: CaseInsensitiveMap<string, string>, logCategory?: LogCategory): Promise<void> {
     const logMessage = metaVariables.get('logMessage') ?? '';
     const results = await this.formatLog(logMessage, metaVariables);
 
