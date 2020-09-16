@@ -820,8 +820,6 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       const metaVariables = new CaseInsensitiveMap<string, string>();
       this.currentMetaVariables = metaVariables;
-      metaVariables.set('file', URI.parse(fileUri).fsPath);
-      metaVariables.set('line', String(line));
       metaVariables.set('hitCount', '-1');
 
       if (this.metaVariablesWhenNotBreak) {
@@ -1022,11 +1020,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         event.body.variablesReference = variablesReference;
       }
 
-      if (metaVariables.has('file')) {
-        event.body.source = { path: metaVariables.get('file') };
-      }
-      if (metaVariables.has('line')) {
-        event.body.line = parseInt(metaVariables.get('line')!, 10);
+      if (this.currentStackFrames) {
+        const { fileUri, line } = this.currentStackFrames[0];
+        event.body.source = { path: fileUri };
+        event.body.line = line;
       }
       this.sendEvent(event);
     }
