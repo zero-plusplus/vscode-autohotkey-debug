@@ -609,22 +609,38 @@ Therefore, variables that have not yet been evaluated are not proposed.
 
 This is a limited feature, but can be very useful for editing the source code while debugging.
 
-## Standard output
-Messages output to standard output are displayed in the [debug console panel](https://code.visualstudio.com/docs/editor/debugging).
+## Debug console
+![debug-console](image/debug-console.jpg)
+Displays various messages during debugging. Press `Ctrl + Shift + y` if you want to use it.
 
-There are several ways to output a message to the standard output.
+### Message from Debug adapter
+Besides the announcements from the debug adapter, you can send messages to the debug console yourself in the following ways.
+* [Log point](#log-point)
+* Debug directive's [Output directive](#output-directive)
+
+### Message from AutoHotkey
+You can output messages from the AutoHotkey script to the debug console by using the following method.
 * [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
 * [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
 * [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
 
 ### About error message
-There are two types of error messages in AutoHotkey: loadtime error and runtime error.
+The debug adapter modifies the format of the file name and line number in the error messages output by AutoHotkey. This allows VSCode to recognize it as a link and allows the user to jump to the source of the error.
 
-A loadtime error will result in a file path being output, while a runtime error will result in No output. Also, regardless of the [ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm) setting, I get a message box. So the runtime error is a bit inconvenient.
+However, not all errors are output to the debug console and
+If a runtime error occurs, the error message is basically only shown in a dialog box.
+This doesn't allow you to jump to the source of the error using a link.
 
-If you want to fix it, add [this code](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) to your script.
+If this is inconvenient for you, you can include [this library](https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a) in your scripts.
+The library will catch all errors and output a message to the debug console in the same format as the actual error messages.
 
-This code will suppress the runtime error message box and make the output the same as the loadtime error.
+If you encounter a bug in this library, please comment at the link.
+
+### About Multi-byte garbled characters(or mojibake)
+AutoHotkey does not output multi-byte strings well.
+However, in version `1.1.1.33.00`, the [#ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm) directive has been extended to allow output in UTF-8, which solves this problem.
+
+It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8"]` instead of using the directive.
 
 ## PerfTips (Optional)
 ![perftips](image/perftips.gif)
