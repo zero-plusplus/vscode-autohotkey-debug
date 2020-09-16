@@ -233,7 +233,7 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
     <td>useProcessUsageData</td>
     <td>boolean</td>
     <td>
-        <strong>Note that if you enable this setting, step-execution is slow.</strong> Add process usage data to the <a href="#metavariable">MetaVariable</a>.
+        <strong>Note that if you enable this setting, step-execution is slow. Still, it's faster than Scite4AutoHotkey.</strong> Add process usage data to the <a href="#metavariable">MetaVariable</a>.
     </td>
 </tr>
 <tr>
@@ -302,13 +302,9 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
 </table>
 
 # MetaVariable
-Some features make use of the information available to the debugger adapter. This is called `MetaVariable`.
+Sometimes the debugger adapter holds more useful information than the AutoHotkey debugger. You can access these data by using `MetaVariable`.
 
-When used, enclose the name of the `MetaVariable` in curly brackets. It is not case sensitive. e.g. `{hitCount}`
-
-Can be used with [Conditional breakpoint](#conditional-breakpoint), [Log point](#log-point), [Watch expression](#watch-expression), etc.
-
-The available MetaVariables are listed below.
+As with AutoHotkey's variable name, this is case insensitive. And to distinguish it from that, the name of the `MetaVariable` is enclosed in curly brackets. e.g. `{hitCount}`
 
 ## Default MetaVarible
 <table>
@@ -318,7 +314,9 @@ The available MetaVariables are listed below.
 </tr>
 <tr>
     <td>{hitCount}</td>
-    <td>hit count of breakpoint. For step execution, it is set to <code>-1</code>.</td>
+    <td>
+        hit count of breakpoint. For step execution, it is set to <code>-1</code>. Removing a breakpoint will also discard the count.
+    </td>
 </tr>
 <tr>
     <td>
@@ -332,8 +330,8 @@ The available MetaVariables are listed below.
 </tr>
 </table>
 
-## Prcess Usage MetaVarible
-The following is available if `useProcessUsageData` is enabled.
+## Prcess Usage MetaVarible (Optional)
+The following is available if `useProcessUsageData` is enabled. This is optional because it takes time to get the usage data of the process.
 
 <table>
 <tr>
