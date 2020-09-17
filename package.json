@@ -167,7 +167,7 @@
                 ],
                 "examples": [
                   "{{elapsedTime_s}}s elapsed",
-                  "{{elapsedTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory"
+                  "{{elapsedTime_s}}s elapsed. CPU {{usageCpu}}%, Memory {{usageMemory_MB}}MB used."
                 ],
                 "properties": {
                   "fontColor": {
@@ -190,7 +190,7 @@
                     "description": "Content to be displayed. You can specify `MetaVariable` and AutoHotkey variables.",
                     "examples": [
                       "{{elapsedTime_s}}s elapsed",
-                      "{{elapsedTime_s}}s elapsed. AHK used {{usageCpu}}% CPU and {{usageMemory_MB}}MB memory"
+                      "{{elapsedTime_s}}s elapsed. CPU {{usageCpu}}%, Memory {{usageMemory_MB}}MB used."
                     ],
                     "default": "{{elapsedTime_s}}s elapsed"
                   }
