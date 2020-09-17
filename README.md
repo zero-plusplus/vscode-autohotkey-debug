@@ -123,13 +123,15 @@ It should be possible to debug [AutoHotkey_H](https://hotkeyit.github.io/v2/), b
 
 If you want to run without debugging, choose `Run -> Run Without Debugging` from the menu or press `Ctrl + F5`.
 
-# Customize the launch configuration
-If you want to change the settings of the debug, you need to edit the `launch.json` file.
-You don't need to see this section if the default settings are sufficient for you.
+# Customize launch.json
+If you want to change the settings of the debugger adapter, you need to edit the `launch.json`.
 
 You can learn the basics of `launch.json` [here](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
+At the same time, learn about the [variables](https://code.visualstudio.com/docs/editor/variables-reference). It is very useful.
 
-## Basic Settings
+All settings are optional and you don't even need to create a `launch.json` if the default settings are sufficient.
+
+## Basic settings
 <table>
 <tr>
     <th>Name</th>
@@ -137,18 +139,34 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
     <th>Description</th>
 </tr>
 <tr>
+    <td>name</td>
+    <td>string</td>
+    <td>The name of the settings. I recommend giving it a unique and easily understood name.</td>
+</tr>
+<tr>
+    <td>type</td>
+    <td>string</td>
+    <td>Specify <code>"autohotkey"</code>. This is like the ID of the debug adapter to run. So its value is fixed.</td>
+</tr>
+<tr>
+    <td>request</td>
+    <td>string</td>
+    <td>Specify <code>"launch"</code>. VSCode also supports <code>"attach"</code>, but this extension does not support it. So its value is fixed.</td>
+</tr>
+<tr>
     <td>runtime</td>
     <td>string</td>
     <td>
         The path to AutoHotkey.exe. If you specify a relative path, the installation directory for AutoHotkey will be the current directory. You can also omit the extension.<br />
-        e.g. <code>"v2/AutoHotkey"</code>, <code>"${workspaceFolder}/AutoHotkey"</code>
+        e.g. <code>"v2/AutoHotkey.exe"</code>, <code>"${workspaceFolder}/AutoHotkey"</code>
     </td>
 </tr>
 <tr>
     <td>runtime_v1<br />runtime_v2</td>
     <td>string</td>
     <td>
-        Same as <code>runtime</code>, but useful if you want to specify different settings for different extensions. <code>runtime_v1</code> corresponds to <code>.ahk</code> and <code>runtime_v2</code> corresponds to <code>.ahk2</code> or <code>.ah2</code>.
+        Same as <code>runtime</code>, but useful if you want to specify different settings for different extensions. <code>runtime_v1</code> corresponds to <code>.ahk</code> and <code>runtime_v2</code> corresponds to <code>.ahk2</code> or <code>.ah2</code>. If the <code>runtime</code> is set, it takes precedence.<br />
+        default: <code>"AutoHotkey.exe"</code>, <code>"v2/AutoHotkey.exe"</code>
     </td>
 </tr>
 <tr>
@@ -156,7 +174,6 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
     <td>arary</td>
     <td>
         <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. However, <code>"/debug"</code> will be ignored.<br />
-        e.g. <code>[ "/ErrorStdOut=UTF-8" ]</code>
     </td>
 </tr>
 <tr>
@@ -171,7 +188,7 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
     <td>number</td>
     <td>
         A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.<br />
-        e.g. <code>9000</code>
+        default: <code>9000</code>
     </td>
 </tr>
 <tr>
@@ -184,7 +201,10 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
 <tr>
     <td>program</td>
     <td>string</td>
-    <td>The absolute path to the script you want to debug.</td>
+    <td>
+        The absolute path to the script you want to debug.<br />
+        default: <code>"${file}"</code>
+    </td>
 </tr>
 <tr>
     <td>args</td>
@@ -202,14 +222,16 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
     <td>stopOnEntry</td>
     <td>boolean</td>
     <td>
-        If <code>false</code>, it runs until it stops at a breakpoint. Set it to <code>true</code> if you want it to stop at the first line, as in SciTE4AutoHotkey.
+        If <code>false</code>, it runs until it stops at a breakpoint. Set it to <code>true</code> if you want it to stop at the first line, as in SciTE4AutoHotkey.<br />
+        default: <code>false</code>
     </td>
 </tr>
 <tr>
     <td>maxChildren</td>
     <td>number</td>
     <td>
-        The maximum number of child elements of the object to be retrieved. Basically, there is no need to change it.
+        The maximum number of child elements of the object to be retrieved. Basically, there is no need to change it.<br />
+        default: <code>10000</code>
     </td>
 </tr>
 <tr>
@@ -222,7 +244,7 @@ You can learn the basics of `launch.json` [here](https://code.visualstudio.com/d
 </tr>
 </table>
 
-## Advanced Settings
+## Advanced settings
 <table>
 <tr>
     <th>Name</th>
