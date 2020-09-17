@@ -694,7 +694,7 @@ Each directive can be configured with the following rules.
 
 * `HITCONDITION` :　See [Hit conditional breakpoint](#hit-conditional-breakpoint)
 
-* `=>` :　Output operator. It must be written with the `MESSAGE`
+* `=>` :　Output operator
     * `->` :　Outputs the `MESSAGE` as it is
     * `=>` :　A line feed code is placed at the end of the `MESSAGE`
     * `->|` or `=>|` :　The same as for each operator, but it suppresses the automatic removal of leading whitespace
