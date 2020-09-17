@@ -617,15 +617,26 @@ export class AhkDebugSession extends LoggingDebugSession {
         throw Error('not available');
       }
 
-      let variablesReference = 0;
+      let variablesReference = 0, indexedVariables, namedVariables;
       if (property instanceof dbgp.ObjectProperty) {
         variablesReference = this.variablesReferenceCounter++;
         this.objectPropertiesByVariablesReference.set(variablesReference, property);
+
+        const maxIndex = property.maxIndex;
+        if (maxIndex !== null) {
+          if (100 < maxIndex) {
+            indexedVariables = maxIndex;
+            namedVariables = 1;
+          }
+        }
       }
+
       response.body = {
         result: property.displayValue,
         type: property.type,
         variablesReference,
+        indexedVariables,
+        namedVariables,
       };
       this.sendResponse(response);
     }
