@@ -607,17 +607,19 @@ e.g. `= 30`, `<= 30`
 ### Log point
 ![log-point](image/log-point.gif)
 
-The log point does not stop, unlike at the break point.
-Instead, they print their contents to standard output.
-This can be useful if you don't want to put the code for the output in a script.
+`Log point` unlike `breakpoint` do not stop the script. Instead, they output a message to the debug console.
 
-You can embed the value of a variable by enclosing the `VariableName` or `MetaVariable` in braces.
+What makes them different from traditional log output is that you don't have to modify your script. Also, you can embed variable value. Especially in the case of objects, the output is very easy to read as they are grouped.
 
-For more information on `VariableName`, see [data inspection](#data-inspection). You can read more about the metavariables [here](#MetaVariable).
+However, you need to use VSCode's UI to use this feature, so some people may prefer to embed logging process in scripts the traditional way.
+Debug directive's [Output directive](#output-directive) is useful in this case.
 
- e.g. `count: {A_Index}`, `name: {person.name}`, `{{elapsedTime_s}}`
+#### Embedding value
+You can embed the [VariableName](#about-variablename) and [MetaVariable](#metavariable) value by enclosing them in curly brackets.
 
 If you want to output `{`, use `\{`.
+
+e.g. `count: {A_Index}`, `name: {person.name}`, `{{elapsedTime_s}}`, `\{notVariable\}`
 
 ## IntelliSense in Debugging
 ![intellisense](image/intellisense.gif)
