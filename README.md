@@ -44,7 +44,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 * From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
-* The specification that `VariableName` is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
+* The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
 * `1.6.0` - 2020-xx-xx
@@ -280,7 +280,7 @@ All settings are optional and you don't even need to create a `launch.json` if t
     <td><code>.format</code></td>
     <td>string</td>
     <td>
-        Content to be displayed. You can use the <a href="#metavariable">MetaVariable</a> and AutoHotkey variables.<br />
+        Content to be displayed. You can use the <a href="#metavariable">MetaVariable</a> and <a href="#about-variablename">VariableName</a>.<br />
         e.g. <code>"{{elapsedTime_s}}s elapsed."</code>
     </td>
 </tr>
@@ -427,9 +427,7 @@ You can also click to display the variables of that hierarchy in the [data inspe
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
 
-`VariableName` or `MetaVariableName` are supported. Expressions are not supported.
-
-For more information on `VariableName`, see [data inspection](#data-inspection). You can read more about the metavariables [here](#MetaVariable).
+[VariableName](#about-variablename) or [MetaVariable](#metavariable) are supported. Expressions are not supported.
 
 ## Loaded scripts
 ![loaded-scripts](image/loaded-scripts.gif)
@@ -479,9 +477,9 @@ e.g.
 
 * `Operand` :　`VariableName` or `Primitive`
 
-* `VariableName` :　Variable name displayed in [Data inspection](#data-inspection). e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `VariableName` :　See [VariableName](#about-variablename) for details. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 
-* `MetaVariableName` :　See [MetaVariable](#MetaVariable) for details
+* `MetaVariableName` :　See [MetaVariable](#MetaVariable) for details. e.g. `{hitCount}`
 
 * `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 
