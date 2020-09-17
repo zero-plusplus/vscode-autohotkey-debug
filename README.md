@@ -352,7 +352,7 @@ As with AutoHotkey's variable name, this is case insensitive. And to distinguish
 </tr>
 </table>
 
-## Prcess Usage MetaVarible (Optional)
+## Process Usage MetaVarible (Optional)
 The following is available if `useProcessUsageData` is enabled. This is optional because it takes time to get the usage data of the process.
 
 <table>
