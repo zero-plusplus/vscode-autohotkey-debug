@@ -702,7 +702,7 @@ Each directive can be configured with the following rules.
 * `MESSAGE` :　See [Log point](#log-point)
 
 ### Breakpoint directive
-Set a [breakpoint](#breakpoint) in the position of the directive.Unlike normal breakpoint, they are not displayed in the UI and cannot be changed.
+Set a [breakpoint](#breakpoint) in the position of the directive. Unlike normal breakpoint, they are not displayed in the UI and cannot be changed.
 ```ahk
 ; @Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE
 ```
