@@ -872,6 +872,11 @@ export class AhkDebugSession extends LoggingDebugSession {
           let conditionResult = true;
           if (condition || hitCondition) {
             conditionResult = await this.evalCondition(breakpoint, _metaVariables);
+            if (conditionResult) {
+              if (!(breakpoint.hidden || conditionResults.includes(true))) {
+                stopReason = 'conditional breakpoint';
+              }
+            }
           }
 
           const logMode = logGroup || logMessage;
@@ -881,9 +886,6 @@ export class AhkDebugSession extends LoggingDebugSession {
             conditionResult = false;
           }
 
-          if (!(breakpoint.hidden || conditionResults.includes(true))) {
-            stopReason = 'conditional breakpoint';
-          }
           conditionResults.push(conditionResult);
         }
       }
