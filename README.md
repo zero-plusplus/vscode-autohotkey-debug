@@ -421,8 +421,7 @@ Due to the specification of vscode, array indexing syntax is not supported e.g. 
 ![call-stack](image/call-stack.gif)
 
 You can see the current call stack.
-
-You can also click to display the variables of that hierarchy in the [data inspection](#data-inspection).
+Also click to display the variables of that hierarchy in the [data inspection](#data-inspection).
 
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
