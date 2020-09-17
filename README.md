@@ -255,7 +255,7 @@ All settings are optional and you don't even need to create a `launch.json` if t
     <td>useProcessUsageData</td>
     <td>boolean</td>
     <td>
-        <strong>Note that if you enable this setting, step-execution is slow. Still, it's faster than Scite4AutoHotkey.</strong> Add process usage data to the <a href="#metavariable">MetaVariable</a>.
+        <strong>Note that if you enable this setting, step-execution is slow. Still, it's faster than Scite4AutoHotkey.</strong> Add process usage data to the <a href="#process-usage-metavarible-optional">MetaVariable</a>.
     </td>
 </tr>
 <tr>
