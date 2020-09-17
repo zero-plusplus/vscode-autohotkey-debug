@@ -427,7 +427,10 @@ You can also click to display the variables of that hierarchy in the [data inspe
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
 
-[VariableName](#about-variablename) or [MetaVariable](#metavariable) are supported. Expressions are not supported.
+You can monitor the value of a variable. Expressions are not supported.
+
+In addition to [VariableName](#about-variablename), you can monitor [MetaVariable](#metavariable).
+Therefore, it can be used as a substitute for [PerfTips](#perftips-optional).
 
 ## Loaded scripts
 ![loaded-scripts](image/loaded-scripts.gif)
