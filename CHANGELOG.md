@@ -39,6 +39,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
 * [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51) Error occurs when getting dynamic properties by data inspect, etc
 * [#53](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/53) Setting a string containing `&` and `|` in a conditional breakpoint always returns false
+* [#55](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/55) Chunking doesn't work when a large array is specified in a Watch expression
 * Data inspect shows an array of length 1 as `{1: value}`
 * If the error code is 0, output category is stderr
 * Can't pause with Advanced breakpoint
