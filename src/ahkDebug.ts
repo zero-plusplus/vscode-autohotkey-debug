@@ -855,7 +855,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       if (this.isPaused && !this.breakpointManager!.isAdvancedBreakpoint(fileUri, line)) {
-        this.sendStoppedEvent(response.stopReason, metaVariables);
+        this.sendStoppedEvent(response.stopReason);
         return;
       }
 
@@ -928,7 +928,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       if (stop) {
-        this.sendStoppedEvent(stopReason, metaVariables);
+        this.sendStoppedEvent(stopReason);
         return;
       }
 
@@ -953,12 +953,15 @@ export class AhkDebugSession extends LoggingDebugSession {
       await this.checkContinuationStatus(result);
     }
   }
-  private sendStoppedEvent(stopReason: string, metaVariables: CaseInsensitiveMap<string, string>): void {
+  private sendStoppedEvent(stopReason: string): void {
     this.metaVariablesWhenNotBreak = null;
     this.stackFramesWhenStepOut = null;
     this.stackFramesWhenStepOver = null;
     this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
-    this.displayPerfTips(metaVariables);
+
+    if (this.currentMetaVariables) {
+      this.displayPerfTips(this.currentMetaVariables);
+    }
   }
   private async evalCondition(breakpoint: Breakpoint, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
     const { condition, hitCondition } = breakpoint;
