@@ -4,7 +4,7 @@
 * [Overview](#overview)
 * [Installation](#installation)
 * [Usage](#usage)
-* [Customize the launch configuration](#customize-the-launch-configuration)
+* [Customize launch.json](#customize-launch.json)
 * [MetaVariable](#metavariable) ***NEW***
 * [Features](#features)
     * [Data inspection](#data-inspection)
@@ -669,7 +669,7 @@ It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8"]` in
 ![perftips](image/perftips.gif)
 
 You can use it by setting `usePerfTips` in launch.json.
-For more information on setting it up, see [here](#customize-the-launch-configuration).
+For more information on setting it up, see [here](#customize-launch.json).
 
 As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time
 
