@@ -72,6 +72,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: If the error code is 0, output category is stderr
     * Fixed: Can't pause with Advanced breakpoint
     * Fixed: Blank line printed when outputting object
+    * Fixed: "\{" is output without unescaped in Log point etc
 
 * `1.5.0` - 2020-08-14
     * Added: Operators in conditional breakpoint

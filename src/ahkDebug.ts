@@ -1054,7 +1054,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const variableRegex = /(?<!\\)\{(?<variableName>(?:\{?)?(?:\\\{|\\\}|[^{}\n])+?(?:\})?)(?<!\\)\}/gu;
     if (format.search(variableRegex) === -1) {
-      return [ format ];
+      return [ unescapeLogMessage(format) ];
     }
 
     const results: Array<string | dbgp.ObjectProperty> = [];

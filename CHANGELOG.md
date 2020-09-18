@@ -44,6 +44,7 @@ Also want to check the development status, check the [commit history](https://gi
 * If the error code is 0, output category is stderr
 * Can't pause with Advanced breakpoint
 * Blank line printed when outputting object
+* "\{" is output without unescaped in Log point etc
 
 ## [1.5.0] - 2020-08-14
 ### Added
