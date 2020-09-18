@@ -754,7 +754,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             condition,
             hitCondition,
             logMessage,
-            hide: true,
+            hidden: true,
           } as BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
