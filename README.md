@@ -354,7 +354,10 @@ As with AutoHotkey's variable name, this is case insensitive. And to distinguish
 </table>
 
 ## Process Usage MetaVarible (Optional)
-The following is available if `useProcessUsageData` is enabled. This is optional because it takes time to get the usage data of the process.
+Available when `useProcessUsageData` is set to `true`.
+
+If you enable this option, the speed of step execution is greatly reduced. This is because it takes longer to get the data.
+Also **note that you can only use [PerfTips](#perftips-optional) and [Watch expression](#watch-expression)**.
 
 <table>
 <tr>

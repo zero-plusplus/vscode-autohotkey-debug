@@ -847,15 +847,9 @@ export class AhkDebugSession extends LoggingDebugSession {
         metaVariables.set('elapsedTime_ms', String(response.elapsedTime.ms).slice(0, 10));
         metaVariables.set('elapsedTime_s', String(response.elapsedTime.s.toFixed(8)).slice(0, 10));
       }
-      if (this.config.useProcessUsageData) {
-        const usage = await pidusage(this.ahkProcess!.pid);
-        metaVariables.set('usageCpu', String(usage.cpu));
-        metaVariables.set('usageMemory_B', String(usage.memory));
-        metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
-      }
 
       if (this.isPaused && !this.breakpointManager!.isAdvancedBreakpoint(fileUri, line)) {
-        this.sendStoppedEvent(response.stopReason);
+        await this.sendStoppedEvent(response.stopReason);
         return;
       }
 
@@ -928,7 +922,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       if (stop) {
-        this.sendStoppedEvent(stopReason);
+        await this.sendStoppedEvent(stopReason);
         return;
       }
 
@@ -953,15 +947,22 @@ export class AhkDebugSession extends LoggingDebugSession {
       await this.checkContinuationStatus(result);
     }
   }
-  private sendStoppedEvent(stopReason: string): void {
+  private async sendStoppedEvent(stopReason: string): Promise<void> {
     this.metaVariablesWhenNotBreak = null;
     this.stackFramesWhenStepOut = null;
     this.stackFramesWhenStepOver = null;
-    this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
 
     if (this.currentMetaVariables) {
-      this.displayPerfTips(this.currentMetaVariables);
+      const metaVariables = this.currentMetaVariables;
+      if (this.config.useProcessUsageData) {
+        const usage = await pidusage(this.ahkProcess!.pid);
+        metaVariables.set('usageCpu', String(usage.cpu));
+        metaVariables.set('usageMemory_B', String(usage.memory));
+        metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
+      }
+      await this.displayPerfTips(metaVariables);
     }
+    this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
   }
   private async evalCondition(breakpoint: Breakpoint, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
     const { condition, hitCondition } = breakpoint;
