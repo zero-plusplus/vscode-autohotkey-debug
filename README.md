@@ -738,9 +738,6 @@ e.g.
     * `startCollapsed` :　Same as start, but the created groups will be collapsed
     * `end` :　Ends the group
 
-# Change log
-See [CHANGELOG](CHANGELOG.md)
-
 # Known issues
 * [Data inspection](#data-inspection) bug. Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0..99]`. The AutoHotkey array starts at 1 and should be `[1..100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment
 
