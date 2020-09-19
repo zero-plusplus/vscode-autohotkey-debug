@@ -65,6 +65,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 type LogCategory = 'console' | 'stdout' | 'stderr';
 
 export class AhkDebugSession extends LoggingDebugSession {
+  private pauseRequested = false;
   private isPaused = false;
   private isSessionStopped = false;
   private server?: net.Server;
@@ -83,7 +84,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   private conditionalEvaluator!: ConditionalEvaluator;
   private currentStackFrames: dbgp.StackFrame[] | null = null;
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
-  private metaVariablesWhenNotBreak: CaseInsensitiveMap<string, string> | null = null;
   private stackFramesWhenStepOut: dbgp.StackFrame[] | null = null;
   private stackFramesWhenStepOver: dbgp.StackFrame[] | null = null;
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
@@ -315,35 +315,46 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
+    this.pauseRequested = false;
     this.isPaused = false;
+    this.currentMetaVariables = null;
+
     const result = await this.session!.sendContinuationCommand('run');
     this.checkContinuationStatus(result);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
+    this.currentMetaVariables = null;
+    this.pauseRequested = true;
+    this.isPaused = false;
 
-    this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_over');
     this.checkContinuationStatus(result);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
+    this.currentMetaVariables = null;
+    this.pauseRequested = true;
+    this.isPaused = false;
 
-    this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_into');
     this.checkContinuationStatus(result);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
+    this.currentMetaVariables = null;
+    this.pauseRequested = true;
+    this.isPaused = false;
 
-    this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('step_out');
     this.checkContinuationStatus(result);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
+    this.currentMetaVariables = null;
+    this.pauseRequested = true;
+    this.isPaused = false;
 
-    this.isPaused = true;
     const result = await this.session!.sendContinuationCommand('break');
     this.checkContinuationStatus(result);
   }
@@ -808,36 +819,23 @@ export class AhkDebugSession extends LoggingDebugSession {
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
-    this.clearPerfTipsDecorations();
-
     if (response.status === 'stopped') {
       this.isSessionStopped = true;
     }
     else if (response.status === 'break') {
-      const executionByUser = this.stackFramesWhenStepOver === null && this.stackFramesWhenStepOut === null;
-      if (executionByUser && this.currentStackFrames) {
-        if (response.commandName === 'step_out') {
-          this.stackFramesWhenStepOut = this.currentStackFrames.slice(0);
-        }
-        else if (response.commandName === 'step_over') {
-          this.stackFramesWhenStepOver = this.currentStackFrames.slice(0);
-        }
+      if (this.isPaused) {
+        return;
       }
+      this.clearPerfTipsDecorations();
 
-      const { stackFrames } = await this.session!.sendStackGetCommand();
-      const { fileUri, line } = stackFrames[0];
-      this.currentStackFrames = stackFrames;
 
-      const conditionResults: boolean[] = [];
-
+      const prevMetaVariables = this.currentMetaVariables;
       const metaVariables = new CaseInsensitiveMap<string, string>();
-      this.currentMetaVariables = metaVariables;
       metaVariables.set('hitCount', '-1');
-
-      if (this.metaVariablesWhenNotBreak) {
-        const elapsedTime_ns = parseFloat(this.metaVariablesWhenNotBreak.get('elapsedTime_ns')!) + response.elapsedTime.ns;
-        const elapsedTime_ms = parseFloat(this.metaVariablesWhenNotBreak.get('elapsedTime_ms')!) + response.elapsedTime.ms;
-        const elapsedTime_s = parseFloat(this.metaVariablesWhenNotBreak.get('elapsedTime_s')!) + response.elapsedTime.s;
+      if (prevMetaVariables) {
+        const elapsedTime_ns = parseFloat(prevMetaVariables.get('elapsedTime_ns')!) + response.elapsedTime.ns;
+        const elapsedTime_ms = parseFloat(prevMetaVariables.get('elapsedTime_ms')!) + response.elapsedTime.ms;
+        const elapsedTime_s = parseFloat(prevMetaVariables.get('elapsedTime_s')!) + response.elapsedTime.s;
         metaVariables.set('elapsedTime_ns', String(elapsedTime_ns).slice(0, 10));
         metaVariables.set('elapsedTime_ms', String(elapsedTime_ms).slice(0, 10));
         metaVariables.set('elapsedTime_s', String(elapsedTime_s.toFixed(8)).slice(0, 10));
@@ -847,13 +845,26 @@ export class AhkDebugSession extends LoggingDebugSession {
         metaVariables.set('elapsedTime_ms', String(response.elapsedTime.ms).slice(0, 10));
         metaVariables.set('elapsedTime_s', String(response.elapsedTime.s.toFixed(8)).slice(0, 10));
       }
+      this.currentMetaVariables = metaVariables;
 
-      if (this.isPaused && !this.breakpointManager!.isAdvancedBreakpoint(fileUri, line)) {
-        await this.sendStoppedEvent(response.stopReason);
-        return;
+      const prevStackFrames = this.currentStackFrames;
+      const { stackFrames } = await this.session!.sendStackGetCommand();
+      const { fileUri, line } = stackFrames[0];
+      this.currentStackFrames = stackFrames;
+
+      const stepExecutionByUser = response.commandName.includes('step') && this.stackFramesWhenStepOver === null && this.stackFramesWhenStepOut === null;
+      if (stepExecutionByUser && prevStackFrames) {
+        if (response.commandName === 'step_out') {
+          this.stackFramesWhenStepOut = prevStackFrames.slice();
+        }
+        else if (response.commandName === 'step_over') {
+          this.stackFramesWhenStepOver = prevStackFrames.slice();
+        }
       }
 
+
       let stopReason = String(response.stopReason);
+      const conditionResults: boolean[] = [];
       const lineBreakpoints = this.breakpointManager!.getBreakpoints(fileUri, line);
       if (lineBreakpoints) {
         lineBreakpoints.hitCount++;
@@ -899,50 +910,53 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
 
-      let stop = conditionResults.includes(true);
-      if (this.stackFramesWhenStepOut && this.currentStackFrames.length < this.stackFramesWhenStepOut.length) {
-        this.stackFramesWhenStepOut = null;
-        stop = true;
+      if (response.commandName === 'break') {
+        metaVariables.set('elapsedTime_ns', '-1');
+        metaVariables.set('elapsedTime_ms', '-1');
+        metaVariables.set('elapsedTime_s', '-1');
+        this.sendStoppedEvent(response.stopReason);
+        return;
       }
-      else if (this.stackFramesWhenStepOver && this.stackFramesWhenStepOver.length === this.currentStackFrames.length) {
-        stop = true;
+      else if (response.commandName === 'step_into') {
+        this.sendStoppedEvent(response.stopReason);
+        return;
       }
-      else if ([ 'step_into', 'break' ].includes(response.commandName)) {
-        stop = true;
-      }
+      else if (this.stackFramesWhenStepOver) {
+        if (this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
+          this.stackFramesWhenStepOver = null;
 
-      let stepOverExecute = false, stepOutExecute = false;
-      if (this.stackFramesWhenStepOver && this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
-        this.stackFramesWhenStepOver = null;
-        stop = false;
-        stepOverExecute = true;
-      }
-      else if (this.stackFramesWhenStepOut && this.stackFramesWhenStepOut.length === 1) {
-        if (this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
-          this.stackFramesWhenStepOut = null;
-          stop = false;
-          stepOutExecute = true;
+          const result = await this.session!.sendContinuationCommand('step_over');
+          this.checkContinuationStatus(result);
+          return;
+        }
+        else if (this.stackFramesWhenStepOver.length === this.currentStackFrames.length) {
+          await this.sendStoppedEvent(stopReason);
+          return;
         }
       }
+      else if (this.stackFramesWhenStepOut) {
+        if (this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) { // || this.stackFramesWhenStepOut.length === this.currentStackFrames.length) {
+          this.stackFramesWhenStepOut = null;
 
-      if (stop) {
+          const result = await this.session!.sendContinuationCommand('step_out');
+          this.checkContinuationStatus(result);
+          return;
+        }
+        else if (this.currentStackFrames.length < this.stackFramesWhenStepOut.length) {
+          await this.sendStoppedEvent(stopReason);
+          return;
+        }
+      }
+      else if (conditionResults.includes(true)) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
 
-      this.metaVariablesWhenNotBreak = metaVariables;
-
       let result: dbgp.ContinuationResponse;
-      if (stepOverExecute) {
-        result = await this.session!.sendContinuationCommand('step_over');
-      }
-      else if (stepOutExecute) {
+      if (this.stackFramesWhenStepOut || this.stackFramesWhenStepOver) {
         result = await this.session!.sendContinuationCommand('step_out');
       }
-      else if (this.stackFramesWhenStepOut || this.stackFramesWhenStepOver) {
-        result = await this.session!.sendContinuationCommand('step_out');
-      }
-      else if (this.isPaused) {
+      else if (this.pauseRequested) {
         result = await this.session!.sendContinuationCommand('break');
       }
       else {
@@ -952,9 +966,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
   }
   private async sendStoppedEvent(stopReason: string): Promise<void> {
-    this.metaVariablesWhenNotBreak = null;
     this.stackFramesWhenStepOut = null;
     this.stackFramesWhenStepOver = null;
+    this.pauseRequested = false;
+    this.isPaused = true;
 
     if (this.currentMetaVariables) {
       const metaVariables = this.currentMetaVariables;

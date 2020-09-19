@@ -348,7 +348,7 @@ As with AutoHotkey's variable name, this is case insensitive. And to distinguish
         {elapsedTime_s}
     </td>
     <td>
-        Time taken to execute. The suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second). Note that this is not an exact execute time. The difference is especially large if you are using <a href="#advanced-breakpoint">Advanced breakpoint</a>
+        Time taken to execute. If paused, it will be set to <code>-1</code> because the exact execution time cannot be obtained. Each suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second). Note that this is not an exact execute time. The difference is especially large if you are using <a href="#advanced-breakpoint">Advanced breakpoint</a>
     </td>
 </tr>
 </table>
@@ -373,7 +373,7 @@ Also **note that you can only use [PerfTips](#perftips-optional) and [Watch expr
         {usageMemory_B}<br />
         {usageMemory_MB}
     </td>
-    <td>Current memory usage. The suffix indicates the unit of measurement: <code>B</code>(byte), <code>MB</code>(megabyte)</td>
+    <td>Current memory usage. Each suffix indicates the unit of measurement: <code>B</code>(byte), <code>MB</code>(megabyte)</td>
 </tr>
 </table>
 
