@@ -103,7 +103,12 @@ export class BreakpointManager {
     let registeredBreakpoints: LineBreakpoints;
     if (this.hasBreakpoint(_fileUri, actualLine)) {
       registeredBreakpoints = this.getBreakpoints(_fileUri, actualLine)!;
-      registeredBreakpoints.push(settedBreakpoint);
+      if (settedBreakpoint.hidden) {
+        registeredBreakpoints.push(settedBreakpoint);
+      }
+      else {
+        registeredBreakpoints.unshift(settedBreakpoint);
+      }
     }
     else {
       registeredBreakpoints = new LineBreakpoints(settedBreakpoint);
