@@ -874,14 +874,18 @@ export class AhkDebugSession extends LoggingDebugSession {
           _metaVariables.set('logMessage', logMessage);
           _metaVariables.set('logGroup', logGroup);
 
+          const isDefiniteStop = conditionResults.includes(true);
           let conditionResult = true;
           if (condition || hitCondition) {
             conditionResult = await this.evalCondition(breakpoint, _metaVariables);
-            if (conditionResult) {
-              if (!(breakpoint.hidden || conditionResults.includes(true))) {
-                stopReason = 'conditional breakpoint';
-              }
+            if (conditionResult && !isDefiniteStop) {
+              stopReason = breakpoint.hidden
+                ? 'hidden breakpoint'
+                : 'conditional breakpoint';
             }
+          }
+          else if (!isDefiniteStop && breakpoint.hidden) {
+            stopReason = 'hidden breakpoint';
           }
 
           const logMode = logGroup || logMessage;
