@@ -42,7 +42,6 @@ Also want to check the development status, check the [commit history](https://gi
 * [#55](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/55) Chunking doesn't work when a large array is specified in a Watch expression
 * Data inspect shows an array of length 1 as `{1: value}`
 * If the error code is 0, output category is stderr
-* Can't pause with Advanced breakpoint
 * Blank line printed when outputting object
 * "\{" is output without unescaped in Log point etc
 

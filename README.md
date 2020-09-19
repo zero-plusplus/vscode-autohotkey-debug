@@ -70,7 +70,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: [#55](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/55) Chunking doesn't work when a large array is specified in a Watch expression
     * Fixed: Data inspect shows an array of length 1 as `{1: value}`
     * Fixed: If the error code is 0, output category is stderr
-    * Fixed: Can't pause with Advanced breakpoint
     * Fixed: Blank line printed when outputting object
     * Fixed: "\{" is output without unescaped in Log point etc
 
