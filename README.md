@@ -629,7 +629,6 @@ e.g. `count: {A_Index}`, `{object}`, `name: {person.name}`, `{{elapsedTime_s}}`
 ![intellisense](image/intellisense.gif)
 
 The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
-Therefore, variables that have not yet been evaluated are not proposed.
 
 This is a limited feature, but can be very useful for editing the source code while debugging.
 
