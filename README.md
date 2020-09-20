@@ -14,7 +14,7 @@
     * [Breakpoint](#breakpoint)
     * [Advanced breakpoint](#advanced-breakpoint)
         * [Conditional breakpoint](#conditional-breakpoint)
-        * [Hit Conditional Breakpoint](#hit-conditional-breakpoint)
+        * [Hit conditional breakpoint](#hit-conditional-breakpoint)
         * [Log point](#log-point)
     * [IntelliSense in debugging](#intellisense-in-debugging) ***NEW***
     * [Debug console](#debug-console)
@@ -289,7 +289,7 @@ Also at the same time, learn about the [VSCode's variables](https://code.visuals
     <td><code>.format</code></td>
     <td>string</td>
     <td>
-        Content to be displayed. You can use the <a href="#metavariable">MetaVariable</a> and <a href="#about-variablename">VariableName</a>.<br />
+        Content to be displayed. See the Log point's <a href="#embedding-value">Embedding value</a> for instructions on how to embed the variables.<br />
         e.g. <code>"{{elapsedTime_s}}s elapsed."</code>
     </td>
 </tr>
@@ -393,7 +393,6 @@ You can check the data of the variables. Also check the type name by hovering ov
 
 In the case of an object, you can see the class name and a summary of the child elements in the value. e.g. `ClassName {field: "value"}`, `Array [1, 2, 3]`
 
-
 #### About VariableName
 If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is case-insensitive.
 
@@ -430,7 +429,7 @@ You can see the value by hovering over the name of the variable. Also see the va
 ![call-stack](image/call-stack.gif)
 
 You can see the current call stack.
-Also click to display the variables of that hierarchy in the [data inspection](#data-inspection).
+Also click to display the variables of that hierarchy in the [Data inspection](#data-inspection).
 
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
@@ -565,13 +564,13 @@ e.g.
 
                 * `"number:like"` :　Composite types of `integer:like` and `float:like`
 
-                * `"object:ClassName"` :　Checks whether an object is a particular `ClassName`. You can check the `ClassName` by looking at the value of the variable holding the object in [data inspection](#data-inspection)(e.g. `ClassName {...} `). Note that the `ClassName` here is not the same as the value of the `__class` field
+                * `"object:ClassName"` :　Checks whether an object is a particular `ClassName`. You can check the `ClassName` by looking at the value of the variable holding the object in [Data inspection](#data-inspection)(e.g. `ClassName {...} `). Note that the `ClassName` here is not the same as the value of the `__class` field
 
             * `VariableName` :　Checks if the class inherits from a specific class. The value of the variable must be an class object. e.g. `instance is ClassObject`
 
         * `[not] in` :　Check if the object owns or inherits a particular field. Left side is `Primitive` or `VariableName`, and the right side is `VariableName`. e.g. `"key" in Object`, `"key" not in Object`
 
-### Hit Conditional Breakpoint
+### Hit conditional breakpoint
 ![hit-conditional-breakpoint](image/hit-conditional-breakpoint.gif)
 
 Break the script when the breakpoint reaches a certain hit count. You can check the current hit count by watching `{hitCount}` in the [Watch expression](#watch-expression).
@@ -609,7 +608,7 @@ e.g. `= 30`, `<= 30`
 ### Log point
 ![log-point](image/log-point.gif)
 
-`Log point` unlike `breakpoint` do not pause the script. Instead, they output a message to the [Debug console](#debug-console).
+This feature unlike [Breakpoint](#breakpoint) do not break the script. Instead, they output a message to the [Debug console](#debug-console).
 
 What makes them different from traditional log output is that you don't have to modify your script. Also, you can embed variable value. Especially in the case of objects, the output is very easy to read as they are grouped.
 
@@ -680,12 +679,11 @@ Display more information when `useProcessUsageData` is `true`. Note, however, th
 ## Debug directive (Optional)
 **This is a preview version. Specifications are subject to change. Also need to search for directive comments slows down performance at startup.**
 
-
 You can send commands to the debugger adapter by embedding special comments into the script.
 This feature is achieved using [Advanced breakpoint](#advanced-breakpoint). So knowledge of it may be required.
 
 Each directive can be configured with the following rules.
-```
+```md
 # Capitalization indicates the part that can be setting. Basically, it can be omitted.
 # Only spaces are allowed before directive comment.
 
@@ -707,11 +705,11 @@ Each directive can be configured with the following rules.
     * `=>` :　A line feed code is placed at the end of the `MESSAGE`
     * `->|` or `=>|` :　The same as for each operator, but it suppresses the automatic removal of leading whitespace
 
-* `MESSAGE` :　See [Log point](#log-point)
+* `MESSAGE` :　See Log point's [Embedding value](#embedding-value)
 
 ### Breakpoint directive
-Set a [breakpoint](#breakpoint) in the position of the directive. Unlike normal breakpoint, they are not displayed in the UI and cannot be changed.
-```
+Set a [Breakpoint](#breakpoint) in the position of the directive. Unlike normal breakpoint, it is not displayed in the UI and cannot be changed.
+```md
 ; @Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE
 ```
 
@@ -719,12 +717,12 @@ e.g. `; @Debug-Breakpoint`, `; @Debug-Breakpoint(20 < person.age) => {person.nam
 
 ### Output directive
 Similar to the [Breakpoint directive](#breakpoint-directive), but limited to [Log point](#log-point). Instead, a grouping feature has been added.
-```
+```md
 ; @Debug-Output:GROUPING(CONDITION)[HITCONDITION] => MESSAGE
 ```
 
 e.g.
-```
+```md
 ; @Debug-Output:start => {person.name}
 ; @Debug-Output => name: {person.name}
 ; @Debug-Output => age: {person.age}
