@@ -12,16 +12,16 @@
     * [Watch expression](#watch-expression)
     * [Loaded scripts](#loaded-scripts)
     * [Breakpoint](#breakpoint)
+    * [Advanced breakpoint](#advanced-breakpoint)
         * [Conditional breakpoint](#conditional-breakpoint)
         * [Hit Conditional Breakpoint](#hit-conditional-breakpoint)
         * [Log point](#log-point)
     * [IntelliSense in Debugging](#intellisense-in-debugging) ***NEW***
-    * [Standard output](#standard-output)
+    * [Debug console](#debug-console)
     * [PerfTips (Optional)](#perftips-optional) ***NEW***
     * [Debug directive (Optional)](#debug-directive-optional) ***NEW***
         * [Breakpoint directive](#breakpoint-directive) ***NEW***
         * [Output directive](#output-directive) ***NEW***
-* [Change log](#change-log)
 * [Known issues](#known-issues)
 * [Development support](#development-support)
 
