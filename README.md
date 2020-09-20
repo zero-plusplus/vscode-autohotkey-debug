@@ -16,10 +16,10 @@
         * [Conditional breakpoint](#conditional-breakpoint)
         * [Hit Conditional Breakpoint](#hit-conditional-breakpoint)
         * [Log point](#log-point)
-    * [IntelliSense in Debugging](#intellisense-in-debugging) ***NEW***
+    * [IntelliSense in debugging](#intellisense-in-debugging) ***NEW***
     * [Debug console](#debug-console)
     * [PerfTips (Optional)](#perftips-optional) ***NEW***
-    * [Debug directive (Optional)](#debug-directive-optional) ***NEW***
+    * [Debug directive (Optional)](#debug-directive-optional)
         * [Breakpoint directive](#breakpoint-directive) ***NEW***
         * [Output directive](#output-directive) ***NEW***
 * [Known issues](#known-issues)
@@ -36,11 +36,13 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 * If you want to know what the next version of the plan is, check out the [milestones](https://github.com/zero-plusplus/vscode-autohotkey-debug/milestones)
 
-* To support the developers (bug reports, sponsorship, etc.), see [here](#development-support)
+* If you're interested in supporting the development(bug reports, sponsorship, etc.), look [here](#development-support)
 
 # News
+`1.6.0` is a big update, so there may be some bugs in it. If you find it, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
+
 ### Important Notices
-* Advanced output has been removed. See [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) for details. Please use [Output directive](#output-directive) instead
+* From `1.6.0`, `Advanced output` has been removed. This was not a feasible feature. Please use [Output directive](#output-directive) instead
 
 * From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
@@ -49,10 +51,10 @@ A separate extension that supports the AutoHotkey language is required(The most 
 ### Update
 * `1.6.0` - 2020-xx-xx
     * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support `Run Without Debugging`
-    * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support [MetaVariable](#metavariable). This is supported by several features
-    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Support [PerfTips](#perftips-optional)
-    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Support [Debug directive](#debug-directive-optional)
-    * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support [IntelliSense in Debugging](#intellisense-in-debugging), which is only available for debugging
+    * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support MetaVariable. This is supported by several features
+    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Support PerfTips
+    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Support Debug directive
+    * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support IntelliSense in debugging, which is only available for debugging
     * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
     * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
     * Changed: [#41](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/41) Remove `useAdvancedBreakpoint`. Advanced breakpoint is enabled by default
@@ -100,10 +102,10 @@ See [CHANGELOG](CHANGELOG.md) for details.
 
 # Overview
 This extension was designed to be upwardly compatible with the SciTE4AutoHotkey debug adapter.
-So you can use all of it's features as well as new features such as conditional breakpoints.
+So you can use all of it's features as well as new features such as [Conditional breakpoint](#conditional-breakpoint).
 It also runs asynchronously, so it runs very fast. Best of all, VSCode's debug UI is great!
 
-See [Features](#features) for more information.
+See [Features](#features) for details.
 
 ### Unsupported
 The following features cannot be implemented due to specifications.
@@ -112,6 +114,8 @@ The following features cannot be implemented due to specifications.
 ### About AutoHotkey_H
 It should be possible to debug [AutoHotkey_H](https://hotkeyit.github.io/v2/), but I'm not familiar with it so I can't guarantee it will work.
 
+I want to deal with it as much as possible, so please report any problems to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
+
 # Installation
 1. Install [AutoHotkey](https://www.autohotkey.com/)
 2. Install an extension to support AutoHotkey (the famous ` slevesque.vscode-autohotkey`)
@@ -119,7 +123,7 @@ It should be possible to debug [AutoHotkey_H](https://hotkeyit.github.io/v2/), b
 
 # Usage
 1. Open a file with the extension `ahk`, `ahk2` or `ah2`.
-2. Place the breakpoints where you want them
+2. Set [Breakpoint](#breakpoint) where you want them
 3. Press `F5`
 
 If you want to run without debugging, choose `Run -> Run Without Debugging` from the menu or press `Ctrl + F5`.
@@ -127,10 +131,13 @@ If you want to run without debugging, choose `Run -> Run Without Debugging` from
 # Customize launch.json
 If you want to change the settings of the debugger adapter, you need to edit the `launch.json`.
 
-You can learn the basics of `launch.json` [here](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
-At the same time, learn about the [variables](https://code.visualstudio.com/docs/editor/variables-reference). It is very useful.
+If the default settings are sufficient for you, you don't need to see this section.
 
-All settings are optional and you don't even need to create a `launch.json` if the default settings are sufficient.
+You can learn the basics of `launch.json` [here](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
+
+Also at the same time, learn about the [VSCode's variables](https://code.visualstudio.com/docs/editor/variables-reference). It is very useful. Here are some of the most commonly used ones.
+* `${file}` :　the current opened file
+* `${workspaceFolder}` :　the path of the folder opened in VS Code
 
 ## Basic settings
 <table>
@@ -158,7 +165,7 @@ All settings are optional and you don't even need to create a `launch.json` if t
     <td>runtime</td>
     <td>string</td>
     <td>
-        The path to AutoHotkey.exe. If you specify a relative path, the installation directory for AutoHotkey will be the current directory. You can also omit the extension.<br />
+        The path to AutoHotkey.exe. If you specify a relative path, the current directory is <code>C:\Program Files\AutoHotkey</code>. Also extension(i.e. ".exe") is optional.<br />
         e.g. <code>"v2/AutoHotkey.exe"</code>, <code>"${workspaceFolder}/AutoHotkey"</code>
     </td>
 </tr>
@@ -174,7 +181,8 @@ All settings are optional and you don't even need to create a `launch.json` if t
     <td>runtimeArgs</td>
     <td>arary</td>
     <td>
-        <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. However, <code>"/debug"</code> will be ignored.<br />
+        <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. <code>"/debug"</code> will be ignored.<br />
+        default: <code>[ "/ErrorStdOut" ]</code>
     </td>
 </tr>
 <tr>
@@ -256,7 +264,7 @@ All settings are optional and you don't even need to create a `launch.json` if t
     <td>useProcessUsageData</td>
     <td>boolean</td>
     <td>
-        <strong>Note that if you enable this setting, step-execution is slow. Still, it's faster than Scite4AutoHotkey.</strong> Add process usage data to the <a href="#process-usage-metavarible-optional">MetaVariable</a>.
+        <strong>Note that if you enable this setting, step-execution is slow. Still, it's faster than Scite4AutoHotkey.</strong> Add process usage data to the <a href="#process-usage-metavariable-optional">MetaVariable</a>.
     </td>
 </tr>
 <tr>
@@ -329,7 +337,7 @@ Sometimes the debugger adapter holds more useful information than the AutoHotkey
 
 As with AutoHotkey's variable name, this is case insensitive. And to distinguish it from that, the name of the `MetaVariable` is enclosed in curly brackets. e.g. `{hitCount}`
 
-## Default MetaVarible
+## Basic MetaVariable
 <table>
 <tr>
     <th>Name</th>
@@ -348,16 +356,16 @@ As with AutoHotkey's variable name, this is case insensitive. And to distinguish
         {elapsedTime_s}
     </td>
     <td>
-        Time taken to execute. If paused, it will be set to <code>-1</code> because the exact execution time cannot be obtained. Each suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second). Note that this is not an exact execute time. The difference is especially large if you are using <a href="#advanced-breakpoint">Advanced breakpoint</a>
+        <strong>Note that this is not accurate by specification and will be set to <code>-1</code> when paused.</strong><br />
+        Time taken to execute. Each suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second).
     </td>
 </tr>
 </table>
 
-## Process Usage MetaVarible (Optional)
-Available when `useProcessUsageData` is set to `true`.
+## Process usage MetaVariable (Optional)
+**Note that you can only use [PerfTips](#perftips-optional) and [Watch expression](#watch-expression).**
 
-If you enable this option, the speed of step execution is greatly reduced. This is because it takes longer to get the data.
-Also **note that you can only use [PerfTips](#perftips-optional) and [Watch expression](#watch-expression)**.
+Available when `useProcessUsageData` is set to `true`.
 
 <table>
 <tr>
@@ -381,12 +389,15 @@ Also **note that you can only use [PerfTips](#perftips-optional) and [Watch expr
 ## Data inspection
 ![data-inspection](image/data-inspection.gif)
 
-You can check the data of the variables.
+You can check the data of the variables. Also check the type name by hovering over the variable name.
+
+In the case of an object, you can see the class name and a summary of the child elements in the value. e.g. `ClassName {field: "value"}`, `Array [1, 2, 3]`
+
 
 #### About VariableName
 If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is case-insensitive.
 
-The object's child elements are the same as in the running script, and can be specified in dot syntax or array indexing syntax. Which method is available depends on the version of AutoHotkey, v1 can use either method. e.g. `obj.field`, `obj["field"]`, `arr[1]`
+The object's child elements are the same as in the running script, and can be specified in dot notation(e.g. `object.field`) or bracket notation(e.g. `array[1]`). Which notation is available depends on the version of AutoHotkey, v1 can use either notation.
 
 #### About A_DebuggerName
 This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
@@ -396,9 +407,7 @@ This is a variable that is only set when you are debugging, and also in SciTE4Au
 
 **Note that in v2, a critical error will force the script to stop if you override the [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property).**
 
-The value of the variable can be overridden by a primitive value.
-
-The following values are supported.
+The following values are supported. Object is not supported by the specification.
 * `String` :　e.g `"foo"`
 
 * `Number`
@@ -415,11 +424,7 @@ On v2, it is converted to `Float`. So, `3.0e3` is written as `3000.0`. e.g. `3.0
 ### Data inspection when hover
 ![data-inspection-when-hover](image/data-inspection-when-hover.gif)
 
-You can see the data by hovering over the name of the variable.
-
-Only variables, and fields that use the member access syntax (e.g. `object.field`) are supported.
-
-Due to the specification of vscode, array indexing syntax is not supported e.g. `arr[1]` and `obj["spaced key"]`.
+You can see the value by hovering over the name of the variable. Also see the values of the object's child elements, only support in dot notation(e.g. `object.field`). Bracket notation(e.g. `array[1]`) is not supported.
 
 ## Call stack
 ![call-stack](image/call-stack.gif)
@@ -465,17 +470,11 @@ Expression1 [LogicalOperator1 Expression2, LogicalOperator2 Expression3...]
 
 e.g.
 * `A_Index == 30`
-
 * `20 <= person.age`
-
 * `person.name ~= "i)J.*"`
-
 * `100 < countof list`
-
 * `variable is "string"`, `object is "object:Func"`, `instance is ClassObject`
-
 * `"field" in Object`, `keyName not in Object`
-
 * `object is Fowl || "wing" in object && "beak" in object`
 
 ##### Rules
@@ -503,18 +502,18 @@ e.g.
 
     * Comparison operators :　Specify `Operand` on the left and right. The `is` or `in` operator must have at least one space before and after it
 
-        * `=` :　Equal ignore case
+        * `=` :　Compares two values in a case insensitive
 
-        * `==` :　Equal case sensitive
+        * `==` :　Compares two values in a case sensitive
 
-        * `!=` :　Not equal ignore case
+        * `!=` :　Negative of `=` operator
 
-        * `!==` :　Not equal case sensitive
+        * `!==` :　Negative of `==` operator
 
-        * `~=` :　Compare with [AutoHotkey like RegEx](https://www.autohotkey.com/docs/misc/RegEx-QuickRef.htm) or [Javascript RegExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions). e.g. `name ~= "i)j.*"`, `name ~= /j.*/i`
+        * `~=` :　Compares with [AutoHotkey like RegEx](https://www.autohotkey.com/docs/misc/RegEx-QuickRef.htm) or [Javascript RegExp](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions). e.g. `name ~= "i)j.*"`, `name ~= /j.*/i`
             * **Note** :　`AutoHotkey like RegEx` is not the same as a pure AutoHotkey regular expression(PCRE). Convert PCRE to a JavaScript RegExp using [pcre-to-regexp](https://www.npmjs.com/package/pcre-to-regexp). This means that PCRE-specific features such as (?R) are not available
 
-        * `!~` :　The negate version of the `~=` operator
+        * `!~` :　Negate of `~=` operator
 
         * `>` :　Greater than
 
@@ -524,7 +523,7 @@ e.g.
 
         * `<=` :　Less than or equal
 
-        * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. The is operator, left and right sides are all case-insensitive
+        * `is [not]` :　Checks if the value is of a particular type or if it inherits from a particular class. The left side is specified with `VariableName`. The right side specifies the following values. It is case-insensitive
 
             * The five basic types are as follows. These can be checked by hovering over the variable names in [Data inspection](#data-inspection). e.g. `variable is "string"`, `variable is not "undefined"`
 
@@ -540,9 +539,9 @@ e.g.
 
             * Composite types. e.g. `variable is "number"`
 
-                * `"number"` :　Composite types of integer and float
+                * `"number"` :　Composite types of `integer` and `float`
 
-                * `"primitive"` :　Composite types of string, integer and float
+                * `"primitive"` :　Composite types of `string`, `integer` and `float`
 
             * More detailed type check. e.g. `variable is "number:like"`, `variable is not "object:Func"`
 
@@ -560,11 +559,11 @@ e.g.
 
                 * `"string:time"` : 　Checks if it can be interpreted as a date. A date is a string of characters that can be parsed by [Data.parse](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse). e.g. `2000-1-1 00:00:00`
 
-                * `"integer:like"` or `"int:like"` :　Checks if the value can be converted to an integer or an integer. e.g. `123`, `"123"`
+                * `"integer:like"` or `"int:like"` :　Checks if the value can be converted to an `integer` or an pure `integer`. e.g. `123`, `"123"`
 
-                * `"float:like"` or `"int:like"` :　Checks if the value can be converted to a float and not integer, or a float. Returns false if the value is an integer. e.g. `123.456`, `"123.456"`
+                * `"float:like"` or `"int:like"` :　Checks if the value can be converted to a `float` and not `integer`, or a pure `float`. Returns false if the value is an `integer`. e.g. `123.456`, `"123.456"`
 
-                * `"number:like"` :　Composite types of integer:like and float:like
+                * `"number:like"` :　Composite types of `integer:like` and `float:like`
 
                 * `"object:ClassName"` :　Checks whether an object is a particular `ClassName`. You can check the `ClassName` by looking at the value of the variable holding the object in [data inspection](#data-inspection)(e.g. `ClassName {...} `). Note that the `ClassName` here is not the same as the value of the `__class` field
 
@@ -575,13 +574,10 @@ e.g.
 ### Hit Conditional Breakpoint
 ![hit-conditional-breakpoint](image/hit-conditional-breakpoint.gif)
 
-Break the script when the breakpoint reaches a certain hit count.
-
-You can check your hit count by using [PerfTips](#perftips-optional).
-Specifically, set the `usePerfTips` in launch.json to `hitCount: {{hitCount}}`.
+Break the script when the breakpoint reaches a certain hit count. You can check the current hit count by watching `{hitCount}` in the [Watch expression](#watch-expression).
 
 ##### Grammer
-It's basically a short hand with a conditional breakpoint. However, only the `%` operator will be a unique feature.
+It is basically a short hand of conditional breakpoint. However, only the `%` operator will be a unique feature.
 
 ```md
 # You don't need to enter anything in {}. It is written for the purpose of explanation
@@ -613,7 +609,7 @@ e.g. `= 30`, `<= 30`
 ### Log point
 ![log-point](image/log-point.gif)
 
-`Log point` unlike `breakpoint` do not stop the script. Instead, they output a message to the debug console.
+`Log point` unlike `breakpoint` do not pause the script. Instead, they output a message to the [Debug console](#debug-console).
 
 What makes them different from traditional log output is that you don't have to modify your script. Also, you can embed variable value. Especially in the case of objects, the output is very easy to read as they are grouped.
 
@@ -621,13 +617,15 @@ However, you need to use VSCode's UI to use this feature, so some people may pre
 Debug directive's [Output directive](#output-directive) is useful in this case.
 
 #### Embedding value
-You can embed the [VariableName](#about-variablename) and [MetaVariable](#metavariable) value by enclosing them in curly brackets.
+You can embed value the [AutoHotkey's variable](#about-variablename) or [MetaVariable](#metavariable) name by enclosing them name in curly brackets.
 
-If you want to output `{`, use `\{`.
+If the value is an object, it is displayed as a group, like a [Data inspection](#data-inspection). Note that this will be output as a separate message. That is, if the message is `{primitive}{object}{primitive}`, three messages will be outputted.
 
-e.g. `count: {A_Index}`, `name: {person.name}`, `{{elapsedTime_s}}`, `\{notVariable\}`
+If you want to output curly brackets directly, prefix it with `\`. e.g. `\{notVariableName\}`
 
-## IntelliSense in Debugging
+e.g. `count: {A_Index}`, `{object}`, `name: {person.name}`, `{{elapsedTime_s}}`
+
+## IntelliSense in debugging
 ![intellisense](image/intellisense.gif)
 
 The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
@@ -637,10 +635,11 @@ This is a limited feature, but can be very useful for editing the source code wh
 
 ## Debug console
 ![debug-console](image/debug-console.jpg)
+
 Displays various messages during debugging. Press `Ctrl + Shift + y` if you want to use it.
 
 ### Message from Debug adapter
-Besides the announcements from the debug adapter, you can send messages to the debug console yourself in the following ways.
+Besides the announcements from the debug adapter, you can output messages to the debug console yourself in the following ways.
 * [Log point](#log-point)
 * Debug directive's [Output directive](#output-directive)
 
@@ -671,24 +670,26 @@ It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8"]` in
 ## PerfTips (Optional)
 ![perftips](image/perftips.gif)
 
-You can use it by setting `usePerfTips` in launch.json.
-For more information on setting it up, see [here](#customize-launch.json).
+**Note if you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other. But `Metavariable` are also supported by the watch expression, so you can use that instead.**
 
-As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time
+Available when `usePerfTips` is setting. See [here](#customize-launch.json) for details.
 
-Display more information when `useProcessUsageData` is `true`. Note, however, that this will slow down the step-execution.
+As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time. This is especially noticeable if you are using [Advanced breakpoint](#advanced-breakpoint).
 
-Note: If you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other. But `Metavariable` are also supported by the watch expression, so you can use that instead.
+Display more information when `useProcessUsageData` is `true`. Note, however, that this will slow down the step execution.
 
 ## Debug directive (Optional)
 **This is a preview version. Specifications are subject to change. Also need to search for directive comments slows down performance at startup.**
 
-You can send commands to the debugger adapter by embedding special comments into the script.
 
-Take a look at that one, as it is implemented using [Advanced breakpoint](#advanced-breakpoint).
+You can send commands to the debugger adapter by embedding special comments into the script.
+This feature is achieved using [Advanced breakpoint](#advanced-breakpoint). So knowledge of it may be required.
 
 Each directive can be configured with the following rules.
-```ahk
+```
+# Capitalization indicates the part that can be setting. Basically, it can be omitted.
+# Only spaces are allowed before directive comment.
+
 ; @Debug-COMMAND:PARAM1:PARAM2:PARAM3...(CONDITION)[HITCONDITION] => MESSAGE
 ```
 
@@ -711,20 +712,20 @@ Each directive can be configured with the following rules.
 
 ### Breakpoint directive
 Set a [breakpoint](#breakpoint) in the position of the directive. Unlike normal breakpoint, they are not displayed in the UI and cannot be changed.
-```ahk
+```
 ; @Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE
 ```
 
-e.g. `; @Debug-Breakpoint(20 < person.age) => {person.name}`
+e.g. `; @Debug-Breakpoint`, `; @Debug-Breakpoint(20 < person.age) => {person.name}`
 
 ### Output directive
 Similar to the [Breakpoint directive](#breakpoint-directive), but limited to [Log point](#log-point). Instead, a grouping feature has been added.
-```ahk
+```
 ; @Debug-Output:GROUPING(CONDITION)[HITCONDITION] => MESSAGE
 ```
 
 e.g.
-```ahk
+```
 ; @Debug-Output:start => {person.name}
 ; @Debug-Output => name: {person.name}
 ; @Debug-Output => age: {person.age}
@@ -732,7 +733,7 @@ e.g.
 ```
 
 #### PARAM
-1. `GROUPPING` :　You can group the output. Grouped outputs can be collapsed. Be sure to close the group with `end` as it will affect all subsequent output.
+1. `GROUPPING` :　You can group the output. Grouped outputs can be collapsed. Be sure to close the group with `end` as it will affect all subsequent output
     * `start` :　Start a new group
     * `startCollapsed` :　Same as start, but the created groups will be collapsed
     * `end` :　Ends the group
@@ -742,7 +743,7 @@ e.g.
 
 * v2 only bug. An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection)
 
-* If there is a conditional breakpoint that returns false immediately after the start of debugging, the pause will not work until the next stop
+* If there is a [Conditional breakpoint](#conditional-breakpoint) that returns false immediately after the start of debugging, the pause will not work until the next stop
 
 # Development support
 ## About source code contributes
@@ -750,11 +751,13 @@ I am currently not accepting contributions.
 
 I understand that this is a folly to throw away the strength of open-source software, but I believe that I should do all the implementation because the development of this extension includes the purpose of measuring my skills as a programmer.
 
+However, suggestions are welcome. Let's make this extension even better together!
+
 ## About bug reports and feature requests
 It is accepted on [Github issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues). (Github account required). Basically, I will reply to you by the same day or the next day, so feel free to report.
 
 ## About GitHub Sponsors
-I am looking for [GitHub Sponsors](https://github.com/sponsors/zero-plusplus) for $1-$100 per month. However, please note the following
+I am looking for [GitHub Sponsors](https://github.com/sponsors/zero-plusplus) for $1-$100 per month. However, please note the following.
 
 1. There is no rewards for sponsors. This is because development is a priority.
 2. I will not stop development just because I don't have a sponsor. So there is no need to be forced to become a sponsor
