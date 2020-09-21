@@ -916,6 +916,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendStoppedEvent(response.stopReason);
         return;
       }
+      else if (conditionResults.includes(true)) {
+        await this.sendStoppedEvent(stopReason);
+        return;
+      }
       else if (this.stackFramesWhenStepOver) {
         if (this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
           this.stackFramesWhenStepOver = null;
@@ -941,10 +945,6 @@ export class AhkDebugSession extends LoggingDebugSession {
           await this.sendStoppedEvent(stopReason);
           return;
         }
-      }
-      else if (conditionResults.includes(true)) {
-        await this.sendStoppedEvent(stopReason);
-        return;
       }
 
       let result: dbgp.ContinuationResponse;
