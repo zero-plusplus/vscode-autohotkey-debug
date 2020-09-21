@@ -1,7 +1,7 @@
 {
   "name": "vscode-autohotkey-debug",
   "version": "1.5.0",
-  "description": "Supports AutoHotkey v1 and v2 debugging",
+  "description": "Debugging support for AutoHotkey(includes H) v1 and v2",
   "author": "zero-plusplus <git@zero-plusplus.com>",
   "license": "MIT",
   "main": "./build/src/extension",
