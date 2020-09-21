@@ -27,10 +27,10 @@
 
 # Before reading
 Please read the following first.
-* This document has been translated from Japanese to English using DeepL Translate
+* This document has been translated from Japanese to English using [DeepL Translate](https://www.deepl.com/home)
 
 * **This extension will not work alone.**
-A separate extension that supports the AutoHotkey language is required(The most famous is `slevesque.vscode-autohotkey`). If you are using AutoHotkey v2, another extension that supports it required. (e.g. `dudelmoser.vscode-autohotkey2`)
+A separate extension that supports the AutoHotkey language is required(The most famous is [slevesque.vscode-autohotkey](https://marketplace.visualstudio.com/items?itemName=slevesque.vscode-autohotkey)). If you are using AutoHotkey v2, another extension that supports it required. (e.g. [dudelmoser.vscode-autohotkey2](https://marketplace.visualstudio.com/items?itemName=dudelmoser.vscode-autohotkey2))
 
 * Before you update, please look at the [News](#news) below this first. It may contain important information. Also, there may be a fatal bug in the new version. If this is the case, please refer to [CHANGELOG](CHANGELOG.md) to downgrade it
 
@@ -265,7 +265,7 @@ Also at the same time, learn about the [VSCode's variables](https://code.visuals
     <td>useProcessUsageData</td>
     <td>boolean</td>
     <td>
-        <strong>Note that if you enable this setting, step-execution is slow. Still, it's faster than Scite4AutoHotkey.</strong> Add process usage data to the <a href="#process-usage-metavariable-optional">MetaVariable</a>.
+        <strong>Note that if you enable, step execution is slow. Still, it's faster than Scite4AutoHotkey.</strong> Add process usage data to the <a href="#process-usage-metavariable-optional">MetaVariable</a>.
     </td>
 </tr>
 <tr>
@@ -314,7 +314,7 @@ Also at the same time, learn about the [VSCode's variables](https://code.visuals
     <td rowspan=2>useDebugDirective</td>
     <td>boolean</td>
     <td>
-        <strong>Note that enabling it will degrade performance.</strong> Enable / disable <a href="#debug-directive-optional">Debug directive</a>.
+        <strong>Note that if you enable, debug startup is slow.</strong> Enable / disable <a href="#debug-directive-optional">Debug directive</a>.
     </td>
 </tr>
 <tr>
@@ -715,7 +715,7 @@ Set a [Breakpoint](#breakpoint) in the position of the directive. Unlike normal 
 ; @Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE
 ```
 
-e.g. `; @Debug-Breakpoint`, `; @Debug-Breakpoint(20 < person.age) => {person.name}`
+e.g. `; @Debug-Breakpoint(20 < person.age) => {person.name}`
 
 ### Output directive
 Similar to the [Breakpoint directive](#breakpoint-directive), but limited to [Log point](#log-point). Instead, a grouping feature has been added.
