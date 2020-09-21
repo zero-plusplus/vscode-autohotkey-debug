@@ -112,9 +112,10 @@ The following features cannot be implemented due to specifications.
 * Attach to a running script
 
 ### About AutoHotkey_H
-It should be possible to debug [AutoHotkey_H](https://hotkeyit.github.io/v2/), but I'm not familiar with it so I can't guarantee it will work.
+I'm not familiar with [AutoHotkey_H](https://hotkeyit.github.io/v2/), but like AutoHotkey, it uses [DBGP](https://xdebug.org/) and should be able to be debugged without problems.
+However, the implementation is a bit different, so there may be some inherent bugs that may occur.
 
-I want to deal with it as much as possible, so please report any problems to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
+If you find a bug, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
 # Installation
 1. Install [AutoHotkey](https://www.autohotkey.com/)
