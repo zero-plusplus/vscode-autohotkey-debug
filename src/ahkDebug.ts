@@ -917,7 +917,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendStoppedEvent(response.stopReason);
         return;
       }
-      else if (conditionResults.includes(true)) {
+      else if (stepExecutionByUser && conditionResults.includes(true)) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
@@ -946,6 +946,11 @@ export class AhkDebugSession extends LoggingDebugSession {
           await this.sendStoppedEvent(stopReason);
           return;
         }
+      }
+
+      if (conditionResults.includes(true)) {
+        await this.sendStoppedEvent(stopReason);
+        return;
       }
 
       let result: dbgp.ContinuationResponse;
