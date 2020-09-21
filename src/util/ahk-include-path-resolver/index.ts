@@ -207,7 +207,7 @@ const defaultConversionTable: SupportVariables = {
 
 const defaultConfig = { rootPath: '', libraryType: 'local' };
 export default class Resolver {
-  private static readonly includeRegex = /^\s*#Include(?:|(?<mode>Again))\s+(?:|(?<optional>[*]i)\s+)(?:(?<includePath>[^*\s\r\n<>]+)|<(?<libraryPath>[^*\s\r\n<>]+)>)\s*/iu;
+  private static readonly includeRegex = /^\s*#Include(?:|(?<mode>Again))\s+(?:|(?<optional>[*]i)\s+)(?:(?<includePath>[^*\s\r\n<>]+)|<(?<libraryPath>[^*\s\r\n<>]+)>)/iu;
   public readonly conversionTable: SupportVariables;
   public readonly config: AdditionalInfo;
   constructor(config: AdditionalInfo) {
