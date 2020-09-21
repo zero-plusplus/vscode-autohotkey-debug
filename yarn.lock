@@ -182,10 +182,10 @@
     semver "^6.3.0"
     tsutils "^3.17.1"
 
-"@zero-plusplus/ahk-include-path-resolver@^1.0.8":
-  version "1.0.8"
-  resolved "https://npm.pkg.github.com/download/@zero-plusplus/ahk-include-path-resolver/1.0.8/3770e989750b2c36b4b82c13061ccd06e0009351ac7e2e8bba82223e0e42b0bb#914913f54b06f335d4d1e05e61049f529a57bf7a"
-  integrity sha512-rAv5e8l1CtcmKSGBiDAfd/C9SQ3mG49nPJ0o+UmwMPL011ymCnI7lNDy5pczSUZA0wvZPCq6RV8y8oW44qD/1Q==
+"@zero-plusplus/ahk-include-path-resolver@^1.0.9":
+  version "1.0.9"
+  resolved "https://npm.pkg.github.com/download/@zero-plusplus/ahk-include-path-resolver/1.0.9/3150e8eff38c38e84e76e5a2e60cb981bf28b3b0e0abf488e11e3d16fb088e02#827a9ab51892139dfee2700f9615677668cb0ae7"
+  integrity sha512-uQ+8nyHQNKAkg8/Czl7WFUE69rO/z5uP877F0s3Igjt2CSNAwq+lHHlM60QxJxp89ZEhX1UdNfKuxDVu11TiiA==
   dependencies:
     "@types/underscore" "^1.10.0"
     read-dir-deep "^7.0.1"
