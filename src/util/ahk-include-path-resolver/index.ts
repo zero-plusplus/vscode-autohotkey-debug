@@ -346,13 +346,14 @@ export default class Resolver {
     } as ParsedInclude;
     return parsedInclude;
   }
-  public extractAllIncludePath(libraryTypes: LibraryType[], recursiveInfo: { filePath?: string; libraryPathList: string[]; currentDir?: string } = { libraryPathList: [] }): string[] {
+  public extractAllIncludePath(libraryTypes: LibraryType[], recursiveInfo: { filePath?: string; libraryPathList: string[]; currentDir?: string; init: boolean } = { libraryPathList: [], init: false }): string[] {
     const includePathList: string[] = [];
 
-    if (!recursiveInfo.currentDir) {
+    if (!recursiveInfo.init) {
       libraryTypes.forEach((libraryType) => {
         recursiveInfo.libraryPathList.push(...this.getLibraryPathList(libraryType));
       });
+      recursiveInfo.init = true;
     }
 
     const targetPath = path.resolve(recursiveInfo.filePath ?? this.config.rootPath);
