@@ -12,7 +12,6 @@
             "args": [],
             "stopOnEntry": false,
             "useDebugDirective": true,
-            "useProcessUsageData": false,
             "usePerfTips": true,
             "openFileOnExit": "${file}",
             "internalConsoleOptions": "openOnSessionStart"

@@ -154,11 +154,6 @@
                 "description": "Automatically stop after launch.",
                 "default": false
               },
-              "useProcessUsageData": {
-                "type": "boolean",
-                "description": "Add a process usage data to a MetaVariable. note that setting it to true will slow down the step execution by a factor of several.",
-                "default": false
-              },
               "usePerfTips": {
                 "type": [
                   "boolean",
@@ -241,7 +236,6 @@
     ]
   },
   "dependencies": {
-    "@wtfcode/byte-converter": "^1.7.11",
     "@zero-plusplus/ahk-include-path-resolver": "^1.0.8",
     "convert-hrtime": "^3.0.0",
     "fast-xml-parser": "^3.16.0",
@@ -250,7 +244,6 @@
     "parsimmon": "^1.13.0",
     "path-exists": "^4.0.0",
     "pcre-to-regexp": "^1.1.0",
-    "pidusage": "^2.0.21",
     "regex-parser": "^2.2.11",
     "underscore": "^1.10.2",
     "underscore.string": "^3.3.5",

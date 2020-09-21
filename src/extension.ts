@@ -38,7 +38,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtime_v2: 'v2/AutoHotkey.exe',
       runtimeArgs_v1: [ '/ErrorStdOut' ],
       runtimeArgs_v2: [ '/ErrorStdOut' ],
-      useProcessUsageData: false,
       usePerfTips: false,
       useDebugDirective: false,
       openFileOnExit: null,
@@ -46,13 +45,10 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     defaults(config, defaultConfig);
 
     if (config.usePerfTips) {
-      const defaultFormat = config.useProcessUsageData
-        ? `{{elapsedTime_s}}s elapsed. CPU {{usageCpu}}%, Memory {{usageMemory_MB}}MB used.`
-        : '{{elapsedTime_s}}s elapsed';
       const defaultUsePerfTips = {
         fontColor: 'gray',
         fontStyle: 'italic',
-        format: defaultFormat,
+        format: '{{elapsedTime_s}}s elapsed',
       };
 
       if (config.usePerfTips === true) {

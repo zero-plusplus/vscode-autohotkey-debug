@@ -187,11 +187,6 @@
     semver "^6.3.0"
     tsutils "^3.17.1"
 
-"@wtfcode/byte-converter@^1.7.11":
-  version "1.7.11"
-  resolved "https://registry.yarnpkg.com/@wtfcode/byte-converter/-/byte-converter-1.7.11.tgz#6c03fd0a3466568fa31797ddb94828d423085539"
-  integrity sha512-4XrNSg5YvF2AbuZpdn/gAPD0/f9QZZYsYWkk7yWmhnkw9bkFDxSEhWSYJKU1zAwG63ZbvqdYdEHvGbbL3v7jcw==
-
 "@zero-plusplus/ahk-include-path-resolver@^1.0.8":
   version "1.0.8"
   resolved "https://npm.pkg.github.com/download/@zero-plusplus/ahk-include-path-resolver/1.0.8/3770e989750b2c36b4b82c13061ccd06e0009351ac7e2e8bba82223e0e42b0bb#914913f54b06f335d4d1e05e61049f529a57bf7a"
@@ -1639,13 +1634,6 @@ picomatch@^2.0.4, picomatch@^2.0.5, picomatch@^2.2.1:
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-2.2.2.tgz#21f333e9b6b8eaff02468f5146ea406d345f4dad"
   integrity sha512-q0M/9eZHzmr0AulXyPwNfZjtwZ/RBZlbN3K3CErVrk50T2ASYI7Bye0EvekFY3IP1Nt2DHu0re+V2ZHIpMkuWg==
 
-pidusage@^2.0.21:
-  version "2.0.21"
-  resolved "https://registry.yarnpkg.com/pidusage/-/pidusage-2.0.21.tgz#7068967b3d952baea73e57668c98b9eaa876894e"
-  integrity sha512-cv3xAQos+pugVX+BfXpHsbyz/dLzX+lr44zNMsYiGxUw+kV5sgQCIcLd1z+0vq+KyC7dJ+/ts2PsfgWfSC3WXA==
-  dependencies:
-    safe-buffer "^5.2.1"
-
 pkg-dir@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/pkg-dir/-/pkg-dir-4.2.0.tgz#f099133df7ede422e81d1d8448270eeb3e4261f3"
@@ -1782,11 +1770,6 @@ rxjs@^6.5.3:
   integrity sha512-WfQI+1gohdf0Dai/Bbmk5L5ItH5tYqm3ki2c5GdWhKjalzjg93N3avFjVStyZZz+A2Em+ZxKH5bNghw9UeylGQ==
   dependencies:
     tslib "^1.9.0"
-
-safe-buffer@^5.2.1:
-  version "5.2.1"
-  resolved "https://registry.yarnpkg.com/safe-buffer/-/safe-buffer-5.2.1.tgz#1eaf9fa9bdb1fdd4ec75f58f9cdb4e6b7827eec6"
-  integrity sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==
 
 safe-buffer@~5.2.0:
   version "5.2.0"

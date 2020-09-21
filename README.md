@@ -262,13 +262,6 @@ Also at the same time, learn about the [VSCode's variables](https://code.visuals
     <th>Description</th>
 </tr>
 <tr>
-    <td>useProcessUsageData</td>
-    <td>boolean</td>
-    <td>
-        <strong>Note that if you enable, step execution is slow. Still, it's faster than Scite4AutoHotkey.</strong> Add process usage data to the <a href="#process-usage-metavariable-optional">MetaVariable</a>.
-    </td>
-</tr>
-<tr>
     <td rowspan=3>usePerfTips</td>
     <td>boolean</td>
     <td>Enable / disable <a href="#perftips-optional">PerfTips</a>.</td>
@@ -338,7 +331,6 @@ Sometimes the debugger adapter holds more useful information than the AutoHotkey
 
 As with AutoHotkey's variable name, this is case insensitive. And to distinguish it from that, the name of the `MetaVariable` is enclosed in curly brackets. e.g. `{hitCount}`
 
-## Basic MetaVariable
 <table>
 <tr>
     <th>Name</th>
@@ -360,29 +352,6 @@ As with AutoHotkey's variable name, this is case insensitive. And to distinguish
         <strong>Note that this is not accurate by specification and will be set to <code>-1</code> when paused.</strong><br />
         Time taken to execute. Each suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second).
     </td>
-</tr>
-</table>
-
-## Process usage MetaVariable (Optional)
-**Note that debugging performance is degraded because of the time it takes to retrieve process usage data.**
-
-Available when `useProcessUsageData` is set to `true`.
-
-<table>
-<tr>
-    <th>Name</th>
-    <th>Description</th>
-</tr>
-<tr>
-    <td>{usageCpu}</td>
-    <td>Current CPU usage. (Unit: %)</td>
-</tr>
-<tr>
-    <td>
-        {usageMemory_B}<br />
-        {usageMemory_MB}
-    </td>
-    <td>Current memory usage. Each suffix indicates the unit of measurement: <code>B</code>(byte), <code>MB</code>(megabyte)</td>
 </tr>
 </table>
 
@@ -675,8 +644,6 @@ It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8"]` in
 Available when `usePerfTips` is setting. See [here](#customize-launchjson) for details.
 
 As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time. This is especially noticeable if you are using [Advanced breakpoint](#advanced-breakpoint).
-
-Display more information when `useProcessUsageData` is `true`. Note, however, that this will slow down the step execution.
 
 ## Debug directive (Optional)
 **This is a preview version. Specifications are subject to change. Also need to search for directive comments slows down performance at startup.**
