@@ -131,14 +131,12 @@ If you want to run without debugging, choose `Run -> Run Without Debugging` from
 
 # Customize launch.json
 If you want to change the settings of the debugger adapter, you need to edit the `launch.json`.
-
+You can learn the basics of `launch.json` [here](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
 If the default settings are sufficient for you, you don't need to see this section.
 
-You can learn the basics of `launch.json` [here](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
-
-Also at the same time, learn about the [VSCode's variables](https://code.visualstudio.com/docs/editor/variables-reference). It is very useful. Here are some of the most commonly used ones.
-* `${file}` :　the current opened file
-* `${workspaceFolder}` :　the path of the folder opened in VS Code
+It is highly recommended that you learn about [VSCode's variables](https://code.visualstudio.com/docs/editor/variables-reference) before setting them up. It is sufficient to understand the following variables.
+* `${file}` :　It will be replaced with the path of the currently open file
+* `${workspaceFolder}` :　It will be replaced with the path of the folder opened in the VS code
 
 ## Basic settings
 <table>
@@ -330,6 +328,13 @@ Also at the same time, learn about the [VSCode's variables](https://code.visuals
 Sometimes the debugger adapter holds more useful information than the AutoHotkey debugger. You can access these data by using `MetaVariable`.
 
 As with AutoHotkey's variable name, this is case insensitive. And to distinguish it from that, the name of the `MetaVariable` is enclosed in curly brackets. e.g. `{hitCount}`
+
+The following features allow to handle `MetaVariable`.
+* [Watch expression](#watch-expression)
+* [Log point](#log-point)
+* [PerfTips](#perftips-optional)
+* [Breakpoint directive](#breakpoint-directive)
+* [Output directive](#output-directive)
 
 <table>
 <tr>
