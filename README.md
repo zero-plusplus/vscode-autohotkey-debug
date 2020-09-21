@@ -4,7 +4,7 @@
 * [Overview](#overview)
 * [Installation](#installation)
 * [Usage](#usage)
-* [Customize launch.json](#customize-launch.json)
+* [Customize launch.json](#customize-launchjson)
 * [MetaVariable](#metavariable) ***NEW***
 * [Features](#features)
     * [Data inspection](#data-inspection)
@@ -444,7 +444,7 @@ Therefore, it can be used as a substitute for [PerfTips](#perftips-optional).
 
 You can see the external script being loaded.
 
-It supports both explicit loading using `#Include` and implicit loading using [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib).
+It supports both explicit loading using [#Include](https://www.autohotkey.com/docs/commands/_Include.htm) and implicit loading using [function libraries](https://www.autohotkey.com/docs/Functions.htm#lib).
 
 ## Breakpoint
 You can learn the basics of breakpoint [here](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
@@ -483,7 +483,7 @@ e.g.
 
 * `VariableName` :　See [VariableName](#about-variablename) for details. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
 
-* `MetaVariableName` :　See [MetaVariable](#MetaVariable) for details. e.g. `{hitCount}`
+* `MetaVariableName` :　See [MetaVariable](#metavariable) for details. e.g. `{hitCount}`
 
 * `Primitive` :　Primitive values for AutoHotkey. e.g. `"string"`, `123`, `123.456`, `0x123`, `3.0e3`
 
@@ -581,6 +581,7 @@ It is basically a short hand of conditional breakpoint. However, only the `%` op
 ```md
 # You don't need to enter anything in {}. It is written for the purpose of explanation
 # You can omit anything in []
+
 {hitCount} [Operator] Integer
 ```
 
@@ -670,7 +671,7 @@ It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8"]` in
 
 **Note if you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other. But `Metavariable` are also supported by the watch expression, so you can use that instead.**
 
-Available when `usePerfTips` is setting. See [here](#customize-launch.json) for details.
+Available when `usePerfTips` is setting. See [here](#customize-launchjson) for details.
 
 As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time. This is especially noticeable if you are using [Advanced breakpoint](#advanced-breakpoint).
 
