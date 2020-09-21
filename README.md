@@ -639,7 +639,7 @@ It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8"]` in
 ## PerfTips (Optional)
 ![perftips](image/perftips.gif)
 
-**Note if you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other. But `Metavariable` are also supported by the watch expression, so you can use that instead.**
+**Note if you have an extension installed that displays information inline, such as `eamodio.gitlens`, it may be overwritten by that information. Currently, you need to give up one or the other. But [MetaVariable](#metavariable) are also supported by the [Watch expression](#watch-expression), so you can use that instead.**
 
 Available when `usePerfTips` is setting. See [here](#customize-launchjson) for details.
 
