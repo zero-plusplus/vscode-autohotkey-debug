@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.6.0] - 2020-09-21
+## [1.6.0] - 2020-09-22
 ### Added
 * [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support `Run Without Debugging`
 * [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support MetaVariable. This is supported by several features.
