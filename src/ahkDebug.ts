@@ -32,9 +32,10 @@ import {
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { Parser, createParser } from './util/ConditionParser';
 import { ConditionalEvaluator } from './util/ConditionEvaluator';
+import { toFixed } from './util/numberUtils';
+import { equalsIgnoreCase } from './util/stringUtils';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
-import { equalsIgnoreCase } from './util/stringUtils';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
   program: string;
@@ -832,14 +833,14 @@ export class AhkDebugSession extends LoggingDebugSession {
         const elapsedTime_ns = parseFloat(prevMetaVariables.get('elapsedTime_ns')!) + response.elapsedTime.ns;
         const elapsedTime_ms = parseFloat(prevMetaVariables.get('elapsedTime_ms')!) + response.elapsedTime.ms;
         const elapsedTime_s = parseFloat(prevMetaVariables.get('elapsedTime_s')!) + response.elapsedTime.s;
-        metaVariables.set('elapsedTime_ns', String(elapsedTime_ns).slice(0, 10));
-        metaVariables.set('elapsedTime_ms', String(elapsedTime_ms).slice(0, 10));
-        metaVariables.set('elapsedTime_s', String(elapsedTime_s.toFixed(8)).slice(0, 10));
+        metaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
+        metaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
+        metaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
       }
       else {
-        metaVariables.set('elapsedTime_ns', String(response.elapsedTime.ns).slice(0, 10));
-        metaVariables.set('elapsedTime_ms', String(response.elapsedTime.ms).slice(0, 10));
-        metaVariables.set('elapsedTime_s', String(response.elapsedTime.s.toFixed(8)).slice(0, 10));
+        metaVariables.set('elapsedTime_ns', toFixed(response.elapsedTime.ns, 3));
+        metaVariables.set('elapsedTime_ms', toFixed(response.elapsedTime.ms, 3));
+        metaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
       }
       this.currentMetaVariables = metaVariables;
 
