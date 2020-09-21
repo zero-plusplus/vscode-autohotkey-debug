@@ -297,63 +297,63 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.sendResponse(response);
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
     await this.registerDebugDirective();
 
     if (this.config.stopOnEntry) {
       const result = await this.session!.sendContinuationCommand('step_into');
-      this.checkContinuationStatus(result);
-      return;
+      await this.checkContinuationStatus(result);
     }
-
-    const result = await this.session!.sendContinuationCommand('run');
-    this.checkContinuationStatus(result);
+    else {
+      const result = await this.session!.sendContinuationCommand('run');
+      await this.checkContinuationStatus(result);
+    }
+    this.sendResponse(response);
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.sendResponse(response);
     this.pauseRequested = false;
     this.isPaused = false;
     this.currentMetaVariables = null;
 
     const result = await this.session!.sendContinuationCommand('run');
-    this.checkContinuationStatus(result);
+    await this.checkContinuationStatus(result);
+    this.sendResponse(response);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.sendResponse(response);
     this.currentMetaVariables = null;
     this.pauseRequested = true;
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('step_over');
-    this.checkContinuationStatus(result);
+    await this.checkContinuationStatus(result);
+    this.sendResponse(response);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.sendResponse(response);
     this.currentMetaVariables = null;
     this.pauseRequested = true;
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('step_into');
-    this.checkContinuationStatus(result);
+    await this.checkContinuationStatus(result);
+    this.sendResponse(response);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.sendResponse(response);
     this.currentMetaVariables = null;
     this.pauseRequested = true;
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('step_out');
-    this.checkContinuationStatus(result);
+    await this.checkContinuationStatus(result);
+    this.sendResponse(response);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.sendResponse(response);
     this.currentMetaVariables = null;
     this.pauseRequested = true;
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('break');
-    this.checkContinuationStatus(result);
+    await this.checkContinuationStatus(result);
+    this.sendResponse(response);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };
