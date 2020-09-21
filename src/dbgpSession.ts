@@ -4,6 +4,10 @@ import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import { rtrim } from 'underscore.string';
+import * as convertHrTime from 'convert-hrtime';
+import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
+import { equalsIgnoreCase, startsWithIgnoreCase } from './util/stringUtils';
+import { range } from 'underscore';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -47,10 +51,9 @@ export class InitPacket {
     this.fileUri = fileuri;
   }
 }
-export type ContinuationCommandName = 'run' | 'step_into' | 'step_over' | 'step_out' | 'break' | 'stop' | 'detach';
+export type ContinuationCommandName = 'run' | 'step_into' | 'step_over' | 'step_out' | 'break' | 'stop' | 'detach' | 'status';
 export type CommandName =
   ContinuationCommandName |
-  'status' |
   'stack_get' | 'stack_depth' | 'context_get' | 'context_names' |
   'property_get' | 'property_set' | 'property_value' |
   'feature_get' | 'feature_set' |
@@ -97,7 +100,7 @@ export class DbgpError extends Error {
 }
 export class Response {
   public transactionId: number;
-  public commandName: string;
+  public commandName: CommandName;
   constructor(response: XmlNode) {
     const { transaction_id, command } = response.attributes;
 
@@ -140,7 +143,14 @@ export class StackGetResponse extends Response {
     }
   }
 }
+export class StackDepthResponse extends Response {
+  public depth: number;
+  constructor(response: XmlNode) {
+    super(response);
 
+    this.depth = parseInt(response.attributes.depth, 10);
+  }
+}
 type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll';
 type PropertyType = 'undefined' | 'string' | 'integer' | 'float' | 'object';
 export abstract class Property {
@@ -166,8 +176,8 @@ export abstract class Property {
 
     this.context = context;
     this.facet = facet as PropertyFacet;
-    this.fullName = fullname;
-    this.name = name;
+    this.fullName = fullname.replace(/<base>/gui, 'base');
+    this.name = name.replace('<base>', 'base');
     this.type = type as PropertyType;
     this.size = parseInt(size, 10);
   }
@@ -186,7 +196,7 @@ export class ObjectProperty extends Property {
   public page: number;
   public pageSize: number;
   public get maxIndex(): number | null {
-    for (let reverseIndex = this.children.length - 1; 0 < reverseIndex; reverseIndex--) {
+    for (let reverseIndex = this.children.length - 1; 0 <= reverseIndex; reverseIndex--) {
       const property = this.children[reverseIndex];
       const index = property.index;
       if (index !== null) {
@@ -213,7 +223,7 @@ export class ObjectProperty extends Property {
         value += '…';
         break;
       }
-      if (property.name === '<base>') {
+      if (property.name === 'base') {
         continue;
       }
 
@@ -300,18 +310,38 @@ export class PropertySetResponse extends Response {
   }
 }
 export type ContinuationStatus = 'starting' | 'break' | 'running' | 'stopped';
-export type ContinuationReason = 'ok' | 'error';
+export type ContinuationExitReason = 'ok' | 'error';
+export type ContinuationStopReason = 'step' | 'breakpoint' | 'pause';
+export interface ContinuationElapsedTime {
+  ns: number;
+  ms: number;
+  s: number;
+}
 export class ContinuationResponse extends Response {
-  public commandName: ContinuationCommandName;
-  public reason: ContinuationReason;
+  public exitReason: ContinuationExitReason;
+  public stopReason: ContinuationStopReason;
   public status: ContinuationStatus;
-  constructor(response: XmlNode) {
+  public elapsedTime: ContinuationElapsedTime;
+  constructor(response: XmlNode, elapsedTime: ContinuationElapsedTime) {
     super(response);
-    const { command, status, reason } = response.attributes;
 
-    this.commandName = command as ContinuationCommandName;
-    this.reason = reason as ContinuationReason;
-    this.status = status as ContinuationStatus;
+    this.elapsedTime = elapsedTime;
+    const status = response.attributes.status ? response.attributes.status as ContinuationStatus : 'break';
+    const exitReason = response.attributes.reason ? response.attributes.reason as ContinuationExitReason : 'ok';
+    let stopReason: ContinuationStopReason;
+    if (this.commandName.startsWith('step')) {
+      stopReason = 'step';
+    }
+    else if (this.commandName === 'break') {
+      stopReason = 'pause';
+    }
+    else {
+      stopReason = 'breakpoint';
+    }
+
+    this.exitReason = exitReason;
+    this.stopReason = stopReason;
+    this.status = status;
   }
 }
 export class Context {
@@ -351,7 +381,7 @@ export class ContextGetResponse extends Response {
     }
   }
 }
-export type FeatureGetName = 'language_supports_threads' | 'language_name' | 'language_version' | 'encoding' | 'protocol_version' | 'supports_async' | 'breakpoint_types';
+export type FeatureGetName = 'language_supports_threads' | 'language_name' | 'language_version' | 'encoding' | 'protocol_version' | 'supports_async' | 'breakpoint_types' | 'multiple_sessions' | FeatureSetName;
 export class FeatureGetResponse extends Response {
   public featureName: FeatureGetName;
   public supported: boolean;
@@ -378,12 +408,6 @@ export class FeatureSetResponse extends Response {
   }
 }
 export type BreakpointConditionType = 'condition' | 'hit' | 'log';
-export interface BreakpointAdvancedData {
-  counter: number;
-  condition?: string;
-  hitCondition?: string;
-  logMessage?: string;
-}
 export type BreakpointType = 'line';
 export type BreakpointState = 'enabled' | 'disabled';
 export class Breakpoint {
@@ -393,56 +417,26 @@ export class Breakpoint {
   public fileUri: string;
   public line: number;
   public temporary?: boolean;
-  public advancedData?: BreakpointAdvancedData;
-  constructor(responseOrFileUri: XmlNode | string, line?: number, advancedData?: BreakpointAdvancedData) {
-    if (typeof responseOrFileUri === 'object') {
-      const response = responseOrFileUri;
-      const { id, type, state, filename, lineno, temporary } = response.attributes;
-
-      this.id = parseInt(id, 10);
-      this.type = type as BreakpointType;
-      this.state = state as BreakpointState;
-      this.fileUri = filename;
-      this.line = parseInt(lineno, 10);
-      this.temporary = Boolean(parseInt(temporary, 10));
-    }
-    else if (typeof line === 'number') {
-      const fileName = responseOrFileUri;
-
-      this.id = -1;
-      this.type = 'line';
-      this.state = 'enabled';
-      this.fileUri = fileName;
-      this.line = line;
-      this.temporary = false;
-
-      if (advancedData) {
-        this.advancedData = advancedData;
-      }
-    }
-    else {
-      throw Error('The argument is invalid');
-    }
-  }
-}
-export class BreakpointGetResponse extends Response {
-  public id: number;
-  public type: BreakpointType;
-  public state: BreakpointState;
-  public fileUri: string;
-  public line: number;
   constructor(response: XmlNode) {
-    super(response);
-    if (typeof response.breakpoint === 'undefined') {
-      throw Error('');
-    }
-    const { id, filename, lineno, state, type } = response.breakpoint.attributes;
+    const { id, type, state, filename, lineno, temporary } = response.attributes;
 
     this.id = parseInt(id, 10);
     this.type = type as BreakpointType;
     this.state = state as BreakpointState;
     this.fileUri = filename;
     this.line = parseInt(lineno, 10);
+    this.temporary = Boolean(parseInt(temporary, 10));
+  }
+}
+export class BreakpointGetResponse extends Response {
+  public breakpoint: Breakpoint;
+  constructor(response: XmlNode) {
+    super(response);
+    if (typeof response.breakpoint === 'undefined') {
+      throw Error('');
+    }
+
+    this.breakpoint = new Breakpoint(response.breakpoint);
   }
 }
 export class BreakpointSetResponse extends Response {
@@ -510,8 +504,12 @@ export class Session extends EventEmitter {
   private readonly pendingCommands = new Map<number, Command>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
+  public get closed(): boolean {
+    return !this.socket.writable;
+  }
   constructor(socket: Socket) {
     super();
+
     this.socket = socket
       .on('data', (packet: Buffer): void => this.handlePacket(packet))
       .on('error', (error: Error) => this.emit('error', error))
@@ -571,47 +569,74 @@ export class Session extends EventEmitter {
       this.write(command_str);
     });
   }
-  public async sendStatusCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('status'));
-  }
-  public async sendStackGetCommand(): Promise<StackGetResponse> {
+  public async sendStackGetCommand(depth?: number): Promise<StackGetResponse> {
+    if (depth) {
+      return new StackGetResponse(await this.sendCommand('stack_get', `-d ${depth - 1}`));
+    }
     return new StackGetResponse(await this.sendCommand('stack_get'));
   }
-  public async sendPropertyGetCommand(context: Context, name: string): Promise<PropertyGetResponse> {
-    return new PropertyGetResponse(
-      await this.sendCommand('property_get', `-n ${name.replace(/<base>/ug, 'base')} -c ${context.id} -d ${context.stackFrame.level}`),
-      context,
-    );
+  public async sendStackDepthCommand(): Promise<StackDepthResponse> {
+    return new StackDepthResponse(await this.sendCommand('stack_depth'));
+  }
+  public async sendPropertyGetCommand(context: Context, name: string, maxDepth?: number): Promise<PropertyGetResponse> {
+    const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
+
+    this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
+    const dbgpResponse = await this.sendCommand('property_get', `-n ${name.replace(/<base>/ug, 'base')} -c ${context.id} -d ${context.stackFrame.level}`);
+    this.sendFeatureSetCommand('max_depth', maxDepth_backup);
+
+    return new PropertyGetResponse(dbgpResponse, context);
+  }
+  public async sendContinuationCommand(commandName: ContinuationCommandName): Promise<ContinuationResponse> {
+    const startTime = process.hrtime();
+    const response = await this.sendCommand(commandName);
+    const diff = convertHrTime(process.hrtime(startTime));
+
+    const elapsedTime = {
+      ns: diff.nanoseconds,
+      ms: diff.milliseconds,
+      s: diff.seconds,
+    } as ContinuationElapsedTime;
+    return new ContinuationResponse(response, elapsedTime);
   }
   public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: string; data: string }): Promise<PropertySetResponse> {
-    return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName.replace(/<base>/ug, 'base')} -t ${property.typeName}`, property.data));
+    return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName} -t ${property.typeName}`, property.data));
   }
   public async sendRunCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('run'));
+    return this.sendContinuationCommand('run');
   }
   public async sendBreakCommand(): Promise<Response> {
-    return new Response(await this.sendCommand('break'));
+    return this.sendContinuationCommand('break');
   }
   public async sendStopCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('stop'));
+    return this.sendContinuationCommand('stop');
   }
   public async sendDetachCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('detach'));
+    return this.sendContinuationCommand('detach');
   }
   public async sendStepIntoCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('step_into'));
+    return this.sendContinuationCommand('step_into');
   }
   public async sendStepOutCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('step_out'));
+    return this.sendContinuationCommand('step_out');
   }
   public async sendStepOverCommand(): Promise<ContinuationResponse> {
-    return new ContinuationResponse(await this.sendCommand('step_over'));
+    return this.sendContinuationCommand('step_over');
+  }
+  public async sendStatusCommand(): Promise<ContinuationResponse> {
+    return this.sendContinuationCommand('status');
   }
   public async sendContextNamesCommand(stackFrame: StackFrame): Promise<ContextNamesResponse> {
     return new ContextNamesResponse(await this.sendCommand('context_names'), stackFrame);
   }
-  public async sendContextGetCommand(context: Context): Promise<ContextGetResponse> {
-    return new ContextGetResponse(await this.sendCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`), context);
+  public async sendContextGetCommand(context: Context, maxDepth?: number): Promise<ContextGetResponse> {
+    const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
+
+    this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
+    const dbgpResponse = await this.sendCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`);
+    this.sendFeatureSetCommand('max_depth', maxDepth_backup);
+
+    return new ContextGetResponse(dbgpResponse, context);
   }
   public async sendFeatureGetCommand(featureName: FeatureGetName): Promise<FeatureGetResponse> {
     return new FeatureGetResponse(await this.sendCommand('feature_get', `-n ${featureName}`));
@@ -625,8 +650,8 @@ export class Session extends EventEmitter {
   public async sendBreakpointSetCommand(fileUri: string, line: number): Promise<BreakpointSetResponse> {
     return new BreakpointSetResponse(await this.sendCommand('breakpoint_set', `-t line -f ${fileUri} -n ${line}`));
   }
-  public async sendBreakpointRemoveCommand(breakpoint: Breakpoint): Promise<Response> {
-    return new Response(await this.sendCommand('breakpoint_remove', `-d ${String(breakpoint.id)}`));
+  public async sendBreakpointRemoveCommand(id: number): Promise<Response> {
+    return new Response(await this.sendCommand('breakpoint_remove', `-d ${id}`));
   }
   public async sendBreakpointListCommand(): Promise<BreakpointListResponse> {
     return new BreakpointListResponse(await this.sendCommand('breakpoint_list'));
@@ -637,11 +662,11 @@ export class Session extends EventEmitter {
   public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
   }
-  public async fetchLatestProperty(propertyName: string): Promise<Property | null> {
+  public async fetchLatestProperty(propertyName: string, maxDepth?: number): Promise<Property | null> {
     const { stackFrames } = await this.sendStackGetCommand();
     const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
     for await (const context of contexts) {
-      const { properties } = await this.sendPropertyGetCommand(context, propertyName);
+      const { properties } = await this.sendPropertyGetCommand(context, propertyName, maxDepth);
       const property = properties[0];
       if (property.type !== 'undefined') {
         return property;
@@ -679,12 +704,131 @@ export class Session extends EventEmitter {
     }
     return null;
   }
-  public async fetchLatestPropertyWithoutChildren(propertyName: string): Promise<Property | null> {
-    await this.sendFeatureSetCommand('max_depth', 0);
-    const response = await this.fetchLatestProperty(propertyName);
-    await this.sendFeatureSetCommand('max_depth', this.DEFAULT_DEPTH);
+  public async safeFetchLatestProperty(propertyName: string, maxDepth?: number): Promise<Property | null> {
+    const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
+    const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
+    if (!propertyName.includes('.') || propertyName.includes('[') || ahkVersion === 1) {
+      return this.fetchLatestProperty(propertyName, _maxDepth);
+    }
 
-    return response;
+    // utils
+    const getProperty = (property: ObjectProperty, key: string): Property | null => {
+      for (const child of property.children) {
+        if (equalsIgnoreCase(key, child.name)) {
+          return child;
+        }
+      }
+      return null;
+    };
+    const getInheritedProperty = async(property: Property, key: string): Promise<Property | null> => {
+      if (property instanceof PrimitiveProperty) {
+        return null;
+      }
+
+      const objectProperty = property as ObjectProperty;
+      const child = getProperty(objectProperty, key);
+      if (child) {
+        return child;
+      }
+
+      // Search prototype chain
+      const baseProperty = await this.fetchLatestProperty(`${objectProperty.fullName}.base`); // `base` field can be safely obtained
+      if (!baseProperty) {
+        return null;
+      }
+
+      let currentBaseProperty = baseProperty as ObjectProperty;
+      while (currentBaseProperty !== null) {
+        const child = getProperty(currentBaseProperty, key);
+        if (child) {
+          return child;
+        }
+
+        // eslint-disable-next-line no-await-in-loop
+        const baseProperty = await this.fetchLatestProperty(`${currentBaseProperty.fullName}.base`);
+        if (baseProperty instanceof ObjectProperty) {
+          currentBaseProperty = baseProperty;
+          continue;
+        }
+        break;
+      }
+      return null;
+    };
+    const getDeepProprety = async(property: ObjectProperty, keys: string[]): Promise<Property | null> => {
+      let currentProperty = property;
+
+      for await (const i of range(keys.length)) {
+        const key = keys[i];
+        const child = await getInheritedProperty(currentProperty, key);
+        if (child) {
+          const isLastLoop = i === keys.length - 1;
+          if (isLastLoop) {
+            return child;
+          }
+          else if (child instanceof PrimitiveProperty) {
+            return null;
+          }
+
+          currentProperty = child as ObjectProperty;
+          continue;
+        }
+        break;
+      }
+      return null;
+    };
+
+    const propertyPathArray = propertyName.split('.');
+    const topProperty = await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth);
+    if (topProperty === null || topProperty instanceof PrimitiveProperty) {
+      return null;
+    }
+    propertyPathArray.shift();
+
+    const property = await getDeepProprety(topProperty as ObjectProperty, propertyPathArray);
+    if (property) {
+      return property;
+    }
+    return null;
+  }
+  public async fetchLatestProperties(maxDepth?: number): Promise<Property[]> {
+    const { stackFrames } = await this.sendStackGetCommand();
+    const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
+
+    const propertyMap = new CaseInsensitiveMap<string, Property>();
+    for await (const context of contexts) {
+      const { properties } = await this.sendContextGetCommand(context, maxDepth);
+      properties.forEach((property) => {
+        if (propertyMap.has(property.fullName)) {
+          return;
+        }
+        propertyMap.set(property.fullName, property);
+      });
+    }
+    return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
+  }
+  public async fetchSuggestList(searchText: string): Promise<Property[]> {
+    const filterCallback = (property: Property): boolean => startsWithIgnoreCase(property.fullName, searchText);
+    if (!searchText.includes('.')) {
+      const properties = await this.fetchLatestProperties();
+      if (searchText === '') {
+        return properties;
+      }
+      return properties.filter(filterCallback);
+    }
+
+    const parentName = searchText.split('.').slice(0, -1).join('.');
+    const property = await this.safeFetchLatestProperty(parentName);
+    if (property === null) {
+      return [];
+    }
+    else if (property instanceof ObjectProperty) {
+      return property.children.filter(filterCallback);
+    }
+    else if (startsWithIgnoreCase(property.fullName, searchText)) {
+      return [ property ];
+    }
+
+    return [];
   }
   public async close(): Promise<void> {
     this.removeAllListeners();

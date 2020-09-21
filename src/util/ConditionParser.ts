@@ -185,7 +185,19 @@ export const createParser = function(version: 1 | 2): P.Language {
         };
       });
     },
-    Value(rules) {
+    MetaVariable(rules) {
+      return P.seq(
+        P.string('{'),
+        P.regex(/[\w_]+/u),
+        P.string('}'),
+      ).map((result) => {
+        return {
+          type: 'MetaVariable',
+          value: result[1],
+        };
+      });
+    },
+    Operand(rules) {
       return P.alt(
         P.seq(
           P.alt(rules.CountofOperator),
@@ -193,6 +205,7 @@ export const createParser = function(version: 1 | 2): P.Language {
             rules.Primitive,
             rules.RegexpLiteral,
             rules.PropertyName,
+            rules.MetaVariable,
           ),
         ).map((result) => {
           return {
@@ -205,6 +218,7 @@ export const createParser = function(version: 1 | 2): P.Language {
           rules.Primitive,
           rules.RegexpLiteral,
           rules.PropertyName,
+          rules.MetaVariable,
         ),
       );
     },
@@ -220,10 +234,40 @@ export const createParser = function(version: 1 | 2): P.Language {
         };
       });
     },
+    Expressions(rules) {
+      return P.alt(
+        P.seq(
+          rules.Expression,
+          rules._,
+          rules.LogicalOperator,
+          rules._,
+          rules.Expression,
+        ).node(''),
+        rules.Expression.node(''),
+      ).map((result) => {
+        const pos = {
+          start: result.start,
+          end: result.end,
+        };
+
+        if (result.value.length === 5) {
+          return {
+            type: 'Expressions',
+            value: [ result.value[0], result.value[2], result.value[4] ],
+            pos,
+          };
+        }
+        return {
+          type: 'Expression',
+          value: result.value,
+          pos,
+        };
+      });
+    },
     Expression(rules) {
       return P.alt(
         rules.BinaryExpression,
-        rules.Value,
+        rules.Operand,
       ).map((result) => {
         return {
           type: 'Expression',
@@ -233,9 +277,9 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     BinaryExpression(rules) {
       return P.seq(
-        rules.Value,
+        rules.Operand,
         rules.Operator,
-        rules.Value,
+        rules.Operand,
       ).map((result) => {
         return {
           type: 'BinaryExpression',
@@ -249,6 +293,9 @@ export const createParser = function(version: 1 | 2): P.Language {
         rules.IsOperator,
         rules.InOperator,
       );
+    },
+    LogicalOperator(rules) {
+      return P.alt(P.string('&&'), P.string('||'));
     },
     ComparisonOperator(rules) {
       return P.seq(

@@ -11,9 +11,11 @@ import {
   ProviderResult,
   WorkspaceFolder,
   debug,
+  languages,
   window,
 } from 'vscode';
 import { defaults, range } from 'underscore';
+import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
@@ -36,11 +38,47 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtime_v2: 'v2/AutoHotkey.exe',
       runtimeArgs_v1: [ '/ErrorStdOut' ],
       runtimeArgs_v2: [ '/ErrorStdOut' ],
-      useAdvancedBreakpoint: false,
-      useAdvancedOutput: false,
+      useProcessUsageData: false,
+      usePerfTips: false,
+      useDebugDirective: false,
       openFileOnExit: null,
     };
     defaults(config, defaultConfig);
+
+    if (config.usePerfTips) {
+      const defaultFormat = config.useProcessUsageData
+        ? `{{elapsedTime_s}}s elapsed. CPU {{usageCpu}}%, Memory {{usageMemory_MB}}MB used.`
+        : '{{elapsedTime_s}}s elapsed';
+      const defaultUsePerfTips = {
+        fontColor: 'gray',
+        fontStyle: 'italic',
+        format: defaultFormat,
+      };
+
+      if (config.usePerfTips === true) {
+        config.usePerfTips = defaultUsePerfTips;
+      }
+      else {
+        if (typeof config.usePerfTips === 'string') {
+          config.usePerfTips = { format: config.usePerfTips };
+        }
+        defaults(config.usePerfTips, defaultUsePerfTips);
+      }
+    }
+
+    if (config.useDebugDirective) {
+      const defaultDirectiveComment = {
+        useBreakpointDirective: true,
+        useOutputDirective: true,
+      };
+
+      if (config.useDebugDirective === true) {
+        config.useDebugDirective = defaultDirectiveComment;
+      }
+      else {
+        defaults(config.useDebugDirective, defaultDirectiveComment);
+      }
+    }
 
     if (typeof config.port === 'string') {
       if (config.port.match(/^\d+$/u)) {
@@ -132,7 +170,8 @@ export const activate = function(context: ExtensionContext): void {
   const provider = new AhkConfigurationProvider();
 
   context.subscriptions.push(debug.registerDebugConfigurationProvider('ahk', provider));
-
   context.subscriptions.push(debug.registerDebugConfigurationProvider('autohotkey', provider));
   context.subscriptions.push(debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
+
+  context.subscriptions.push(languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2', 'autohotkey' ], completionItemProvider, '.'));
 };

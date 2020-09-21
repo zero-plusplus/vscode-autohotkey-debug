@@ -5,7 +5,7 @@ import {
   ChildProcessWithoutNullStreams,
   spawn,
 } from 'child_process';
-import { window, workspace } from 'vscode';
+import * as vscode from 'vscode';
 import {
   InitializedEvent,
   LoggingDebugSession,
@@ -18,13 +18,27 @@ import {
   ThreadEvent,
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
+import { URI } from 'vscode-uri';
+import { range } from 'underscore';
 import { sync as pathExistsSync } from 'path-exists';
 import * as isPortTaken from 'is-port-taken';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
+import * as pidusage from 'pidusage';
+import ByteConverter from '@wtfcode/byte-converter';
+import {
+  Breakpoint,
+  BreakpointAdvancedData,
+  BreakpointLogGroup,
+  BreakpointManager,
+} from './util/BreakpointManager';
+import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { Parser, createParser } from './util/ConditionParser';
 import { ConditionalEvaluator } from './util/ConditionEvaluator';
+import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
+import { equalsIgnoreCase } from './util/stringUtils';
 
+const byteConverter = new ByteConverter();
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
   program: string;
   runtime: string;
@@ -36,11 +50,23 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   port: number;
   permittedPortRange: number[];
   maxChildren: number;
-  useAdvancedBreakpoint: boolean;
-  useAdvancedOutput: boolean;
+  useProcessUsageData: boolean;
+  usePerfTips: false | {
+    fontColor: string;
+    fontStyle: string;
+    format: string;
+  };
+  useDebugDirective: false | {
+    useBreakpointDirective: boolean;
+    useOutputDirective: boolean;
+  };
   openFileOnExit: string;
 }
+type LogCategory = 'console' | 'stdout' | 'stderr';
+
 export class AhkDebugSession extends LoggingDebugSession {
+  private pauseRequested = false;
+  private isPaused = false;
   private isSessionStopped = false;
   private server?: net.Server;
   private session?: dbgp.Session;
@@ -54,31 +80,20 @@ export class AhkDebugSession extends LoggingDebugSession {
   private variablesReferenceCounter = 1;
   private readonly objectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
-  private readonly breakpoints: { [key: string]: dbgp.Breakpoint | undefined} = {};
+  private breakpointManager?: BreakpointManager;
   private conditionalEvaluator!: ConditionalEvaluator;
+  private currentStackFrames: dbgp.StackFrame[] | null = null;
+  private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
+  private stackFramesWhenStepOut: dbgp.StackFrame[] | null = null;
+  private stackFramesWhenStepOver: dbgp.StackFrame[] | null = null;
+  private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
+  private readonly loadedSources: string[] = [];
   constructor() {
     super('autohotkey-debug.txt');
 
     this.setDebuggerColumnsStartAt1(true);
     this.setDebuggerLinesStartAt1(true);
     this.setDebuggerPathFormat('uri');
-  }
-  public convertClientPathToDebugger(filePath: string): string {
-    const fileUri = super.convertClientPathToDebugger(filePath).replace('file:///', '');
-    const isUnc = path.parse(fileUri).root === '';
-    if (isUnc) {
-      return `\\\\${fileUri}`;
-    }
-    return fileUri;
-  }
-  public convertDebuggerPathToClient(fileUri: string): string {
-    const filePath = super.convertDebuggerPathToClient(fileUri);
-
-    const isUnc = filePath.startsWith('\\');
-    if (isUnc) {
-      return `\\${filePath}`;
-    }
-    return filePath;
   }
   protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
     response.body = {
@@ -93,6 +108,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.clearPerfTipsDecorations();
+
     if (this.session) {
       if (this.ahkProcess) {
         if (!this.isSessionStopped) {
@@ -107,8 +124,8 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (this.config.openFileOnExit !== null) {
       if (pathExistsSync(this.config.openFileOnExit)) {
-        const doc = await workspace.openTextDocument(this.config.openFileOnExit);
-        window.showTextDocument(doc);
+        const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
+        vscode.window.showTextDocument(doc);
       }
       else {
         const message = {
@@ -117,7 +134,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         } as DebugProtocol.Message;
         // For some reason, the error message could not be displayed by the following method.
         // this.sendErrorResponse(response, message);
-        window.showErrorMessage(message.format);
+        vscode.window.showErrorMessage(message.format);
       }
     }
 
@@ -126,12 +143,27 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): Promise<void> {
     this.config = args;
-    const lunchScript = (): void => {
-      if (!pathExistsSync(this.config.runtime)) {
-        throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
-      }
 
-      const runtimeArgs = [ ...this.config.runtimeArgs, `/Debug=${String(args.hostname)}:${String(args.port)}`, `${args.program}`, ...args.args ];
+    if (!pathExistsSync(this.config.runtime)) {
+      throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
+    }
+
+    try {
+      const runtimeArgs: string[] = [];
+      if (!args.noDebug) {
+        const portUsed = await isPortTaken(this.config.port, this.config.hostname);
+        if (portUsed) {
+          if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
+            this.sendEvent(new TerminatedEvent());
+            return;
+          }
+        }
+
+        runtimeArgs.push(`/Debug=${String(args.hostname)}:${String(args.port)}`);
+      }
+      runtimeArgs.push(...this.config.runtimeArgs);
+      runtimeArgs.push(`${args.program}`);
+      runtimeArgs.push(...args.args);
       this.sendEvent(new OutputEvent(`${this.config.runtime} ${runtimeArgs.join(' ')}\n`, 'console'));
       const ahkProcess = spawn(
         this.config.runtime,
@@ -141,107 +173,79 @@ export class AhkDebugSession extends LoggingDebugSession {
           env: args.env,
         },
       );
-      ahkProcess.on('exit', (exitCode) => {
-        if (!(exitCode === null || exitCode === 0)) {
-          this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, 'stderr'));
-          this.sendEvent(new TerminatedEvent());
-        }
+      ahkProcess.on('close', (exitCode) => {
+        this.isSessionStopped = true;
+        const category = exitCode === 0 ? 'console' : 'stderr';
+        this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
+        this.sendEvent(new TerminatedEvent());
       });
       ahkProcess.stdout.on('data', (data: string | Buffer) => {
         const fixedData = this.fixPathOfRuntimeError(String(data));
-        if (this.session && this.config.useAdvancedOutput) {
-          this.printLogMessage(fixedData, 'stdout');
-          return;
-        }
         this.sendEvent(new OutputEvent(fixedData, 'stdout'));
       });
       ahkProcess.stderr.on('data', (data: Buffer) => {
         const fixedData = this.fixPathOfRuntimeError(String(data));
-        if (this.session && this.config.useAdvancedOutput) {
-          this.printLogMessage(fixedData, 'stderr');
-          return;
-        }
-
         this.sendEvent(new OutputEvent(fixedData, 'stderr'));
       });
-
       this.ahkProcess = ahkProcess;
-    };
-    const createServer = (): void => {
-      this.server = net.createServer()
-        .listen(args.port, args.hostname)
-        .on('connection', (socket) => {
-          try {
-            this.session = new dbgp.Session(socket)
-              .on('init', (initPacket: dbgp.InitPacket) => {
-                if (typeof this.session === 'undefined') {
-                  return;
-                }
-                this.session.sendFeatureGetCommand('language_version').then((response) => {
-                  this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
-                  this.ahkParser = createParser(this.ahkVersion);
-                  this.conditionalEvaluator = new ConditionalEvaluator(this.session!, this.ahkVersion);
 
-                  // Request breakpoints from VS Code
-                  this.sendEvent(new InitializedEvent());
-                });
-              })
-              .on('warning', (warning: string) => {
-                this.sendEvent(new OutputEvent(`${warning}\n`));
-              })
-              .on('error', (error?: Error) => {
-                if (error) {
-                  if (!this.isSessionStopped && this.ahkProcess) {
-                    this.ahkProcess.kill();
-                    this.isSessionStopped = true;
+      await new Promise((resolve, reject) => {
+        this.server = net.createServer()
+          .listen(args.port, args.hostname)
+          .on('connection', (socket) => {
+            try {
+              this.session = new dbgp.Session(socket)
+                .on('init', (initPacket: dbgp.InitPacket) => {
+                  if (typeof this.session === 'undefined') {
+                    return;
                   }
-                  this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
-                }
+                  this.session.sendFeatureGetCommand('language_version').then((response) => {
+                    this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
+                    completionItemProvider.ahkVersion = this.ahkVersion;
+                    completionItemProvider.session = this.session ?? null;
+                    this.ahkParser = createParser(this.ahkVersion);
+                    this.conditionalEvaluator = new ConditionalEvaluator(this.session!, this.ahkVersion);
 
-                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-                this.sendEvent(new TerminatedEvent());
-              })
-              .on('close', () => {
-                this.isSessionStopped = true;
-                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-                this.sendEvent(new TerminatedEvent());
-              })
-              .on('stdout', (data) => {
-                if (this.session && this.config.useAdvancedOutput) {
-                  this.printLogMessage(data, 'stdout');
-                  return;
-                }
-                this.sendEvent(new OutputEvent(data, 'stdout'));
-              })
-              .on('stderr', (data) => {
-                const fixedData = this.fixPathOfRuntimeError(String(data));
-                if (this.session && this.config.useAdvancedOutput) {
-                  this.printLogMessage(fixedData, 'stderr');
-                  return;
-                }
-                this.sendEvent(new OutputEvent(fixedData, 'stderr'));
-              });
+                    // Request breakpoints from VS Code
+                    this.sendEvent(new InitializedEvent());
+                  });
+                })
+                .on('warning', (warning: string) => {
+                  this.sendEvent(new OutputEvent(`${warning}\n`));
+                })
+                .on('error', (error?: Error) => {
+                  if (error) {
+                    if (!this.isSessionStopped && this.ahkProcess) {
+                      this.ahkProcess.kill();
+                      this.isSessionStopped = true;
+                    }
+                    this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
+                  }
 
-            this.sendEvent(new ThreadEvent('Session started.', this.session.id));
-          }
-          catch (error) {
-            this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
-            this.sendEvent(new TerminatedEvent());
-          }
-        });
-    };
+                  this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                })
+                .on('close', () => {
+                  this.isSessionStopped = true;
+                  this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                })
+                .on('stdout', (data) => {
+                  this.sendEvent(new OutputEvent(data, 'stdout'));
+                })
+                .on('stderr', (data) => {
+                  const fixedData = this.fixPathOfRuntimeError(String(data));
+                  this.sendEvent(new OutputEvent(fixedData, 'stderr'));
+                });
 
-    const portUsed = await isPortTaken(this.config.port, this.config.hostname);
-    if (portUsed) {
-      if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
-        this.sendEvent(new TerminatedEvent());
-        return;
-      }
-    }
-
-    try {
-      createServer();
-      lunchScript();
+              this.breakpointManager = new BreakpointManager(this.session);
+              this.sendEvent(new ThreadEvent('Session started.', this.session.id));
+              resolve();
+            }
+            catch (error) {
+              this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
+              reject(error);
+            }
+          });
+      });
     }
     catch (error) {
       const message = {
@@ -257,124 +261,113 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
     const filePath = args.source.path ?? '';
-    const dbgpBreakpoint = (await this.session!.sendBreakpointListCommand()).breakpoints;
+    const fileUri = URI.file(filePath).toString();
+    const requestedBreakpoints = args.breakpoints ?? [];
 
-    // Clear dbgp breakpoints from current file
-    await Promise.all(dbgpBreakpoint
-      .filter((dbgpBreakpoint) => {
-        // (breakpoint.fileUri === fileUri) is not Equals.
-        // breakpoint.fileUri: file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"
-        // fileUri:            file:///w:/project/vscode-autohotkey-debug/demo/demo.ahk
-        const _filePath = this.convertDebuggerPathToClient(dbgpBreakpoint.fileUri);
-        if (filePath.toLowerCase() === _filePath.toLowerCase()) {
-          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-          delete this.breakpoints[`${filePath.toLowerCase()}${dbgpBreakpoint.line}`];
-          return true;
-        }
-        return false;
-      })
-      .map(async(dbgpBreakpoint) => {
-        return this.session!.sendBreakpointRemoveCommand(dbgpBreakpoint);
-      }));
+    await this.breakpointManager!.unregisterBreakpointsInFile(fileUri);
 
     const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
-    if (args.breakpoints) {
-      await Promise.all(args.breakpoints
-        .map(async(vscodeBreakpoint, index) => {
-          try {
-            const { id } = await this.session!.sendBreakpointSetCommand(this.convertClientPathToDebugger(filePath), vscodeBreakpoint.line);
-            const { fileUri, line } = await this.session!.sendBreakpointGetCommand(id);
+    for await (const requestedBreakpoint of requestedBreakpoints) {
+      const { condition, hitCondition } = requestedBreakpoint;
+      const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
 
-            const dbgpBreakpoint = this.breakpoints[`${filePath}${line}`];
-            if (dbgpBreakpoint?.advancedData) {
-              dbgpBreakpoint.advancedData.condition = vscodeBreakpoint.condition;
-              dbgpBreakpoint.advancedData.hitCondition = vscodeBreakpoint.hitCondition;
-              dbgpBreakpoint.advancedData.logMessage = vscodeBreakpoint.logMessage;
-            }
-            else {
-              this.breakpoints[`${filePath.toLowerCase()}${line}`] = new dbgp.Breakpoint(fileUri, line, {
-                counter: 0,
-                condition: vscodeBreakpoint.condition,
-                hitCondition: vscodeBreakpoint.hitCondition,
-                logMessage: vscodeBreakpoint.logMessage,
-              });
-            }
+      const advancedData = {
+        condition,
+        hitCondition,
+        logMessage,
+      } as BreakpointAdvancedData;
+      try {
+        const actualBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, requestedBreakpoint.line, advancedData);
+        if (actualBreakpoint.hidden) {
+          continue;
+        }
 
-            vscodeBreakpoints[index] = {
-              id,
-              line,
-              verified: true,
-            };
-          }
-          catch (error) {
-            vscodeBreakpoints[index] = {
-              verified: false,
-              message: error.message,
-            };
-          }
-        }));
+        vscodeBreakpoints.push({
+          id: actualBreakpoint.id,
+          line: actualBreakpoint.line,
+          verified: true,
+        });
+      }
+      catch (error) {
+        vscodeBreakpoints.push({
+          verified: false,
+          message: error.message,
+        });
+      }
     }
 
     response.body = { breakpoints: vscodeBreakpoints };
     this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
-    await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
     this.sendResponse(response);
+    await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
+    await this.registerDebugDirective();
+
     if (this.config.stopOnEntry) {
-      const dbgpResponse = await this.session!.sendStepIntoCommand();
-      this.checkContinuationStatus(dbgpResponse);
+      const result = await this.session!.sendContinuationCommand('step_into');
+      this.checkContinuationStatus(result);
       return;
     }
 
-    this.session!.sendRunCommand().then((dbgpResponse) => {
-      if (this.config.useAdvancedBreakpoint) {
-        this.checkContinuationStatus(dbgpResponse, !this.config.stopOnEntry);
-        return;
-      }
-
-      this.checkContinuationStatus(dbgpResponse);
-    });
+    const result = await this.session!.sendContinuationCommand('run');
+    this.checkContinuationStatus(result);
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
+    this.pauseRequested = false;
+    this.isPaused = false;
+    this.currentMetaVariables = null;
 
-    const dbgpResponse = await this.session!.sendRunCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint);
+    const result = await this.session!.sendContinuationCommand('run');
+    this.checkContinuationStatus(result);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
+    this.currentMetaVariables = null;
+    this.pauseRequested = true;
+    this.isPaused = false;
 
-    const dbgpResponse = await this.session!.sendStepOverCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint, true);
+    const result = await this.session!.sendContinuationCommand('step_over');
+    this.checkContinuationStatus(result);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
+    this.currentMetaVariables = null;
+    this.pauseRequested = true;
+    this.isPaused = false;
 
-    const dbgpResponse = await this.session!.sendStepIntoCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint, true);
+    const result = await this.session!.sendContinuationCommand('step_into');
+    this.checkContinuationStatus(result);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.sendResponse(response);
+    this.currentMetaVariables = null;
+    this.pauseRequested = true;
+    this.isPaused = false;
 
-    const dbgpResponse = await this.session!.sendStepOutCommand();
-    this.checkContinuationStatus(dbgpResponse, this.config.useAdvancedBreakpoint, true);
+    const result = await this.session!.sendContinuationCommand('step_out');
+    this.checkContinuationStatus(result);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
-    await this.session!.sendBreakCommand();
-    this.sendEvent(new StoppedEvent('pause', this.session!.id));
     this.sendResponse(response);
+    this.currentMetaVariables = null;
+    this.pauseRequested = true;
+    this.isPaused = false;
+
+    const result = await this.session!.sendContinuationCommand('break');
+    this.checkContinuationStatus(result);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };
     this.sendResponse(response);
   }
-  protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): Promise<void> {
+  protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): void {
     const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
     const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
     const endFrame = startFrame + maxLevels;
 
-    const { stackFrames: allStackFrames } = await this.session!.sendStackGetCommand();
+    const allStackFrames: dbgp.StackFrame[] = this.currentStackFrames!; // The most recent stack frame is always retrieved by checkContinuationStatus, which is executed immediately before, so you won't get a null.
     const stackFrames = allStackFrames.slice(startFrame, endFrame);
 
     if (0 < stackFrames.length) {
@@ -382,7 +375,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         totalFrames: allStackFrames.length,
         stackFrames: stackFrames.map((stackFrame) => {
           const id = this.stackFrameIdCounter++;
-          const filePath = this.convertDebuggerPathToClient(stackFrame.fileUri);
+          const filePath = URI.parse(stackFrame.fileUri).fsPath;
           const source = {
             name: path.basename(filePath),
             path: filePath,
@@ -443,7 +436,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
     let properties: dbgp.Property[] = [];
-
     if (this.contextByVariablesReference.has(args.variablesReference)) {
       const context = this.contextByVariablesReference.get(args.variablesReference)!;
       properties = (await this.session!.sendContextGetCommand(context)).properties;
@@ -607,29 +599,55 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (!args.frameId) {
         throw Error('Error: Cannot evaluate code without a session');
       }
-      const parsed = this.ahkParser.PropertyName.parse(propertyName);
-      if (!parsed.status) {
-        throw Error('Error: Only the property name is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`');
+
+      const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
+      if (metaVariableParsed.status) {
+        const metaVariableName = metaVariableParsed.value.value;
+        if (this.currentMetaVariables?.has(metaVariableName)) {
+          response.body = {
+            result: this.currentMetaVariables.get(metaVariableName)!,
+            variablesReference: 0,
+          };
+          this.sendResponse(response);
+          return;
+        }
+        throw Error('not available');
+      }
+
+      const propertyNameParsed = this.ahkParser.PropertyName.parse(propertyName);
+      if (!propertyNameParsed.status) {
+        throw Error('Error: Only the property name or meta variable is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`, `{metaVariableName}`');
       }
       const stackFrame = this.stackFramesByFrameId.get(args.frameId);
       if (!stackFrame) {
         throw Error('Error: Could not get stack frame');
       }
 
-      const property = await this.session!.fetchLatestProperty(propertyName);
+      const property = await this.session!.safeFetchLatestProperty(propertyName);
       if (property === null) {
         throw Error('not available');
       }
 
-      let variablesReference = 0;
+      let variablesReference = 0, indexedVariables, namedVariables;
       if (property instanceof dbgp.ObjectProperty) {
         variablesReference = this.variablesReferenceCounter++;
         this.objectPropertiesByVariablesReference.set(variablesReference, property);
+
+        const maxIndex = property.maxIndex;
+        if (maxIndex !== null) {
+          if (100 < maxIndex) {
+            indexedVariables = maxIndex;
+            namedVariables = 1;
+          }
+        }
       }
+
       response.body = {
         result: property.displayValue,
         type: property.type,
         variablesReference,
+        indexedVariables,
+        namedVariables,
       };
       this.sendResponse(response);
     }
@@ -643,14 +661,10 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   // eslint-disable-next-line @typescript-eslint/require-await
   protected async loadedSourcesRequest(response: DebugProtocol.LoadedSourcesResponse, args: DebugProtocol.LoadedSourcesArguments, request?: DebugProtocol.Request): Promise<void> {
-    const resolver = new AhkIncludeResolver({
-      rootPath: this.config.program,
-      runtimePath: this.config.runtime,
-      version: this.ahkVersion,
-    });
+    const loadedScriptPathList = this.getAllLoadedSourcePath();
 
-    const sources: DebugProtocol.Source[] = [ { name: path.basename(this.config.program), path: this.config.program } as DebugProtocol.Source ];
-    await Promise.all(resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]).map(async(filePath): Promise<void> => {
+    const sources: DebugProtocol.Source[] = [];
+    await Promise.all(loadedScriptPathList.map(async(filePath): Promise<void> => {
       return new Promise((resolve) => {
         stat(filePath, (err, stats) => {
           if (err) {
@@ -666,6 +680,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         });
       });
     }));
+
     response.body = { sources };
     this.sendResponse(response);
   }
@@ -678,7 +693,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (!this.config.permittedPortRange.includes(this.config.port)) {
       const message = `Port number \`${originalPort}\` is already in use. Would you like to start debugging using \`${this.config.port}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
-      const result = await window.showInformationMessage(message, { modal: true }, 'Yes');
+      const result = await vscode.window.showInformationMessage(message, { modal: true }, 'Yes');
       if (typeof result === 'undefined') {
         return false;
       }
@@ -686,24 +701,105 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     return true;
   }
-  private async getCurrentBreakpoint(): Promise<dbgp.Breakpoint | null> {
-    let stackFrame: dbgp.StackFrame;
-    try {
-      const { stackFrames } = await this.session!.sendStackGetCommand();
-      stackFrame = stackFrames[0];
+  private getAllLoadedSourcePath(): string[] {
+    if (0 < this.loadedSources.length) {
+      return this.loadedSources;
     }
-    catch (error) {
-      return null;
+    const resolver = new AhkIncludeResolver({
+      rootPath: this.config.program,
+      runtimePath: this.config.runtime,
+      version: this.ahkVersion,
+    });
+    this.loadedSources.push(this.config.program);
+    this.loadedSources.push(...resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]));
+    return this.loadedSources;
+  }
+  private async registerDebugDirective(): Promise<void> {
+    if (!this.config.useDebugDirective) {
+      return;
     }
+    const {
+      useBreakpointDirective,
+      useOutputDirective,
+    } = this.config.useDebugDirective;
 
-    const { fileUri, line } = stackFrame;
-    const filePath = this.convertDebuggerPathToClient(fileUri);
-    const breakpoint = this.breakpoints[`${filePath.toLowerCase()}${line}`];
+    const filePathList = this.getAllLoadedSourcePath();
+    // const DEBUG_start = process.hrtime();
+    await Promise.all(filePathList.map(async(filePath) => {
+      const document = await vscode.workspace.openTextDocument(filePath);
+      const fileUri = URI.file(filePath).toString();
 
-    if (breakpoint) {
-      return breakpoint;
-    }
-    return null;
+      await Promise.all(range(document.lineCount).map(async(line_0base) => {
+        const textLine = document.lineAt(line_0base);
+        const match = textLine.text.match(/^\s*;\s*@Debug-(?<directiveType>[\w_]+)(?::(?<params>[\w_:]+))?\s*(?=\(|\[|-|=|$)(?:\((?<condition>[^\n)]+)\))?\s*(?:\[(?<hitCondition>[^\n]+)\])?\s*(?:(?<outputOperator>->|=>)?(?<leaveLeadingSpace>\|)?(?<message>.*))?$/ui);
+        if (!match?.groups) {
+          return;
+        }
+
+        const directiveType = match.groups.directiveType.toLowerCase();
+        const {
+          condition = '',
+          hitCondition = '',
+          outputOperator,
+          message = '',
+        } = match.groups;
+        const params = match.groups.params ? match.groups.params.split(':') : '';
+        const removeLeadingSpace = match.groups.leaveLeadingSpace ? !match.groups.leaveLeadingSpace : true;
+
+        let logMessage = message;
+        if (removeLeadingSpace) {
+          logMessage = logMessage.trimLeft();
+        }
+        if (outputOperator === '=>') {
+          logMessage += '\n';
+        }
+
+        const line = line_0base + 1;
+        const nextLine = line + 1;
+        if (useBreakpointDirective && directiveType === 'breakpoint') {
+          if (0 < params.length) {
+            return;
+          }
+
+          const advancedData = {
+            condition,
+            hitCondition,
+            logMessage,
+            hidden: true,
+          } as BreakpointAdvancedData;
+          await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
+        }
+        else if (useOutputDirective && directiveType === 'output') {
+          let logGroup: string | undefined;
+          if (0 < params.length) {
+            if (equalsIgnoreCase(params[0], 'start')) {
+              logGroup = 'start';
+            }
+            else if (equalsIgnoreCase(params[0], 'startCollapsed')) {
+              logGroup = 'startCollapsed';
+            }
+            else if (equalsIgnoreCase(params[0], 'end')) {
+              logGroup = 'end';
+            }
+          }
+          const newCondition = condition;
+          const advancedData = {
+            condition: newCondition,
+            hitCondition,
+            logMessage,
+            logGroup,
+            hidden: true,
+          } as BreakpointAdvancedData;
+          await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
+        }
+      }));
+    }));
+    // const DEBUG_hrtime = process.hrtime(DEBUG_start);
+    // // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+    // // eslint-disable-next-line no-mixed-operators
+    // const DEBUG_ns = DEBUG_hrtime[0] * 1e9 + DEBUG_hrtime[1];
+    // const DEBUG_s = DEBUG_ns / 1e9;
+    // this.printLogMessage(`elapsedTime: ${DEBUG_s}s`);
   }
   private fixPathOfRuntimeError(errorMessage: string): string {
     if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
@@ -722,63 +818,207 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
-  private async checkContinuationStatus(response: dbgp.ContinuationResponse, checkExtraBreakpoint = false, forceStop = false): Promise<void> {
+  private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
     if (response.status === 'stopped') {
       this.isSessionStopped = true;
-      this.sendEvent(new TerminatedEvent());
     }
     else if (response.status === 'break') {
-      if (checkExtraBreakpoint) {
-        const breakpoint = await this.getCurrentBreakpoint();
-        if (breakpoint) {
-          await this.checkAdvancedBreakpoint(breakpoint, forceStop);
-          return;
+      if (this.isPaused) {
+        return;
+      }
+      this.clearPerfTipsDecorations();
+
+
+      const prevMetaVariables = this.currentMetaVariables;
+      const metaVariables = new CaseInsensitiveMap<string, string>();
+      metaVariables.set('hitCount', '-1');
+      if (prevMetaVariables) {
+        const elapsedTime_ns = parseFloat(prevMetaVariables.get('elapsedTime_ns')!) + response.elapsedTime.ns;
+        const elapsedTime_ms = parseFloat(prevMetaVariables.get('elapsedTime_ms')!) + response.elapsedTime.ms;
+        const elapsedTime_s = parseFloat(prevMetaVariables.get('elapsedTime_s')!) + response.elapsedTime.s;
+        metaVariables.set('elapsedTime_ns', String(elapsedTime_ns).slice(0, 10));
+        metaVariables.set('elapsedTime_ms', String(elapsedTime_ms).slice(0, 10));
+        metaVariables.set('elapsedTime_s', String(elapsedTime_s.toFixed(8)).slice(0, 10));
+      }
+      else {
+        metaVariables.set('elapsedTime_ns', String(response.elapsedTime.ns).slice(0, 10));
+        metaVariables.set('elapsedTime_ms', String(response.elapsedTime.ms).slice(0, 10));
+        metaVariables.set('elapsedTime_s', String(response.elapsedTime.s.toFixed(8)).slice(0, 10));
+      }
+      this.currentMetaVariables = metaVariables;
+
+      const prevStackFrames = this.currentStackFrames;
+      const { stackFrames } = await this.session!.sendStackGetCommand();
+      const { fileUri, line } = stackFrames[0];
+      this.currentStackFrames = stackFrames;
+
+      const stepExecutionByUser = response.commandName.includes('step') && this.stackFramesWhenStepOver === null && this.stackFramesWhenStepOut === null;
+      if (stepExecutionByUser && prevStackFrames) {
+        if (response.commandName === 'step_out') {
+          this.stackFramesWhenStepOut = prevStackFrames.slice();
+        }
+        else if (response.commandName === 'step_over') {
+          this.stackFramesWhenStepOver = prevStackFrames.slice();
         }
       }
 
-      const stopReason = response.commandName.startsWith('step')
-        ? 'step'
-        : 'breakpoint';
-      this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
+
+      let stopReason = String(response.stopReason);
+      const conditionResults: boolean[] = [];
+      const lineBreakpoints = this.breakpointManager!.getBreakpoints(fileUri, line);
+      if (lineBreakpoints) {
+        lineBreakpoints.hitCount++;
+        metaVariables.set('hitCount', String(lineBreakpoints.hitCount));
+
+        for await (const breakpoint of lineBreakpoints) {
+          const _metaVariables = new CaseInsensitiveMap<string, string>(metaVariables.entries());
+
+          const {
+            condition,
+            hitCondition,
+            logGroup,
+            logMessage,
+          } = breakpoint;
+
+          _metaVariables.set('condition', condition);
+          _metaVariables.set('hitCondition', hitCondition);
+          _metaVariables.set('logMessage', logMessage);
+          _metaVariables.set('logGroup', logGroup);
+
+          const isDefiniteStop = conditionResults.includes(true);
+          let conditionResult = true;
+          if (condition || hitCondition) {
+            conditionResult = await this.evalCondition(breakpoint, _metaVariables);
+            if (conditionResult && !isDefiniteStop) {
+              stopReason = breakpoint.hidden
+                ? 'hidden breakpoint'
+                : 'conditional breakpoint';
+            }
+          }
+          else if (!isDefiniteStop && breakpoint.hidden) {
+            stopReason = 'hidden breakpoint';
+          }
+
+          const logMode = logGroup || logMessage;
+          if (conditionResult && logMode) {
+            const logCategory = 'stderr' as LogCategory;
+            await this.printLogMessage(_metaVariables, logCategory);
+            conditionResult = false;
+          }
+
+          conditionResults.push(conditionResult);
+        }
+      }
+
+      if (response.commandName === 'break') {
+        metaVariables.set('elapsedTime_ns', '-1');
+        metaVariables.set('elapsedTime_ms', '-1');
+        metaVariables.set('elapsedTime_s', '-1');
+        this.sendStoppedEvent(response.stopReason);
+        return;
+      }
+      else if (response.commandName === 'step_into') {
+        this.sendStoppedEvent(response.stopReason);
+        return;
+      }
+      else if (this.stackFramesWhenStepOver) {
+        if (this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
+          this.stackFramesWhenStepOver = null;
+
+          const result = await this.session!.sendContinuationCommand('step_over');
+          this.checkContinuationStatus(result);
+          return;
+        }
+        else if (this.stackFramesWhenStepOver.length === this.currentStackFrames.length) {
+          await this.sendStoppedEvent(stopReason);
+          return;
+        }
+      }
+      else if (this.stackFramesWhenStepOut) {
+        if (this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) { // || this.stackFramesWhenStepOut.length === this.currentStackFrames.length) {
+          this.stackFramesWhenStepOut = null;
+
+          const result = await this.session!.sendContinuationCommand('step_out');
+          this.checkContinuationStatus(result);
+          return;
+        }
+        else if (this.currentStackFrames.length < this.stackFramesWhenStepOut.length) {
+          await this.sendStoppedEvent(stopReason);
+          return;
+        }
+      }
+      else if (conditionResults.includes(true)) {
+        await this.sendStoppedEvent(stopReason);
+        return;
+      }
+
+      let result: dbgp.ContinuationResponse;
+      if (this.stackFramesWhenStepOut || this.stackFramesWhenStepOver) {
+        result = await this.session!.sendContinuationCommand('step_out');
+      }
+      else if (this.pauseRequested) {
+        result = await this.session!.sendContinuationCommand('break');
+      }
+      else {
+        result = await this.session!.sendContinuationCommand('run');
+      }
+      await this.checkContinuationStatus(result);
     }
   }
-  private async checkAdvancedBreakpoint(breakpoint: dbgp.Breakpoint, forceStop = false): Promise<void> {
-    if (!breakpoint.advancedData) {
-      return;
-    }
-    breakpoint.advancedData.counter++;
+  private async sendStoppedEvent(stopReason: string): Promise<void> {
+    this.stackFramesWhenStepOut = null;
+    this.stackFramesWhenStepOver = null;
+    this.pauseRequested = false;
+    this.isPaused = true;
 
-    const { condition, hitCondition, logMessage, counter } = breakpoint.advancedData;
+    if (this.currentMetaVariables) {
+      const metaVariables = this.currentMetaVariables;
+      if (this.config.useProcessUsageData) {
+        const usage = await pidusage(this.ahkProcess!.pid);
+        metaVariables.set('usageCpu', String(usage.cpu));
+        metaVariables.set('usageMemory_B', String(usage.memory));
+        metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
+      }
+      await this.displayPerfTips(metaVariables);
+    }
+    this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
+  }
+  private async evalCondition(breakpoint: Breakpoint, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
+    const { condition, hitCondition } = breakpoint;
+    const hitCount = parseInt(metaVariables.get('hitCount')!, 10);
 
     let conditionResult = false, hitConditionResult = false;
     if (condition) {
-      conditionResult = await this.conditionalEvaluator.eval(condition);
+      conditionResult = await this.conditionalEvaluator.eval(condition, metaVariables);
     }
     if (hitCondition) {
       const match = hitCondition.match(/^(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)$/u);
       if (match?.groups) {
-        const { operator, number } = match.groups;
+        const { operator = '>=' } = match.groups;
+        const number = parseInt(match.groups.number, 10);
 
-        let _operator = operator;
-        if (typeof _operator === 'undefined') {
-          _operator = '>=';
+        if (operator === '=' || operator === '==') {
+          hitConditionResult = hitCount === number;
         }
-        else if (_operator === '=') {
-          _operator = '==';
+        else if (operator === '>') {
+          hitConditionResult = hitCount > number;
         }
-
-        const code = _operator === '%'
-          ? `(${counter % parseInt(number, 10)} === 0)`
-          : `${counter} ${_operator} ${number}`;
-        try {
-          hitConditionResult = await this.conditionalEvaluator.eval(code);
+        else if (operator === '>=') {
+          hitConditionResult = hitCount >= number;
         }
-        catch {
+        else if (operator === '<') {
+          hitConditionResult = hitCount < number;
+        }
+        else if (operator === '<=') {
+          hitConditionResult = hitCount <= number;
+        }
+        else if (operator === '%') {
+          hitConditionResult = hitCount % number === 0;
         }
       }
     }
 
-    let matchCondition = true;
+    let matchCondition = false;
     if (condition && hitCondition) {
       matchCondition = conditionResult && hitConditionResult;
     }
@@ -786,109 +1026,160 @@ export class AhkDebugSession extends LoggingDebugSession {
       matchCondition = conditionResult || hitConditionResult;
     }
 
-    if (matchCondition) {
-      if (typeof logMessage === 'undefined') {
-        let stopReason = 'conditional breakpoint';
-        if (typeof condition === 'undefined' && typeof hitCondition === 'undefined') {
-          stopReason = 'breakpoint';
+    return matchCondition;
+  }
+  private async printLogMessage(metaVariables: CaseInsensitiveMap<string, string>, logCategory?: LogCategory): Promise<void> {
+    const logMessage = metaVariables.get('logMessage') ?? '';
+    const results = await this.formatLog(logMessage, metaVariables);
+
+    // When output an object, it automatically breaks a line. Therefore, if the end is a newline code, remove it.
+    const last = results[results.length - 1];
+    const prevLast = results[results.length - 2];
+    if (-1 < String(last).search(/^(\r\n|\r|\n)$/u) && prevLast instanceof dbgp.ObjectProperty) {
+      results.pop();
+    }
+
+    for (const messageOrProperty of results) {
+      let event: DebugProtocol.OutputEvent;
+      if (typeof messageOrProperty === 'string') {
+        const message = messageOrProperty;
+
+        event = new OutputEvent(message, logCategory) as DebugProtocol.OutputEvent;
+        if (metaVariables.has('logGroup')) {
+          event.body.group = metaVariables.get('logGroup')! as BreakpointLogGroup;
         }
-        this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
-        return;
+      }
+      else {
+        const property = messageOrProperty;
+        const variablesReference = this.variablesReferenceCounter++;
+        this.logObjectPropertiesByVariablesReference.set(variablesReference, property);
+
+        event = new OutputEvent(property.displayValue, logCategory) as DebugProtocol.OutputEvent;
+        event.body.variablesReference = variablesReference;
       }
 
-      await this.printLogMessage(logMessage, 'stdout', breakpoint, true);
+      if (this.currentStackFrames) {
+        const { fileUri, line } = this.currentStackFrames[0];
+        event.body.source = { path: fileUri };
+        event.body.line = line;
+      }
+      this.sendEvent(event);
     }
-
-    if (forceStop) {
-      this.sendEvent(new StoppedEvent('force stop', this.session!.id));
-      return;
-    }
-
-    const response = await this.session!.sendRunCommand();
-    await this.checkContinuationStatus(response, true);
   }
-  private async printLogMessage(logMessage: string, logCategory: string, breakpoint: dbgp.Breakpoint | null = null, newline = false): Promise<void> {
+  private async formatLog(format: string, metaVariables?: CaseInsensitiveMap<string, string>): Promise<Array<string | dbgp.ObjectProperty>> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
-    const createOutputEvent = (message: string, variablesReference: number | null = null): DebugProtocol.OutputEvent => {
-      let unescapedMessage = unescapeLogMessage(message);
-      if (newline) {
-        unescapedMessage += '\n';
-      }
-      const event = new OutputEvent(unescapedMessage, logCategory) as DebugProtocol.OutputEvent;
-      if (variablesReference) {
-        event.body.variablesReference = variablesReference;
-      }
-      if (breakpoint) {
-        event.body.source = { path: breakpoint.fileUri };
-        event.body.line = breakpoint.line;
-      }
-      return event;
-    };
 
-    const regex = /(?<!\\)\{(?<variableName>(?:\\\{|\\\}|[^{}\n])+?)(?<!\\)\}/gu;
-    let message = '';
-    if (logMessage.search(regex) === -1) {
-      this.sendEvent(createOutputEvent(logMessage));
-      return;
+    const variableRegex = /(?<!\\)\{(?<variableName>(?:\{?)?(?:\\\{|\\\}|[^{}\n])+?(?:\})?)(?<!\\)\}/gu;
+    if (format.search(variableRegex) === -1) {
+      return [ unescapeLogMessage(format) ];
     }
 
-    const { stackFrames } = await this.session!.sendStackGetCommand();
-    const { contexts } = await this.session!.sendContextNamesCommand(stackFrames[0]);
-    let currentIndex = 0;
-    for await (const match of logMessage.matchAll(regex)) {
+    const results: Array<string | dbgp.ObjectProperty> = [];
+    let message = '', currentIndex = 0;
+    for await (const match of format.matchAll(variableRegex)) {
       if (typeof match.index === 'undefined') {
         break;
       }
       if (typeof match.groups === 'undefined') {
         break;
       }
+
+      if (currentIndex < match.index) {
+        message += format.slice(currentIndex, match.index);
+      }
+
       const { variableName } = match.groups;
-
-      for await (const context of contexts) {
-        let property: dbgp.Property;
-        try {
-          const { properties } = await this.session!.sendPropertyGetCommand(context, variableName);
-          property = properties[0];
-        }
-        catch (error) {
-          continue;
-        }
-
-        if (property.type === 'undefined') {
-          continue;
-        }
-
-        if (property instanceof dbgp.ObjectProperty) {
-          if (currentIndex < match.index) {
-            message += logMessage.slice(currentIndex, match.index);
-          }
-          if (message) {
-            this.sendEvent(new OutputEvent(unescapeLogMessage(message), logCategory));
-            message = '';
-          }
-
-          const objectProperty = property;
-          const variablesReference = this.variablesReferenceCounter++;
-          this.logObjectPropertiesByVariablesReference.set(variablesReference, objectProperty);
-          this.sendEvent(createOutputEvent(objectProperty.displayValue, variablesReference));
+      if (-1 < variableName.search(variableRegex)) {
+        const metaVariableName = variableName.match(new RegExp(variableRegex.source, 'u'))?.groups?.variableName ?? '';
+        if (metaVariables?.has(metaVariableName)) {
+          message += metaVariables.get(metaVariableName)!;
         }
         else {
-          const primitiveProperty = property as dbgp.PrimitiveProperty;
-          message += logMessage.slice(currentIndex, match.index) + primitiveProperty.value;
+          message += match[0];
         }
+      }
+      else {
+        const property = await this.session!.safeFetchLatestProperty(variableName);
 
-        currentIndex = match[0].length + match.index;
-        break;
+        if (property) {
+          if (property instanceof dbgp.ObjectProperty) {
+            if (message !== '') {
+              results.push(unescapeLogMessage(message));
+              message = '';
+            }
+
+            results.push(property);
+          }
+          else if (property instanceof dbgp.PrimitiveProperty) {
+            message += property.value;
+          }
+        }
+        else {
+          message += match[0];
+        }
+      }
+
+      currentIndex = match[0].length + match.index;
+    }
+
+    if (currentIndex < format.length) {
+      message += format.slice(currentIndex);
+    }
+    results.push(unescapeLogMessage(message));
+    return results;
+  }
+  private async displayPerfTips(metaVarialbes: CaseInsensitiveMap<string, string>): Promise<void> {
+    if (!this.config.usePerfTips) {
+      return;
+    }
+
+    const { format } = this.config.usePerfTips;
+    let message = '';
+    for (const messageOrProperty of await this.formatLog(format, metaVarialbes)) {
+      if (typeof messageOrProperty === 'string') {
+        message += messageOrProperty;
       }
     }
 
-    if (currentIndex < logMessage.length) {
-      message += logMessage.slice(currentIndex);
+    const decorationType = vscode.window.createTextEditorDecorationType({
+      after: {
+        fontStyle: this.config.usePerfTips.fontStyle,
+        color: this.config.usePerfTips.fontColor,
+        contentText: ` ${message}`,
+      },
+    });
+    this.perfTipsDecorationTypes.push(decorationType);
+
+    if (!this.currentStackFrames) {
+      return;
     }
-    if (message) {
-      this.sendEvent(createOutputEvent(message));
+
+    const { fileUri, line } = this.currentStackFrames[0];
+    const document = await vscode.workspace.openTextDocument(URI.parse(fileUri).fsPath);
+    let line_0base = line - 1;
+    if (line_0base === document.lineCount) {
+      line_0base--; // I don't know about the details, but if the script stops at the end of the file and it's not a blank line, then line_0base will be the value of `document.lineCount + 1`, so we'll compensate for that
+    }
+
+    const textLine = document.lineAt(line_0base);
+    const startPosition = textLine.range.end;
+    const endPosition = new vscode.Position(line_0base, textLine.range.end.character + message.length - 1);
+    const decoration = { range: new vscode.Range(startPosition, endPosition) } as vscode.DecorationOptions;
+
+    const editor = await vscode.window.showTextDocument(document);
+    editor.setDecorations(decorationType, [ decoration ]);
+  }
+  private clearPerfTipsDecorations(): void {
+    if (!this.config.usePerfTips) {
+      return;
+    }
+
+    for (const editor of vscode.window.visibleTextEditors) {
+      for (const decorationTypes of this.perfTipsDecorationTypes) {
+        editor.setDecorations(decorationTypes, []);
+      }
     }
   }
 }

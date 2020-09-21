@@ -11,8 +11,10 @@
             "program": "${file}",
             "args": [],
             "stopOnEntry": false,
-            "useAdvancedBreakpoint": true,
-            "useAdvancedOutput": true,
+            "useDebugDirective": true,
+            "useProcessUsageData": false,
+            "usePerfTips": true,
+            "openFileOnExit": "${file}",
             "internalConsoleOptions": "openOnSessionStart"
         },
         {
@@ -24,8 +26,6 @@
             "program": "${file}",
             "args": [],
             "stopOnEntry": false,
-            "useAdvancedBreakpoint": false,
-            "useAdvancedOutput": false,
             "maxChildren": 10000
         }
     ]

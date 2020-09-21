@@ -19,6 +19,7 @@ module.exports = {
     'arrow-body-style': 'off',
     'class-methods-use-this': 'off',
     'lines-between-class-members': 'off',
+    'newline-per-chained-call': ["error", { "ignoreChainWithDepth": 5 }],
     'no-plusplus': 'off',
     'no-shadow': 'off',
     'prefer-named-capture-group': 'off',

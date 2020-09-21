@@ -154,14 +154,66 @@
                 "description": "Automatically stop after launch.",
                 "default": false
               },
-              "useAdvancedBreakpoint": {
+              "useProcessUsageData": {
                 "type": "boolean",
-                "description": "Note: This is an experimental feature. Execution speed may be slow. Whether to enable Conditional Breakpoint / Hit Count Breakpoint / Log point",
+                "description": "Add a process usage data to a MetaVariable. note that setting it to true will slow down the step execution by a factor of several.",
                 "default": false
               },
-              "useAdvancedOutput": {
-                "type": "boolean",
-                "description": "Make the output method equivalent to Log point. This is useful when you want to output an object.",
+              "usePerfTips": {
+                "type": [
+                  "boolean",
+                  "string",
+                  "object"
+                ],
+                "examples": [
+                  "{{elapsedTime_s}}s elapsed",
+                  "{{elapsedTime_s}}s elapsed. CPU {{usageCpu}}%, Memory {{usageMemory_MB}}MB used."
+                ],
+                "properties": {
+                  "fontColor": {
+                    "type": "string",
+                    "description": "Set the `color` of CSS",
+                    "default": "gray"
+                  },
+                  "fontStyle": {
+                    "type": "string",
+                    "description": "Set the `font-style` of CSS",
+                    "default": "italic",
+                    "examples": [
+                      "normal",
+                      "italic",
+                      "oblique"
+                    ]
+                  },
+                  "format": {
+                    "type": "string",
+                    "description": "Content to be displayed. You can specify `MetaVariable` and AutoHotkey variables.",
+                    "examples": [
+                      "{{elapsedTime_s}}s elapsed",
+                      "{{elapsedTime_s}}s elapsed. CPU {{usageCpu}}%, Memory {{usageMemory_MB}}MB used."
+                    ],
+                    "default": "{{elapsedTime_s}}s elapsed"
+                  }
+                },
+                "description": "If set to true, execute time will be displayed inline. You can change what is displayed by specifying a string. See the README for details.",
+                "default": false
+              },
+              "useDebugDirective": {
+                "type": [
+                  "boolean",
+                  "object"
+                ],
+                "properties": {
+                  "useBreakpointDirective": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "useOutputDirective": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                },
+                "description": "You can send instructions to the debugger by embedding comments that follow specific rules in the source code. You can set the details by using the object.See the README for details. Note that enabling this feature will slow down the performance at debug launch.",
                 "default": false
               },
               "openFileOnExit": {
@@ -180,14 +232,8 @@
               "name": "AutoHotkey Debug",
               "request": "launch",
               "type": "autohotkey",
-              "runtime_v1": "AutoHotkey.exe",
-              "runtime_v2": "v2/AutoHotkey.exe",
               "program": "^\"\\${file}\"",
-              "args": [],
-              "stopOnEntry": false,
-              "useAdvancedBreakpoint": false,
-              "useAdvancedOutput": false,
-              "maxChildren": 10000
+              "args": []
             }
           }
         ]
@@ -195,24 +241,30 @@
     ]
   },
   "dependencies": {
-    "@zero-plusplus/ahk-include-path-resolver": "^1.0.7",
+    "@wtfcode/byte-converter": "^1.7.11",
+    "@zero-plusplus/ahk-include-path-resolver": "^1.0.8",
+    "convert-hrtime": "^3.0.0",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
     "is-port-taken": "^0.0.3",
     "parsimmon": "^1.13.0",
     "path-exists": "^4.0.0",
     "pcre-to-regexp": "^1.1.0",
+    "pidusage": "^2.0.21",
     "regex-parser": "^2.2.11",
     "underscore": "^1.10.2",
     "underscore.string": "^3.3.5",
     "vscode-debugadapter": "^1.40.0",
-    "vscode-debugprotocol": "^1.40.0"
+    "vscode-debugprotocol": "^1.40.0",
+    "vscode-uri": "^2.1.2"
   },
   "devDependencies": {
+    "@types/convert-hrtime": "^3.0.2",
     "@types/he": "^1.1.1",
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
     "@types/parsimmon": "^1.10.1",
+    "@types/pidusage": "^2.0.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
     "@types/vscode": "^1.45.0",
