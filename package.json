@@ -161,8 +161,7 @@
                   "object"
                 ],
                 "examples": [
-                  "{{elapsedTime_s}}s elapsed",
-                  "{{elapsedTime_s}}s elapsed. CPU {{usageCpu}}%, Memory {{usageMemory_MB}}MB used."
+                  "{{elapsedTime_s}}s elapsed"
                 ],
                 "properties": {
                   "fontColor": {
@@ -184,8 +183,7 @@
                     "type": "string",
                     "description": "Content to be displayed. You can specify `MetaVariable` and AutoHotkey variables.",
                     "examples": [
-                      "{{elapsedTime_s}}s elapsed",
-                      "{{elapsedTime_s}}s elapsed. CPU {{usageCpu}}%, Memory {{usageMemory_MB}}MB used."
+                      "{{elapsedTime_s}}s elapsed"
                     ],
                     "default": "{{elapsedTime_s}}s elapsed"
                   }
@@ -257,7 +255,6 @@
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
     "@types/parsimmon": "^1.10.1",
-    "@types/pidusage": "^2.0.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
     "@types/vscode": "^1.45.0",
