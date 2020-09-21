@@ -364,7 +364,7 @@ As with AutoHotkey's variable name, this is case insensitive. And to distinguish
 </table>
 
 ## Process usage MetaVariable (Optional)
-**Note that you can only use [PerfTips](#perftips-optional) and [Watch expression](#watch-expression).**
+**Note that debugging performance is degraded because of the time it takes to retrieve process usage data.**
 
 Available when `useProcessUsageData` is set to `true`.
 
@@ -375,7 +375,7 @@ Available when `useProcessUsageData` is set to `true`.
 </tr>
 <tr>
     <td>{usageCpu}</td>
-    <td>Current CPU usage (Unit: %)</td>
+    <td>Current CPU usage. (Unit: %)</td>
 </tr>
 <tr>
     <td>

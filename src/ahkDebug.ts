@@ -62,6 +62,12 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   };
   openFileOnExit: string;
 }
+export interface ProcessData {
+  usageCpu: number;
+  usageMemory_B: number;
+  usageMemory_MB: number;
+}
+
 type LogCategory = 'console' | 'stdout' | 'stderr';
 
 export class AhkDebugSession extends LoggingDebugSession {
@@ -818,6 +824,14 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
+  private async getProcessUsageData(): Promise<ProcessData> {
+    const usage = await pidusage(this.ahkProcess!.pid);
+    return {
+      usageCpu: usage.cpu,
+      usageMemory_B: usage.memory,
+      usageMemory_MB: byteConverter.convert(usage.memory, 'B', 'MB'),
+    };
+  }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
     if (response.status === 'stopped') {
       this.isSessionStopped = true;
@@ -871,8 +885,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         metaVariables.set('hitCount', String(lineBreakpoints.hitCount));
 
         for await (const breakpoint of lineBreakpoints) {
-          const _metaVariables = new CaseInsensitiveMap<string, string>(metaVariables.entries());
-
           const {
             condition,
             hitCondition,
@@ -880,6 +892,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             logMessage,
           } = breakpoint;
 
+          const _metaVariables = new CaseInsensitiveMap<string, string>(metaVariables.entries());
           _metaVariables.set('condition', condition);
           _metaVariables.set('hitCondition', hitCondition);
           _metaVariables.set('logMessage', logMessage);
@@ -899,11 +912,26 @@ export class AhkDebugSession extends LoggingDebugSession {
             stopReason = 'hidden breakpoint';
           }
 
-          const logMode = logGroup || logMessage;
-          if (conditionResult && logMode) {
-            const logCategory = 'stderr' as LogCategory;
-            await this.printLogMessage(_metaVariables, logCategory);
-            conditionResult = false;
+          if (conditionResult) {
+            if (this.config.useProcessUsageData) {
+              if (!this.currentMetaVariables.has('usageCpu')) {
+                const { usageCpu, usageMemory_B, usageMemory_MB } = await this.getProcessUsageData();
+                this.currentMetaVariables.set('usageCpu', String(usageCpu));
+                this.currentMetaVariables.set('usageMemory_B', String(usageMemory_B));
+                this.currentMetaVariables.set('usageMemory_MB', String(usageMemory_MB));
+              }
+
+              _metaVariables.set('usageCpu', this.currentMetaVariables.get('usageCpu')!);
+              _metaVariables.set('usageMemory_B', this.currentMetaVariables.get('usageMemory_B')!);
+              _metaVariables.set('usageMemory_MB', this.currentMetaVariables.get('usageMemory_MB')!);
+            }
+
+            const logMode = logGroup || logMessage;
+            if (logMode) {
+              const logCategory = 'stderr' as LogCategory;
+              await this.printLogMessage(_metaVariables, logCategory);
+              conditionResult = false;
+            }
           }
 
           conditionResults.push(conditionResult);
@@ -972,14 +1000,14 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.isPaused = true;
 
     if (this.currentMetaVariables) {
-      const metaVariables = this.currentMetaVariables;
-      if (this.config.useProcessUsageData) {
-        const usage = await pidusage(this.ahkProcess!.pid);
-        metaVariables.set('usageCpu', String(usage.cpu));
-        metaVariables.set('usageMemory_B', String(usage.memory));
-        metaVariables.set('usageMemory_MB', String(byteConverter.convert(usage.memory, 'B', 'MB')));
+      if (this.config.useProcessUsageData && !this.currentMetaVariables.has('usageCpu')) {
+        const { usageCpu, usageMemory_B, usageMemory_MB } = await this.getProcessUsageData();
+        this.currentMetaVariables.set('usageCpu', String(usageCpu));
+        this.currentMetaVariables.set('usageMemory_B', String(usageMemory_B));
+        this.currentMetaVariables.set('usageMemory_MB', String(usageMemory_MB));
       }
-      await this.displayPerfTips(metaVariables);
+
+      await this.displayPerfTips(this.currentMetaVariables);
     }
     this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
   }
