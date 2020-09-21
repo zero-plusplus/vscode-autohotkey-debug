@@ -935,7 +935,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else if (this.stackFramesWhenStepOut) {
-        if (this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) { // || this.stackFramesWhenStepOut.length === this.currentStackFrames.length) {
+        if (this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
           this.stackFramesWhenStepOut = null;
 
           const result = await this.session!.sendContinuationCommand('step_out');
