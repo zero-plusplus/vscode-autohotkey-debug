@@ -504,7 +504,10 @@ export class Session extends EventEmitter {
   private readonly pendingCommands = new Map<number, Command>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
-  public get closed(): boolean {
+  public get socketWritable(): boolean {
+    return this.socket.writable;
+  }
+  public get socketClosed(): boolean {
     return !this.socket.writable;
   }
   constructor(socket: Socket) {
@@ -833,7 +836,7 @@ export class Session extends EventEmitter {
   public async close(): Promise<void> {
     this.removeAllListeners();
     return new Promise<void>((resolve, reject) => {
-      if (this.closed) {
+      if (this.socketClosed) {
         resolve();
         return;
       }
@@ -850,6 +853,7 @@ export class Session extends EventEmitter {
     return new Promise<void>((resolve, reject) => {
       if (!this.socket.writable) {
         reject(new Error('Socket not writable.'));
+        return;
       }
 
       this.socket.write(Buffer.from(command), (err) => {

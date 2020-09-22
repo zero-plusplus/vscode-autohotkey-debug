@@ -64,7 +64,7 @@ type LogCategory = 'console' | 'stdout' | 'stderr';
 export class AhkDebugSession extends LoggingDebugSession {
   private pauseRequested = false;
   private isPaused = false;
-  private isSessionStopped = false;
+  private isTerminateRequested = false;
   private server?: net.Server;
   private session?: dbgp.Session;
   private ahkProcess?: ChildProcessWithoutNullStreams;
@@ -83,7 +83,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
   private stackFramesWhenStepOut: dbgp.StackFrame[] | null = null;
   private stackFramesWhenStepOver: dbgp.StackFrame[] | null = null;
-  private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
+  private perfTipsDecorationTypes?: vscode.TextEditorDecorationType;
   private readonly loadedSources: string[] = [];
   constructor() {
     super('autohotkey-debug.txt');
@@ -105,19 +105,16 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.clearPerfTipsDecorations();
+    if (!this.isTerminateRequested) {
+      this.isTerminateRequested = true;
+    }
 
-    if (this.session) {
-      if (this.ahkProcess) {
-        if (!this.isSessionStopped) {
-          await this.session.sendStopCommand();
-        }
-      }
-      await this.session.close();
+    this.clearPerfTipsDecorations();
+    if (this.session && this.session.socketWritable) {
+      await this.session.sendStopCommand();
     }
-    if (this.server) {
-      this.server.close();
-    }
+    await this.session?.close();
+    this.server?.close();
 
     if (this.config.openFileOnExit !== null) {
       if (pathExistsSync(this.config.openFileOnExit)) {
@@ -151,7 +148,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         const portUsed = await isPortTaken(this.config.port, this.config.hostname);
         if (portUsed) {
           if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
-            this.sendEvent(new TerminatedEvent());
+            this.sendTerminateEvent();
             return;
           }
         }
@@ -171,10 +168,15 @@ export class AhkDebugSession extends LoggingDebugSession {
         },
       );
       ahkProcess.on('close', (exitCode) => {
-        this.isSessionStopped = true;
-        const category = exitCode === 0 ? 'console' : 'stderr';
-        this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
-        this.sendEvent(new TerminatedEvent());
+        if (this.isTerminateRequested) {
+          return;
+        }
+
+        if (exitCode !== null) {
+          const category = exitCode === 0 ? 'console' : 'stderr';
+          this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
+        }
+        this.sendTerminateEvent();
       });
       ahkProcess.stdout.on('data', (data: string | Buffer) => {
         const fixedData = this.fixPathOfRuntimeError(String(data));
@@ -212,9 +214,8 @@ export class AhkDebugSession extends LoggingDebugSession {
                 })
                 .on('error', (error?: Error) => {
                   if (error) {
-                    if (!this.isSessionStopped && this.ahkProcess) {
-                      this.ahkProcess.kill();
-                      this.isSessionStopped = true;
+                    if (this.session?.socketClosed) {
+                      this.ahkProcess?.kill();
                     }
                     this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
                   }
@@ -222,7 +223,6 @@ export class AhkDebugSession extends LoggingDebugSession {
                   this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
                 })
                 .on('close', () => {
-                  this.isSessionStopped = true;
                   this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
                 })
                 .on('stdout', (data) => {
@@ -250,13 +250,18 @@ export class AhkDebugSession extends LoggingDebugSession {
         format: error.message,
       } as DebugProtocol.Message;
       this.sendErrorResponse(response, message);
-      this.sendEvent(new TerminatedEvent());
+      this.sendTerminateEvent();
       return;
     }
 
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     const filePath = args.source.path ?? '';
     const fileUri = URI.file(filePath).toString();
     const requestedBreakpoints = args.breakpoints ?? [];
@@ -297,6 +302,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
     await this.registerDebugDirective();
 
@@ -311,6 +321,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     this.pauseRequested = false;
     this.isPaused = false;
     this.currentMetaVariables = null;
@@ -320,6 +335,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     this.currentMetaVariables = null;
     this.pauseRequested = true;
     this.isPaused = false;
@@ -329,7 +349,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.currentMetaVariables = null;
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     this.pauseRequested = true;
     this.isPaused = false;
 
@@ -338,6 +362,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     this.currentMetaVariables = null;
     this.pauseRequested = true;
     this.isPaused = false;
@@ -347,6 +376,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     this.currentMetaVariables = null;
     this.pauseRequested = true;
     this.isPaused = false;
@@ -356,10 +390,20 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };
     this.sendResponse(response);
   }
   protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): void {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
     const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
     const endFrame = startFrame + maxLevels;
@@ -414,6 +458,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request): Promise<void> {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     const stackFrame = this.stackFramesByFrameId.get(args.frameId);
     if (typeof stackFrame === 'undefined') {
       throw new Error(`Unknown frameId ${args.frameId}`);
@@ -432,6 +481,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     let properties: dbgp.Property[] = [];
     if (this.contextByVariablesReference.has(args.variablesReference)) {
       const context = this.contextByVariablesReference.get(args.variablesReference)!;
@@ -591,6 +645,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      this.sendResponse(response);
+      return;
+    }
+
     const propertyName = args.expression;
     try {
       if (!args.frameId) {
@@ -816,10 +875,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
-    if (response.status === 'stopped') {
-      this.isSessionStopped = true;
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      return;
     }
-    else if (response.status === 'break') {
+
+    if (response.status === 'break') {
       if (this.isPaused) {
         return;
       }
@@ -966,6 +1026,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       await this.checkContinuationStatus(result);
     }
   }
+  private sendTerminateEvent(): void {
+    if (this.isTerminateRequested) {
+      return;
+    }
+
+    this.isTerminateRequested = true;
+    this.sendEvent(new TerminatedEvent());
+  }
   private async sendStoppedEvent(stopReason: string): Promise<void> {
     this.stackFramesWhenStepOut = null;
     this.stackFramesWhenStepOver = null;
@@ -978,49 +1046,55 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
   }
   private async evalCondition(breakpoint: Breakpoint, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
-    const { condition, hitCondition } = breakpoint;
-    const hitCount = parseInt(metaVariables.get('hitCount')!, 10);
+    try {
+      const { condition, hitCondition } = breakpoint;
+      const hitCount = parseInt(metaVariables.get('hitCount')!, 10);
 
-    let conditionResult = false, hitConditionResult = false;
-    if (condition) {
-      conditionResult = await this.conditionalEvaluator.eval(condition, metaVariables);
-    }
-    if (hitCondition) {
-      const match = hitCondition.match(/^(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)$/u);
-      if (match?.groups) {
-        const { operator = '>=' } = match.groups;
-        const number = parseInt(match.groups.number, 10);
+      let conditionResult = false, hitConditionResult = false;
+      if (condition) {
+        conditionResult = await this.conditionalEvaluator.eval(condition, metaVariables);
+      }
+      if (hitCondition) {
+        const match = hitCondition.match(/^(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)$/u);
+        if (match?.groups) {
+          const { operator = '>=' } = match.groups;
+          const number = parseInt(match.groups.number, 10);
 
-        if (operator === '=' || operator === '==') {
-          hitConditionResult = hitCount === number;
-        }
-        else if (operator === '>') {
-          hitConditionResult = hitCount > number;
-        }
-        else if (operator === '>=') {
-          hitConditionResult = hitCount >= number;
-        }
-        else if (operator === '<') {
-          hitConditionResult = hitCount < number;
-        }
-        else if (operator === '<=') {
-          hitConditionResult = hitCount <= number;
-        }
-        else if (operator === '%') {
-          hitConditionResult = hitCount % number === 0;
+          if (operator === '=' || operator === '==') {
+            hitConditionResult = hitCount === number;
+          }
+          else if (operator === '>') {
+            hitConditionResult = hitCount > number;
+          }
+          else if (operator === '>=') {
+            hitConditionResult = hitCount >= number;
+          }
+          else if (operator === '<') {
+            hitConditionResult = hitCount < number;
+          }
+          else if (operator === '<=') {
+            hitConditionResult = hitCount <= number;
+          }
+          else if (operator === '%') {
+            hitConditionResult = hitCount % number === 0;
+          }
         }
       }
+
+      let matchCondition = false;
+      if (condition && hitCondition) {
+        matchCondition = conditionResult && hitConditionResult;
+      }
+      else if (condition || hitCondition) {
+        matchCondition = conditionResult || hitConditionResult;
+      }
+
+      return matchCondition;
+    }
+    catch {
     }
 
-    let matchCondition = false;
-    if (condition && hitCondition) {
-      matchCondition = conditionResult && hitConditionResult;
-    }
-    else if (condition || hitCondition) {
-      matchCondition = conditionResult || hitConditionResult;
-    }
-
-    return matchCondition;
+    return false;
   }
   private async printLogMessage(metaVariables: CaseInsensitiveMap<string, string>, logCategory?: LogCategory): Promise<void> {
     const logMessage = metaVariables.get('logMessage') ?? '';
@@ -1128,6 +1202,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (!this.config.usePerfTips) {
       return;
     }
+    if (!this.currentStackFrames) {
+      return;
+    }
 
     const { format } = this.config.usePerfTips;
     let message = '';
@@ -1136,18 +1213,14 @@ export class AhkDebugSession extends LoggingDebugSession {
         message += messageOrProperty;
       }
     }
-
-    const decorationType = vscode.window.createTextEditorDecorationType({
-      after: {
-        fontStyle: this.config.usePerfTips.fontStyle,
-        color: this.config.usePerfTips.fontColor,
-        contentText: ` ${message}`,
-      },
-    });
-    this.perfTipsDecorationTypes.push(decorationType);
-
-    if (!this.currentStackFrames) {
-      return;
+    if (!this.perfTipsDecorationTypes) {
+      this.perfTipsDecorationTypes = vscode.window.createTextEditorDecorationType({
+        after: {
+          fontStyle: this.config.usePerfTips.fontStyle,
+          color: this.config.usePerfTips.fontColor,
+          contentText: ` ${message}`,
+        },
+      });
     }
 
     const { fileUri, line } = this.currentStackFrames[0];
@@ -1163,17 +1236,21 @@ export class AhkDebugSession extends LoggingDebugSession {
     const decoration = { range: new vscode.Range(startPosition, endPosition) } as vscode.DecorationOptions;
 
     const editor = await vscode.window.showTextDocument(document);
-    editor.setDecorations(decorationType, [ decoration ]);
+    if (this.isTerminateRequested) {
+      return; // If debugging terminated while the step is running, the decorations may remain display
+    }
+    editor.setDecorations(this.perfTipsDecorationTypes, [ decoration ]);
   }
   private clearPerfTipsDecorations(): void {
     if (!this.config.usePerfTips) {
       return;
     }
+    if (!this.perfTipsDecorationTypes) {
+      return;
+    }
 
     for (const editor of vscode.window.visibleTextEditors) {
-      for (const decorationTypes of this.perfTipsDecorationTypes) {
-        editor.setDecorations(decorationTypes, []);
-      }
+      editor.setDecorations(this.perfTipsDecorationTypes, []);
     }
   }
 }

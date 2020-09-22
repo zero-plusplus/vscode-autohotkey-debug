@@ -53,7 +53,7 @@ export const completionItemProvider = {
     if (!this.session) {
       return [];
     }
-    else if (this.session.closed) {
+    else if (this.session.socketClosed) {
       this.session = null;
       return [];
     }
