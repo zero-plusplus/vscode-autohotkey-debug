@@ -33,6 +33,15 @@ export class Breakpoint {
 }
 export class LineBreakpoints extends Array<Breakpoint> {
   public hitCount = 0;
+  public hasAdvancedBreakpoint(): boolean {
+    for (const breakpoint of this) {
+      const { condition, hitCondition, logMessage, logGroup } = breakpoint;
+      if (condition || hitCondition || logMessage || logGroup) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
 
 export class BreakpointManager {
@@ -40,20 +49,6 @@ export class BreakpointManager {
   private readonly breakpointsMap = new CaseInsensitiveMap<string, LineBreakpoints>();
   constructor(session: dbgp.Session) {
     this.session = session;
-  }
-  public isAdvancedBreakpoint(fileUri: string, line: number): boolean {
-    const breakpoints = this.getBreakpoints(fileUri, line);
-    if (!breakpoints) {
-      return false;
-    }
-
-    for (const breakpoint of breakpoints) {
-      const { condition, hitCondition, logMessage, logGroup } = breakpoint;
-      if (condition || hitCondition || logMessage || logGroup) {
-        return true;
-      }
-    }
-    return false;
   }
   public hasBreakpoint(fileUri: string, line: number): boolean {
     const key = this.createKey(fileUri, line);

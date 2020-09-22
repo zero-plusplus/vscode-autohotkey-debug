@@ -909,24 +909,34 @@ export class AhkDebugSession extends LoggingDebugSession {
       const { fileUri, line } = stackFrames[0];
       this.currentStackFrames = stackFrames;
 
+
       const stepExecutionByUser = response.commandName.includes('step') && this.stackFramesWhenStepOver === null && this.stackFramesWhenStepOut === null;
-      if (stepExecutionByUser && prevStackFrames) {
-        if (response.commandName === 'step_out') {
-          this.stackFramesWhenStepOut = prevStackFrames.slice();
+      const lineBreakpoints = this.breakpointManager!.getBreakpoints(fileUri, line);
+      if (stepExecutionByUser) {
+        if (!lineBreakpoints) {
+          this.sendStoppedEvent(response.stopReason);
+          return;
         }
-        else if (response.commandName === 'step_over') {
-          this.stackFramesWhenStepOver = prevStackFrames.slice();
+        if (!lineBreakpoints.hasAdvancedBreakpoint()) {
+          this.sendStoppedEvent(response.stopReason);
+          return;
+        }
+
+        if (prevStackFrames) {
+          if (response.commandName === 'step_out') {
+            this.stackFramesWhenStepOut = prevStackFrames.slice();
+          }
+          else if (response.commandName === 'step_over') {
+            this.stackFramesWhenStepOver = prevStackFrames.slice();
+          }
         }
       }
 
 
       let stopReason = String(response.stopReason);
-      const conditionResults: boolean[] = [];
-      const lineBreakpoints = this.breakpointManager!.getBreakpoints(fileUri, line);
+      const conditionResults: boolean[] = lineBreakpoints ? [] : [ true ];
       if (lineBreakpoints) {
-        lineBreakpoints.hitCount++;
-        metaVariables.set('hitCount', String(lineBreakpoints.hitCount));
-
+        metaVariables.set('hitCount', String(++lineBreakpoints.hitCount));
         for await (const breakpoint of lineBreakpoints) {
           const {
             condition,
@@ -966,6 +976,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
 
+
       if (response.commandName === 'break') {
         metaVariables.set('elapsedTime_ns', '-1');
         metaVariables.set('elapsedTime_ms', '-1');
@@ -982,7 +993,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
       else if (this.stackFramesWhenStepOver) {
-        if (this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
+        if (this.stackFramesWhenStepOver[0].fileUri === this.currentStackFrames[0].fileUri && this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
           this.stackFramesWhenStepOver = null;
 
           const result = await this.session!.sendContinuationCommand('step_over');
@@ -995,7 +1006,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else if (this.stackFramesWhenStepOut) {
-        if (this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
+        if (this.stackFramesWhenStepOut[0].fileUri === this.currentStackFrames[0].fileUri && this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
           this.stackFramesWhenStepOut = null;
 
           const result = await this.session!.sendContinuationCommand('step_out');
@@ -1007,8 +1018,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           return;
         }
       }
-
-      if (conditionResults.includes(true)) {
+      else if (conditionResults.includes(true)) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
