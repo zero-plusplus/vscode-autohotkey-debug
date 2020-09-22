@@ -331,7 +331,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.currentMetaVariables = null;
 
     const result = await this.session!.sendContinuationCommand('run');
-    await this.checkContinuationStatus(result);
+    this.checkContinuationStatus(result);
     this.sendResponse(response);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
@@ -345,7 +345,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('step_over');
-    await this.checkContinuationStatus(result);
+    this.checkContinuationStatus(result);
     this.sendResponse(response);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
@@ -358,7 +358,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('step_into');
-    await this.checkContinuationStatus(result);
+    this.checkContinuationStatus(result);
     this.sendResponse(response);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
@@ -372,7 +372,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('step_out');
-    await this.checkContinuationStatus(result);
+    this.checkContinuationStatus(result);
     this.sendResponse(response);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
@@ -386,7 +386,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('break');
-    await this.checkContinuationStatus(result);
+    this.checkContinuationStatus(result);
     this.sendResponse(response);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
