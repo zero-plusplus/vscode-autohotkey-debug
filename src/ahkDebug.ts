@@ -904,11 +904,11 @@ export class AhkDebugSession extends LoggingDebugSession {
       const lineBreakpoints = this.breakpointManager!.getBreakpoints(fileUri, line);
       if (stepExecutionByUser) {
         if (!lineBreakpoints) {
-          this.sendStoppedEvent(response.stopReason);
+          await this.sendStoppedEvent(response.stopReason);
           return;
         }
         if (!lineBreakpoints.hasAdvancedBreakpoint()) {
-          this.sendStoppedEvent(response.stopReason);
+          await this.sendStoppedEvent(response.stopReason);
           return;
         }
 
@@ -924,7 +924,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
 
       let stopReason = String(response.stopReason);
-      const conditionResults: boolean[] = lineBreakpoints ? [] : [ true ];
+      const conditionResults: boolean[] = [];
       if (lineBreakpoints) {
         metaVariables.set('hitCount', String(++lineBreakpoints.hitCount));
         for await (const breakpoint of lineBreakpoints) {
@@ -971,11 +971,11 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.currentMetaVariables.set('elapsedTime_ns', '-1');
         this.currentMetaVariables.set('elapsedTime_ms', '-1');
         this.currentMetaVariables.set('elapsedTime_s', '-1');
-        this.sendStoppedEvent(response.stopReason);
+        await this.sendStoppedEvent(response.stopReason);
         return;
       }
       else if (response.commandName === 'step_into') {
-        this.sendStoppedEvent(response.stopReason);
+        await this.sendStoppedEvent(response.stopReason);
         return;
       }
       else if (stepExecutionByUser && conditionResults.includes(true)) {
@@ -983,11 +983,13 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
       else if (this.stackFramesWhenStepOver) {
-        if (this.stackFramesWhenStepOver[0].fileUri === this.currentStackFrames[0].fileUri && this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
-          this.stackFramesWhenStepOver = null;
-
+        if (prevStackFrames && equalsIgnoreCase(this.currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && this.currentStackFrames[0].line === prevStackFrames[0].line) {
+          await this.sendStoppedEvent(stopReason);
+          return;
+        }
+        else if (equalsIgnoreCase(this.stackFramesWhenStepOver[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
           const result = await this.session!.sendContinuationCommand('step_over');
-          this.checkContinuationStatus(result);
+          await this.checkContinuationStatus(result);
           return;
         }
         else if (this.stackFramesWhenStepOver.length === this.currentStackFrames.length) {
@@ -996,11 +998,13 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else if (this.stackFramesWhenStepOut) {
-        if (this.stackFramesWhenStepOut[0].fileUri === this.currentStackFrames[0].fileUri && this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
-          this.stackFramesWhenStepOut = null;
-
+        if (prevStackFrames && equalsIgnoreCase(this.currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && this.currentStackFrames[0].line === prevStackFrames[0].line) {
+          await this.sendStoppedEvent(stopReason);
+          return;
+        }
+        else if (equalsIgnoreCase(this.stackFramesWhenStepOut[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
           const result = await this.session!.sendContinuationCommand('step_out');
-          this.checkContinuationStatus(result);
+          await this.checkContinuationStatus(result);
           return;
         }
         else if (this.currentStackFrames.length < this.stackFramesWhenStepOut.length) {
@@ -1008,7 +1012,8 @@ export class AhkDebugSession extends LoggingDebugSession {
           return;
         }
       }
-      else if (conditionResults.includes(true)) {
+
+      if (conditionResults.includes(true)) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
