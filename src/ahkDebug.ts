@@ -83,7 +83,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
   private stackFramesWhenStepOut: dbgp.StackFrame[] | null = null;
   private stackFramesWhenStepOver: dbgp.StackFrame[] | null = null;
-  private perfTipsDecorationTypes?: vscode.TextEditorDecorationType;
+  private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   private readonly loadedSources: string[] = [];
   constructor() {
     super('autohotkey-debug.txt');
@@ -968,9 +968,9 @@ export class AhkDebugSession extends LoggingDebugSession {
 
 
       if (response.commandName === 'break') {
-        metaVariables.set('elapsedTime_ns', '-1');
-        metaVariables.set('elapsedTime_ms', '-1');
-        metaVariables.set('elapsedTime_s', '-1');
+        this.currentMetaVariables.set('elapsedTime_ns', '-1');
+        this.currentMetaVariables.set('elapsedTime_ms', '-1');
+        this.currentMetaVariables.set('elapsedTime_s', '-1');
         this.sendStoppedEvent(response.stopReason);
         return;
       }
@@ -1035,6 +1035,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendEvent(new TerminatedEvent());
   }
   private async sendStoppedEvent(stopReason: string): Promise<void> {
+    if (this.isPaused) {
+      return;
+    }
+
     this.stackFramesWhenStepOut = null;
     this.stackFramesWhenStepOver = null;
     this.pauseRequested = false;
@@ -1213,15 +1217,15 @@ export class AhkDebugSession extends LoggingDebugSession {
         message += messageOrProperty;
       }
     }
-    if (!this.perfTipsDecorationTypes) {
-      this.perfTipsDecorationTypes = vscode.window.createTextEditorDecorationType({
-        after: {
-          fontStyle: this.config.usePerfTips.fontStyle,
-          color: this.config.usePerfTips.fontColor,
-          contentText: ` ${message}`,
-        },
-      });
-    }
+
+    const decorationType = vscode.window.createTextEditorDecorationType({
+      after: {
+        fontStyle: this.config.usePerfTips.fontStyle,
+        color: this.config.usePerfTips.fontColor,
+        contentText: ` ${message}`,
+      },
+    });
+    this.perfTipsDecorationTypes.push(decorationType);
 
     const { fileUri, line } = this.currentStackFrames[0];
     const document = await vscode.workspace.openTextDocument(URI.parse(fileUri).fsPath);
@@ -1239,18 +1243,17 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (this.isTerminateRequested) {
       return; // If debugging terminated while the step is running, the decorations may remain display
     }
-    editor.setDecorations(this.perfTipsDecorationTypes, [ decoration ]);
+    editor.setDecorations(decorationType, [ decoration ]);
   }
   private clearPerfTipsDecorations(): void {
     if (!this.config.usePerfTips) {
       return;
     }
-    if (!this.perfTipsDecorationTypes) {
-      return;
-    }
 
     for (const editor of vscode.window.visibleTextEditors) {
-      editor.setDecorations(this.perfTipsDecorationTypes, []);
+      for (const decorationType of this.perfTipsDecorationTypes) {
+        editor.setDecorations(decorationType, []);
+      }
     }
   }
 }
