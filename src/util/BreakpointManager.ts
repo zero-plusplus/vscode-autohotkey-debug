@@ -10,6 +10,7 @@ export interface BreakpointAdvancedData {
   logGroup?: BreakpointLogGroup;
   hidden?: boolean;
 }
+export type BreakpointKind = 'breakpoint' | 'logpoint' | 'conditional breakpoint' | 'conditional logpoint';
 export class Breakpoint {
   public id: number;
   public fileUri: string;
@@ -19,6 +20,16 @@ export class Breakpoint {
   public logMessage: string;
   public logGroup: string;
   public hidden: boolean;
+  public get kind(): BreakpointKind {
+    const logMode = Boolean(this.logMessage || this.logGroup);
+    if (this.condition || this.hitCondition) {
+      if (logMode) {
+        return 'conditional logpoint';
+      }
+      return 'conditional breakpoint';
+    }
+    return logMode ? 'logpoint' : 'breakpoint';
+  }
   constructor(dbgpBreakpoint: dbgp.Breakpoint, advancedData?: BreakpointAdvancedData) {
     this.id = dbgpBreakpoint.id;
     this.fileUri = dbgpBreakpoint.fileUri;

@@ -51,7 +51,8 @@ export class InitPacket {
     this.fileUri = fileuri;
   }
 }
-export type ContinuationCommandName = 'run' | 'step_into' | 'step_over' | 'step_out' | 'break' | 'stop' | 'detach' | 'status';
+export type StepCommandName = 'step_into' | 'step_over' | 'step_out';
+export type ContinuationCommandName = 'run' | StepCommandName | 'break' | 'stop' | 'detach' | 'status';
 export type CommandName =
   ContinuationCommandName |
   'stack_get' | 'stack_depth' | 'context_get' | 'context_names' |
@@ -608,7 +609,7 @@ export class Session extends EventEmitter {
   public async sendRunCommand(): Promise<ContinuationResponse> {
     return this.sendContinuationCommand('run');
   }
-  public async sendBreakCommand(): Promise<Response> {
+  public async sendBreakCommand(): Promise<ContinuationResponse> {
     return this.sendContinuationCommand('break');
   }
   public async sendStopCommand(): Promise<ContinuationResponse> {

@@ -28,6 +28,7 @@ import {
   BreakpointAdvancedData,
   BreakpointLogGroup,
   BreakpointManager,
+  LineBreakpoints,
 } from './util/BreakpointManager';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { Parser, createParser } from './util/ConditionParser';
@@ -60,7 +61,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   openFileOnExit: string;
 }
 type LogCategory = 'console' | 'stdout' | 'stderr';
-
+type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause';
 export class AhkDebugSession extends LoggingDebugSession {
   private pauseRequested = false;
   private isPaused = false;
@@ -79,6 +80,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private breakpointManager?: BreakpointManager;
   private conditionalEvaluator!: ConditionalEvaluator;
+  private prevStackFrames: dbgp.StackFrame[] | null = null;
   private currentStackFrames: dbgp.StackFrame[] | null = null;
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
   private stackFramesWhenStepOut: dbgp.StackFrame[] | null = null;
@@ -321,9 +323,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
+    this.currentMetaVariables = null;
     this.pauseRequested = false;
     this.isPaused = false;
-    this.currentMetaVariables = null;
 
     const result = await this.session!.sendContinuationCommand('run');
     this.checkContinuationStatus(result);
@@ -335,7 +337,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     this.currentMetaVariables = null;
-    this.pauseRequested = true;
+    this.pauseRequested = false;
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('step_over');
@@ -347,7 +349,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.pauseRequested = true;
+    this.currentMetaVariables = null;
+    this.pauseRequested = false;
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('step_into');
@@ -360,7 +363,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     this.currentMetaVariables = null;
-    this.pauseRequested = true;
+    this.pauseRequested = false;
     this.isPaused = false;
 
     const result = await this.session!.sendContinuationCommand('step_out');
@@ -864,171 +867,222 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
+  private async findMatchedBreakpoint(lineBreakpoints: LineBreakpoints | null): Promise<Breakpoint | null> {
+    if (!lineBreakpoints) {
+      return null;
+    }
+
+    for await (const breakpoint of lineBreakpoints) {
+      if (breakpoint.kind === 'breakpoint') {
+        return breakpoint;
+      }
+      if (breakpoint.kind === 'conditional breakpoint' && await this.evalCondition(breakpoint)) {
+        return breakpoint;
+      }
+    }
+    return null;
+  }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
     if (this.session!.socketClosed || this.isTerminateRequested) {
       return;
     }
+    if (response.status !== 'break') {
+      return;
+    }
+    if (this.isPaused) {
+      return;
+    }
+    this.clearPerfTipsDecorations();
 
-    if (response.status === 'break') {
-      if (this.isPaused) {
-        return;
+    // Prepare
+    const prevMetaVariables = this.currentMetaVariables;
+    this.currentMetaVariables = new CaseInsensitiveMap<string, string>();
+    this.currentMetaVariables.set('hitCount', '-1');
+    if (prevMetaVariables) {
+      const elapsedTime_ns = parseFloat(prevMetaVariables.get('elapsedTime_ns')!) + response.elapsedTime.ns;
+      const elapsedTime_ms = parseFloat(prevMetaVariables.get('elapsedTime_ms')!) + response.elapsedTime.ms;
+      const elapsedTime_s = parseFloat(prevMetaVariables.get('elapsedTime_s')!) + response.elapsedTime.s;
+      this.currentMetaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
+      this.currentMetaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
+      this.currentMetaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
+    }
+    else {
+      this.currentMetaVariables.set('elapsedTime_ns', toFixed(response.elapsedTime.ns, 3));
+      this.currentMetaVariables.set('elapsedTime_ms', toFixed(response.elapsedTime.ms, 3));
+      this.currentMetaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
+    }
+    this.prevStackFrames = this.currentStackFrames;
+    const { stackFrames } = await this.session!.sendStackGetCommand();
+    const { fileUri, line } = stackFrames[0];
+    this.currentStackFrames = stackFrames;
+    const lineBreakpoints = this.breakpointManager!.getBreakpoints(fileUri, line);
+    let stopReason: StopReason = 'step';
+    if (lineBreakpoints) {
+      this.currentMetaVariables.set('hitCount', String(++lineBreakpoints.hitCount));
+      if (0 < lineBreakpoints.length) {
+        stopReason = lineBreakpoints[0].hidden
+          ? 'hidden breakpoint'
+          : 'breakpoint';
       }
-      this.clearPerfTipsDecorations();
+    }
 
+    // Pause
+    if (response.commandName === 'break') {
+      this.currentMetaVariables.set('elapsedTime_ns', '-1');
+      this.currentMetaVariables.set('elapsedTime_ms', '-1');
+      this.currentMetaVariables.set('elapsedTime_s', '-1');
+      await this.processLogpoint(lineBreakpoints);
+      await this.sendStoppedEvent('pause');
+      return;
+    }
 
-      const prevMetaVariables = this.currentMetaVariables;
-      const metaVariables = new CaseInsensitiveMap<string, string>();
-      metaVariables.set('hitCount', '-1');
-      if (prevMetaVariables) {
-        const elapsedTime_ns = parseFloat(prevMetaVariables.get('elapsedTime_ns')!) + response.elapsedTime.ns;
-        const elapsedTime_ms = parseFloat(prevMetaVariables.get('elapsedTime_ms')!) + response.elapsedTime.ms;
-        const elapsedTime_s = parseFloat(prevMetaVariables.get('elapsedTime_s')!) + response.elapsedTime.s;
-        metaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
-        metaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
-        metaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
-      }
-      else {
-        metaVariables.set('elapsedTime_ns', toFixed(response.elapsedTime.ns, 3));
-        metaVariables.set('elapsedTime_ms', toFixed(response.elapsedTime.ms, 3));
-        metaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
-      }
-      this.currentMetaVariables = metaVariables;
-
-      const prevStackFrames = this.currentStackFrames;
-      const { stackFrames } = await this.session!.sendStackGetCommand();
-      const { fileUri, line } = stackFrames[0];
-      this.currentStackFrames = stackFrames;
-
-
-      const stepExecutionByUser = response.commandName.includes('step') && this.stackFramesWhenStepOver === null && this.stackFramesWhenStepOut === null;
-      const lineBreakpoints = this.breakpointManager!.getBreakpoints(fileUri, line);
-      if (stepExecutionByUser) {
-        if (!lineBreakpoints) {
-          await this.sendStoppedEvent(response.stopReason);
-          return;
-        }
-        if (!lineBreakpoints.hasAdvancedBreakpoint()) {
-          await this.sendStoppedEvent(response.stopReason);
-          return;
-        }
-
-        if (prevStackFrames) {
-          if (response.commandName === 'step_out') {
-            this.stackFramesWhenStepOut = prevStackFrames.slice();
-          }
-          else if (response.commandName === 'step_over') {
-            this.stackFramesWhenStepOver = prevStackFrames.slice();
-          }
-        }
-      }
-
-
-      let stopReason = String(response.stopReason);
-      const conditionResults: boolean[] = [];
-      if (lineBreakpoints) {
-        metaVariables.set('hitCount', String(++lineBreakpoints.hitCount));
-        for await (const breakpoint of lineBreakpoints) {
-          const {
-            condition,
-            hitCondition,
-            logGroup,
-            logMessage,
-          } = breakpoint;
-
-          const _metaVariables = new CaseInsensitiveMap<string, string>(metaVariables.entries());
-          _metaVariables.set('condition', condition);
-          _metaVariables.set('hitCondition', hitCondition);
-          _metaVariables.set('logMessage', logMessage);
-          _metaVariables.set('logGroup', logGroup);
-
-          const isDefiniteStop = conditionResults.includes(true);
-          let conditionResult = true;
-          if (condition || hitCondition) {
-            conditionResult = await this.evalCondition(breakpoint, _metaVariables);
-            if (conditionResult && !isDefiniteStop) {
-              stopReason = breakpoint.hidden
-                ? 'hidden breakpoint'
-                : 'conditional breakpoint';
-            }
-          }
-          else if (!isDefiniteStop && breakpoint.hidden) {
-            stopReason = 'hidden breakpoint';
-          }
-
-          const logMode = logGroup || logMessage;
-          if (conditionResult && logMode) {
-            const logCategory = 'stderr' as LogCategory;
-            await this.printLogMessage(_metaVariables, logCategory);
-            conditionResult = false;
-          }
-
-          conditionResults.push(conditionResult);
-        }
-      }
-
-
-      if (response.commandName === 'break') {
-        this.currentMetaVariables.set('elapsedTime_ns', '-1');
-        this.currentMetaVariables.set('elapsedTime_ms', '-1');
-        this.currentMetaVariables.set('elapsedTime_s', '-1');
-        await this.sendStoppedEvent(response.stopReason);
-        return;
-      }
-      else if (response.commandName === 'step_into') {
-        await this.sendStoppedEvent(response.stopReason);
-        return;
-      }
-      else if (stepExecutionByUser && conditionResults.includes(true)) {
-        await this.sendStoppedEvent(stopReason);
-        return;
-      }
-      else if (this.stackFramesWhenStepOver) {
-        if (prevStackFrames && equalsIgnoreCase(this.currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && this.currentStackFrames[0].line === prevStackFrames[0].line) {
-          await this.sendStoppedEvent(stopReason);
-          return;
-        }
-        else if (equalsIgnoreCase(this.stackFramesWhenStepOver[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
-          const result = await this.session!.sendContinuationCommand('step_over');
-          await this.checkContinuationStatus(result);
-          return;
-        }
-        else if (this.stackFramesWhenStepOver.length === this.currentStackFrames.length) {
-          await this.sendStoppedEvent(stopReason);
-          return;
-        }
-      }
-      else if (this.stackFramesWhenStepOut) {
-        if (prevStackFrames && equalsIgnoreCase(this.currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && this.currentStackFrames[0].line === prevStackFrames[0].line) {
-          await this.sendStoppedEvent(stopReason);
-          return;
-        }
-        else if (equalsIgnoreCase(this.stackFramesWhenStepOut[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
-          const result = await this.session!.sendContinuationCommand('step_out');
-          await this.checkContinuationStatus(result);
-          return;
-        }
-        else if (this.currentStackFrames.length < this.stackFramesWhenStepOut.length) {
-          await this.sendStoppedEvent(stopReason);
-          return;
-        }
-      }
-
-      if (conditionResults.includes(true)) {
+    // Step
+    if (response.commandName.includes('step')) {
+      if (response.commandName === 'step_into') {
+        await this.processLogpoint(lineBreakpoints);
         await this.sendStoppedEvent(stopReason);
         return;
       }
 
-      let result: dbgp.ContinuationResponse;
-      if (this.stackFramesWhenStepOut || this.stackFramesWhenStepOver) {
-        result = await this.session!.sendContinuationCommand('step_out');
-      }
-      else if (this.pauseRequested) {
-        result = await this.session!.sendContinuationCommand('break');
-      }
-      else {
-        result = await this.session!.sendContinuationCommand('run');
-      }
+      await this.processStepExecution(response.commandName as dbgp.StepCommandName, lineBreakpoints);
+      return;
+    }
+
+    // Normal breakpoint
+    if (lineBreakpoints && !lineBreakpoints.hasAdvancedBreakpoint()) {
+      await this.sendStoppedEvent(stopReason);
+      return;
+    }
+
+    // Advanced breakpoint
+    await this.processLogpoint(lineBreakpoints);
+    const breakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
+    if (breakpoint) {
+      await this.sendStoppedEvent(stopReason);
+      return;
+    }
+
+    // Interruptive pause
+    if (this.pauseRequested) {
+      const result = await this.session!.sendBreakCommand();
       await this.checkContinuationStatus(result);
+      return;
+    }
+
+    // Re-check in case an interruption has occurred
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (this.isPaused) {
+      return;
+    }
+
+    // Auto execution
+    const result = await this.session!.sendRunCommand();
+    await this.checkContinuationStatus(result);
+  }
+  private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints: LineBreakpoints | null): Promise<void> {
+    if (!this.currentMetaVariables || !this.currentStackFrames) {
+      throw Error(`This message shouldn't appear.`);
+    }
+
+    let stopReason: StopReason = 'step';
+    if (lineBreakpoints && 0 < lineBreakpoints.length) {
+      stopReason = lineBreakpoints[0].hidden
+        ? 'hidden breakpoint'
+        : 'breakpoint';
+    }
+
+    const executeByUser = this.stackFramesWhenStepOut === null && this.stackFramesWhenStepOver === null;
+    if (executeByUser) {
+      // Normal step
+      if (!lineBreakpoints || lineBreakpoints.length === 0) {
+        await this.sendStoppedEvent('step');
+        return;
+      }
+      else if (!lineBreakpoints.hasAdvancedBreakpoint()) { // normal breakpoint
+        await this.sendStoppedEvent(stopReason);
+        return;
+      }
+
+      // Prepare advanced step
+      if (this.prevStackFrames) {
+        if (stepType === 'step_out') {
+          this.stackFramesWhenStepOut = this.prevStackFrames.slice();
+        }
+        else if (stepType === 'step_over') {
+          this.stackFramesWhenStepOver = this.prevStackFrames.slice();
+        }
+      }
+    }
+
+    // Advanced step
+    await this.processLogpoint(lineBreakpoints);
+    const breakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
+    if (executeByUser && breakpoint) {
+      await this.sendStoppedEvent(stopReason);
+      return;
+    }
+
+    if (this.pauseRequested) {
+      const result = await this.session!.sendBreakCommand();
+      await this.checkContinuationStatus(result);
+      return;
+    }
+    else if (this.stackFramesWhenStepOut) {
+      // One more breath. The final adjustment
+      if (equalsIgnoreCase(this.stackFramesWhenStepOut[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
+        const result = await this.session!.sendContinuationCommand('step_out');
+        await this.checkContinuationStatus(result);
+        return;
+      }
+
+      // Complated step out
+      if (this.currentStackFrames.length < this.stackFramesWhenStepOut.length) {
+        await this.sendStoppedEvent(stopReason);
+        return;
+      }
+    }
+    else if (this.stackFramesWhenStepOver) {
+      // If go back to the same line in a one-line loop, etc.
+      if (this.prevStackFrames && equalsIgnoreCase(this.currentStackFrames[0].fileUri, this.prevStackFrames[0].fileUri) && this.currentStackFrames[0].line === this.prevStackFrames[0].line) {
+        await this.sendStoppedEvent(stopReason);
+        return;
+      }
+
+      // One more breath. The final adjustment
+      if (equalsIgnoreCase(this.stackFramesWhenStepOver[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
+        const result = await this.session!.sendContinuationCommand('step_over');
+        await this.checkContinuationStatus(result);
+        return;
+      }
+
+      // Complated step over
+      if (this.stackFramesWhenStepOver.length === this.currentStackFrames.length) {
+        await this.sendStoppedEvent(stopReason);
+        return;
+      }
+    }
+
+    const result = await this.session!.sendContinuationCommand('step_out');
+    await this.checkContinuationStatus(result);
+  }
+  private async processLogpoint(lineBreakpoints: LineBreakpoints | null): Promise<void> {
+    if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
+      throw Error(`This message shouldn't appear.`);
+    }
+    if (!lineBreakpoints) {
+      return;
+    }
+    if (!lineBreakpoints.hasAdvancedBreakpoint()) {
+      return;
+    }
+
+    for await (const breakpoint of lineBreakpoints) {
+      if (breakpoint.kind.includes('logpoint')) {
+        if (breakpoint.kind === 'conditional logpoint' && !await this.evalCondition(breakpoint)) {
+          continue;
+        }
+        await this.printLogMessage(breakpoint, 'stderr');
+      }
     }
   }
   private sendTerminateEvent(): void {
@@ -1039,7 +1093,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.isTerminateRequested = true;
     this.sendEvent(new TerminatedEvent());
   }
-  private async sendStoppedEvent(stopReason: string): Promise<void> {
+  private async sendStoppedEvent(stopReason: StopReason): Promise<void> {
     if (this.isPaused) {
       return;
     }
@@ -1054,14 +1108,18 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
   }
-  private async evalCondition(breakpoint: Breakpoint, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
+  private async evalCondition(breakpoint: Breakpoint): Promise<boolean> {
+    if (!this.currentMetaVariables) {
+      throw Error(`This message shouldn't appear.`);
+    }
+
     try {
       const { condition, hitCondition } = breakpoint;
-      const hitCount = parseInt(metaVariables.get('hitCount')!, 10);
+      const hitCount = parseInt(this.currentMetaVariables.get('hitCount')!, 10);
 
       let conditionResult = false, hitConditionResult = false;
       if (condition) {
-        conditionResult = await this.conditionalEvaluator.eval(condition, metaVariables);
+        conditionResult = await this.conditionalEvaluator.eval(condition, this.currentMetaVariables);
       }
       if (hitCondition) {
         const match = hitCondition.match(/^(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)$/u);
@@ -1105,9 +1163,13 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     return false;
   }
-  private async printLogMessage(metaVariables: CaseInsensitiveMap<string, string>, logCategory?: LogCategory): Promise<void> {
-    const logMessage = metaVariables.get('logMessage') ?? '';
-    const results = await this.formatLog(logMessage, metaVariables);
+  private async printLogMessage(breakpoint: Breakpoint, logCategory?: LogCategory): Promise<void> {
+    if (!this.currentMetaVariables) {
+      throw Error(`This message shouldn't appear.`);
+    }
+
+    const { logMessage, logGroup } = breakpoint;
+    const results = await this.formatLog(logMessage, this.currentMetaVariables);
 
     // When output an object, it automatically breaks a line. Therefore, if the end is a newline code, remove it.
     const last = results[results.length - 1];
@@ -1122,8 +1184,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         const message = messageOrProperty;
 
         event = new OutputEvent(message, logCategory) as DebugProtocol.OutputEvent;
-        if (metaVariables.has('logGroup')) {
-          event.body.group = metaVariables.get('logGroup')! as BreakpointLogGroup;
+        if (logGroup) {
+          event.body.group = logGroup as BreakpointLogGroup;
         }
       }
       else {
