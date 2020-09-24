@@ -943,6 +943,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (response.commandName.includes('step')) {
       if (response.commandName === 'step_into') {
         await this.processLogpoint(lineBreakpoints);
+        const breakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
+        if (!breakpoint) {
+          stopReason = 'step';
+        }
         await this.sendStoppedEvent(stopReason);
         return;
       }
@@ -1020,12 +1024,15 @@ export class AhkDebugSession extends LoggingDebugSession {
     // Advanced step
     await this.processLogpoint(lineBreakpoints);
     const breakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
+    if (!breakpoint) {
+      stopReason = 'step';
+    }
+
     if (executeByUser && breakpoint) {
       await this.sendStoppedEvent(stopReason);
       return;
     }
-
-    if (this.pauseRequested) {
+    else if (this.pauseRequested) {
       const result = await this.session!.sendBreakCommand();
       await this.checkContinuationStatus(result);
       return;
