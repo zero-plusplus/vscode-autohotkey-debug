@@ -173,7 +173,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>string</td>
     <td>
         Same as <code>runtime</code>, but useful if you want to specify different settings for different extensions. <code>runtime_v1</code> corresponds to <code>.ahk</code> and <code>runtime_v2</code> corresponds to <code>.ahk2</code> or <code>.ah2</code>. If the <code>runtime</code> is set, it takes precedence.<br />
-        default: <code>"AutoHotkey.exe"</code>, <code>"v2/AutoHotkey.exe"</code>
+        <strong>default: <code>"AutoHotkey.exe"</code>, <code>"v2/AutoHotkey.exe"</code></strong>
     </td>
 </tr>
 <tr>
@@ -181,7 +181,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>arary</td>
     <td>
         <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. <code>"/debug"</code> will be ignored.<br />
-        default: <code>[ "/ErrorStdOut" ]</code>
+        <strong>default: <code>[ "/ErrorStdOut" ]</code></strong>
     </td>
 </tr>
 <tr>
@@ -196,7 +196,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>number</td>
     <td>
         A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.<br />
-        default: <code>9000</code>
+        <strong>default: <code>9000</code></strong>
     </td>
 </tr>
 <tr>
@@ -211,7 +211,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>string</td>
     <td>
         The absolute path to the script you want to debug.<br />
-        default: <code>"${file}"</code>
+        <strong>default: <code>"${file}"</code><strong>
     </td>
 </tr>
 <tr>
@@ -231,7 +231,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>boolean</td>
     <td>
         If <code>false</code>, it runs until it stops at a breakpoint. Set it to <code>true</code> if you want it to stop at the first line, as in SciTE4AutoHotkey.<br />
-        default: <code>false</code>
+        <strong>default: <code>false</code><strong>
     </td>
 </tr>
 <tr>
@@ -239,7 +239,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>number</td>
     <td>
         The maximum number of child elements of the object to be retrieved. Basically, there is no need to change it.<br />
-        default: <code>10000</code>
+        <strong>default: <code>10000</code><strong>
     </td>
 </tr>
 <tr>
@@ -263,14 +263,17 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>useIntellisense</td>
     <td>boolean</td>
     <td>
-        Enable / disable <a href="#intellisense-in-debugging">Intellisense in Debugging</a>. <strong>If you have installed another extension that supports IntelliSense, it is recommended to disable this feature.</strong><br />
-    default: <code>true</code>
+        Enable / disable <a href="#intellisense-in-debugging">Intellisense in Debugging</a>. If you have installed another extension that supports IntelliSense, it is recommended to disable this feature.<br />
+    <strong>default: <code>true</code></strong>
     </td>
 </tr>
 <tr>
     <td rowspan=3>usePerfTips</td>
     <td>boolean</td>
-    <td>Enable / disable <a href="#perftips-optional">PerfTips</a>.</td>
+    <td>
+        Enable / disable <a href="#perftips-optional">PerfTips</a>.<br />
+        <strong>default: <code>false</code></strong>
+    </td>
 </tr>
 <tr>
     <td>string</td>
@@ -313,7 +316,8 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td rowspan=2>useDebugDirective</td>
     <td>boolean</td>
     <td>
-        <strong>Note that if you enable, debug startup is slow.</strong> Enable / disable <a href="#debug-directive-optional">Debug directive</a>.
+        <strong>Note that if you enable, debug startup is slow.</strong> Enable / disable <a href="#debug-directive-optional">Debug directive</a>.<br />
+        <strong>default: <code>false</code></strong>
     </td>
 </tr>
 <tr>
