@@ -1062,6 +1062,12 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
+    // Pause on breakpoint
+    if (breakpoint) {
+      await this.sendStoppedEvent(stopReason);
+      return;
+    }
+
     const result = await this.session!.sendContinuationCommand('step_out');
     await this.checkContinuationStatus(result);
   }
