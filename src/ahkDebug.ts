@@ -1028,8 +1028,15 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
     else if (this.stackFramesWhenStepOut) {
-      // One more breath. The final adjustment
-      if (equalsIgnoreCase(this.stackFramesWhenStepOut[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
+      // If go back to the same line in a one-line loop, etc.
+      if (this.prevStackFrames && equalsIgnoreCase(this.currentStackFrames[0].fileUri, this.prevStackFrames[0].fileUri) && this.currentStackFrames[0].line === this.prevStackFrames[0].line) {
+        if (breakpoint) {
+          await this.sendStoppedEvent(stopReason);
+          return;
+        }
+      }
+      else if (equalsIgnoreCase(this.stackFramesWhenStepOut[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
+        // One more breath. The final adjustment
         const result = await this.session!.sendContinuationCommand('step_out');
         await this.checkContinuationStatus(result);
         return;
