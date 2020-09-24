@@ -657,6 +657,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         if (this.currentMetaVariables?.has(metaVariableName)) {
           response.body = {
             result: this.currentMetaVariables.get(metaVariableName)!,
+            type: 'metavariable',
             variablesReference: 0,
           };
           this.sendResponse(response);
