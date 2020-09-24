@@ -96,23 +96,20 @@ export class ConditionalEvaluator {
     this.ahkVersion = version;
   }
   public async eval(expressions: string, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
-    let parsed = this.parser.Expressions.parse(expressions);
+    const parsed = this.parser.Expressions.parse(expressions);
     if (!parsed.status) {
-      parsed = this.parser.Expressions.parse(expressions.slice(0, parsed.index.offset));
-      if (!parsed.status) {
-        return false;
-      }
+      return false;
     }
 
     const exprs = parsed.value.value;
     if (Array.isArray(exprs)) {
-      const pos = parsed.value.pos;
-      const a = await this.evalExpression(exprs[0].value, metaVariables);
-      const operator = logicalOperators[exprs[1]];
-      const b = await this.evalExpression(exprs[2].value, metaVariables);
+      const [ left, operatorName, right, rest ] = exprs;
+      const a = await this.evalExpression(left.value, metaVariables);
+      const operator = logicalOperators[operatorName];
+      const b = await this.evalExpression(right.value, metaVariables);
       const result = operator(a, b);
-      if (pos.end.offset < expressions.length) {
-        return this.eval(`${String(result)} ${expressions.slice(pos.end.offset)}`, metaVariables);
+      if (rest) {
+        return this.eval(`${String(result)}${String(rest)}`, metaVariables);
       }
       return result;
     }

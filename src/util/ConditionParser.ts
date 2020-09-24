@@ -242,6 +242,7 @@ export const createParser = function(version: 1 | 2): P.Language {
           rules.LogicalOperator,
           rules._,
           rules.Expression,
+          P.regex(/.*/u), // rest expression
         ).node(''),
         rules.Expression.node(''),
       ).map((result) => {
@@ -250,10 +251,10 @@ export const createParser = function(version: 1 | 2): P.Language {
           end: result.end,
         };
 
-        if (result.value.length === 5) {
+        if (result.value.length === 6) {
           return {
             type: 'Expressions',
-            value: [ result.value[0], result.value[2], result.value[4] ],
+            value: [ result.value[0], result.value[2], result.value[4], result.value[5] ],
             pos,
           };
         }
