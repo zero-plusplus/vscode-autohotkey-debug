@@ -366,8 +366,8 @@ The following features allow to handle `MetaVariable`.
         {elapsedTime_s}
     </td>
     <td>
-        <strong>Note that this is not accurate by specification and will be set to <code>-1</code> when paused.</strong><br />
-        Time taken to execute. Each suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second).
+        Time taken to execute. Each suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second).<br /><br />
+        <strong>Note that this is not accurate by specification, Especially noticeable if you are using <a href="#advanced-breakpoint">Advanced breakpoint</a>. Also note that if you pause, the value will be <code>-1</code>, as the exact execute time cannot be calculated.</strong>
     </td>
 </tr>
 </table>
@@ -662,7 +662,9 @@ It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8"]` in
 
 Available when `usePerfTips` is setting. See [here](#customize-launchjson) for details.
 
-As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time. Note that by specification, this will be slower than the actual execute time. This is especially noticeable if you are using [Advanced breakpoint](#advanced-breakpoint).
+As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time.
+
+**Please note that the execute time displayed are not exact. See `{elapsedTime_s}` in [MetaVariable](#metavariable) for details**
 
 ## Debug directive (Optional)
 **This is a preview version. Specifications are subject to change. Also need to search for directive comments slows down performance at startup.**
