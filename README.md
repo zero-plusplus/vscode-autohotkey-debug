@@ -260,6 +260,14 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <th>Description</th>
 </tr>
 <tr>
+    <td>useIntellisense</td>
+    <td>boolean</td>
+    <td>
+        Enable / disable <a href="#intellisense-in-debugging">Intellisense in Debugging</a>. <strong>If you have installed another extension that supports IntelliSense, it is recommended to disable this feature.</strong><br />
+    default: <code>true</code>
+    </td>
+</tr>
+<tr>
     <td rowspan=3>usePerfTips</td>
     <td>boolean</td>
     <td>Enable / disable <a href="#perftips-optional">PerfTips</a>.</td>
@@ -606,6 +614,8 @@ e.g. `count: {A_Index}`, `{object}`, `name: {person.name}`, `{{elapsedTime_s}}`
 The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
 
 This is a limited feature, but can be very useful for editing the source code while debugging.
+
+If you don't need this feature, set `useIntellisense` to `false`.
 
 ## Debug console
 ![debug-console](image/debug-console.jpg)

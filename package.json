@@ -191,6 +191,11 @@
                 "description": "If set to true, execute time will be displayed inline. You can change what is displayed by specifying a string. See the README for details.",
                 "default": false
               },
+              "useIntellisense": {
+                "type": "boolean",
+                "description": "If you have another extension installed that supports IntelliSense, it is recommended that you turn off this feature.",
+                "default": true
+              },
               "useDebugDirective": {
                 "type": [
                   "boolean",

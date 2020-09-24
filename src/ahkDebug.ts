@@ -54,6 +54,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     fontStyle: string;
     format: string;
   };
+  useIntellisense: boolean;
   useDebugDirective: false | {
     useBreakpointDirective: boolean;
     useOutputDirective: boolean;
@@ -202,6 +203,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                   }
                   this.session.sendFeatureGetCommand('language_version').then((response) => {
                     this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
+                    completionItemProvider.useIntellisense = this.config.useIntellisense;
                     completionItemProvider.ahkVersion = this.ahkVersion;
                     completionItemProvider.session = this.session ?? null;
                     this.ahkParser = createParser(this.ahkVersion);
