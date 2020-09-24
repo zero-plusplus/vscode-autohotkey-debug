@@ -164,7 +164,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>runtime</td>
     <td>string</td>
     <td>
-        The path to AutoHotkey.exe. If you specify a relative path, the current directory is <code>C:\Program Files\AutoHotkey</code>. Also extension(i.e. ".exe") is optional.<br />
+        The path to AutoHotkey.exe. If you specify a relative path, the current directory is <code>C:/Program Files/AutoHotkey</code>. Also extension(i.e. <code>.exe</code>) is optional.<br />
         e.g. <code>"v2/AutoHotkey.exe"</code>, <code>"${workspaceFolder}/AutoHotkey"</code>
     </td>
 </tr>
