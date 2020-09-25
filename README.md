@@ -180,7 +180,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>runtimeArgs</td>
     <td>arary</td>
     <td>
-        <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. <code>"/debug"</code> will be ignored.<br />
+        <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. However <code>"/debug"</code> will be ignored.<br />
         <strong>default: <code>[ "/ErrorStdOut" ]</code></strong>
     </td>
 </tr>

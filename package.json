@@ -85,7 +85,7 @@
                 "items": {
                   "type": "string"
                 },
-                "description": "Arguments to pass to AutoHotkey.exe. \"/debug\" will be ignored.",
+                "description": "Arguments to pass to AutoHotkey.exe. However \"/debug\" will be ignored.",
                 "default": [
                   "/ErrorStdOut"
                 ]
