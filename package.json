@@ -65,9 +65,67 @@
         "configurationAttributes": {
           "launch": {
             "properties": {
+              "runtime": {
+                "type": "string",
+                "description": "The path to AutoHotkey.exe. If you specify a relative path, the current directory is \"C:/Program Files/AutoHotkey\". Also extension(i.e. \".exe\") is optional.",
+                "default": "AutoHotkey.exe"
+              },
+              "runtime_v1": {
+                "type": "string",
+                "description": "This is the \"runtime\" when the extension is \".ahk\". If runtime is set, it takes precedence.",
+                "default": "AutoHotkey.exe"
+              },
+              "runtime_v2": {
+                "type": "string",
+                "description": "This is the \"runtime\" when the extension is \".ahk2\" or \".ah2\". If \"runtime\" is set, it takes precedence.",
+                "default": "v2/AutoHotkey.exe"
+              },
+              "runtimeArgs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Arguments to pass to AutoHotkey.exe. \"/debug\" will be ignored.",
+                "default": [
+                  "/ErrorStdOut"
+                ]
+              },
+              "runtimeArgs_v1": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "This is the \"runtimeArgs\" when the extension is \".ahk\". If \"runtimeArgs\" is set, it takes precedence.",
+                "default": [
+                  "/ErrorStdOut"
+                ]
+              },
+              "runtimeArgs_v2": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "This is the \"runtimeArgs\" when the extension is \".ahk2\" or \".ah2\". If \"runtimeArgs\" is set, it takes precedence.",
+                "default": [
+                  "/ErrorStdOut"
+                ]
+              },
+              "hostname": {
+                "type": "string",
+                "description": "No changes are required.",
+                "default": "localhost"
+              },
+              "port": {
+                "type": [
+                  "string",
+                  "number"
+                ],
+                "description": "A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.",
+                "default": 9000
+              },
               "program": {
                 "type": "string",
-                "description": "Absolute path to a (ahk | ahk2 | ah2) file.",
+                "description": "The absolute path to the script you want to debug.",
                 "default": "${file}"
               },
               "args": {
@@ -75,7 +133,7 @@
                 "items": {
                   "type": "string"
                 },
-                "description": "Arguments passed to the program to debug.",
+                "description": "Arguments to be passed to \"program\"",
                 "default": []
               },
               "env": {
@@ -86,73 +144,28 @@
                     "null"
                   ]
                 },
-                "description": "environment variables (the value null can be used to empty string a variable)",
+                "description": "Environment variable to be set during debugging. if set to null, it will be treated as an empty string.",
                 "default": {}
-              },
-              "runtime": {
-                "type": "string",
-                "description": "Assign `AutoHotkey.exe` to the extension `ahk` and `ahk2` and `ah2`. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. The extension `.exe` can be omitted."
-              },
-              "runtime_v1": {
-                "type": "string",
-                "description": "Assign `AutoHotkey.exe` to the extension `ahk`. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. The extension `.exe` can be omitted."
-              },
-              "runtime_v2": {
-                "type": "string",
-                "description": "Assign `AutoHotkey.exe` to the extension `ahk2` or `ah2`. If you specify a relative path, the installation directory of AutoHotkey becomes the current directory. The extension `.exe` can be omitted."
-              },
-              "runtimeArgs": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "In most cases you will not need to change this setting. Be aware that debugging may fail if you make changes.\nArguments to pass to AutoHotkey.exe. However, `/Debug` is ignored.",
-                "default": [
-                  "/ErrorStdOut"
-                ]
-              },
-              "runtimeArgs_v1": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "In most cases you will not need to change this setting. Be aware that debugging may fail if you make changes.\nArgument to be passed to AutoHotkey.exe when the extension is `ahk`. However, `/Debug` is ignored.",
-                "default": [
-                  "/ErrorStdOut"
-                ]
-              },
-              "runtimeArgs_v2": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                },
-                "description": "In most cases you will not need to change this setting. Be aware that debugging may fail if you make changes.\nArgument to be passed to AutoHotkey.exe when the extension is `ahk2` or `ah2`. However, `/Debug` is ignored.",
-                "default": [
-                  "/ErrorStdOut"
-                ]
-              },
-              "hostname": {
-                "type": "string",
-                "description": "",
-                "default": "127.0.0.1"
-              },
-              "port": {
-                "type": [
-                  "string",
-                  "number"
-                ],
-                "description": "You need to change this number if you want to debug multiple source code at the same time using different vscode instances. For example, 9001, 9002. You can also declare a range of port numbers that may be used by setting a string like \"start-last\". `start` and `last` are numbers. Also, it must be `start < last` For example, \"9000-9010\". By declaring it, you can suppress the message confirming the port usage.",
-                "default": 9000
-              },
-              "maxChildren": {
-                "type": "number",
-                "description": "Maximum number of child elements to retrieve",
-                "default": 10000
               },
               "stopOnEntry": {
                 "type": "boolean",
-                "description": "Automatically stop after launch.",
+                "description": "If false, it runs until it stops at a breakpoint. Set it to true if you want it to stop at the first line, as in SciTE4AutoHotkey.",
                 "default": false
+              },
+              "maxChildren": {
+                "type": "number",
+                "description": "The maximum number of child elements of the object to be retrieved. Basically, there is no need to change it.",
+                "default": 10000
+              },
+              "openFileOnExit": {
+                "type": "string",
+                "description": "The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script.",
+                "default": "${file}"
+              },
+              "useIntellisense": {
+                "type": "boolean",
+                "description": "Enable / disable Intellisense in Debugging. If you have installed another extension that supports IntelliSense, it is recommended to disable this feature.",
+                "default": true
               },
               "usePerfTips": {
                 "type": [
@@ -164,37 +177,32 @@
                   "{{elapsedTime_s}}s elapsed"
                 ],
                 "properties": {
+                  "format": {
+                    "type": "string",
+                    "description": "Content to be displayed. See the README for detailed instructions on how to set it up.",
+                    "examples": [
+                      "{{elapsedTime_s}}s elapsed"
+                    ],
+                    "default": "{{elapsedTime_s}}s elapsed"
+                  },
                   "fontColor": {
                     "type": "string",
-                    "description": "Set the `color` of CSS",
+                    "description": "Set the `color` of CSS.",
                     "default": "gray"
                   },
                   "fontStyle": {
                     "type": "string",
-                    "description": "Set the `font-style` of CSS",
+                    "description": "Set the `font-style` of CSS.",
                     "default": "italic",
                     "examples": [
                       "normal",
                       "italic",
                       "oblique"
                     ]
-                  },
-                  "format": {
-                    "type": "string",
-                    "description": "Content to be displayed. You can specify `MetaVariable` and AutoHotkey variables.",
-                    "examples": [
-                      "{{elapsedTime_s}}s elapsed"
-                    ],
-                    "default": "{{elapsedTime_s}}s elapsed"
                   }
                 },
-                "description": "If set to true, execute time will be displayed inline. You can change what is displayed by specifying a string. See the README for details.",
+                "description": "Enable / disable PerfTips. See the README for detailed instructions on how to set it up.",
                 "default": false
-              },
-              "useIntellisense": {
-                "type": "boolean",
-                "description": "If you have another extension installed that supports IntelliSense, it is recommended that you turn off this feature.",
-                "default": true
               },
               "useDebugDirective": {
                 "type": [
@@ -204,20 +212,17 @@
                 "properties": {
                   "useBreakpointDirective": {
                     "type": "boolean",
+                    "description": "Enable / disable Breakpoint directive.",
                     "default": true
                   },
                   "useOutputDirective": {
                     "type": "boolean",
+                    "description": "Enable / disable Output directive.",
                     "default": true
                   }
                 },
-                "description": "You can send instructions to the debugger by embedding comments that follow specific rules in the source code. You can set the details by using the object.See the README for details. Note that enabling this feature will slow down the performance at debug launch.",
+                "description": "Enable / disable Debug directive. See the README for detailed instructions on how to set it up.",
                 "default": false
-              },
-              "openFileOnExit": {
-                "type": "string",
-                "description": "The absolute path of the file to open when the debugger exits.  If you want to turn this feature off, set it to null or omit it.",
-                "default": "${file}"
               }
             }
           }
@@ -228,8 +233,8 @@
             "description": "A new configuration for 'debugging' a user selected (ahk | ahk2 | ah2) file.",
             "body": {
               "name": "AutoHotkey Debug",
-              "request": "launch",
               "type": "autohotkey",
+              "request": "launch",
               "program": "^\"\\${file}\"",
               "args": []
             }
