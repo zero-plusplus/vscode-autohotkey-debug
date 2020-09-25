@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
 
 export interface CompletionItemProvider extends vscode.CompletionItemProvider {
-  useIntellisense: boolean;
+  useIntelliSenseInDebugging: boolean;
   ahkVersion: 1 | 2;
   session: dbgp.Session | null;
 }
@@ -48,11 +48,11 @@ const createDetail = (property: dbgp.Property): string => {
   return `[${property.context.name}] (${kindName}) ${property.fullName}: ${type}`;
 };
 export const completionItemProvider = {
-  useIntellisense: true,
+  useIntelliSenseInDebugging: true,
   ahkVersion: 1,
   session: null,
   async provideCompletionItems(document, position, token, context) {
-    if (!this.useIntellisense) {
+    if (!this.useIntelliSenseInDebugging) {
       return [];
     }
     if (!this.session) {

@@ -39,7 +39,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtimeArgs_v1: [ '/ErrorStdOut' ],
       runtimeArgs_v2: [ '/ErrorStdOut' ],
       usePerfTips: false,
-      useIntellisense: true,
+      useIntelliSenseInDebugging: true,
       useDebugDirective: false,
       openFileOnExit: null,
     };

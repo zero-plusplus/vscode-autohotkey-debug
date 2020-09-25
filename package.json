@@ -162,9 +162,9 @@
                 "description": "The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script.",
                 "default": "${file}"
               },
-              "useIntellisense": {
+              "useIntelliSenseInDebugging": {
                 "type": "boolean",
-                "description": "Enable / disable Intellisense in Debugging. If you have installed another extension that supports IntelliSense, it is recommended to disable this feature.",
+                "description": "Enable / disable IntelliSense in Debugging. If you have installed another extension that supports IntelliSense, it is recommended to disable this feature.",
                 "default": true
               },
               "usePerfTips": {

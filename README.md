@@ -260,10 +260,10 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <th>Description</th>
 </tr>
 <tr>
-    <td>useIntellisense</td>
+    <td>useIntelliSenseInDebugging</td>
     <td>boolean</td>
     <td>
-        Enable / disable <a href="#intellisense-in-debugging">Intellisense in Debugging</a>. If you have installed another extension that supports IntelliSense, it is recommended to disable this feature.<br />
+        Enable / disable <a href="#intellisense-in-debugging">IntelliSense in Debugging</a>. If you have installed another extension that supports IntelliSense, it is recommended to disable this feature.<br />
     <strong>default: <code>true</code></strong>
     </td>
 </tr>
@@ -619,7 +619,7 @@ The variables that are displayed in the [Data inspection](#data-inspection) will
 
 This is a limited feature, but can be very useful for editing the source code while debugging.
 
-If you don't need this feature, set `useIntellisense` to `false`.
+If you don't need this feature, set `useIntelliSenseInDebugging ` to `false`.
 
 ## Debug console
 ![debug-console](image/debug-console.jpg)
