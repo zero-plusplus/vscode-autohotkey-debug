@@ -598,19 +598,19 @@ e.g. `= 30`, `<= 30`
 
 This feature unlike [Breakpoint](#breakpoint) do not break the script. Instead, they output a message to the [Debug console](#debug-console).
 
-What makes them different from traditional log output is that you don't have to modify your script. Also, you can embed variable value. Especially in the case of objects, the output is very easy to read as they are grouped.
+What makes them different from traditional log output is that you don't have to modify your script. Also, you can embed variable value. See [Embedding value](#embedding-value) for details.
 
 However, you need to use VSCode's UI to use this feature, so some people may prefer to embed logging process in scripts the traditional way.
 Debug directive's [Output directive](#output-directive) is useful in this case.
 
 #### Embedding value
-You can embed value the [AutoHotkey's variable](#about-variablename) or [MetaVariable](#metavariable) name by enclosing them name in curly brackets.
+You can embed value the [AutoHotkey's variable](#about-variablename) or [MetaVariable](#metavariable) name by enclosing them name in curly brackets. e.g. `count: {A_Index}`, `{object}`, `name: {person.name}`, `{{elapsedTime_s}}`
 
-If the value is an object, it is displayed as a group, like a [Data inspection](#data-inspection). Note that this will be output as a separate message. That is, if the message is `{primitive}{object}{primitive}`, three messages will be outputted.
+If the value is an object, it is displayed as a group, like a [Data inspection](#data-inspection). Before using it, please pay attention to the following.
+* Object is output separately from the other messages. In other words, `{primitive}{object}{primitive}` outputs three messages
+* Script exits without stopping at the [Breakpoint](#breakpoint), information about the object may not be output
 
 If you want to output curly brackets directly, prefix it with `\`. e.g. `\{notVariableName\}`
-
-e.g. `count: {A_Index}`, `{object}`, `name: {person.name}`, `{{elapsedTime_s}}`
 
 ## IntelliSense in debugging
 ![intellisense](image/intellisense.gif)
@@ -733,6 +733,8 @@ e.g.
 * v2 only bug. An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection)
 
 * If there is a [Conditional breakpoint](#conditional-breakpoint) that returns false immediately after the start of debugging, the pause will not work until the next stop
+
+* If a message containing an object is output at a [Log point](#log-point), etc., and then the script exits without stopping at the [Breakpoint](#breakpoint), information about the object may not be output
 
 # Development support
 ## About source code contributes
