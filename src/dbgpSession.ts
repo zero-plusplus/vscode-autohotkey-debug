@@ -741,20 +741,24 @@ export class Session extends EventEmitter {
         return null;
       }
 
-      let currentBaseProperty = baseProperty as ObjectProperty;
-      while (currentBaseProperty !== null) {
+      const LIMIT = 1000;
+      let currentBaseProperty: Property | null = baseProperty;
+      for await (const nouse of range(LIMIT)) {
+        nouse;
+
+        if (currentBaseProperty === null) {
+          break;
+        }
+        else if (!(currentBaseProperty instanceof ObjectProperty)) {
+          break;
+        }
+
         const child = getProperty(currentBaseProperty, key);
         if (child) {
           return child;
         }
 
-        // eslint-disable-next-line no-await-in-loop
-        const baseProperty = await this.fetchLatestProperty(`${currentBaseProperty.fullName}.base`);
-        if (baseProperty instanceof ObjectProperty) {
-          currentBaseProperty = baseProperty;
-          continue;
-        }
-        break;
+        currentBaseProperty = await this.fetchLatestProperty(`${currentBaseProperty.fullName}.base`);
       }
       return null;
     };
