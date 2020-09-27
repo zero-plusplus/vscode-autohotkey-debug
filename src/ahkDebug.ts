@@ -1044,6 +1044,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         : 'breakpoint';
     }
 
+    const prevStackFrames: dbgp.StackFrame[] | undefined = this.prevStackFrames?.slice();
+    const currentStackFrames = this.currentStackFrames.slice();
     const executeByUser = this.stackFramesWhenStepOut === null && this.stackFramesWhenStepOver === null;
     if (executeByUser) {
       // Normal step
@@ -1057,12 +1059,18 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       // Prepare advanced step
-      if (this.prevStackFrames) {
+      if (prevStackFrames) {
+        // Fix a bug that prevented AutoExec threads, timer threads, etc. from getting proper information when there was more than one call stack
+        if (prevStackFrames.length === 1 && 1 < currentStackFrames.length) {
+          currentStackFrames.pop();
+          currentStackFrames.push(prevStackFrames[0]);
+        }
+
         if (stepType === 'step_out') {
-          this.stackFramesWhenStepOut = this.prevStackFrames.slice();
+          this.stackFramesWhenStepOut = prevStackFrames.slice();
         }
         else if (stepType === 'step_over') {
-          this.stackFramesWhenStepOver = this.prevStackFrames.slice();
+          this.stackFramesWhenStepOver = prevStackFrames.slice();
         }
       }
     }
@@ -1084,14 +1092,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
     else if (this.stackFramesWhenStepOut) {
-      // If go back to the same line in a one-line loop, etc.
-      if (this.prevStackFrames && equalsIgnoreCase(this.currentStackFrames[0].fileUri, this.prevStackFrames[0].fileUri) && this.currentStackFrames[0].line === this.prevStackFrames[0].line) {
+      // If go back to the same line in a loop
+      if (prevStackFrames && equalsIgnoreCase(currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && currentStackFrames[0].line === prevStackFrames[0].line) {
         if (breakpoint) {
           await this.sendStoppedEvent(stopReason);
           return;
         }
       }
-      else if (equalsIgnoreCase(this.stackFramesWhenStepOut[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOut[0].line === this.currentStackFrames[0].line) {
+      else if (equalsIgnoreCase(this.stackFramesWhenStepOut[0].fileUri, currentStackFrames[0].fileUri) && this.stackFramesWhenStepOut[0].line === currentStackFrames[0].line) {
         // One more breath. The final adjustment
         const result = await this.session!.sendContinuationCommand('step_out');
         await this.checkContinuationStatus(result);
@@ -1105,21 +1113,23 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
     else if (this.stackFramesWhenStepOver) {
-      // If go back to the same line in a one-line loop, etc.
-      if (this.prevStackFrames && equalsIgnoreCase(this.currentStackFrames[0].fileUri, this.prevStackFrames[0].fileUri) && this.currentStackFrames[0].line === this.prevStackFrames[0].line) {
-        await this.sendStoppedEvent(stopReason);
-        return;
+      // If go back to the same line in a loop
+      if (this.stackFramesWhenStepOver.length === currentStackFrames.length) {
+        if (prevStackFrames && equalsIgnoreCase(currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && currentStackFrames[0].line === prevStackFrames[0].line) {
+          await this.sendStoppedEvent(stopReason);
+          return;
+        }
       }
 
       // One more breath. The final adjustment
-      if (equalsIgnoreCase(this.stackFramesWhenStepOver[0].fileUri, this.currentStackFrames[0].fileUri) && this.stackFramesWhenStepOver[0].line === this.currentStackFrames[0].line) {
+      if (equalsIgnoreCase(this.stackFramesWhenStepOver[0].fileUri, currentStackFrames[0].fileUri) && this.stackFramesWhenStepOver[0].line === currentStackFrames[0].line) {
         const result = await this.session!.sendContinuationCommand('step_over');
         await this.checkContinuationStatus(result);
         return;
       }
 
       // Complated step over
-      if (this.stackFramesWhenStepOver.length === this.currentStackFrames.length) {
+      if (this.stackFramesWhenStepOver.length === currentStackFrames.length) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
