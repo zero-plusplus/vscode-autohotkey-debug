@@ -70,6 +70,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51) Error occurs when getting dynamic properties by data inspect, etc
     * Fixed: [#53](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/53) Setting a string containing `&` and `|` in a conditional breakpoint always returns false
     * Fixed: [#55](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/55) Chunking doesn't work when a large array is specified in a Watch expression
+    * Fixed: [#57](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/57) If the script exits without stopping at a breakpoint, etc., the message containing the object is not printed correctly
     * Fixed: Data inspect shows an array of length 1 as `{1: value}`
     * Fixed: If the error code is 0, output category is stderr
     * Fixed: Blank line printed when outputting object
@@ -606,9 +607,7 @@ Debug directive's [Output directive](#output-directive) is useful in this case.
 #### Embedding value
 You can embed value the [AutoHotkey's variable](#about-variablename) or [MetaVariable](#metavariable) name by enclosing them name in curly brackets. e.g. `count: {A_Index}`, `{object}`, `name: {person.name}`, `{{elapsedTime_s}}`
 
-If the value is an object, it is displayed as a group, like a [Data inspection](#data-inspection). Before using it, please pay attention to the following.
-* Object is output separately from the other messages. In other words, `{primitive}{object}{primitive}` outputs three messages
-* Script exits without stopping at the [Breakpoint](#breakpoint), information about the object may not be output
+If the value is an object, it is displayed as a group, like a [Data inspection](#data-inspection). Note that this will be output as a separate message. That is, `{primitive}{object}{primitive}` will output three messages.
 
 If you want to output curly brackets directly, prefix it with `\`. e.g. `\{notVariableName\}`
 
@@ -733,8 +732,6 @@ e.g.
 * v2 only bug. An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection)
 
 * If there is a [Conditional breakpoint](#conditional-breakpoint) that returns false immediately after the start of debugging, the pause will not work until the next stop
-
-* If a message containing an object is output at a [Log point](#log-point), etc., and then the script exits without stopping at the [Breakpoint](#breakpoint), information about the object may not be output
 
 # Development support
 ## About source code contributes

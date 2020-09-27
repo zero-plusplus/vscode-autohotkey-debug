@@ -495,6 +495,33 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('variablesRequest');
+    if (this.logObjectPropertiesByVariablesReference.has(args.variablesReference)) {
+      const objectProperty = this.logObjectPropertiesByVariablesReference.get(args.variablesReference);
+      if (objectProperty) {
+        const variablesReference = this.variablesReferenceCounter++;
+        this.objectPropertiesByVariablesReference.set(variablesReference, objectProperty);
+
+        let indexedVariables, namedVariables;
+        const maxIndex = objectProperty.maxIndex;
+        if (maxIndex !== null) {
+          if (100 < maxIndex) {
+            indexedVariables = maxIndex;
+            namedVariables = 1;
+          }
+        }
+        const variable = {
+          name: objectProperty.name,
+          value: objectProperty.displayValue,
+          variablesReference,
+          indexedVariables,
+          namedVariables,
+        } as DebugProtocol.Variable;
+        response.body = { variables: [ variable ] };
+      }
+      this.sendResponse(response);
+      return;
+    }
+
     if (this.session!.socketClosed || this.isTerminateRequested) {
       this.sendResponse(response);
       return;
@@ -508,10 +535,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     else if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
       const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
       properties = objectProperty.children;
-    }
-    else if (this.logObjectPropertiesByVariablesReference.has(args.variablesReference)) {
-      const objectProperty = this.logObjectPropertiesByVariablesReference.get(args.variablesReference);
-      properties = [ objectProperty as dbgp.Property ];
     }
 
     const variables: DebugProtocol.Variable[] = [];
