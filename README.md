@@ -75,7 +75,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: If the error code is 0, output category is stderr
     * Fixed: Blank line printed when outputting object
     * Fixed: In some case, "\{" is output without unescaped in Log point etc
-    * In some cases, debugging may not be successful
+    * Fixed: In some case, debugging may not be successful
 
 * `1.5.0` - 2020-08-14
     * Added: Operators in conditional breakpoint
