@@ -35,6 +35,7 @@ import { Parser, createParser } from './util/ConditionParser';
 import { ConditionalEvaluator } from './util/ConditionEvaluator';
 import { toFixed } from './util/numberUtils';
 import { equalsIgnoreCase } from './util/stringUtils';
+import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 
@@ -60,10 +61,13 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     useOutputDirective: boolean;
   };
   openFileOnExit: string;
+  trace: boolean;
 }
+
 type LogCategory = 'console' | 'stdout' | 'stderr';
 type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause';
 export class AhkDebugSession extends LoggingDebugSession {
+  private readonly traceLogger: TraceLogger;
   private pauseRequested = false;
   private isPaused = false;
   private isTerminateRequested = false;
@@ -91,6 +95,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   constructor() {
     super('autohotkey-debug.txt');
 
+    this.traceLogger = new TraceLogger((e) => this.sendEvent(e));
     this.setDebuggerColumnsStartAt1(true);
     this.setDebuggerLinesStartAt1(true);
     this.setDebuggerPathFormat('uri');
@@ -108,6 +113,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('disconnectRequest');
     if (!this.isTerminateRequested) {
       this.isTerminateRequested = true;
     }
@@ -139,6 +145,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.shutdown();
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): Promise<void> {
+    this.traceLogger.enable = args.trace;
+    this.traceLogger.log('launchRequest');
     this.config = args;
 
     if (!pathExistsSync(this.config.runtime)) {
@@ -261,6 +269,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
+    this.traceLogger.log('setBreakPointsRequest');
     if (this.session!.socketClosed || this.isTerminateRequested) {
       this.sendResponse(response);
       return;
@@ -306,6 +315,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('configurationDoneRequest');
     this.sendResponse(response);
     if (this.session!.socketClosed || this.isTerminateRequested) {
       return;
@@ -320,6 +330,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.checkContinuationStatus(result);
   }
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('continueRequest');
     this.sendResponse(response);
     if (this.session!.socketClosed || this.isTerminateRequested) {
       return;
@@ -333,6 +344,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.checkContinuationStatus(result);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('nextRequest');
     this.sendResponse(response);
     if (this.session!.socketClosed || this.isTerminateRequested) {
       return;
@@ -346,6 +358,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.checkContinuationStatus(result);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('stepInRequest');
     this.sendResponse(response);
     if (this.session!.socketClosed || this.isTerminateRequested) {
       return;
@@ -359,6 +372,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.checkContinuationStatus(result);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('stepOutRequest');
     this.sendResponse(response);
     if (this.session!.socketClosed || this.isTerminateRequested) {
       return;
@@ -372,6 +386,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.checkContinuationStatus(result);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('pauseRequest');
     this.sendResponse(response);
     if (this.session!.socketClosed || this.isTerminateRequested) {
       return;
@@ -385,6 +400,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.checkContinuationStatus(result);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
+    this.traceLogger.log('threadsRequest');
     if (this.session!.socketClosed || this.isTerminateRequested) {
       this.sendResponse(response);
       return;
@@ -394,6 +410,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): void {
+    this.traceLogger.log('stackTraceRequest');
     if (this.session!.socketClosed || this.isTerminateRequested) {
       this.sendResponse(response);
       return;
@@ -453,6 +470,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('scopesRequest');
     if (this.session!.socketClosed || this.isTerminateRequested) {
       this.sendResponse(response);
       return;
@@ -476,6 +494,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('variablesRequest');
     if (this.session!.socketClosed || this.isTerminateRequested) {
       this.sendResponse(response);
       return;
@@ -556,6 +575,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('setVariableRequest');
     let typeName: string, data: string;
     const parsed = this.ahkParser.Primitive.parse(args.value);
     if ('value' in parsed) {
@@ -640,6 +660,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('evaluateRequest');
     if (this.session!.socketClosed || this.isTerminateRequested) {
       this.sendResponse(response);
       return;
@@ -709,10 +730,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
   }
   protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void {
+    this.traceLogger.log('sourceRequest');
     this.sendResponse(response);
   }
   // eslint-disable-next-line @typescript-eslint/require-await
   protected async loadedSourcesRequest(response: DebugProtocol.LoadedSourcesResponse, args: DebugProtocol.LoadedSourcesArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('loadedSourcesRequest');
     const loadedScriptPathList = this.getAllLoadedSourcePath();
 
     const sources: DebugProtocol.Source[] = [];
@@ -1109,6 +1132,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
   }
   private sendTerminateEvent(): void {
+    this.traceLogger.log('sendTerminateEvent');
     if (this.isTerminateRequested) {
       return;
     }
@@ -1117,6 +1141,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendEvent(new TerminatedEvent());
   }
   private async sendStoppedEvent(stopReason: StopReason): Promise<void> {
+    this.traceLogger.log('sendStoppedEvent');
     if (this.isPaused) {
       return;
     }

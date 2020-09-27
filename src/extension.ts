@@ -42,6 +42,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       useIntelliSenseInDebugging: true,
       useDebugDirective: false,
       openFileOnExit: null,
+      trace: false,
     };
     defaults(config, defaultConfig);
 
