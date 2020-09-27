@@ -1192,16 +1192,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const { logMessage, logGroup } = breakpoint;
-    const results = await this.formatLog(logMessage, this.currentMetaVariables);
-
-    // When output an object, it automatically breaks a line. Therefore, if the end is a newline code, remove it.
-    const last = results[results.length - 1];
-    const prevLast = results[results.length - 2];
-    if (-1 < String(last).search(/^(\r\n|\r|\n)$/u) && prevLast instanceof dbgp.ObjectProperty) {
-      results.pop();
-    }
-
-    for (const messageOrProperty of results) {
+    for (const messageOrProperty of await this.formatLog(logMessage, this.currentMetaVariables)) {
       let event: DebugProtocol.OutputEvent;
       if (typeof messageOrProperty === 'string') {
         const message = messageOrProperty;
@@ -1290,6 +1281,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       message += format.slice(currentIndex);
     }
     results.push(unescapeLogMessage(message));
+
+    // When output an object, it automatically breaks a line. Therefore, if the end is a newline code, remove it.
+    if (1 < results.length) {
+      const last = results[results.length - 1];
+      const prevLast = results[results.length - 2];
+      if (-1 < String(last).search(/^(\r\n|\r|\n)$/u) && prevLast instanceof dbgp.ObjectProperty) {
+        results.pop();
+      }
+    }
+
     return results;
   }
   private async displayPerfTips(metaVarialbes: CaseInsensitiveMap<string, string>): Promise<void> {
