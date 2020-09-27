@@ -705,6 +705,8 @@ Set a [Breakpoint](#breakpoint) in the position of the directive. Unlike normal 
 e.g. `; @Debug-Breakpoint(20 < person.age) => {person.name}`
 
 ### Output directive
+![output-directive](image/output-directive.gif)
+
 Similar to the [Breakpoint directive](#breakpoint-directive), but limited to [Log point](#log-point). Instead, a grouping feature has been added.
 ```md
 ; @Debug-Output:GROUPING(CONDITION)[HITCONDITION] => MESSAGE
