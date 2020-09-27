@@ -74,7 +74,8 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: Data inspect shows an array of length 1 as `{1: value}`
     * Fixed: If the error code is 0, output category is stderr
     * Fixed: Blank line printed when outputting object
-    * Fixed: "\{" is output without unescaped in Log point etc
+    * Fixed: In some case, "\{" is output without unescaped in Log point etc
+    * In some cases, debugging may not be successful
 
 * `1.5.0` - 2020-08-14
     * Added: Operators in conditional breakpoint

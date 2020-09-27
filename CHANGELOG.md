@@ -44,7 +44,8 @@ Also want to check the development status, check the [commit history](https://gi
 * Data inspect shows an array of length 1 as `{1: value}`
 * If the error code is 0, output category is stderr
 * Blank line printed when outputting object
-* "\{" is output without unescaped in Log point etc
+* In some case, "\{" is output without unescaped in Log point etc
+* In some cases, debugging may not be successful
 
 ## [1.5.0] - 2020-08-14
 ### Added
