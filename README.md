@@ -125,7 +125,7 @@ If you find a bug, please report it to [issues](https://github.com/zero-plusplus
 3. Press `Ctrl + P`, type `ext install zero-plusplus.vscode-autohotkey-debug`
 
 # Usage
-1. Open a file with the extension `ahk`, `ahk2` or `ah2`.
+1. Open a file with the extension `.ahk`, `.ahk2` or `.ah2`.
 2. Set [Breakpoint](#breakpoint) where you want them
 3. Press `F5`
 
@@ -150,7 +150,10 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
 <tr>
     <td>name</td>
     <td>string</td>
-    <td>The name of the settings. I recommend giving it a unique and easily understood name.</td>
+    <td>
+        The name of the settings. I recommend giving it a unique and easily understood name.<br />
+        <strong>default: <code>AutoHotkey Debug</code></strong>
+    </td>
 </tr>
 <tr>
     <td>type</td>
@@ -182,7 +185,8 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>runtimeArgs</td>
     <td>arary</td>
     <td>
-        <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong> Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. However <code>"/debug"</code> will be ignored.<br />
+        <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong><br /><br />
+        Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. However <code>"/debug"</code> will be ignored.<br />
         <strong>default: <code>[ "/ErrorStdOut" ]</code></strong>
     </td>
 </tr>
@@ -204,7 +208,8 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
 <tr>
     <td>string</td>
     <td>
-        If a port is already in use, a confirmation message appears asking if you want to use a different port. If this message is annoying, you can use the <code>"start-end"</code> format to specify a range of ports that may be used in advance.<br />
+        If a port is already in use, a confirmation message will appear asking if you want to use a different port. If this message is annoying, you can give the debug adapter permission to use the port using the <code>"start-end"</code> format.
+<br />
         e.g. <code>"9000-9010"</code>
     </td>
 </tr>
@@ -318,7 +323,8 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td rowspan=2>useDebugDirective</td>
     <td>boolean</td>
     <td>
-        <strong>Note that if you enable, debug startup is slow.</strong> Enable / disable <a href="#debug-directive-optional">Debug directive</a>.<br />
+        <strong>Note that if you enable, debug startup is slow.</strong><br /><br />
+        Enable / disable <a href="#debug-directive-optional">Debug directive</a>.<br />
         <strong>default: <code>false</code></strong>
     </td>
 </tr>
@@ -347,8 +353,9 @@ The following features allow to handle `MetaVariable`.
 * [Watch expression](#watch-expression)
 * [Log point](#log-point)
 * [PerfTips](#perftips-optional)
-* [Breakpoint directive](#breakpoint-directive)
-* [Output directive](#output-directive)
+* [Debug directive](#debug-directive-optional)
+    * [Breakpoint directive](#breakpoint-directive)
+    * [Output directive](#output-directive)
 
 <table>
 <tr>
@@ -368,8 +375,8 @@ The following features allow to handle `MetaVariable`.
         {elapsedTime_s}
     </td>
     <td>
-        Time taken to execute. Each suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second).<br /><br />
-        <strong>Note that this is not accurate by specification, Especially noticeable if you are using <a href="#advanced-breakpoint">Advanced breakpoint</a>. Also note that if you pause, the value will be <code>-1</code>, as the exact execute time cannot be calculated.</strong>
+        <strong>Note that this is not accurate by specification, Especially noticeable if you are using <a href="#advanced-breakpoint">Advanced breakpoint</a>. Also note that if you pause, the value will be <code>-1</code>, as the exact execute time cannot be calculated.</strong><br /><br />
+        Time taken to execute. Each suffix indicates the unit of measurement: <code>ns</code>(nanosecond), <code>ms</code>(millisecond), <code>s</code>(second).
     </td>
 </tr>
 </table>
@@ -380,10 +387,14 @@ The following features allow to handle `MetaVariable`.
 
 You can check the data of the variables. Also check the type name by hovering over the variable name.
 
-In the case of an object, you can see the class name and a summary of the child elements in the value. e.g. `ClassName {field: "value"}`, `Array [1, 2, 3]`
+If the variable is an object, the value is a `ClassName` and summary of its children. e.g. `ClassName {field: "value"}`, `Object(3) [1, 2, 3]`
+
+You can click on it to see its children. The max number of child elements can be set by `maxChildren` in [launch.json](#customize-launchjson).
+
+ `ClassName` is used in the `is` operator for [Conditional breakpoint](#conditional-breakpoint). Note that this name is what the debug adapter is aware of and may be different from the `__Class` field.
 
 #### About VariableName
-If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is case-insensitive.
+If you see `VariableName` in this document, it's the name of the variable displayed by this feature. It is case insensitive.
 
 The object's child elements are the same as in the running script, and can be specified in dot notation(e.g. `object.field`) or bracket notation(e.g. `array[1]`). Which notation is available depends on the version of AutoHotkey, v1 can use either notation.
 
@@ -393,7 +404,7 @@ This is a variable that is only set when you are debugging, and also in SciTE4Au
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
 
-**Note that in v2, a critical error will force the script to stop if you override the [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property).**
+**Note that in v2, a critical error will force the script to stop if you rewrite the [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property).**
 
 The following values are supported. Object is not supported by the specification.
 * `String` :　e.g `"foo"`
@@ -461,7 +472,9 @@ e.g.
 * `20 <= person.age`
 * `person.name ~= "i)J.*"`
 * `100 < countof list`
-* `variable is "string"`, `object is "object:Func"`, `instance is ClassObject`
+* `variable is "string"`
+* `object is "object:Func"`
+* `instance is ClassObject`
 * `"field" in Object`, `keyName not in Object`
 * `object is Fowl || "wing" in object && "beak" in object`
 
@@ -562,7 +575,7 @@ e.g.
 ### Hit conditional breakpoint
 ![hit-conditional-breakpoint](image/hit-conditional-breakpoint.gif)
 
-Break the script when the breakpoint reaches a certain hit count. You can check the current hit count by watching `{hitCount}` in the [Watch expression](#watch-expression).
+Break the script when the breakpoint reaches a certain hit count. You can check the current hit count by watching `{hitCount}` in the [Watch expression](#watch-expression) etc.
 
 ##### Grammer
 It is basically a short hand of conditional breakpoint. However, only the `%` operator will be a unique feature.
@@ -615,9 +628,7 @@ If you want to output curly brackets directly, prefix it with `\`. e.g. `\{notVa
 ## IntelliSense in debugging
 ![intellisense](image/intellisense.gif)
 
-The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
-
-This is a limited feature, but can be very useful for editing the source code while debugging.
+The variables that are displayed in the [Data inspection](#data-inspection) will be suggested. This is a limited feature, but can be very useful for editing the source code while debugging.
 
 If you don't need this feature, set `useIntelliSenseInDebugging ` to `false`.
 
@@ -629,10 +640,12 @@ Displays various messages during debugging. Press `Ctrl + Shift + y` if you want
 ### Message from Debug adapter
 Besides the announcements from the debug adapter, you can output messages to the debug console yourself in the following ways.
 * [Log point](#log-point)
-* Debug directive's [Output directive](#output-directive)
+* [Debug directive](#debug-directive-optional)
+    * [Breakpoint directive](#breakpoint-directive)
+    * [Output directive](#output-directive)
 
 ### Message from AutoHotkey
-You can output messages from the AutoHotkey script to the debug console by using the following method.
+You can output messages from the script to the debug console in the following ways.
 * [FileAppend](https://www.autohotkey.com/docs/commands/FileAppend.htm)
 * [FileOpen](https://www.autohotkey.com/docs/commands/FileOpen.htm)
 * [OutputDebug](https://www.autohotkey.com/docs/commands/OutputDebug.htm)
@@ -653,7 +666,7 @@ If you encounter a bug in this library, please comment at the link.
 AutoHotkey does not output multi-byte strings well.
 However, in version `1.1.33.00`, the [#ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm) directive has been extended to allow output in UTF-8, which solves this problem.
 
-It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8"]` instead of using the directive.
+It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8" ]` instead of using the directive. However note that you will get an error if you have an older version that is not supported.
 
 ## PerfTips (Optional)
 ![perftips](image/perftips.gif)
@@ -662,7 +675,7 @@ It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8"]` in
 
 Available when `usePerfTips` is setting. See [here](#customize-launchjson) for details.
 
-As with Visual Studio's PerfTips, when debugging is break, the current line displays the execute time.
+As with [Visual Studio's PerfTips](https://docs.microsoft.com/en-us/visualstudio/profiling/perftips?view=vs-2019), when debugging is break, the current line displays the execute time.
 
 **Please note that the execute time displayed are not exact. See `{elapsedTime_s}` in [MetaVariable](#metavariable) for details**
 
@@ -724,10 +737,10 @@ e.g.
 ```
 
 #### PARAM
-1. `GROUPPING` :　You can group the output. Grouped outputs can be collapsed. Be sure to close the group with `end` as it will affect all subsequent output
-    * `start` :　Start a new group
-    * `startCollapsed` :　Same as start, but the created groups will be collapsed
-    * `end` :　Ends the group
+1. `GROUPPING` :　You can group the output. **Be sure to ungroup with `end` as this will affect all subsequent outputs**
+    * `start` :　Starting a new group
+    * `startCollapsed` :　Same as `start`, but the created groups will be collapsed
+    * `end` :　Ending the group
 
 # Known issues
 * [Data inspection](#data-inspection) bug. Arrays with a length of 101 or more are chunked into 100 elements each. It is a specification that these headings will be displayed as `[0..99]`. The AutoHotkey array starts at 1 and should be `[1..100]`, but I can't find a way to change the headings, so I can't solve this problem at the moment
