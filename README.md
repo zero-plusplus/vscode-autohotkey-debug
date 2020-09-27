@@ -49,7 +49,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
-* `1.6.0` - 2020-09-22
+* `1.6.0` - 2020-09-28
     * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support `Run Without Debugging`
     * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support MetaVariable. This is supported by several features
     * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Support PerfTips
