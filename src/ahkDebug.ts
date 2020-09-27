@@ -1150,7 +1150,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         if (breakpoint.kind === 'conditional logpoint' && !await this.evalCondition(breakpoint)) {
           continue;
         }
-        await this.printLogMessage(breakpoint, 'stderr');
+        await this.printLogMessage(breakpoint, 'stdout');
       }
     }
   }
