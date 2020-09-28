@@ -987,16 +987,6 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     // Step
     if (response.commandName.includes('step')) {
-      if (response.commandName === 'step_into') {
-        await this.processLogpoint(lineBreakpoints);
-        const breakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
-        if (!breakpoint) {
-          stopReason = 'step';
-        }
-        await this.sendStoppedEvent(stopReason);
-        return;
-      }
-
       await this.processStepExecution(response.commandName as dbgp.StepCommandName, lineBreakpoints);
       return;
     }
@@ -1046,10 +1036,20 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const prevStackFrames: dbgp.StackFrame[] | undefined = this.prevStackFrames?.slice();
     const currentStackFrames = this.currentStackFrames.slice();
+    const comebackFromFunc = prevStackFrames && currentStackFrames.length < prevStackFrames.length;
+    if (comebackFromFunc && lineBreakpoints) {
+      this.currentMetaVariables.set('hitCount', String(--lineBreakpoints.hitCount));
+    }
+
     const executeByUser = this.stackFramesWhenStepOut === null && this.stackFramesWhenStepOver === null;
     if (executeByUser) {
       // Normal step
-      if (!lineBreakpoints || lineBreakpoints.length === 0) {
+      if (stepType === 'step_into') {
+        await this.processLogpoint(lineBreakpoints);
+        await this.sendStoppedEvent(stopReason);
+        return;
+      }
+      else if (!lineBreakpoints || lineBreakpoints.length === 0) {
         await this.sendStoppedEvent('step');
         return;
       }
@@ -1069,7 +1069,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         if (stepType === 'step_out') {
           this.stackFramesWhenStepOut = prevStackFrames.slice();
         }
-        else if (stepType === 'step_over') {
+        else { // step_over
           this.stackFramesWhenStepOver = prevStackFrames.slice();
         }
       }

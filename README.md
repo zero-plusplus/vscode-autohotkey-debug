@@ -76,6 +76,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: Blank line printed when outputting object
     * Fixed: In some case, "\{" is output without unescaped in Log point etc
     * Fixed: In some case, debugging may not be successful
+    * Fixed: When the Advanced breakpoint is used, the step execution may cause the {hitCount} to go wrong
 
 * `1.5.0` - 2020-08-14
     * Added: Operators in conditional breakpoint

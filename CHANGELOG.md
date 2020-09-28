@@ -46,6 +46,7 @@ Also want to check the development status, check the [commit history](https://gi
 * Blank line printed when outputting object
 * In some case, "\{" is output without unescaped in Log point etc
 * In some case, debugging may not be successful
+* When the Advanced breakpoint is used, the step execution may cause the {hitCount} to go wrong
 
 ## [1.5.0] - 2020-08-14
 ### Added
