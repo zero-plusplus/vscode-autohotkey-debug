@@ -1039,6 +1039,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     const comebackFromFunc = prevStackFrames && currentStackFrames.length < prevStackFrames.length;
     if (comebackFromFunc && lineBreakpoints) {
       this.currentMetaVariables.set('hitCount', String(--lineBreakpoints.hitCount));
+      if (stepType === 'step_over') {
+        await this.processLogpoint(lineBreakpoints);
+        await this.sendStoppedEvent(stopReason);
+        return;
+      }
     }
 
     const executeByUser = this.stackFramesWhenStepOut === null && this.stackFramesWhenStepOver === null;
