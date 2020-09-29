@@ -985,22 +985,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    // Step
+    // Paused on step
     if (response.commandName.includes('step')) {
       await this.processStepExecution(response.commandName as dbgp.StepCommandName, lineBreakpoints);
       return;
     }
 
-    // Normal breakpoint
-    if (lineBreakpoints && !lineBreakpoints.hasAdvancedBreakpoint()) {
-      await this.sendStoppedEvent(stopReason);
-      return;
-    }
-
-    // Advanced breakpoint
+    // Paused on breakpoint
     await this.processLogpoint(lineBreakpoints);
-    const breakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
-    if (breakpoint) {
+    const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
+    if (matchedBreakpoint) {
       await this.sendStoppedEvent(stopReason);
       return;
     }
@@ -1026,51 +1020,56 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (!this.currentMetaVariables || !this.currentStackFrames) {
       throw Error(`This message shouldn't appear.`);
     }
+    await this.processLogpoint(lineBreakpoints);
+
+    // Fix a bug that prevented AutoExec thread, Timer thread, from getting proper information when there was more than one call stack
+    const prevStackFrames: dbgp.StackFrame[] | undefined = this.prevStackFrames?.slice();
+    const currentStackFrames = this.currentStackFrames.slice();
+    if (prevStackFrames && prevStackFrames.length === 1 && 1 < currentStackFrames.length) {
+      currentStackFrames.pop();
+      currentStackFrames.push(prevStackFrames[0]);
+    }
 
     let stopReason: StopReason = 'step';
-    if (lineBreakpoints && 0 < lineBreakpoints.length) {
-      stopReason = lineBreakpoints[0].hidden
+    const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
+    if (matchedBreakpoint) {
+      stopReason = matchedBreakpoint.hidden
         ? 'hidden breakpoint'
         : 'breakpoint';
     }
 
-    const prevStackFrames: dbgp.StackFrame[] | undefined = this.prevStackFrames?.slice();
-    const currentStackFrames = this.currentStackFrames.slice();
+    // Offset the {hitCount} increment if it comes back from a function
     const comebackFromFunc = prevStackFrames && currentStackFrames.length < prevStackFrames.length;
     if (comebackFromFunc && lineBreakpoints) {
       this.currentMetaVariables.set('hitCount', String(--lineBreakpoints.hitCount));
-      if (stepType === 'step_over') {
-        await this.processLogpoint(lineBreakpoints);
-        await this.sendStoppedEvent(stopReason);
-        return;
-      }
+    }
+
+    // Force pause
+    if (comebackFromFunc && stepType === 'step_over') {
+      await this.sendStoppedEvent('step');
+      return;
+    }
+    else if (stepType === 'step_into') {
+      await this.sendStoppedEvent(stopReason);
+      return;
     }
 
     const executeByUser = this.stackFramesWhenStepOut === null && this.stackFramesWhenStepOver === null;
     if (executeByUser) {
       // Normal step
-      if (stepType === 'step_into') {
-        await this.processLogpoint(lineBreakpoints);
+      if (!lineBreakpoints) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
-      else if (!lineBreakpoints || lineBreakpoints.length === 0) {
-        await this.sendStoppedEvent('step');
-        return;
-      }
-      else if (!lineBreakpoints.hasAdvancedBreakpoint()) { // normal breakpoint
+
+      // Pause on breakpoint
+      if (matchedBreakpoint) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
 
       // Prepare advanced step
       if (prevStackFrames) {
-        // Fix a bug that prevented AutoExec threads, timer threads, etc. from getting proper information when there was more than one call stack
-        if (prevStackFrames.length === 1 && 1 < currentStackFrames.length) {
-          currentStackFrames.pop();
-          currentStackFrames.push(prevStackFrames[0]);
-        }
-
         if (stepType === 'step_out') {
           this.stackFramesWhenStepOut = prevStackFrames.slice();
         }
@@ -1081,17 +1080,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     // Advanced step
-    await this.processLogpoint(lineBreakpoints);
-    const breakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
-    if (!breakpoint) {
-      stopReason = 'step';
-    }
-
-    if (executeByUser && breakpoint) {
-      await this.sendStoppedEvent(stopReason);
-      return;
-    }
-    else if (this.pauseRequested) {
+    if (this.pauseRequested) {
       const result = await this.session!.sendBreakCommand();
       await this.checkContinuationStatus(result);
       return;
@@ -1099,7 +1088,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     else if (this.stackFramesWhenStepOut) {
       // If go back to the same line in a loop
       if (prevStackFrames && equalsIgnoreCase(currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && currentStackFrames[0].line === prevStackFrames[0].line) {
-        if (breakpoint) {
+        if (matchedBreakpoint) {
           await this.sendStoppedEvent(stopReason);
           return;
         }
@@ -1141,7 +1130,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     // Pause on breakpoint
-    if (breakpoint) {
+    if (matchedBreakpoint) {
       await this.sendStoppedEvent(stopReason);
       return;
     }
