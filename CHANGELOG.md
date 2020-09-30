@@ -41,6 +41,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#53](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/53) Setting a string containing `&` and `|` in a conditional breakpoint always returns false
 * [#55](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/55) Chunking doesn't work when a large array is specified in a Watch expression
 * [#57](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/57) If the script exits without stopping at a breakpoint, etc., the message containing the object is not printed correctly
+* [#58](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/58) Registering or unregistering a breakpoint resets the hit count for all breakpoints
 * Data inspect shows an array of length 1 as `{1: value}`
 * If the error code is 0, output category is stderr
 * Blank line printed when outputting object

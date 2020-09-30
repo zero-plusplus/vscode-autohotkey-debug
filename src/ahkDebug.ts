@@ -279,27 +279,43 @@ export class AhkDebugSession extends LoggingDebugSession {
     const fileUri = URI.file(filePath).toString();
     const requestedBreakpoints = args.breakpoints ?? [];
 
+    // Keep the hit count
+    const hitCountMap = new Map<number, number>();
+    for (const requestedBreakpoint of requestedBreakpoints) {
+      const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, requestedBreakpoint.line);
+      if (lineBreakpoints) {
+        hitCountMap.set(requestedBreakpoint.line, lineBreakpoints.hitCount);
+      }
+    }
+
     await this.breakpointManager!.unregisterBreakpointsInFile(fileUri);
 
     const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
     for await (const requestedBreakpoint of requestedBreakpoints) {
-      const { condition, hitCondition } = requestedBreakpoint;
-      const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
-
-      const advancedData = {
-        condition,
-        hitCondition,
-        logMessage,
-      } as BreakpointAdvancedData;
       try {
-        const actualBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, requestedBreakpoint.line, advancedData);
-        if (actualBreakpoint.hidden) {
+        const { condition, hitCondition } = requestedBreakpoint;
+        const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
+        const advancedData = {
+          condition,
+          hitCondition,
+          logMessage,
+        } as BreakpointAdvancedData;
+
+        const breakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, requestedBreakpoint.line, advancedData);
+        if (hitCountMap.has(breakpoint.line)) {
+          const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, breakpoint.line);
+          if (lineBreakpoints) {
+            lineBreakpoints.hitCount = hitCountMap.get(breakpoint.line)!;
+          }
+        }
+
+        if (breakpoint.hidden) {
           continue;
         }
 
         vscodeBreakpoints.push({
-          id: actualBreakpoint.id,
-          line: actualBreakpoint.line,
+          id: breakpoint.id,
+          line: breakpoint.line,
           verified: true,
         });
       }
@@ -964,7 +980,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const { stackFrames } = await this.session!.sendStackGetCommand();
     const { fileUri, line } = stackFrames[0];
     this.currentStackFrames = stackFrames;
-    const lineBreakpoints = this.breakpointManager!.getBreakpoints(fileUri, line);
+    const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, line);
     let stopReason: StopReason = 'step';
     if (lineBreakpoints) {
       this.currentMetaVariables.set('hitCount', String(++lineBreakpoints.hitCount));

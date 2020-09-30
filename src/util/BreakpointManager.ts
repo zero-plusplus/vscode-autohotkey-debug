@@ -65,7 +65,7 @@ export class BreakpointManager {
     const key = this.createKey(fileUri, line);
     return this.breakpointsMap.has(key);
   }
-  public getBreakpoints(fileUri: string, line: number): LineBreakpoints | null {
+  public getLineBreakpoints(fileUri: string, line: number): LineBreakpoints | null {
     const targetFilePath = URI.parse(fileUri).fsPath.toLowerCase();
 
     for (const [ key, breakpoints ] of this.breakpointsMap) {
@@ -108,7 +108,7 @@ export class BreakpointManager {
 
     let registeredBreakpoints: LineBreakpoints;
     if (this.hasBreakpoint(_fileUri, actualLine)) {
-      registeredBreakpoints = this.getBreakpoints(_fileUri, actualLine)!;
+      registeredBreakpoints = this.getLineBreakpoints(_fileUri, actualLine)!;
       if (settedBreakpoint.hidden) {
         registeredBreakpoints.push(settedBreakpoint);
       }
@@ -123,8 +123,8 @@ export class BreakpointManager {
     }
     return settedBreakpoint;
   }
-  public async unregisterBreakpoints(fileUri: string, line: number): Promise<void> {
-    const breakpoints = this.getBreakpoints(fileUri, line);
+  public async unregisterLineBreakpoints(fileUri: string, line: number): Promise<void> {
+    const breakpoints = this.getLineBreakpoints(fileUri, line);
     if (!breakpoints || breakpoints.length === 0) {
       return;
     }
@@ -156,7 +156,7 @@ export class BreakpointManager {
         return;
       }
 
-      await this.unregisterBreakpoints(fileUri, line);
+      await this.unregisterLineBreakpoints(fileUri, line);
     }));
   }
   private createKey(fileUri: string, line: number): string {
