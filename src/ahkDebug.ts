@@ -68,6 +68,7 @@ type LogCategory = 'console' | 'stdout' | 'stderr';
 type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause';
 export class AhkDebugSession extends LoggingDebugSession {
   private readonly traceLogger: TraceLogger;
+  private autoExecutingOnAdvancedBreakpoint = false;
   private pauseRequested = false;
   private isPaused = false;
   private isTerminateRequested = false;
@@ -408,12 +409,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariables = null;
     this.pauseRequested = true;
     this.isPaused = false;
 
-    const result = await this.session!.sendContinuationCommand('break');
-    this.checkContinuationStatus(result);
+    if (!this.autoExecutingOnAdvancedBreakpoint) {
+      this.currentMetaVariables = null;
+      const result = await this.session!.sendContinuationCommand('break');
+      this.checkContinuationStatus(result);
+    }
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     this.traceLogger.log('threadsRequest');
@@ -1017,8 +1020,11 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     // Interruptive pause
     if (this.pauseRequested) {
-      const result = await this.session!.sendBreakCommand();
-      await this.checkContinuationStatus(result);
+      this.currentMetaVariables.set('elapsedTime_ns', '-1');
+      this.currentMetaVariables.set('elapsedTime_ms', '-1');
+      this.currentMetaVariables.set('elapsedTime_s', '-1');
+      await this.session!.sendBreakCommand();
+      await this.sendStoppedEvent('pause');
       return;
     }
 
@@ -1029,6 +1035,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     // Auto execution
+    this.autoExecutingOnAdvancedBreakpoint = true;
     const result = await this.session!.sendRunCommand();
     await this.checkContinuationStatus(result);
   }
@@ -1096,12 +1103,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     // Advanced step
-    if (this.pauseRequested) {
-      const result = await this.session!.sendBreakCommand();
-      await this.checkContinuationStatus(result);
-      return;
-    }
-    else if (this.stackFramesWhenStepOut) {
+    this.autoExecutingOnAdvancedBreakpoint = true;
+    if (this.stackFramesWhenStepOut) {
       // If go back to the same line in a loop
       if (prevStackFrames && equalsIgnoreCase(currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && currentStackFrames[0].line === prevStackFrames[0].line) {
         if (matchedBreakpoint) {
@@ -1151,6 +1154,19 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
+    // Interruptive pause
+    if (this.pauseRequested) {
+      this.currentMetaVariables.set('elapsedTime_ns', '-1');
+      this.currentMetaVariables.set('elapsedTime_ms', '-1');
+      this.currentMetaVariables.set('elapsedTime_s', '-1');
+      await this.session!.sendBreakCommand();
+      await this.sendStoppedEvent('pause');
+      return;
+    }
+    if (this.isPaused) {
+      return;
+    }
+
     const result = await this.session!.sendContinuationCommand('step_out');
     await this.checkContinuationStatus(result);
   }
@@ -1193,6 +1209,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.stackFramesWhenStepOver = null;
     this.pauseRequested = false;
     this.isPaused = true;
+    this.autoExecutingOnAdvancedBreakpoint = false;
 
     if (this.currentMetaVariables) {
       await this.displayPerfTips(this.currentMetaVariables);
