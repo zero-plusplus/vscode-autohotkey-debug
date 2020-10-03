@@ -1049,6 +1049,12 @@ export class AhkDebugSession extends LoggingDebugSession {
       currentStackFrames.push(prevStackFrames[0]);
     }
 
+    // Offset the {hitCount} increment if it comes back from a function
+    const comebackFromFunc = prevStackFrames && currentStackFrames.length < prevStackFrames.length;
+    if (comebackFromFunc && lineBreakpoints) {
+      lineBreakpoints.decrementHitCount();
+    }
+
     let stopReason: StopReason = 'step';
     const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
     if (matchedBreakpoint) {
@@ -1056,12 +1062,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       stopReason = matchedBreakpoint.hidden
         ? 'hidden breakpoint'
         : 'breakpoint';
-    }
-
-    // Offset the {hitCount} increment if it comes back from a function
-    const comebackFromFunc = prevStackFrames && currentStackFrames.length < prevStackFrames.length;
-    if (comebackFromFunc && lineBreakpoints) {
-      lineBreakpoints.decrementHitCount();
     }
 
     // Force pause
