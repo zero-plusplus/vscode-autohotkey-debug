@@ -278,45 +278,32 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const filePath = args.source.path ?? '';
     const fileUri = URI.file(filePath).toString();
-    const requestedBreakpoints = args.breakpoints ?? [];
-
-    // Keep the hit count
-    const hitCountMap = new Map<number, number>();
-    for (const requestedBreakpoint of requestedBreakpoints) {
-      const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, requestedBreakpoint.line);
-      if (lineBreakpoints) {
-        hitCountMap.set(requestedBreakpoint.line, lineBreakpoints.hitCount);
-      }
-    }
-
-    await this.breakpointManager!.unregisterBreakpointsInFile(fileUri);
+    const removedBreakpoints = await this.breakpointManager!.unregisterBreakpointsInFile(fileUri);
 
     const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
-    for await (const requestedBreakpoint of requestedBreakpoints) {
+    for await (const requestedBreakpoint of args.breakpoints ?? []) {
       try {
-        const { condition, hitCondition } = requestedBreakpoint;
+        const { condition, hitCondition, line, column = 1 } = requestedBreakpoint;
         const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
         const advancedData = {
           condition,
           hitCondition,
           logMessage,
+          unverifiedLine: line,
+          unverifiedColumn: column,
         } as BreakpointAdvancedData;
 
-        const breakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, requestedBreakpoint.line, advancedData);
-        if (hitCountMap.has(breakpoint.line)) {
-          const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, breakpoint.line);
-          if (lineBreakpoints) {
-            lineBreakpoints.hitCount = hitCountMap.get(breakpoint.line)!;
-          }
-        }
+        const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
 
-        if (breakpoint.hidden) {
-          continue;
+        // Restore hitCount
+        const removedBreakpoint = removedBreakpoints.find((breakpoint) => registeredBreakpoint.unverifiedLine === breakpoint.unverifiedLine && registeredBreakpoint.unverifiedColumn === breakpoint.unverifiedColumn);
+        if (removedBreakpoint) {
+          registeredBreakpoint.hitCount = removedBreakpoint.hitCount;
         }
 
         vscodeBreakpoints.push({
-          id: breakpoint.id,
-          line: breakpoint.line,
+          id: registeredBreakpoint.id,
+          line: registeredBreakpoint.line,
           verified: true,
         });
       }
@@ -986,7 +973,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, line);
     let stopReason: StopReason = 'step';
     if (lineBreakpoints) {
-      this.currentMetaVariables.set('hitCount', String(++lineBreakpoints.hitCount));
+      lineBreakpoints.incrementHitCount();
       if (0 < lineBreakpoints.length) {
         stopReason = lineBreakpoints[0].hidden
           ? 'hidden breakpoint'
@@ -1014,6 +1001,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.processLogpoint(lineBreakpoints);
     const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
     if (matchedBreakpoint) {
+      this.currentMetaVariables.set('hitCount', String(matchedBreakpoint.hitCount));
       await this.sendStoppedEvent(stopReason);
       return;
     }
@@ -1056,6 +1044,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     let stopReason: StopReason = 'step';
     const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
     if (matchedBreakpoint) {
+      this.currentMetaVariables.set('hitCount', String(matchedBreakpoint.hitCount));
       stopReason = matchedBreakpoint.hidden
         ? 'hidden breakpoint'
         : 'breakpoint';
@@ -1064,7 +1053,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     // Offset the {hitCount} increment if it comes back from a function
     const comebackFromFunc = prevStackFrames && currentStackFrames.length < prevStackFrames.length;
     if (comebackFromFunc && lineBreakpoints) {
-      this.currentMetaVariables.set('hitCount', String(--lineBreakpoints.hitCount));
+      lineBreakpoints.decrementHitCount();
     }
 
     // Force pause
@@ -1222,12 +1211,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     try {
-      const { condition, hitCondition } = breakpoint;
-      const hitCount = parseInt(this.currentMetaVariables.get('hitCount')!, 10);
+      const { condition, hitCondition, hitCount } = breakpoint;
+      const metaVariable = new CaseInsensitiveMap<string, string>(this.currentMetaVariables.entries());
+      metaVariable.set('hitCount', String(hitCount));
 
       let conditionResult = false, hitConditionResult = false;
       if (condition) {
-        conditionResult = await this.conditionalEvaluator.eval(condition, this.currentMetaVariables);
+        conditionResult = await this.conditionalEvaluator.eval(condition, metaVariable);
       }
       if (hitCondition) {
         const match = hitCondition.match(/^(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)$/u);
@@ -1276,8 +1266,11 @@ export class AhkDebugSession extends LoggingDebugSession {
       throw Error(`This message shouldn't appear.`);
     }
 
-    const { logMessage, logGroup } = breakpoint;
-    for (const messageOrProperty of await this.formatLog(logMessage, this.currentMetaVariables)) {
+    const { logMessage, logGroup, hitCount } = breakpoint;
+    const metaVariables = new CaseInsensitiveMap<string, string>(this.currentMetaVariables.entries());
+    metaVariables.set('hitCount', String(hitCount));
+
+    for (const messageOrProperty of await this.formatLog(logMessage, metaVariables)) {
       let event: DebugProtocol.OutputEvent;
       if (typeof messageOrProperty === 'string') {
         const message = messageOrProperty;

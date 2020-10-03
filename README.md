@@ -368,7 +368,8 @@ The following features allow to handle `MetaVariable`.
 <tr>
     <td>{hitCount}</td>
     <td>
-        hit count of breakpoint. For step execution, it is set to <code>-1</code>. Removing a breakpoint will also discard the count.
+        Hit count of <a href="#breakpoint">Breakpoint</a>. If the <a href="#about-stop-reason">stop reason</a> is not <code>BREAKPOINT</code> or <code>HIDDEN BREAKPOINT</code>, the value will be <code>-1</code>.<br />
+        Removing a breakpoint will also discard the count.
     </td>
 </tr>
 <tr>
@@ -433,6 +434,17 @@ You can see the value by hovering over the name of the variable. Also see the va
 
 You can see the current call stack.
 Also click to display the variables of that hierarchy in the [Data inspection](#data-inspection).
+
+### About stop reason
+You can also see why the script was stopped. This information may not be very useful, but I'll use it to explain it, so I'll document it.
+
+There are three stop reasons.
+* PAUSE
+* STEP
+* BREAKPOINT
+* HIDDEN BREAKPOINT
+
+`HIDDEN BREAKPOINT` is a [Breakpoint](#breakpoint) set by the [Breakpoint directive](#breakpoint-directive).
 
 ## Watch expression
 ![watch-expression](image/watch-expression.gif)
