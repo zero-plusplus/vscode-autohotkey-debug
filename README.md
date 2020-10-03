@@ -729,7 +729,7 @@ Each directive can be configured with the following rules.
 ### Breakpoint directive
 ![breakpoint-directive](image/breakpoint-directive.gif)
 
-Set a [Breakpoint](#breakpoint) in the position of the directive. Unlike normal breakpoint, it is not displayed in the UI and cannot be changed.
+Set a `Hidden breakpoint` in the position of the directive. Unlike [Breakpoint](#breakpoint), it is not displayed in the UI and cannot be changed.
 ```md
 ; @Debug-Breakpoint(CONDITION)[HITCONDITION] => MESSAGE
 ```
