@@ -133,24 +133,26 @@ export class BreakpointManager {
     const settedBreakpoint = new Breakpoint((await this.session.sendBreakpointGetCommand(response.id)).breakpoint, _advancedData);
     const verifiedLine = settedBreakpoint.line;
 
-    let registeredBreakpoints: LineBreakpoints;
+    let registeredLineBreakpoints: LineBreakpoints;
     if (this.hasBreakpoint(fileUri, verifiedLine)) {
-      registeredBreakpoints = this.getLineBreakpoints(fileUri, verifiedLine)!;
-      registeredBreakpoints.push(settedBreakpoint);
-      registeredBreakpoints.sort((a, b) => {
+      registeredLineBreakpoints = this.getLineBreakpoints(fileUri, verifiedLine)!;
+      registeredLineBreakpoints.push(settedBreakpoint);
+      registeredLineBreakpoints.sort((a, b) => {
+        if (a.hidden !== b.hidden) {
+          return Number(a.hidden) - Number(b.hidden);
+        }
         if (a.unverifiedColumn && b.unverifiedColumn) {
           return a.unverifiedColumn - b.unverifiedColumn;
         }
-        if (!a.hidden) {
-          return -1;
-        }
-        return 0;
+        const lineA = a.unverifiedLine ?? a.line;
+        const lineB = b.unverifiedLine ?? b.line;
+        return lineA - lineB;
       });
     }
     else {
-      registeredBreakpoints = new LineBreakpoints(settedBreakpoint);
+      registeredLineBreakpoints = new LineBreakpoints(settedBreakpoint);
       const key = this.createKey(fileUri, verifiedLine);
-      this.breakpointsMap.set(key, registeredBreakpoints);
+      this.breakpointsMap.set(key, registeredLineBreakpoints);
     }
     return settedBreakpoint;
   }
