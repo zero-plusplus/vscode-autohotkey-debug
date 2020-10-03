@@ -249,6 +249,7 @@
     ]
   },
   "dependencies": {
+    "@zero-plusplus/ahk-include-path-resolver": "^1.0.10",
     "convert-hrtime": "^3.0.0",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",

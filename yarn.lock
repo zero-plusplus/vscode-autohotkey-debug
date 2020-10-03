@@ -123,6 +123,11 @@
   resolved "https://registry.yarnpkg.com/@types/underscore/-/underscore-1.10.0.tgz#5cb0dff2a5f616fc8e0c61b482bf01fa20a03cec"
   integrity sha512-ZAbqul7QAKpM2h1PFGa5ETN27ulmqtj0QviYHasw9LffvXZvVHuraOx/FOsIPPDNGZN0Qo1nASxxSfMYOtSoCw==
 
+"@types/underscore@^1.10.0":
+  version "1.10.24"
+  resolved "https://registry.yarnpkg.com/@types/underscore/-/underscore-1.10.24.tgz#dede004deed3b3f99c4db0bdb9ee21cae25befdd"
+  integrity sha512-T3NQD8hXNW2sRsSbLNjF/aBo18MyJlbw0lSpQHB/eZZtScPdexN4HSa8cByYwTw9Wy7KuOFr81mlDQcQQaZ79w==
+
 "@types/underscore@^1.9.4":
   version "1.9.4"
   resolved "https://registry.yarnpkg.com/@types/underscore/-/underscore-1.9.4.tgz#22d1a3e6b494608e430221ec085fa0b7ccee7f33"
@@ -175,6 +180,15 @@
     lodash "^4.17.15"
     semver "^6.3.0"
     tsutils "^3.17.1"
+
+"@zero-plusplus/ahk-include-path-resolver@^1.0.10":
+  version "1.0.10"
+  resolved "https://npm.pkg.github.com/download/@zero-plusplus/ahk-include-path-resolver/1.0.10/19e47bb25d45fe16bd179f0dbcf6b32e506c45e5d211ed8e20caf521e3966360#57b459499c19370bdf9190ae7a448a8a14225077"
+  integrity sha512-9nVtZG297k2Q9PrpXXGjTdjhpqF2iH557WZ5AxsWlFykHODGRL99EXI/LUJqW45kELfybI9Np0yJtFzo7eRhsw==
+  dependencies:
+    "@types/underscore" "^1.10.0"
+    read-dir-deep "^7.0.1"
+    underscore "^1.10.2"
 
 "@zero-plusplus/eslint-my-rules@^1.0.16":
   version "1.0.16"

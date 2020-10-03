@@ -22,7 +22,7 @@ import { URI } from 'vscode-uri';
 import { range } from 'underscore';
 import { sync as pathExistsSync } from 'path-exists';
 import * as isPortTaken from 'is-port-taken';
-import AhkIncludeResolver from './util/ahk-include-path-resolver';
+import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {
   Breakpoint,
   BreakpointAdvancedData,
