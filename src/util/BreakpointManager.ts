@@ -136,12 +136,16 @@ export class BreakpointManager {
     let registeredBreakpoints: LineBreakpoints;
     if (this.hasBreakpoint(fileUri, verifiedLine)) {
       registeredBreakpoints = this.getLineBreakpoints(fileUri, verifiedLine)!;
-      if (settedBreakpoint.hidden) {
-        registeredBreakpoints.push(settedBreakpoint);
-      }
-      else {
-        registeredBreakpoints.unshift(settedBreakpoint);
-      }
+      registeredBreakpoints.push(settedBreakpoint);
+      registeredBreakpoints.sort((a, b) => {
+        if (a.unverifiedColumn && b.unverifiedColumn) {
+          return a.unverifiedColumn - b.unverifiedColumn;
+        }
+        if (!a.hidden) {
+          return -1;
+        }
+        return 0;
+      });
     }
     else {
       registeredBreakpoints = new LineBreakpoints(settedBreakpoint);
