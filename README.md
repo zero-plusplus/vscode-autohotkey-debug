@@ -65,6 +65,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit conditional breakpoint's `%` operator is not working
     * Fixed: [#44](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/44) Loaded scripts are not detected when on #Include line a directory is specified
     * Fixed: [#45](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/45) Loaded scripts are not detected when on specified  relative path by #Include
+    * Fixed: [#48](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/48) If more than one breakpoints in the same line is removed at once, it will not be removed correctly
     * Fixed: [#49](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/49) v1 only bug. `undefinedVariable == ""` returns false
     * Fixed: [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
     * Fixed: [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51) Error occurs when getting dynamic properties by data inspect, etc

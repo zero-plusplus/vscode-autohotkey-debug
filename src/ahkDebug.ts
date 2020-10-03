@@ -85,6 +85,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly objectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private breakpointManager?: BreakpointManager;
+  private settingBreakpointPending: Array<() => Promise<void>> = [];
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames: dbgp.StackFrame[] | null = null;
   private currentStackFrames: dbgp.StackFrame[] | null = null;
@@ -270,53 +271,60 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
-    this.traceLogger.log('setBreakPointsRequest');
-    if (this.session!.socketClosed || this.isTerminateRequested) {
-      this.sendResponse(response);
-      return;
-    }
+    this.settingBreakpointPending.push(async(): Promise<void> => {
+      this.traceLogger.log('setBreakPointsRequest');
+      if (this.session!.socketClosed || this.isTerminateRequested) {
+        this.sendResponse(response);
+        return;
+      }
 
-    const filePath = args.source.path ?? '';
-    const fileUri = URI.file(filePath).toString();
-    const removedBreakpoints = await this.breakpointManager!.unregisterBreakpointsInFile(fileUri);
+      const filePath = args.source.path ?? '';
+      const fileUri = URI.file(filePath).toString();
+      const removedBreakpoints = await this.breakpointManager!.unregisterBreakpointsInFile(fileUri);
 
-    const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
-    for await (const requestedBreakpoint of args.breakpoints ?? []) {
-      try {
-        const { condition, hitCondition, line, column = 1 } = requestedBreakpoint;
-        const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
-        const advancedData = {
-          condition,
-          hitCondition,
-          logMessage,
-          unverifiedLine: line,
-          unverifiedColumn: column,
-        } as BreakpointAdvancedData;
+      const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
+      for await (const requestedBreakpoint of args.breakpoints ?? []) {
+        try {
+          const { condition, hitCondition, line, column = 1 } = requestedBreakpoint;
+          const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
+          const advancedData = {
+            condition,
+            hitCondition,
+            logMessage,
+            unverifiedLine: line,
+            unverifiedColumn: column,
+          } as BreakpointAdvancedData;
 
-        const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+          const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
 
-        // Restore hitCount
-        const removedBreakpoint = removedBreakpoints.find((breakpoint) => registeredBreakpoint.unverifiedLine === breakpoint.unverifiedLine && registeredBreakpoint.unverifiedColumn === breakpoint.unverifiedColumn);
-        if (removedBreakpoint) {
-          registeredBreakpoint.hitCount = removedBreakpoint.hitCount;
+          // Restore hitCount
+          const removedBreakpoint = removedBreakpoints.find((breakpoint) => registeredBreakpoint.unverifiedLine === breakpoint.unverifiedLine && registeredBreakpoint.unverifiedColumn === breakpoint.unverifiedColumn);
+          if (removedBreakpoint) {
+            registeredBreakpoint.hitCount = removedBreakpoint.hitCount;
+          }
+
+          vscodeBreakpoints.push({
+            id: registeredBreakpoint.id,
+            line: registeredBreakpoint.line,
+            verified: true,
+          });
         }
+        catch (error) {
+          vscodeBreakpoints.push({
+            verified: false,
+            message: error.message,
+          });
+        }
+      }
 
-        vscodeBreakpoints.push({
-          id: registeredBreakpoint.id,
-          line: registeredBreakpoint.line,
-          verified: true,
-        });
-      }
-      catch (error) {
-        vscodeBreakpoints.push({
-          verified: false,
-          message: error.message,
-        });
-      }
+      response.body = { breakpoints: vscodeBreakpoints };
+      this.sendResponse(response);
+    });
+
+    for await (const pending of this.settingBreakpointPending) {
+      await pending();
     }
-
-    response.body = { breakpoints: vscodeBreakpoints };
-    this.sendResponse(response);
+    this.settingBreakpointPending = [];
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('configurationDoneRequest');
