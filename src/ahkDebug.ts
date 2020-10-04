@@ -1039,7 +1039,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (!this.currentMetaVariables || !this.currentStackFrames) {
       throw Error(`This message shouldn't appear.`);
     }
-    await this.processLogpoint(lineBreakpoints);
 
     // Fix a bug that prevented AutoExec thread, Timer thread, from getting proper information when there was more than one call stack
     const prevStackFrames: dbgp.StackFrame[] | undefined = this.prevStackFrames?.slice();
@@ -1047,12 +1046,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (prevStackFrames && prevStackFrames.length === 1 && 1 < currentStackFrames.length) {
       currentStackFrames.pop();
       currentStackFrames.push(prevStackFrames[0]);
-    }
-
-    // Offset the {hitCount} increment if it comes back from a function
-    const comebackFromFunc = prevStackFrames && currentStackFrames.length < prevStackFrames.length;
-    if (comebackFromFunc && lineBreakpoints) {
-      lineBreakpoints.decrementHitCount();
     }
 
     let stopReason: StopReason = 'step';
@@ -1064,12 +1057,24 @@ export class AhkDebugSession extends LoggingDebugSession {
         : 'breakpoint';
     }
 
-    // Force pause
-    if (comebackFromFunc && stepType === 'step_over') {
-      await this.sendStoppedEvent('step');
-      return;
+    const comebackFromFunc = prevStackFrames && currentStackFrames.length < prevStackFrames.length;
+    if (comebackFromFunc) {
+      // Offset the {hitCount} increment if it comes back from a function
+      lineBreakpoints?.decrementHitCount();
+      if (matchedBreakpoint) {
+        this.currentMetaVariables.set('hitCount', String(matchedBreakpoint.hitCount));
+      }
+      if (stepType === 'step_over') {
+        await this.sendStoppedEvent(stopReason);
+        return;
+      }
     }
-    else if (stepType === 'step_into') {
+    else {
+      await this.processLogpoint(lineBreakpoints);
+    }
+
+    // step_into is always stop
+    if (stepType === 'step_into') {
       await this.sendStoppedEvent(stopReason);
       return;
     }
