@@ -465,6 +465,11 @@ It supports both explicit loading using [#Include](https://www.autohotkey.com/do
 ## Breakpoint
 You can learn the basics of breakpoint [here](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
 
+### Unsupported
+* [Inline breakpoint](https://code.visualstudio.com/docs/editor/debugging#_inline-breakpoints) :　It's impossible to implement at the moment
+* [Function breakpoint](https://code.visualstudio.com/docs/editor/debugging#_function-breakpoints) :　There are plans to implement. However, time is needed
+* [Data breakpoint](https://code.visualstudio.com/docs/editor/debugging#_data-breakpoints) :　It's impossible to implement at the moment
+
 ## Advanced breakpoint
 **Note that using this feature for large loops will greatly degrade performance.**
 
