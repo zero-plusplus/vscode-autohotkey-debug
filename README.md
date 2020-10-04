@@ -241,7 +241,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>stopOnEntry</td>
     <td>boolean</td>
     <td>
-        If <code>false</code>, it runs until it stops at a breakpoint. Set it to <code>true</code> if you want it to stop at the first line, as in SciTE4AutoHotkey.<br />
+        If <code>false</code>, it runs until it break at a breakpoint. Set it to <code>true</code> if you want it to stop at the first line, as in SciTE4AutoHotkey.<br />
         <strong>default: <code>false</code><strong>
     </td>
 </tr>
@@ -428,7 +428,7 @@ On v2, it is converted to `Float`. So, `3.0e3` is written as `3000.0`. e.g. `3.0
 ### Data inspection when hover
 ![data-inspection-when-hover](image/data-inspection-when-hover.gif)
 
-You can see the value by hovering over the name of the variable. Also see the values of the object's child elements, only support in dot notation(e.g. `object.field`). Bracket notation(e.g. `array[1]`) is not supported.
+You can see the data by hovering over the name of the variable. Also see the values of the object's child elements, only support in dot notation(e.g. `object.field`). Bracket notation(e.g. `array[1]`) is not supported.
 
 ## Call stack
 ![call-stack](image/call-stack.gif)
@@ -465,15 +465,15 @@ It supports both explicit loading using [#Include](https://www.autohotkey.com/do
 ## Breakpoint
 You can learn the basics of breakpoint [here](https://code.visualstudio.com/docs/editor/debugging#_breakpoints)
 
-### Unsupported
-* [Inline breakpoint](https://code.visualstudio.com/docs/editor/debugging#_inline-breakpoints) :　It's impossible to implement at the moment
-* [Function breakpoint](https://code.visualstudio.com/docs/editor/debugging#_function-breakpoints) :　There are plans to implement. However, time is needed
-* [Data breakpoint](https://code.visualstudio.com/docs/editor/debugging#_data-breakpoints) :　It's impossible to implement at the moment
-
 ## Advanced breakpoint
 **Note that using this feature for large loops will greatly degrade performance.**
 
 See [here](https://code.visualstudio.com/docs/editor/debugging#_advanced-breakpoint-topics) for the basics.
+
+### Unsupported
+* [Inline breakpoint](https://code.visualstudio.com/docs/editor/debugging#_inline-breakpoints) :　It's impossible to implement at the moment
+* [Function breakpoint](https://code.visualstudio.com/docs/editor/debugging#_function-breakpoints) :　There are plans to implement. However, time is needed
+* [Data breakpoint](https://code.visualstudio.com/docs/editor/debugging#_data-breakpoints) :　It's impossible to implement at the moment
 
 ### Conditional breakpoint
 ![conditional-breakpoint](image/conditional-breakpoint.gif)
