@@ -1428,7 +1428,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             results.push(property);
           }
           else if (property instanceof dbgp.PrimitiveProperty) {
-            message += property.value;
+            message += this.escapeDebuggerToClient(property.value);
           }
         }
         else {
