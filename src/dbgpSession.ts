@@ -3,7 +3,6 @@ import { EventEmitter } from 'events';
 import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
-import { rtrim } from 'underscore.string';
 import * as convertHrTime from 'convert-hrtime';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { equalsIgnoreCase, startsWithIgnoreCase } from './util/stringUtils';
@@ -171,7 +170,6 @@ export abstract class Property {
     }
     return null;
   }
-  public abstract get displayValue(): string;
   constructor(propertyNode: XmlNode, context: Context) {
     const { facet, fullname, name, type, size } = propertyNode.attributes;
 
@@ -211,45 +209,6 @@ export class ObjectProperty extends Property {
     }
     return null;
   }
-  public get displayValue(): string {
-    const maxIndex = this.maxIndex;
-    const isArray = maxIndex !== null;
-    let value = isArray
-      ? `${this.className}(${maxIndex!}) [`
-      : `${this.className} {`;
-
-    for (let i = 0; i < this.children.length; i++) {
-      const property = this.children[i];
-      if (100 <= i) {
-        value += '…';
-        break;
-      }
-      if (property.name === 'base') {
-        continue;
-      }
-
-      const displayValue = property instanceof ObjectProperty
-        ? property.className
-        : property.displayValue;
-      if (isArray) {
-        if (!property.isIndex) {
-          continue;
-        }
-
-        value += `${displayValue}, `;
-        continue;
-      }
-
-      const key = property.isIndex
-        ? String(property.index)
-        : property.name;
-      value += `${key}: ${displayValue}, `;
-    }
-
-    value = rtrim(value, ', ');
-    value += isArray ? ']' : '}';
-    return value;
-  }
   constructor(propertyNode: XmlNode, context: Context) {
     super(propertyNode, context);
     const { classname, address, page, pagesize, children } = propertyNode.attributes;
@@ -271,15 +230,6 @@ export class ObjectProperty extends Property {
 export class PrimitiveProperty extends Property {
   public encoding: string;
   public value: string;
-  public get displayValue(): string {
-    if (this.type === 'string') {
-      return `"${this.value}"`;
-    }
-    else if (this.type === 'undefined') {
-      return 'Not initialized';
-    }
-    return this.value;
-  }
   constructor(propertyNode: XmlNode, context: Context) {
     super(propertyNode, context);
     const { encoding } = propertyNode.attributes;

@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.1] - 2020-10-06
+### Fixed
+* [#21](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/21) Special characters are not escaped in data inspection, etc
+
 ## [1.6.0] - 2020-10-04
 ### Added
 * [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support `Run Without Debugging`
@@ -272,6 +276,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.0..v1.6.1
 [1.6.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.5.0..v1.6.0
 [1.5.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.10..v1.5.0
 [1.4.10]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.9..v1.4.10

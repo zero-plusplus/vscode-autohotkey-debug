@@ -49,6 +49,9 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.6.1` - 2020-10-06
+    * Fixed: [#21](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/21) Special characters are not escaped in data inspection, etc
+
 * `1.6.0` - 2020-10-04
     * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support `Run Without Debugging`
     * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support MetaVariable. This is supported by several features
@@ -97,12 +100,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: In some cases, the `<base>` field of an instance cannot be obtained correctly
     * Fixed: Fail to parse hexadecimal numbers starting from 0 as in `0x012` with conditional breakpoints and variable writing, etc
     * Fixed: v1 only bug. Where some variables cannot be obtained with conditional breakpoint and watch expression
-
-* `1.4.10` - 2020-08-03
-    * Changed: The object summary to show only the elements that are actually enumerated (i.e. the base property is not shown)
-    * Fixed: A bug in data inspect
-        * The summary of objects within an object is not displayed correctly. Occurred in 1.4.8
-        * Chunking does not work when opening an array of 101 or more in an object. Occurred in 1.4.8
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
