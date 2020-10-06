@@ -22,6 +22,7 @@ import { URI } from 'vscode-uri';
 import { range } from 'underscore';
 import { sync as pathExistsSync } from 'path-exists';
 import * as isPortTaken from 'is-port-taken';
+import { rtrim } from 'underscore.string';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {
   Breakpoint,
@@ -525,7 +526,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
         const variable = {
           name: objectProperty.name,
-          value: objectProperty.displayValue,
+          value: this.formatProperty(objectProperty),
           variablesReference,
           indexedVariables,
           namedVariables,
@@ -601,7 +602,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       variables.push({
         name: property.name,
         type: property.type,
-        value: property.displayValue,
+        value: this.formatProperty(property),
         variablesReference,
         indexedVariables,
         namedVariables,
@@ -673,7 +674,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         typeName,
         data,
       });
-
       if (!dbgpResponse.success) {
         this.sendErrorResponse(response, {
           id: args.variablesReference,
@@ -682,10 +682,11 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
+      const { properties } = await this.session!.sendPropertyGetCommand(context, fullName);
       response.body = {
         type: typeName,
         variablesReference: 0,
-        value: typeName === 'string' ? `"${data}"` : data,
+        value: this.formatProperty(properties[0]),
       };
       this.sendResponse(response);
     }
@@ -753,7 +754,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       response.body = {
-        result: property.displayValue,
+        result: this.formatProperty(property),
         type: property.type,
         variablesReference,
         indexedVariables,
@@ -912,6 +913,76 @@ export class AhkDebugSession extends LoggingDebugSession {
     // const DEBUG_ns = DEBUG_hrtime[0] * 1e9 + DEBUG_hrtime[1];
     // const DEBUG_s = DEBUG_ns / 1e9;
     // this.printLogMessage(`elapsedTime: ${DEBUG_s}s`);
+  }
+  private escapeDebuggerToClient(str: string): string {
+    const version = this.ahkVersion;
+    return str
+      .replace(/"/gu, version === 1 ? '""' : '`"')
+      .replace(/\r\n/gu, '`r`n')
+      .replace(/\n/gu, '`n')
+      .replace(/\r/gu, '`r')
+      .replace(/[\b]/gu, '`b')
+      .replace(/\t/gu, '`t')
+      .replace(/\v/gu, '`v')
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\x07]/gu, '`a')
+      .replace(/\f/gu, '`f');
+  }
+  private formatProperty(property: dbgp.Property): string {
+    const formatPrimitiveProperty = (property: dbgp.PrimitiveProperty): string => {
+      if (property.type === 'string') {
+        return `"${this.escapeDebuggerToClient(property.value)}"`;
+      }
+      else if (property.type === 'undefined') {
+        return 'Not initialized';
+      }
+      return property.value;
+    };
+
+    if (property instanceof dbgp.PrimitiveProperty) {
+      return formatPrimitiveProperty(property);
+    }
+
+    const objectProperty = property as dbgp.ObjectProperty;
+    const maxIndex = objectProperty.maxIndex;
+    const isArray = maxIndex !== null;
+    let value = maxIndex
+      ? `${objectProperty.className}(${maxIndex}) [`
+      : `${objectProperty.className} {`;
+
+    const children = objectProperty.children.slice(0, 100);
+    for (const child of children) {
+      if (child.name === 'base') {
+        continue;
+      }
+
+      const displayValue = child instanceof dbgp.PrimitiveProperty
+        ? formatPrimitiveProperty(child)
+        : (child as dbgp.ObjectProperty).className;
+
+      const objectChild = child as dbgp.ObjectProperty;
+      if (isArray) {
+        if (!objectChild.isIndex) {
+          continue;
+        }
+
+        value += `${displayValue}, `;
+        continue;
+      }
+
+      const key = objectChild.isIndex
+        ? String(objectChild.index)
+        : objectChild.name;
+      value += `${key}: ${displayValue}, `;
+    }
+
+    if (children.length === 100) {
+      value += '…';
+    }
+
+    value = rtrim(value, ', ');
+    value += isArray ? ']' : '}';
+    return value;
   }
   private fixPathOfRuntimeError(errorMessage: string): string {
     if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
@@ -1298,7 +1369,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         const variablesReference = this.variablesReferenceCounter++;
         this.logObjectPropertiesByVariablesReference.set(variablesReference, property);
 
-        event = new OutputEvent(property.displayValue, logCategory) as DebugProtocol.OutputEvent;
+        event = new OutputEvent(this.formatProperty(property), logCategory) as DebugProtocol.OutputEvent;
         event.body.variablesReference = variablesReference;
       }
 
