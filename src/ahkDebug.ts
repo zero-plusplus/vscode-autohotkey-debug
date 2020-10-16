@@ -122,13 +122,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     this.clearPerfTipsDecorations();
-    if (this.session && this.session.socketWritable) {
+    if (this.session?.socketWritable) {
       await this.session.sendStopCommand();
     }
     await this.session?.close();
     this.server?.close();
 
-    if (this.config.openFileOnExit !== null) {
+    if (this.config.openFileOnExit) {
       if (pathExistsSync(this.config.openFileOnExit)) {
         const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
         vscode.window.showTextDocument(doc);
@@ -186,7 +186,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           return;
         }
 
-        if (exitCode !== null) {
+        if (exitCode) {
           const category = exitCode === 0 ? 'console' : 'stderr';
           this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
         }

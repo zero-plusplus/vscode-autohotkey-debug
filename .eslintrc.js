@@ -1,6 +1,7 @@
 const { typescript: { rules } } = require('@zero-plusplus/eslint-my-rules');
 
 module.exports = {
+  root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
     ecmaVersion: 2018,
@@ -16,6 +17,7 @@ module.exports = {
   plugins: [ "@typescript-eslint" ],
   rules: {
     ...rules,
+    'no-undef': 'off', // Wait for improve: NodeJS, BufferEncoding, etc. are not supported.
     'arrow-body-style': 'off',
     'class-methods-use-this': 'off',
     'lines-between-class-members': 'off',

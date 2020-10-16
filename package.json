@@ -274,14 +274,14 @@
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
     "@types/vscode": "^1.45.0",
-    "@typescript-eslint/eslint-plugin": "^2.29.0",
-    "@typescript-eslint/parser": "^2.29.0",
+    "@typescript-eslint/eslint-plugin": "^4.4.1",
+    "@typescript-eslint/parser": "^4.4.1",
     "@zero-plusplus/eslint-my-rules": "^1.0.16",
-    "eslint": "^6.8.0",
+    "eslint": "^7.11.0",
     "husky": "^4.2.5",
     "mocha": "^7.1.1",
     "ts-node": "^8.9.0",
-    "typescript": "^3.8.3",
+    "typescript": "^4.0.3",
     "vsce": "^1.75.0",
     "vscode-debugadapter-testsupport": "^1.40.3"
   }
