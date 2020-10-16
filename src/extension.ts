@@ -91,7 +91,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
             start = parseInt(match!.groups!.start, 10);
             last = parseInt(match!.groups!.last, 10);
           }
-          catch (error) {
+          catch (error: unknown) {
             throw Error(`${commonMessage} Please set it like "9000-9010". It may contain whitespace or irrelevant strings.`);
           }
 
@@ -104,8 +104,9 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
           config.port = start;
           config.permittedPortRange = range(start, last + 1);
         }
-        catch (error) {
-          window.showErrorMessage(error.message);
+        catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
+          window.showErrorMessage(errorMessage);
           config.port = 9000;
           config.permittedPortRange = [ config.port ];
         }

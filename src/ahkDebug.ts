@@ -252,17 +252,18 @@ export class AhkDebugSession extends LoggingDebugSession {
               this.sendEvent(new ThreadEvent('Session started.', this.session.id));
               resolve();
             }
-            catch (error) {
+            catch (error: unknown) {
               this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
               reject(error);
             }
           });
       });
     }
-    catch (error) {
+    catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
       const message = {
         id: 2,
-        format: error.message,
+        format: errorMessage,
       } as DebugProtocol.Message;
       this.sendErrorResponse(response, message);
       this.sendTerminateEvent();
@@ -310,10 +311,11 @@ export class AhkDebugSession extends LoggingDebugSession {
             verified: true,
           });
         }
-        catch (error) {
+        catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
           vscodeBreakpoints.push({
             verified: false,
-            message: error.message,
+            message: errorMessage,
           });
         }
       }
@@ -690,7 +692,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       };
       this.sendResponse(response);
     }
-    catch (error) {
+    catch (error: unknown) {
       this.sendErrorResponse(response, {
         id: args.variablesReference,
         format: 'Command execution failed. This message is not normally displayed.',
@@ -762,8 +764,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       };
       this.sendResponse(response);
     }
-    catch (error) {
-      response.body = { result: error.message, variablesReference: 0 };
+    catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
+      response.body = { result: errorMessage, variablesReference: 0 };
       this.sendResponse(response);
     }
   }

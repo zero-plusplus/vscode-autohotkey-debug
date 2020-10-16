@@ -228,10 +228,10 @@
     read-dir-deep "^7.0.1"
     underscore "^1.10.2"
 
-"@zero-plusplus/eslint-my-rules@^1.0.16":
-  version "1.0.16"
-  resolved "https://npm.pkg.github.com/download/@zero-plusplus/eslint-my-rules/1.0.16/995d8fa23160d7c1e3c99041a3a379a1ab1d8a41ea413c92e77719d5401b761a#768fd1637151d87ff65f8ddcf97298e052452c1c"
-  integrity sha512-/dfrZgI0FKHs+lEBcKJ+7ISfhPO6kuaW3J2gkhDSa1ENNPQvkdRFwjt/DEIUR8h4w+fDhNmGzZoUtn86ejDmRw==
+"@zero-plusplus/eslint-my-rules@^1.0.18":
+  version "1.0.18"
+  resolved "https://npm.pkg.github.com/download/@zero-plusplus/eslint-my-rules/1.0.18/eebc42bf91ec23f88c7e35314a644fe339dc245d7696a8fc675a4544087af827#8660a2446a927a37545931ff0b98acf26e8b6699"
+  integrity sha512-1cVb+XSM0lk9kQHBm9t7iaWaSqp0JbfTj71TrSjDoYlzMP1LenmHP5TmB/dWFOjak56qljLVuX7JYqYIqNOwJg==
 
 acorn-jsx@^5.2.0:
   version "5.2.0"
