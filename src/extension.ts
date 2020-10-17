@@ -15,6 +15,7 @@ import {
   window,
 } from 'vscode';
 import { defaults, range } from 'underscore';
+import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
 
@@ -36,8 +37,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       maxChildren: 10000,
       runtime_v1: 'AutoHotkey.exe',
       runtime_v2: 'v2/AutoHotkey.exe',
-      runtimeArgs_v1: [ '/ErrorStdOut' ],
-      runtimeArgs_v2: [ '/ErrorStdOut' ],
       usePerfTips: false,
       useIntelliSenseInDebugging: true,
       useDebugDirective: false,
@@ -113,18 +112,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       }
     }
 
-    if (typeof config.runtimeArgs === 'undefined') {
-      const editor = window.activeTextEditor;
-      config.runtimeArgs = editor && editor.document.languageId.toLowerCase() === 'ahk'
-        ? config.runtimeArgs_v1
-        : config.runtimeArgs_v2; // ahk2 or ah2
-    }
-    if (!Array.isArray(config.runtimeArgs)) {
-      config.runtimeArgs = [];
-    }
-    config.runtimeArgs = config.runtimeArgs.filter((arg) => arg.search(/\/debug/ui) === -1);
-    config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
-
     if (config.type === 'ahk') {
       window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
       config.type = 'autohotkey';
@@ -155,6 +142,28 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       if (path.extname(config.runtime) === '') {
         config.runtime += '.exe';
       }
+    }
+
+    if (typeof config.runtimeArgs === 'undefined') {
+      const ahkVersion = getAhkVersion(config.runtime);
+      if (typeof config.runtimeArgs_v1 === 'undefined') {
+        config.runtimeArgs_v1 = ahkVersion.mejor === 1 && ahkVersion.minor === 1 && 33 <= ahkVersion.teeny
+          ? [ '/ErrorStdOut=UTF-8' ]
+          : [ '/ErrorStdOut' ];
+      }
+      if (typeof config.runtimeArgs_v2 === 'undefined') {
+        config.runtimeArgs_v2 = ahkVersion.alpha && 112 <= ahkVersion.alpha
+          ? [ '/ErrorStdOut=UTF-8' ]
+          : [ '/ErrorStdOut' ];
+      }
+
+      const editor = window.activeTextEditor;
+      config.runtimeArgs = editor && editor.document.languageId.toLowerCase() === 'ahk'
+        ? config.runtimeArgs_v1
+        : config.runtimeArgs_v2; // ahk2 or ah2
+
+      config.runtimeArgs = config.runtimeArgs.filter((arg) => arg.search(/\/debug/ui) === -1);
+      config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
     }
     return config;
   }

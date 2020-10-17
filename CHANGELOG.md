@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.2] - 2020-10-xx
+### Changed
+* [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Error messages are now output in UTF-8 whenever possible
+
 ## [1.6.1] - 2020-10-06
 ### Fixed
 * [#21](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/21) Special characters are not escaped in data inspection, etc
@@ -276,6 +280,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.1..v1.6.2
 [1.6.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.0..v1.6.1
 [1.6.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.5.0..v1.6.0
 [1.5.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.4.10..v1.5.0

@@ -15,7 +15,7 @@
             "usePerfTips": true,
             "openFileOnExit": "${file}",
             "internalConsoleOptions": "openOnSessionStart",
-            "trace": true
+            "trace": false
         },
         {
             "name": "AutoHotkey_H Debug",
