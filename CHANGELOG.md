@@ -18,6 +18,9 @@ Also want to check the development status, check the [commit history](https://gi
 ### Changed
 * [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Error messages are now output in UTF-8 whenever possible
 
+### Fixed
+* [#63](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/63) Can't get environment variables in the script
+
 ## [1.6.1] - 2020-10-06
 ### Fixed
 * [#21](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/21) Special characters are not escaped in data inspection, etc
