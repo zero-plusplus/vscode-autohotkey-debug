@@ -16,6 +16,7 @@
     "lint": "eslint --fix ./src/**/*.ts ./test/**/*.ts",
     "clean": "rimraf build",
     "build": "yarn clean && yarn lint && tsc",
+    "build:without-lint": "yarn clean && tsc",
     "test": "yarn lint && mocha -r ts-node/register ./test/**/*.test.ts",
     "vscode:prepublish": "yarn build"
   },

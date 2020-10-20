@@ -40,5 +40,10 @@
       "type": "shell",
       "command": "yarn build"
     },
+    {
+      "label": "subtask: build:without-lint",
+      "type": "shell",
+      "command": "yarn build:without-lint"
+    },
   ],
 }
