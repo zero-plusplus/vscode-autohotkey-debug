@@ -259,6 +259,7 @@
     "pcre-to-regexp": "^1.1.0",
     "read-dir-deep": "^7.0.1",
     "regex-parser": "^2.2.11",
+    "ts-predicates": "^1.0.14",
     "underscore": "^1.10.2",
     "underscore.string": "^3.3.5",
     "vscode-debugadapter": "^1.40.0",

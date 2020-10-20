@@ -1966,6 +1966,13 @@ ts-node@^8.9.0:
     source-map-support "^0.5.17"
     yn "3.1.1"
 
+ts-predicates@^1.0.14:
+  version "1.0.14"
+  resolved "https://registry.yarnpkg.com/ts-predicates/-/ts-predicates-1.0.14.tgz#6d0d75090816dfa5e70603bc5645ac94b381875e"
+  integrity sha512-GzLruKg047CQSEbOcXyWxu+/Yuq4tir/cs/LNghEXRvSSeJyivWsr3q8OGY8rAnUWeGNPLci/BYZctpnLYjmWA==
+  dependencies:
+    typeof-util "^1.0.3"
+
 tslib@^1.8.1:
   version "1.11.1"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.11.1.tgz#eb15d128827fbee2841549e171f45ed338ac7e35"
@@ -2002,6 +2009,11 @@ typed-rest-client@1.2.0:
   dependencies:
     tunnel "0.0.4"
     underscore "1.8.3"
+
+typeof-util@^1.0.3:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/typeof-util/-/typeof-util-1.0.7.tgz#e9b897c5c1541719040ae523046c135d7777d5ec"
+  integrity sha512-uFUnoQlZrMtzmOeu1R49YgAouJnRjTqcrYCKfUq5HCE30ZXuh16x/Pmr7IRBkjvG9XJfhGcde2qBpjOt2S1HtQ==
 
 typescript@^4.0.3:
   version "4.0.3"
