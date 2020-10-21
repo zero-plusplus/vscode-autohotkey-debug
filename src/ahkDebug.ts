@@ -21,7 +21,6 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
 import { range } from 'underscore';
 import { sync as pathExistsSync } from 'path-exists';
-import * as isPortTaken from 'is-port-taken';
 import { rtrim } from 'underscore.string';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {
@@ -155,14 +154,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     try {
       const runtimeArgs: string[] = [];
       if (!args.noDebug) {
-        const portUsed = await isPortTaken(this.config.port, this.config.hostname);
-        if (portUsed) {
-          if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
-            this.sendTerminateEvent();
-            return;
-          }
-        }
-
         runtimeArgs.push(`/Debug=${String(args.hostname)}:${String(args.port)}`);
       }
       runtimeArgs.push(...this.config.runtimeArgs);
@@ -798,23 +789,6 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     response.body = { sources };
     this.sendResponse(response);
-  }
-  private async confirmWhetherUseAnotherPort(originalPort: number): Promise<boolean> {
-    const portUsed = await isPortTaken(this.config.port, this.config.hostname);
-    if (portUsed) {
-      this.config.port++;
-      return this.confirmWhetherUseAnotherPort(originalPort);
-    }
-
-    if (!this.config.permittedPortRange.includes(this.config.port)) {
-      const message = `Port number \`${originalPort}\` is already in use. Would you like to start debugging using \`${this.config.port}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
-      const result = await vscode.window.showInformationMessage(message, { modal: true }, 'Yes');
-      if (typeof result === 'undefined') {
-        return false;
-      }
-    }
-
-    return true;
   }
   private getAllLoadedSourcePath(): string[] {
     if (0 < this.loadedSources.length) {
