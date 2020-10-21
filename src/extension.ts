@@ -27,25 +27,26 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     this.pendingErrors = [];
 
     const defaultConfig = {
-      type: 'autohotkey',
       name: 'AutoHotkey Debug',
+      type: 'autohotkey',
       request: 'launch',
+      runtime_v1: 'AutoHotkey.exe',
+      runtime_v2: 'v2/AutoHotkey.exe',
+      hostname: 'localhost',
+      port: 9000,
       program: '${file}',
       args: [],
       env: {},
-      hostname: 'localhost',
-      port: 9000,
       permittedPortRange: [],
       // If a value greater than 10000 is specified, malfunction may occur due to specification changes.
       // Ref: https://github.com/Lexikos/AutoHotkey_L/blob/36600809a348bd3a09d59e335d2897ed16f11ac7/source/Debugger.cpp#L960
       // > TODO: Include the lazy-var arrays for completeness. Low priority since lazy-var arrays are used only for 10001+ variables, and most conventional debugger interfaces would generally not be useful with that many variables.
+      stopOnEntry: false,
       maxChildren: 10000,
-      runtime_v1: 'AutoHotkey.exe',
-      runtime_v2: 'v2/AutoHotkey.exe',
-      usePerfTips: false,
-      useIntelliSenseInDebugging: true,
-      useDebugDirective: false,
       openFileOnExit: null,
+      useIntelliSenseInDebugging: true,
+      usePerfTips: false,
+      useDebugDirective: false,
       trace: false,
     };
     defaults(config, defaultConfig);
@@ -62,27 +63,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         return;
       }
       this.pendingErrors.push(Error(commonErrorMessage));
-    })();
-
-    // init args
-    ((): void => {
-      if (!isArray(config.args)) {
-        this.pendingErrors.push(Error('`args` must be a array.'));
-      }
-    })();
-
-    // init env
-    ((): void => {
-      if (!isPlainObject(config.env)) {
-        this.pendingErrors.push(Error('`env` must be a object.'));
-        return;
-      }
-
-      for (const key in config.env) {
-        if (config.env[key] === null) {
-          config.env[key] = '';
-        }
-      }
     })();
 
     // init hostname
@@ -136,10 +116,45 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       }
     })();
 
+    // init args
+    ((): void => {
+      if (!isArray(config.args)) {
+        this.pendingErrors.push(Error('`args` must be a array.'));
+      }
+    })();
+
+    // init env
+    ((): void => {
+      if (!isPlainObject(config.env)) {
+        this.pendingErrors.push(Error('`env` must be a object.'));
+        return;
+      }
+
+      for (const key in config.env) {
+        if (config.env[key] === null) {
+          config.env[key] = '';
+        }
+      }
+    })();
+
+    // init stopOnEntry
+    ((): void => {
+      if (!isBoolean(config.stopOnEntry)) {
+        this.pendingErrors.push(Error('`stopOnEntry` must be a boolean.'));
+      }
+    })();
+
     // init maxChildren
     ((): void => {
       if (!Number.isInteger(config.maxChildren)) {
         this.pendingErrors.push(Error('`maxChildren` must be a integer.'));
+      }
+    })();
+
+    // init useIntelliSenseInDebugging
+    ((): void => {
+      if (!isBoolean(config.useIntelliSenseInDebugging)) {
+        this.pendingErrors.push(Error('`useIntelliSenseInDebugging` must be a boolean.'));
       }
     })();
 
@@ -165,13 +180,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         return;
       }
       defaults(config.usePerfTips, defaultUsePerfTips);
-    })();
-
-    // init useIntelliSenseInDebugging
-    ((): void => {
-      if (!isBoolean(config.useIntelliSenseInDebugging)) {
-        this.pendingErrors.push(Error('`useIntelliSenseInDebugging` must be a boolean.'));
-      }
     })();
 
     // init useDebugDirective
