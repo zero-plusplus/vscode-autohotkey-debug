@@ -152,10 +152,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.traceLogger.log('launchRequest');
     this.config = args;
 
-    if (!pathExistsSync(this.config.runtime)) {
-      throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
-    }
-
     try {
       const runtimeArgs: string[] = [];
       if (!args.noDebug) {
