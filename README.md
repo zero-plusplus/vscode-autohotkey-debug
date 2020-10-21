@@ -51,6 +51,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 ### Update
 * `1.6.2` - 2020-10-xx
     * Changed: [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Error messages are now output in UTF-8 whenever possible
+    * Changed: Improve error message when an invalid value is set by launch.json
     * Fix: [#63](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/63) Can't get environment variables in the script
 
 * `1.6.1` - 2020-10-06
