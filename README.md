@@ -51,6 +51,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 ### Update
 * `1.6.2` - 2020-10-xx
     * Changed: [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Error messages are now output in UTF-8 whenever possible
+    * Changed: [#64](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/64) Default value of the port to 9002
     * Changed: Improve error message when an invalid value is set by launch.json
     * Fix: [#63](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/63) Can't get environment variables in the script
 
@@ -191,7 +192,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>number</td>
     <td>
         A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.<br />
-        <strong>default: <code>9000</code></strong>
+        <strong>default: <code>9002</code></strong>
     </td>
 </tr>
 <tr>

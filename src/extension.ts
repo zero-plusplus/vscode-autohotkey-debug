@@ -34,7 +34,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtime_v1: 'AutoHotkey.exe',
       runtime_v2: 'v2/AutoHotkey.exe',
       hostname: 'localhost',
-      port: 9000,
+      port: 9002,
       program: '${file}',
       args: [],
       env: {},
