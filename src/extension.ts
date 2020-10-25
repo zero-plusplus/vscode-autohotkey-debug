@@ -47,7 +47,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     // Deprecated. I''ll get rid of it eventually
     if (config.type === 'ahk') {
       window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
-      // eslint-disable-next-line require-atomic-updates
       config.type = 'autohotkey';
     }
 
