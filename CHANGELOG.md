@@ -16,8 +16,8 @@ Also want to check the development status, check the [commit history](https://gi
 ## [Released]
 ## [1.6.2] - 2020-10-xx
 ### Changed
-* [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Error messages are now output in UTF-8 whenever possible
-* [#64](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/64) Default value of the port to 9002
+* [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Whenever possible, the default value of `runtimeArgs` is set to `[ "ErrorStdOut=UTF-8"]`
+* [#64](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/64) Default value of `port` to `9002`
 * Improve error message when an invalid value is set by launch.json
 
 ### Fixed
