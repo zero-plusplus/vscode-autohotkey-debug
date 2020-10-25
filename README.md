@@ -114,6 +114,8 @@ If you find a bug, please report it to [issues](https://github.com/zero-plusplus
 2. Install an extension to support AutoHotkey (the famous ` slevesque.vscode-autohotkey`)
 3. Press `Ctrl + P`, type `ext install zero-plusplus.vscode-autohotkey-debug`
 
+If you want to use AutoHotkey v2, or AutoHotkey_H edit the `runtime` in [launch.json](#customize-launchjson).
+
 # Usage
 1. Open a file with the extension `.ahk`, `.ahk2` or `.ah2`.
 2. Set [Breakpoint](#breakpoint) where you want them
