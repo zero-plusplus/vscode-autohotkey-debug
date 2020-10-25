@@ -1,3 +1,4 @@
+import { existsSync } from 'fs';
 import * as path from 'path';
 import {
   CancellationToken,
@@ -14,39 +15,256 @@ import {
   languages,
   window,
 } from 'vscode';
-import { defaults, range } from 'underscore';
+import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
+import { defaults, isString, range } from 'underscore';
+import * as isPortTaken from 'is-port-taken';
+import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
 
+const normalizePath = (filePath: string): string => (filePath ? path.normalize(filePath) : filePath); // If pass in an empty string, path.normalize returns '.'
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
-    const defaultConfig = {
+    defaults(config, {
+      name: 'AutoHotkey Debug',
       type: 'autohotkey',
-      name: 'Launch',
       request: 'launch',
+      runtime_v1: 'AutoHotkey.exe',
+      runtime_v2: 'v2/AutoHotkey.exe',
+      hostname: 'localhost',
+      port: 9002,
       program: '${file}',
       args: [],
       env: {},
-      hostname: 'localhost',
-      port: 9000,
-      permittedPortRange: [],
-      // If a value greater than 10000 is specified, malfunction may occur due to specification changes.
-      // Ref: https://github.com/Lexikos/AutoHotkey_L/blob/36600809a348bd3a09d59e335d2897ed16f11ac7/source/Debugger.cpp#L960
-      // > TODO: Include the lazy-var arrays for completeness. Low priority since lazy-var arrays are used only for 10001+ variables, and most conventional debugger interfaces would generally not be useful with that many variables.
+      stopOnEntry: false,
       maxChildren: 10000,
-      runtime_v1: 'AutoHotkey.exe',
-      runtime_v2: 'v2/AutoHotkey.exe',
-      runtimeArgs_v1: [ '/ErrorStdOut' ],
-      runtimeArgs_v2: [ '/ErrorStdOut' ],
-      usePerfTips: false,
       useIntelliSenseInDebugging: true,
+      usePerfTips: false,
       useDebugDirective: false,
-      openFileOnExit: null,
       trace: false,
-    };
-    defaults(config, defaultConfig);
+    });
 
-    if (config.usePerfTips) {
+    // Deprecated. I''ll get rid of it eventually
+    if (config.type === 'ahk') {
+      window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
+      config.type = 'autohotkey';
+    }
+
+    return config;
+  }
+  public async resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): Promise<DebugConfiguration> {
+    // init request
+    ((): void => {
+      if (config.request === 'launch') {
+        return;
+      }
+
+      const commonErrorMessage = '`type` must be "launch".';
+      if (config.request === 'attach') {
+        throw Error(`${commonErrorMessage} "attach" is not supported.`);
+      }
+      throw Error(commonErrorMessage);
+    })();
+
+    // init runtime
+    ((): void => {
+      if (typeof config.runtime === 'undefined') {
+        const editor = window.activeTextEditor;
+        config.runtime = editor && editor.document.languageId.toLowerCase() === 'ahk'
+          ? config.runtime_v1
+          : config.runtime_v2; // ahk2 or ah2
+      }
+
+      if (!isString(config.runtime)) {
+        throw Error('`runtime` must be a string.');
+      }
+      if (config.runtime) {
+        if (!path.isAbsolute(config.runtime)) {
+          const ahkPath = `${String(process.env.PROGRAMFILES)}/AutoHotkey`;
+          config.runtime = path.resolve(ahkPath, config.runtime);
+        }
+        if (path.extname(config.runtime) === '') {
+          config.runtime += '.exe';
+        }
+      }
+
+      if (!existsSync(config.runtime)) {
+        throw Error(`\`runtime\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.runtime))}"`);
+      }
+    })();
+
+    // init runtimeArgs
+    ((): void => {
+      if (typeof config.runtimeArgs === 'undefined') {
+        const ahkVersion = getAhkVersion(config.runtime, { env: config.env });
+        if (ahkVersion === null) {
+          throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);
+        }
+
+        if (typeof config.runtimeArgs_v1 === 'undefined') {
+          config.runtimeArgs_v1 = ahkVersion.mejor === 1 && ahkVersion.minor === 1 && 33 <= ahkVersion.teeny
+            ? [ '/ErrorStdOut=UTF-8' ]
+            : [ '/ErrorStdOut' ];
+        }
+        if (typeof config.runtimeArgs_v2 === 'undefined') {
+          config.runtimeArgs_v2 = ahkVersion.alpha && 112 <= ahkVersion.alpha
+            ? [ '/ErrorStdOut=UTF-8' ]
+            : [ '/ErrorStdOut' ];
+        }
+
+        const editor = window.activeTextEditor;
+        config.runtimeArgs = editor && editor.document.languageId.toLowerCase() === 'ahk'
+          ? config.runtimeArgs_v1
+          : config.runtimeArgs_v2; // ahk2 or ah2
+
+        config.runtimeArgs = config.runtimeArgs.filter((arg) => arg.search(/\/debug/ui) === -1);
+        config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
+      }
+
+      if (isArray(config.runtimeArgs)) {
+        return;
+      }
+      throw Error('`runtimeArgs` must be a array.');
+    })();
+
+    // init hostname
+    ((): void => {
+      if (!isString(config.hostname)) {
+        throw Error('`hostname` must be a string.');
+      }
+    })();
+
+    // init port
+    await (async(): Promise<void> => {
+      const portRange = ((): { permitted: boolean; range: number[] } => {
+        const createUnPermittedPortRange = (port: number): { permitted: boolean; range: number[] } => {
+          return { permitted: false, range: range(port, port + 100) };
+        };
+
+        if (Number.isInteger(config.port)) {
+          return createUnPermittedPortRange(config.port as number);
+        }
+        else if (typeof config.port === 'string') {
+          if (config.port.match(/^\d+$/u)) {
+            return createUnPermittedPortRange(parseInt(config.port, 10));
+          }
+
+          const errorMessage = 'It must be specified in the format of "start-last". It must be start < last. e.g. "9002-9010"';
+          const match = config.port.match(/^(?<start>\d+)-(?<last>\d+)$/u);
+          if (!match) {
+            throw Error(errorMessage);
+          }
+          if (!match.groups) {
+            throw Error(errorMessage);
+          }
+
+          const start = parseInt(match.groups.start, 10);
+          const last = parseInt(match.groups.last, 10);
+          if (isNaN(start) || isNaN(last)) {
+            throw Error(errorMessage);
+          }
+          if (start === last) {
+            throw Error(errorMessage);
+          }
+          if (last <= start) {
+            throw Error(errorMessage);
+          }
+          return { permitted: true, range: range(start, last + 1) };
+        }
+
+        throw Error('`port` must be a number or a string of `start-last` format. e.g. "9002-9010"');
+      })();
+
+      for await (const port of portRange.range) {
+        const portUsed = await isPortTaken(port, config.hostname);
+        if (!portUsed) {
+          // eslint-disable-next-line require-atomic-updates
+          config.port = port;
+          return;
+        }
+        if (!portRange.permitted) {
+          const message = `Port number \`${port}\` is already in use. Would you like to start debugging using \`${port + 1}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
+          const result = await window.showInformationMessage(message, { modal: true }, 'Yes');
+          if (!result) {
+            break;
+          }
+        }
+      }
+
+      throw Error('`port` must be an unused port number.');
+    })();
+
+    // init program
+    ((): void => {
+      if (!isString(config.program)) {
+        throw Error('`program` must be a string.');
+      }
+      if (!existsSync(config.program)) {
+        throw Error(`\`program\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.program))}"`);
+      }
+    })();
+
+    // init args
+    ((): void => {
+      if (!isArray(config.args)) {
+        throw Error('`args` must be a array.');
+      }
+    })();
+
+    // init env
+    ((): void => {
+      if (!isPlainObject(config.env)) {
+        throw Error('`env` must be a object.');
+      }
+
+      for (const key in config.env) {
+        if (config.env[key] === null) {
+          config.env[key] = '';
+        }
+      }
+    })();
+
+    // init stopOnEntry
+    ((): void => {
+      if (!isBoolean(config.stopOnEntry)) {
+        throw Error('`stopOnEntry` must be a boolean.');
+      }
+    })();
+
+    // init maxChildren
+    ((): void => {
+      if (!Number.isInteger(config.maxChildren)) {
+        throw Error('`maxChildren` must be a integer.');
+      }
+    })();
+
+    // init openFileOnExit
+    ((): void => {
+      if (typeof config.openFileOnExit === 'undefined') {
+        return;
+      }
+
+      if (!isString(config.openFileOnExit)) {
+        throw Error('`openFileOnExit` must be a string.');
+      }
+      if (!existsSync(config.openFileOnExit)) {
+        throw Error(`\`openFileOnExit\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.openFileOnExit))}"`);
+      }
+    })();
+
+    // init useIntelliSenseInDebugging
+    ((): void => {
+      if (!isBoolean(config.useIntelliSenseInDebugging)) {
+        throw Error('`useIntelliSenseInDebugging` must be a boolean.');
+      }
+    })();
+
+    // init usePerfTips
+    ((): void => {
+      if (!(isBoolean(config.usePerfTips) || isString(config.usePerfTips) || isPlainObject(config.usePerfTips))) {
+        throw Error('`usePerfTips` must be a boolean, a string or a object.');
+      }
+
       const defaultUsePerfTips = {
         fontColor: 'gray',
         fontStyle: 'italic',
@@ -55,16 +273,24 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
 
       if (config.usePerfTips === true) {
         config.usePerfTips = defaultUsePerfTips;
+        return;
       }
-      else {
-        if (typeof config.usePerfTips === 'string') {
-          config.usePerfTips = { format: config.usePerfTips };
-        }
-        defaults(config.usePerfTips, defaultUsePerfTips);
+      if (typeof config.usePerfTips === 'string') {
+        config.usePerfTips = { format: config.usePerfTips };
+        return;
       }
-    }
+      defaults(config.usePerfTips, defaultUsePerfTips);
+    })();
 
-    if (config.useDebugDirective) {
+    // init useDebugDirective
+    ((): void => {
+      if (!(isBoolean(config.useDebugDirective) || isPlainObject(config.useDebugDirective))) {
+        throw Error('`useDebugDirective` must be a boolean or a object.');
+      }
+      if (config.useDebugDirective === false) {
+        return;
+      }
+
       const defaultDirectiveComment = {
         useBreakpointDirective: true,
         useOutputDirective: true,
@@ -72,89 +298,18 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
 
       if (config.useDebugDirective === true) {
         config.useDebugDirective = defaultDirectiveComment;
+        return;
       }
-      else {
-        defaults(config.useDebugDirective, defaultDirectiveComment);
+      defaults(config.useDebugDirective, defaultDirectiveComment);
+    })();
+
+    // init trace
+    ((): void => {
+      if (!isBoolean(config.trace)) {
+        throw Error('`trace` must be a boolean.');
       }
-    }
+    })();
 
-    if (typeof config.port === 'string') {
-      if (config.port.match(/^\d+$/u)) {
-        config.port = parseInt(config.port, 10);
-      }
-      else {
-        const match = config.port.match(/^(?<start>\d+)-(?<last>\d+)$/u);
-        try {
-          const commonMessage = 'Invalid value is set to `port` in `launch.json`.';
-          let start: number, last: number;
-          try {
-            start = parseInt(match!.groups!.start, 10);
-            last = parseInt(match!.groups!.last, 10);
-          }
-          catch (error) {
-            throw Error(`${commonMessage} Please set it like "9000-9010". It may contain whitespace or irrelevant strings.`);
-          }
-
-          if (start === last) {
-            throw Error(`${commonMessage} The values on the left and right are the same, please set it like "9000-9010".`);
-          }
-          else if (last <= start) {
-            throw Error(`${commonMessage} Set a lower number on the left than on the right, like "${last}-${start}" instead of "${config.port}"`);
-          }
-          config.port = start;
-          config.permittedPortRange = range(start, last + 1);
-        }
-        catch (error) {
-          window.showErrorMessage(error.message);
-          config.port = 9000;
-          config.permittedPortRange = [ config.port ];
-        }
-      }
-    }
-
-    if (typeof config.runtimeArgs === 'undefined') {
-      const editor = window.activeTextEditor;
-      config.runtimeArgs = editor && editor.document.languageId.toLowerCase() === 'ahk'
-        ? config.runtimeArgs_v1
-        : config.runtimeArgs_v2; // ahk2 or ah2
-    }
-    if (!Array.isArray(config.runtimeArgs)) {
-      config.runtimeArgs = [];
-    }
-    config.runtimeArgs = config.runtimeArgs.filter((arg) => arg.search(/\/debug/ui) === -1);
-    config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
-
-    if (config.type === 'ahk') {
-      window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
-      config.type = 'autohotkey';
-    }
-
-    for (const key in config.env) {
-      if (config.env[key] === null) {
-        config.env[key] = '';
-      }
-    }
-
-    return config;
-  }
-  public resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
-    if (typeof config.runtime === 'undefined') {
-      const editor = window.activeTextEditor;
-      config.runtime = editor && editor.document.languageId.toLowerCase() === 'ahk'
-        ? config.runtime_v1
-        : config.runtime_v2; // ahk2 or ah2
-    }
-
-    if (config.runtime !== '') {
-      if (!path.isAbsolute(config.runtime)) {
-        const ahkPath = `${String(process.env.PROGRAMFILES)}/AutoHotkey`;
-        config.runtime = path.resolve(ahkPath, config.runtime);
-      }
-
-      if (path.extname(config.runtime) === '') {
-        config.runtime += '.exe';
-      }
-    }
     return config;
   }
 }

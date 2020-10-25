@@ -49,6 +49,12 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.6.2` - 2020-10-xx
+    * Changed: [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Whenever possible, the default value of `runtimeArgs` is set to `[ "ErrorStdOut=UTF-8"]`
+    * Changed: [#64](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/64) Default value of `port` to `9002`
+    * Changed: Improve error message when an invalid value is set by launch.json
+    * Fix: [#63](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/63) Can't get environment variables in the script
+
 * `1.6.1` - 2020-10-06
     * Fixed: [#21](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/21) Special characters are not escaped in data inspection, etc
 
@@ -84,23 +90,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Fixed: In some case, debugging may not be successful
     * Fixed: When the Advanced breakpoint is used, the step execution may cause the {hitCount} to go wrong
 
-* `1.5.0` - 2020-08-14
-    * Added: Operators in conditional breakpoint
-        * The following operators are now available
-            * `!~`
-            * `is`
-            * `in`
-            * `&&`
-            * `||`
-            * `countof`
-    * Changed: Conditional breakpoint
-        * JavaScript RegExp is now available with the `~=` operator
-        * Make `VariableName` parsing more accurate
-    * Fixed: The exit process fails with some errors
-    * Fixed: In some cases, the `<base>` field of an instance cannot be obtained correctly
-    * Fixed: Fail to parse hexadecimal numbers starting from 0 as in `0x012` with conditional breakpoints and variable writing, etc
-    * Fixed: v1 only bug. Where some variables cannot be obtained with conditional breakpoint and watch expression
-
 See [CHANGELOG](CHANGELOG.md) for details.
 
 # Overview
@@ -124,6 +113,8 @@ If you find a bug, please report it to [issues](https://github.com/zero-plusplus
 1. Install [AutoHotkey](https://www.autohotkey.com/)
 2. Install an extension to support AutoHotkey (the famous ` slevesque.vscode-autohotkey`)
 3. Press `Ctrl + P`, type `ext install zero-plusplus.vscode-autohotkey-debug`
+
+If you want to use AutoHotkey v2, or AutoHotkey_H edit the `runtime` in [launch.json](#customize-launchjson).
 
 # Usage
 1. Open a file with the extension `.ahk`, `.ahk2` or `.ah2`.
@@ -188,7 +179,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>
         <strong>Most people don't need to change this setting. If you set it wrong, debugging may fail.</strong><br /><br />
         Arguments to pass to AutoHotkey.exe. You can see a description of the argument <a href="https://www.autohotkey.com/docs/Scripts.htm#cmd">here</a>, described as a Switch. However <code>"/debug"</code> will be ignored.<br />
-        <strong>default: <code>[ "/ErrorStdOut" ]</code></strong>
+        <strong>default:<code>[ "/ErrorStdOut" ]</code></strong>. If possible <strong><code>[ "/ErrorStdOut=UTF-8"]</code></strong>.
     </td>
 </tr>
 <tr>
@@ -203,7 +194,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>number</td>
     <td>
         A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.<br />
-        <strong>default: <code>9000</code></strong>
+        <strong>default: <code>9002</code></strong>
     </td>
 </tr>
 <tr>
@@ -681,10 +672,9 @@ The library will catch all errors and output a message to the debug console in t
 If you encounter a bug in this library, please comment at the link.
 
 ### About Multi-byte garbled characters(or mojibake)
-AutoHotkey does not output multi-byte strings well.
-However, in version `1.1.33.00`, the [#ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm) directive has been extended to allow output in UTF-8, which solves this problem.
+AutoHotkey error messages do not output a multi-byte string well. However, in version `1.1.33.00`, the [#ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm) directive and the [/ErrorStdOut](https://www.autohotkey.com/docs/Scripts.htm#cmd) switch has been extended to allow UTF-8 output, which resolves this issue.
 
-It is recommended that you set the `runtimeArgs` to `[ "/ErrorStdOut=UTF-8" ]` instead of using the directive. However note that you will get an error if you have an older version that is not supported.
+This extension enables this feature by default if possible, so the user doesn't need to be aware of it.
 
 ## PerfTips (Optional)
 ![perftips](image/perftips.gif)

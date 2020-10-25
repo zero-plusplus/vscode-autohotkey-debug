@@ -21,7 +21,6 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
 import { range } from 'underscore';
 import { sync as pathExistsSync } from 'path-exists';
-import * as isPortTaken from 'is-port-taken';
 import { rtrim } from 'underscore.string';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {
@@ -49,7 +48,6 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   stopOnEntry: boolean;
   hostname: string;
   port: number;
-  permittedPortRange: number[];
   maxChildren: number;
   usePerfTips: false | {
     fontColor: string;
@@ -122,13 +120,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     this.clearPerfTipsDecorations();
-    if (this.session && this.session.socketWritable) {
+    if (this.session?.socketWritable) {
       await this.session.sendStopCommand();
     }
     await this.session?.close();
     this.server?.close();
 
-    if (this.config.openFileOnExit !== null) {
+    if (this.config.openFileOnExit) {
       if (pathExistsSync(this.config.openFileOnExit)) {
         const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
         vscode.window.showTextDocument(doc);
@@ -152,21 +150,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.traceLogger.log('launchRequest');
     this.config = args;
 
-    if (!pathExistsSync(this.config.runtime)) {
-      throw Error(`AutoHotkey runtime not found. Install AutoHotkey or specify the path of AutoHotkey.exe. Value of \`runtime\` in launch.json: \`${this.config.runtime}\``);
-    }
-
     try {
       const runtimeArgs: string[] = [];
       if (!args.noDebug) {
-        const portUsed = await isPortTaken(this.config.port, this.config.hostname);
-        if (portUsed) {
-          if (!await this.confirmWhetherUseAnotherPort(this.config.port)) {
-            this.sendTerminateEvent();
-            return;
-          }
-        }
-
         runtimeArgs.push(`/Debug=${String(args.hostname)}:${String(args.port)}`);
       }
       runtimeArgs.push(...this.config.runtimeArgs);
@@ -178,7 +164,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         runtimeArgs,
         {
           cwd: path.dirname(args.program),
-          env: args.env,
+          env: {
+            ...process.env,
+            ...args.env,
+          },
         },
       );
       ahkProcess.on('close', (exitCode) => {
@@ -186,7 +175,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           return;
         }
 
-        if (exitCode !== null) {
+        if (exitCode) {
           const category = exitCode === 0 ? 'console' : 'stderr';
           this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
         }
@@ -252,17 +241,18 @@ export class AhkDebugSession extends LoggingDebugSession {
               this.sendEvent(new ThreadEvent('Session started.', this.session.id));
               resolve();
             }
-            catch (error) {
+            catch (error: unknown) {
               this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
               reject(error);
             }
           });
       });
     }
-    catch (error) {
+    catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
       const message = {
         id: 2,
-        format: error.message,
+        format: errorMessage,
       } as DebugProtocol.Message;
       this.sendErrorResponse(response, message);
       this.sendTerminateEvent();
@@ -310,10 +300,11 @@ export class AhkDebugSession extends LoggingDebugSession {
             verified: true,
           });
         }
-        catch (error) {
+        catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
           vscodeBreakpoints.push({
             verified: false,
-            message: error.message,
+            message: errorMessage,
           });
         }
       }
@@ -690,7 +681,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       };
       this.sendResponse(response);
     }
-    catch (error) {
+    catch (error: unknown) {
       this.sendErrorResponse(response, {
         id: args.variablesReference,
         format: 'Command execution failed. This message is not normally displayed.',
@@ -762,8 +753,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       };
       this.sendResponse(response);
     }
-    catch (error) {
-      response.body = { result: error.message, variablesReference: 0 };
+    catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
+      response.body = { result: errorMessage, variablesReference: 0 };
       this.sendResponse(response);
     }
   }
@@ -796,23 +788,6 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     response.body = { sources };
     this.sendResponse(response);
-  }
-  private async confirmWhetherUseAnotherPort(originalPort: number): Promise<boolean> {
-    const portUsed = await isPortTaken(this.config.port, this.config.hostname);
-    if (portUsed) {
-      this.config.port++;
-      return this.confirmWhetherUseAnotherPort(originalPort);
-    }
-
-    if (!this.config.permittedPortRange.includes(this.config.port)) {
-      const message = `Port number \`${originalPort}\` is already in use. Would you like to start debugging using \`${this.config.port}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
-      const result = await vscode.window.showInformationMessage(message, { modal: true }, 'Yes');
-      if (typeof result === 'undefined') {
-        return false;
-      }
-    }
-
-    return true;
   }
   private getAllLoadedSourcePath(): string[] {
     if (0 < this.loadedSources.length) {

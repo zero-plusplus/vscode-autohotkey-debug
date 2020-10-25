@@ -21,7 +21,7 @@ suite('Debug session test', () => {
       'language="AutoHotkey" protocol_version="1.0" fileuri="file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"/>\0',
     ];
     this.session.on('init', (response: dbgp.InitPacket) => {
-      assert.deepEqual(response, {
+      assert.deepStrictEqual(response, {
         appId: 'AutoHotkey',
         fileUri: 'file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk',
         ideKey: '',

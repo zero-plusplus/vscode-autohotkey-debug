@@ -418,7 +418,7 @@ type StdMode = 'disable' | 'copy' | 'redirect';
 enum StdModeEnum {
   disable,
   copy,
-  redirect
+  redirect,
 }
 export class StdResponse extends Response {
   public success: boolean;
