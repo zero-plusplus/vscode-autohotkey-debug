@@ -164,10 +164,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         runtimeArgs,
         {
           cwd: path.dirname(args.program),
-          env: {
-            ...process.env,
-            ...args.env,
-          },
+          env: args.env,
         },
       );
       ahkProcess.on('close', (exitCode) => {

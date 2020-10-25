@@ -217,11 +217,17 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         throw Error('`env` must be a object.');
       }
 
-      for (const key in config.env) {
-        if (config.env[key] === null) {
-          config.env[key] = '';
-        }
+      const env = {};
+      for (const [ key, value ] of Object.entries(process.env)) {
+        env[key.toLowerCase()] = value;
       }
+      for (const [ key, value ] of Object.entries(config.env)) {
+        const a = value ?? '';
+        a;
+        env[key.toLowerCase()] = value ?? '';
+      }
+
+      config.env = env;
     })();
 
     // init stopOnEntry
