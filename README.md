@@ -674,7 +674,7 @@ If you encounter a bug in this library, please comment at the link.
 ### About Multi-byte garbled characters(or mojibake)
 AutoHotkey error messages do not output a multi-byte string well. However, in version `1.1.33.00`, the [#ErrorStdOut](https://www.autohotkey.com/docs/commands/_ErrorStdOut.htm) directive and the [/ErrorStdOut](https://www.autohotkey.com/docs/Scripts.htm#cmd) switch has been extended to allow UTF-8 output, which resolves this issue.
 
-This extension enables this feature by default if possible, so the user doesn't need to be aware of it.
+If this feature is available, it is enabled by default and the user does not need to be aware of it. However, if you have set `runtimeArgs`, you need to add `"/ErrorStdOut=UTF-8"` manually.
 
 ## PerfTips (Optional)
 ![perftips](image/perftips.gif)
