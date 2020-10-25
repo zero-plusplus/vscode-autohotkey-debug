@@ -48,7 +48,6 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   stopOnEntry: boolean;
   hostname: string;
   port: number;
-  permittedPortRange: number[];
   maxChildren: number;
   usePerfTips: false | {
     fontColor: string;
