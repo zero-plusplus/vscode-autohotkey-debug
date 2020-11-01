@@ -341,6 +341,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.pauseRequested = false;
     this.isPaused = false;
 
+    this.clearPerfTipsDecorations();
     const result = await this.session!.sendContinuationCommand('run');
     this.checkContinuationStatus(result);
   }
@@ -397,7 +398,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.isPaused = false;
 
     if (this.autoExecutingOnAdvancedBreakpoint) {
-    this.pauseRequested = true;
+      this.pauseRequested = true;
 
       // Force pause
       setTimeout(() => {
@@ -410,10 +411,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-      this.currentMetaVariables = null;
-      const result = await this.session!.sendContinuationCommand('break');
-      this.checkContinuationStatus(result);
-    }
+    this.currentMetaVariables = null;
+    const result = await this.session!.sendContinuationCommand('break');
+    this.checkContinuationStatus(result);
+  }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     this.traceLogger.log('threadsRequest');
     if (this.session!.socketClosed || this.isTerminateRequested) {
