@@ -403,6 +403,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       // Force pause
       setTimeout(() => {
         if (!this.isPaused) {
+          if (this.session!.socketClosed || this.isTerminateRequested) {
+            return;
+          }
+
           this.session!.sendContinuationCommand('break').then((result) => {
             this.checkContinuationStatus(result);
           });
