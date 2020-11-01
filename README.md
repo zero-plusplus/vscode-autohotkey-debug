@@ -49,6 +49,10 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.6.3` - 2020-xx-xx
+    * Fixed: [#65](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/65) If a conditional breakpoint that returns false is passed, the pause button will not work until the next stop
+    * Fixed: [#66](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/66) When resume debugging, PerfTips will remain visible until the next stop
+
 * `1.6.2` - 2020-10-26
     * Changed: [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Whenever possible, the default value of `runtimeArgs` is set to `[ "ErrorStdOut=UTF-8"]`
     * Changed: [#64](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/64) Default value of `port` to `9002`
@@ -57,38 +61,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 * `1.6.1` - 2020-10-06
     * Fixed: [#21](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/21) Special characters are not escaped in data inspection, etc
-
-* `1.6.0` - 2020-10-04
-    * Added: [#13](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/13) Support `Run Without Debugging`
-    * Added: [#28](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/28) Support MetaVariable. This is supported by several features
-    * Added: [#29](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/29) Support PerfTips
-    * Added: [#30](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/30) Support Debug directive
-    * Added: [#40](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/40) Support IntelliSense in debugging, which is only available for debugging
-    * Changed: [#27](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/27) Remove Advanced output
-    * Changed: [#35](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/35) The exit code is now always displayed
-    * Changed: [#41](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/41) Remove `useAdvancedBreakpoint`. Advanced breakpoint is enabled by default
-    * Changed: [#46](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/46) Improved step execution when using Advanced breakpoint. This removed the forced stop
-    * Fixed: [#32](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/32) If you set a blank character to a Log point, it will not be paused until re-set it
-    * Fixed: [#33](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/33) Float values do not work properly at Conditional breakpoint
-    * Fixed: [#34](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/34) The pause and force stop don't work after an Advanced breakpoint
-    * Fixed: [#37](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/37) Hit conditional breakpoint's `%` operator is not working
-    * Fixed: [#44](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/44) Loaded scripts are not detected when on #Include line a directory is specified
-    * Fixed: [#45](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/45) Loaded scripts are not detected when on specified  relative path by #Include
-    * Fixed: [#48](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/48) If more than one breakpoints in the same line is removed at once, it will not be removed correctly
-    * Fixed: [#49](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/49) v1 only bug. `undefinedVariable == ""` returns false
-    * Fixed: [#50](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/50) The base field cannot be inspected by a hover
-    * Fixed: [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51) Error occurs when getting dynamic properties by data inspect, etc
-    * Fixed: [#53](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/53) Setting a string containing `&` and `|` in a conditional breakpoint always returns false
-    * Fixed: [#55](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/55) Chunking doesn't work when a large array is specified in a Watch expression
-    * Fixed: [#57](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/57) If the script exits without stopping at a breakpoint, etc., the message containing the object is not printed correctly
-    * Fixed: [#58](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/58) Registering or unregistering a breakpoint resets the hit count for all breakpoints
-    * Fixed: [#59](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/59) Hit count shifts when pausing while using Advanced breakpoint
-    * Fixed: Data inspect shows an array of length 1 as `{1: value}`
-    * Fixed: If the error code is 0, output category is stderr
-    * Fixed: Blank line printed when outputting object
-    * Fixed: In some case, "\{" is output without unescaped in Log point etc
-    * Fixed: In some case, debugging may not be successful
-    * Fixed: When the Advanced breakpoint is used, the step execution may cause the {hitCount} to go wrong
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
