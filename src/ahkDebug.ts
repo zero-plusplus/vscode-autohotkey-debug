@@ -407,6 +407,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             return;
           }
 
+          this.pauseRequested = false;
           this.session!.sendContinuationCommand('break').then((result) => {
             this.checkContinuationStatus(result);
           });
