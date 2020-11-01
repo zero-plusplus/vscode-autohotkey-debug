@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.3] - 2020-xx-xx
+### Fixed
+* [#65](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/65) If a conditional breakpoint that returns false is passed, the pause button will not work until the next stop
+
 ## [1.6.2] - 2020-10-26
 ### Changed
 * [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Whenever possible, the default value of `runtimeArgs` is set to `[ "ErrorStdOut=UTF-8"]`
@@ -285,6 +289,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.2..v1.6.3
 [1.6.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.1..v1.6.2
 [1.6.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.0..v1.6.1
 [1.6.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.5.0..v1.6.0

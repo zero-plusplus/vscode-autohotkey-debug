@@ -393,15 +393,27 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.pauseRequested = true;
+    this.pauseRequested = false;
     this.isPaused = false;
 
-    if (!this.autoExecutingOnAdvancedBreakpoint) {
+    if (this.autoExecutingOnAdvancedBreakpoint) {
+    this.pauseRequested = true;
+
+      // Force pause
+      setTimeout(() => {
+        if (!this.isPaused) {
+          this.session!.sendContinuationCommand('break').then((result) => {
+            this.checkContinuationStatus(result);
+          });
+        }
+      }, 100);
+      return;
+    }
+
       this.currentMetaVariables = null;
       const result = await this.session!.sendContinuationCommand('break');
       this.checkContinuationStatus(result);
     }
-  }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     this.traceLogger.log('threadsRequest');
     if (this.session!.socketClosed || this.isTerminateRequested) {
