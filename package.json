@@ -13,7 +13,7 @@
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug/issues"
   },
   "scripts": {
-    "lint": "eslint --fix ./src/**/*.ts ./test/**/*.ts",
+    "lint": "eslint --fix --cache ./src/**/*.ts ./test/**/*.ts",
     "clean": "rimraf build",
     "build": "yarn clean && yarn lint && tsc",
     "build:without-lint": "yarn clean && tsc",
