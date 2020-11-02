@@ -52,6 +52,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * `1.6.3` - 2020-xx-xx
     * Fixed: [#65](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/65) If a conditional breakpoint that returns false is passed, the pause button will not work until the next stop
     * Fixed: [#66](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/66) When resume debugging, PerfTips will remain visible until the next stop
+    * Fixed: Improve termination process
 
 * `1.6.2` - 2020-10-26
     * Changed: [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Whenever possible, the default value of `runtimeArgs` is set to `[ "ErrorStdOut=UTF-8"]`

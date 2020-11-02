@@ -115,13 +115,23 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('disconnectRequest');
-    if (!this.isTerminateRequested) {
-      this.isTerminateRequested = true;
+    if (this.isTerminateRequested) {
+      return;
     }
 
+    this.isTerminateRequested = true;
     this.clearPerfTipsDecorations();
+
     if (this.session?.socketWritable) {
-      await this.session.sendStopCommand();
+      await Promise.race([
+        this.session.sendStopCommand(),
+        new Promise((resolve) => {
+          setTimeout(() => {
+            this.ahkProcess?.kill();
+            resolve();
+          }, 500);
+        }),
+      ]);
     }
     await this.session?.close();
     this.server?.close();
@@ -215,9 +225,6 @@ export class AhkDebugSession extends LoggingDebugSession {
                 })
                 .on('error', (error?: Error) => {
                   if (error) {
-                    if (this.session?.socketClosed) {
-                      this.ahkProcess?.kill();
-                    }
                     this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
                   }
 

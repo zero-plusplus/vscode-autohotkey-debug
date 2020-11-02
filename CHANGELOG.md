@@ -18,6 +18,7 @@ Also want to check the development status, check the [commit history](https://gi
 ### Fixed
 * [#65](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/65) If a conditional breakpoint that returns false is passed, the pause button will not work until the next stop
 * [#66](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/66) When resume debugging, PerfTips will remain visible until the next stop
+* Improve termination process
 
 ## [1.6.2] - 2020-10-26
 ### Changed
