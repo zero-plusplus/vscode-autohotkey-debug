@@ -115,10 +115,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('disconnectRequest');
-    if (this.isTerminateRequested) {
-      return;
-    }
-
     this.isTerminateRequested = true;
     this.clearPerfTipsDecorations();
 

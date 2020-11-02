@@ -49,7 +49,10 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
-* `1.6.3` - 2020-11-02
+* `1.6.4` - 2020-11-02
+    * Fixed: [#68](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/68) Debug adapter does not exit successfully if a syntax error occurs
+
+* `1.6.3 [YANKED]` - 2020-11-02 |**Don't install. Please use `1.6.4`**|
     * Fixed: [#65](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/65) If a conditional breakpoint that returns false is passed, the pause button will not work until the next stop
     * Fixed: [#66](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/66) When resume debugging, PerfTips will remain visible until the next stop
     * Fixed: Improve termination process
@@ -59,9 +62,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Changed: [#64](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/64) Default value of `port` to `9002`
     * Changed: Improve error message when an invalid value is set by launch.json
     * Fix: [#63](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/63) Can't get environment variables in the script
-
-* `1.6.1` - 2020-10-06
-    * Fixed: [#21](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/21) Special characters are not escaped in data inspection, etc
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
