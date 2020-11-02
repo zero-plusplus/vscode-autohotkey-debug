@@ -49,7 +49,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
-* `1.6.3` - 2020-xx-xx
+* `1.6.3` - 2020-11-02
     * Fixed: [#65](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/65) If a conditional breakpoint that returns false is passed, the pause button will not work until the next stop
     * Fixed: [#66](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/66) When resume debugging, PerfTips will remain visible until the next stop
     * Fixed: Improve termination process
