@@ -121,7 +121,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (this.session?.socketWritable) {
       await Promise.race([
         this.session.sendStopCommand(),
-        new Promise((resolve) => {
+        new Promise<void>((resolve) => {
           setTimeout(() => {
             this.ahkProcess?.kill();
             resolve();
@@ -194,7 +194,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       });
       this.ahkProcess = ahkProcess;
 
-      await new Promise((resolve, reject) => {
+      await new Promise<void>((resolve, reject) => {
         this.server = net.createServer()
           .listen(args.port, args.hostname)
           .on('connection', (socket) => {
