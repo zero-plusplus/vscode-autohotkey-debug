@@ -33,6 +33,18 @@
       "preLaunchTask": "subtask: build:without-lint",
     },
     {
+        "name": "Gulp Test",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/node_modules/gulp/bin/gulp.js",
+        "args": [
+            "build"
+        ],
+        "skipFiles": [
+            "<node_internals>/**"
+        ]
+    },
+    {
       "name": "Mocha Tests",
       "type": "node",
       "request": "launch",

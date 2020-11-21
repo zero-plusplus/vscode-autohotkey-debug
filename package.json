@@ -4,7 +4,7 @@
   "description": "Debugging support for AutoHotkey(includes H) v1 and v2",
   "author": "zero-plusplus <git@zero-plusplus.com>",
   "license": "MIT",
-  "main": "./build/src/extension",
+  "main": "./build/dist/extension",
   "repository": {
     "type": "git",
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug.git"
@@ -13,12 +13,12 @@
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug/issues"
   },
   "scripts": {
-    "lint": "eslint --fix --cache ./src/**/*.ts ./test/**/*.ts && tsc --noEmit",
-    "clean": "rimraf build",
-    "build": "yarn clean && yarn lint && tsc",
-    "build:without-lint": "yarn clean && tsc",
+    "build": "yarn gulp build",
+    "clean": "yarn gulp clean",
     "test": "yarn lint && mocha -r ts-node/register ./test/**/*.test.ts",
-    "vscode:prepublish": "yarn build"
+    "lint": "yarn gulp eslint && tsc --noEmit",
+    "package": "yarn clean && vsce package --yarn",
+    "vscode:prepublish": "yarn gulp buildWithoutClean"
   },
   "publisher": "zero-plusplus",
   "engines": {
@@ -269,6 +269,7 @@
   },
   "devDependencies": {
     "@types/convert-hrtime": "^3.0.2",
+    "@types/gulp": "^4.0.7",
     "@types/he": "^1.1.1",
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
@@ -276,15 +277,25 @@
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
     "@types/vscode": "^1.45.0",
+    "@types/webpack": "^4.41.25",
+    "@types/webpack-merge": "^4.1.5",
     "@typescript-eslint/eslint-plugin": "^4.4.1",
     "@typescript-eslint/parser": "^4.4.1",
     "@zero-plusplus/eslint-my-rules": "^1.0.22",
+    "del": "^6.0.0",
+    "esbuild-loader": "^2.4.0",
     "eslint": "^7.11.0",
+    "fork-ts-checker-webpack-plugin": "^6.0.3",
+    "gulp": "^4.0.2",
     "husky": "^4.3.0",
     "mocha": "^7.1.1",
+    "ts-loader": "^8.0.11",
     "ts-node": "^8.9.0",
+    "types-tsconfig": "^1.2.0",
     "typescript": "^4.0.3",
     "vsce": "^1.75.0",
-    "vscode-debugadapter-testsupport": "^1.40.3"
+    "vscode-debugadapter-testsupport": "^1.40.3",
+    "webpack": "^5.6.0",
+    "webpack-merge": "^5.4.0"
   }
 }

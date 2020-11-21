@@ -19,10 +19,12 @@
 		"noUnusedParameters": false,
 		"preserveConstEnums": true,
 		"removeComments": false,
-		"newLine": "crlf",
+		"newLine": "crlf"
 	},
 	"include": [
 		"src/**/*",
-		"test/**/*"
+		"test/**/*",
+		"gulpfile.ts",
+		"webpack.*.ts"
 	]
 }
