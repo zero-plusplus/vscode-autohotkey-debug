@@ -485,7 +485,7 @@
   resolved "https://registry.yarnpkg.com/@xtuc/long/-/long-4.2.2.tgz#d291c6a4e97989b5c61d9acf396ae4fe133a718d"
   integrity sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==
 
-"@zero-plusplus/ahk-include-path-resolver@^1.0.10":
+"@zero-plusplus/ahk-include-path-resolver@^1.0.11":
   version "1.0.11"
   resolved "https://npm.pkg.github.com/download/@zero-plusplus/ahk-include-path-resolver/1.0.11/68b653582a2cef51f174f7737ff256c1824c05d93afc5270d1e1de6e347506fa#a7247cb066def6ae55490f44a18ec0b35387b488"
   integrity sha512-HiYSUDaBhahTVrd3ULCnhHiORXusOXFscqpC2WCc4K2db7DX6Mm5gnLziWxSgXABX6HwtRrn+ETC00Z9hJEtRA==

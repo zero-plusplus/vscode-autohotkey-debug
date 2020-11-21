@@ -49,6 +49,9 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.6.5` - 202x-xx-xx
+    * Fixed: v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`.
+
 * `1.6.4` - 2020-11-02
     * Fixed: [#68](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/68) Debug adapter does not exit successfully if a syntax error occurs
 
