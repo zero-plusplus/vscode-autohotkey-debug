@@ -1,7 +1,5 @@
 .github/
 .vscode/
-build/
-!build/dist
 demo/
 image/
 !image/icon.png

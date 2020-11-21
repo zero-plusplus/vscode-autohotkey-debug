@@ -19,8 +19,8 @@ import {
 } from 'vscode-debugadapter';
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
-import { range } from 'underscore';
 import { sync as pathExistsSync } from 'path-exists';
+import { range } from 'lodash';
 import { rtrim } from 'underscore.string';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {

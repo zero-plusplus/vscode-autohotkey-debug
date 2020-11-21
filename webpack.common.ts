@@ -13,7 +13,7 @@ export default {
   target: 'node',
   entry: './src/extension.ts',
   output: {
-    path: path.resolve(__dirname, 'build/dist'),
+    path: path.resolve(__dirname, 'build/src'),
     filename: 'extension.js',
     libraryTarget: 'commonjs2',
     devtoolModuleFilenameTemplate: '../[resource-path]',
@@ -21,7 +21,6 @@ export default {
   externals: {
     'ts-predicates': 'commonjs ts-predicates',
     'typeof-util': 'commonjs typeof-util',
-    'underscore': 'commonjs underscore',
     'vscode': 'commonjs vscode',
     'vscode-uri': 'commonjs vscode-uri',
   },

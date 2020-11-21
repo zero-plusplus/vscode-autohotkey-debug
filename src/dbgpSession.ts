@@ -4,9 +4,9 @@ import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import * as convertHrTime from 'convert-hrtime';
+import { range } from 'lodash';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { equalsIgnoreCase, startsWithIgnoreCase } from './util/stringUtils';
-import { range } from 'underscore';
 
 export interface XmlDocument {
   init?: XmlNode;

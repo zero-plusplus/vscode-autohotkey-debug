@@ -1,4 +1,5 @@
 import * as gulp from 'gulp';
+import run from 'gulp-run-command';
 import * as del from 'del';
 import * as webpack from 'webpack';
 import { ESLint } from 'eslint';
@@ -6,11 +7,15 @@ import { readFileSync } from 'fs';
 import { TSConfigJSON } from 'types-tsconfig';
 import eslintrc from './.eslintrc';
 import webpackProduction from './webpack.production';
+import webpackDevelopment from './webpack.development';
 
 const clean = async(): Promise<void> => {
   await del('./build');
 };
 
+const tscheck = async(): Promise<void> => {
+  await run('tsc --noEmit')();
+};
 const eslint = async(): Promise<void> => {
   const tsconfig = JSON.parse(readFileSync('./tsconfig.json', 'utf-8')) as TSConfigJSON;
 
@@ -20,11 +25,16 @@ const eslint = async(): Promise<void> => {
   });
   await ESLint.outputFixes(results);
 };
-
-// // #region build
+// #region build
 const buildMain = async(): Promise<void> => {
+  await run('tsc')();
+};
+// #endregion build
+
+// #region bundle
+const bundling = async(webpackConfig: webpack.Configuration): Promise<void> => {
   return new Promise<void>((resolve, reject) => {
-    const compiler = webpack(webpackProduction);
+    const compiler = webpack({ ...webpackConfig });
     compiler.run((err, result) => {
       if (err) {
         console.log(err);
@@ -36,37 +46,37 @@ const buildMain = async(): Promise<void> => {
           reject(result.compilation.errors);
           return;
         }
+        console.log(result.toString());
       }
       resolve();
     });
   });
 };
-// const buildMainDebug = (): NodeJS.ReadWriteStream => {
-//   return gulp.src('./src/extension.ts')
-//     .pipe(webpackStream({
-//       ...webpackBuildMainConfig,
-//       mode: 'development',
-//     }))
-//     .pipe(gulp.dest('./build/src/extension.js'));
-// };
-// const buildTest = (): NodeJS.ReadWriteStream => {
-//   return gulp.src('./test/**/*.ts')
-//     .pipe(webpackStream({
-//       ...webpackCommonConfig,
-//       mode: 'development',
-//     }))
-//     .pipe(gulp.dest('./build'));
-// };
-// // #endregion build
+const bundleMain = async(): Promise<void> => {
+  return bundling(webpackProduction);
+};
+const bundleMainDebug = async(): Promise<void> => {
+  return bundling(webpackDevelopment);
+};
+// #endregion bundle
 
 const buildWithoutClean = gulp.parallel(buildMain);
-const build = gulp.series(clean, buildWithoutClean);
+const build = gulp.series(clean, buildMain);
+const bundleWithoutClean = gulp.parallel(bundleMain);
+const bundle = gulp.series(clean, bundleWithoutClean);
+const bundleDebugWithoutClean = gulp.parallel(bundleMainDebug);
+const bundleDebug = gulp.series(clean, bundleDebugWithoutClean);
+const lint = gulp.parallel(tscheck, eslint);
 export {
   build,
   buildWithoutClean,
   buildMain,
-  // buildMainDebug,
-  // buildTest,
+  bundle,
+  bundleWithoutClean,
+  bundleDebug,
+  bundleDebugWithoutClean,
   clean,
+  lint,
+  tscheck,
   eslint,
 };
