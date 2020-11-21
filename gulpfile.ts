@@ -60,13 +60,13 @@ const bundleMainDebug = async(): Promise<void> => {
 };
 // #endregion bundle
 
-const buildWithoutClean = gulp.parallel(buildMain);
-const build = gulp.series(clean, buildMain);
+const lint = gulp.parallel(tscheck, eslint);
+const buildWithoutClean = gulp.parallel(lint, buildMain);
+const build = gulp.series(clean, buildWithoutClean);
 const bundleWithoutClean = gulp.parallel(bundleMain);
 const bundle = gulp.series(clean, bundleWithoutClean);
 const bundleDebugWithoutClean = gulp.parallel(bundleMainDebug);
 const bundleDebug = gulp.series(clean, bundleDebugWithoutClean);
-const lint = gulp.parallel(tscheck, eslint);
 export {
   build,
   buildWithoutClean,
