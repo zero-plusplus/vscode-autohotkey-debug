@@ -160,7 +160,7 @@ export abstract class Property {
   public name: string;
   public type: PropertyType;
   public size: number;
-  public get isIndex(): boolean {
+  public get isIndexKey(): boolean {
     return this.index !== null;
   }
   public get index(): number | null {
@@ -188,6 +188,7 @@ export abstract class Property {
   }
 }
 export class ObjectProperty extends Property {
+  public readonly isArray: boolean = false;
   public hasChildren: boolean;
   public className: string;
   public children: Property[] = [];
@@ -221,9 +222,21 @@ export class ObjectProperty extends Property {
 
     if (propertyNode.property) {
       const properties = Array.isArray(propertyNode.property) ? propertyNode.property : [ propertyNode.property ];
+      const spraceChecker: number[] = [];
       properties.forEach((propertyNode) => {
-        this.children.push(Property.from(propertyNode, context));
+        const child = Property.from(propertyNode, context);
+        if (child.index) {
+          spraceChecker.push(child.index);
+        }
+        this.children.push(child);
       });
+
+      if (this.maxIndex) {
+        this.isArray = true;
+        if (this.maxIndex !== spraceChecker.length) {
+          this.isArray = false;
+        }
+      }
     }
   }
 }

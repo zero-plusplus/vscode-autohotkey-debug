@@ -50,6 +50,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
 * `1.6.5` - 202x-xx-xx
+    * Fixed: [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
     * Fixed: v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`.
 
 * `1.6.4` - 2020-11-02

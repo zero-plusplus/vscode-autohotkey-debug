@@ -566,11 +566,11 @@ export class AhkDebugSession extends LoggingDebugSession {
       let variablesReference = 0, indexedVariables, namedVariables;
 
       if (args.filter) {
-        if (args.filter === 'named' && property.isIndex) {
+        if (args.filter === 'named' && property.isIndexKey) {
           continue;
         }
         if (args.filter === 'indexed') {
-          if (!property.isIndex) {
+          if (!property.isIndexKey) {
             continue;
           }
           const index = property.index!;
@@ -938,9 +938,9 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const objectProperty = property as dbgp.ObjectProperty;
     const maxIndex = objectProperty.maxIndex;
-    const isArray = maxIndex !== null;
-    let value = maxIndex
-      ? `${objectProperty.className}(${maxIndex}) [`
+    const isArray = objectProperty.isArray;
+    let value = isArray
+      ? `${objectProperty.className}(${maxIndex!}) [`
       : `${objectProperty.className} {`;
 
     const children = objectProperty.children.slice(0, 100);
@@ -954,8 +954,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         : (child as dbgp.ObjectProperty).className;
 
       const objectChild = child as dbgp.ObjectProperty;
-      if (isArray) {
-        if (!objectChild.isIndex) {
+      if (objectProperty.isArray) {
+        if (!objectChild.isIndexKey) {
           continue;
         }
 
@@ -963,7 +963,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         continue;
       }
 
-      const key = objectChild.isIndex
+      const key = objectChild.isIndexKey
         ? String(objectChild.index)
         : objectChild.name;
       value += `${key}: ${displayValue}, `;
