@@ -39,6 +39,8 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * If you're interested in supporting the development(bug reports, sponsorship, etc.), look [here](#development-support)
 
 # News
+In `1.6.5`, the build environment has changed significantly. This reduces the size of the distribution by a factor of 10 or less and drastically reduces the installation time. However, there may be some bugs from this. If this is the case, please report it to issues and temporarily downgrade the extension.
+
 `1.6.0` is a big update, so there may be some bugs in it. If you find it, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
 ### Important Notices
