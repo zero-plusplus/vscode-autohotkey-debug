@@ -52,6 +52,7 @@ In `1.6.5`, the build environment has changed significantly. This reduces the si
 
 ### Update
 * `1.6.5` - 202x-xx-xx
+    * Changed: Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed.
     * Fixed: [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
     * Fixed: v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`.
 
