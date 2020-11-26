@@ -84,7 +84,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly objectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private breakpointManager?: BreakpointManager;
-  private settingBreakpointPending: Array<() => Promise<void>> = [];
+  private readonly settingBreakpointPending: Array<Promise<void>> = [];
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames: dbgp.StackFrame[] | null = null;
   private currentStackFrames: dbgp.StackFrame[] | null = null;
@@ -262,7 +262,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
-    this.settingBreakpointPending.push(async(): Promise<void> => {
+    this.settingBreakpointPending.push((async(): Promise<void> => {
       this.traceLogger.log('setBreakPointsRequest');
       if (this.session!.socketClosed || this.isTerminateRequested) {
         this.sendResponse(response);
@@ -311,12 +311,11 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       response.body = { breakpoints: vscodeBreakpoints };
       this.sendResponse(response);
-    });
+    })());
 
-    for await (const pending of this.settingBreakpointPending) {
-      await pending();
-    }
-    this.settingBreakpointPending = [];
+    await this.settingBreakpointPending.reduce(async(prev, current): Promise<void> => {
+      return prev.then(async() => current);
+    }, Promise.resolve());
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('configurationDoneRequest');
