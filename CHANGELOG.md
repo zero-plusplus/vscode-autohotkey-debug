@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.6.5] - 202x-xx-xx
+## [1.6.5] - 2020-12-02
 ### Changed
 * Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed
 

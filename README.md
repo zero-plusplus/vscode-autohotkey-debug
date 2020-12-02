@@ -51,7 +51,7 @@ In `1.6.5`, the build environment has changed significantly. This reduces the si
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
-* `1.6.5` - 202x-xx-xx
+* `1.6.5` - 2020-12-02
     * Changed: Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed
     * Fixed: [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
     * Fixed: v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`
