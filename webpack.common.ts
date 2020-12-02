@@ -25,6 +25,7 @@ export default {
     'vscode-uri': 'commonjs vscode-uri',
   },
   resolve: { extensions: [ '.ts', '.js' ] },
+  optimization: { minimize: true },
   module: {
     rules: [
       {
