@@ -70,6 +70,7 @@ const bundleWithoutClean = gulp.parallel(bundleMain);
 const bundle = gulp.series(clean, bundleWithoutClean);
 const bundleDebugWithoutClean = gulp.parallel(bundleMainDebug);
 const bundleDebug = gulp.series(clean, bundleDebugWithoutClean);
+const packaging = gulp.parallel(lint, run('vsce package --yarn'));
 export {
   build,
   buildWithoutClean,
@@ -78,6 +79,7 @@ export {
   bundleWithoutClean,
   bundleDebug,
   bundleDebugWithoutClean,
+  packaging,
   clean,
   lint,
   tscheck,

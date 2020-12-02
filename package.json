@@ -17,7 +17,7 @@
     "clean": "yarn gulp clean",
     "test": "yarn lint && mocha -r ts-node/register ./test/**/*.test.ts",
     "lint": "yarn gulp lint",
-    "package": "yarn clean && vsce package --yarn",
+    "package": "yarn gulp packaging",
     "vscode:prepublish": "yarn gulp bundleWithoutClean"
   },
   "publisher": "zero-plusplus",
