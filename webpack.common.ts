@@ -29,13 +29,19 @@ export default {
     rules: [
       {
         test: /\.ts$/u,
-        loader: 'esbuild-loader',
-        options: {
-          loader: 'ts',
-          target: 'esnext',
-          tsconfigRaw: JSON.stringify(tsconfig),
-        },
+        exclude: /node_modules/u,
+        use: [ { loader: 'ts-loader' } ],
       },
+      // VSCode1.4.9 or higher and the following are not available
+      // {
+      //   test: /\.ts$/u,
+      //   loader: 'esbuild-loader',
+      //   options: {
+      //     loader: 'ts',
+      //     target: 'esnext',
+      //     tsconfigRaw: JSON.stringify(tsconfig),
+      //   },
+      // },
     ],
   },
   cache: {
