@@ -16,11 +16,11 @@ Also want to check the development status, check the [commit history](https://gi
 ## [Released]
 ## [1.6.5] - 202x-xx-xx
 ### Changed
-* Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed.
+* Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed
 
 ### Fixed
 * [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
-* v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`.
+* v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`
 
 ## [1.6.4] - 2020-11-02
 ### Fixed
