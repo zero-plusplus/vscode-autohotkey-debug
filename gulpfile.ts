@@ -42,9 +42,12 @@ const bundling = async(webpackConfig: webpack.Configuration): Promise<void> => {
         return;
       }
       if (result) {
-        if (0 < result.compilation.errors.length) {
+        if (result.hasErrors()) {
           reject(result.compilation.errors);
           return;
+        }
+        if (result.hasWarnings()) {
+          reject(result.compilation.warnings);
         }
         console.log(result.toString());
       }
