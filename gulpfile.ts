@@ -70,7 +70,10 @@ const bundleWithoutClean = gulp.parallel(bundleMain);
 const bundle = gulp.series(clean, bundleWithoutClean);
 const bundleDebugWithoutClean = gulp.parallel(bundleMainDebug);
 const bundleDebug = gulp.series(clean, bundleDebugWithoutClean);
-const packaging = gulp.parallel(lint, run('vsce package --yarn'));
+const vscePackage = async(): Promise<void> => {
+  await run('vsce package --yarn')();
+};
+const packaging = gulp.parallel(lint, vscePackage);
 export {
   build,
   buildWithoutClean,
