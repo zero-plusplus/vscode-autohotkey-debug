@@ -121,6 +121,9 @@
                   "string",
                   "number"
                 ],
+                "examples": [
+                  "9002-9010"
+                ],
                 "description": "A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.",
                 "default": 9002
               },
