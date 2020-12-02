@@ -13,12 +13,12 @@
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug/issues"
   },
   "scripts": {
-    "lint": "eslint --fix --cache ./src/**/*.ts ./test/**/*.ts",
-    "clean": "rimraf build",
-    "build": "yarn clean && yarn lint && tsc",
-    "build:without-lint": "yarn clean && tsc",
+    "build": "yarn gulp build",
+    "clean": "yarn gulp clean",
     "test": "yarn lint && mocha -r ts-node/register ./test/**/*.test.ts",
-    "vscode:prepublish": "yarn build"
+    "lint": "yarn gulp lint",
+    "package": "yarn gulp packaging",
+    "vscode:prepublish": "yarn gulp bundleWithoutClean"
   },
   "publisher": "zero-plusplus",
   "engines": {
@@ -120,6 +120,9 @@
                 "type": [
                   "string",
                   "number"
+                ],
+                "examples": [
+                  "9002-9010"
                 ],
                 "description": "A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.",
                 "default": 9002
@@ -250,18 +253,18 @@
     ]
   },
   "dependencies": {
-    "@zero-plusplus/ahk-include-path-resolver": "^1.0.10",
+    "@zero-plusplus/ahk-include-path-resolver": "^1.0.11",
     "convert-hrtime": "^3.0.0",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
     "is-port-taken": "^0.0.3",
+    "lodash": "^4.17.20",
     "parsimmon": "^1.13.0",
     "path-exists": "^4.0.0",
     "pcre-to-regexp": "^1.1.0",
     "read-dir-deep": "^7.0.1",
     "regex-parser": "^2.2.11",
     "ts-predicates": "^1.0.14",
-    "underscore": "^1.10.2",
     "underscore.string": "^3.3.5",
     "vscode-debugadapter": "^1.40.0",
     "vscode-debugprotocol": "^1.40.0",
@@ -269,22 +272,35 @@
   },
   "devDependencies": {
     "@types/convert-hrtime": "^3.0.2",
+    "@types/gulp": "^4.0.7",
     "@types/he": "^1.1.1",
+    "@types/lodash": "^4.14.165",
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
     "@types/parsimmon": "^1.10.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
     "@types/vscode": "^1.45.0",
+    "@types/webpack": "^4.41.25",
+    "@types/webpack-merge": "^4.1.5",
     "@typescript-eslint/eslint-plugin": "^4.4.1",
     "@typescript-eslint/parser": "^4.4.1",
-    "@zero-plusplus/eslint-my-rules": "^1.0.18",
+    "@zero-plusplus/eslint-my-rules": "^1.0.22",
+    "del": "^6.0.0",
+    "esbuild-loader": "^2.4.0",
     "eslint": "^7.11.0",
+    "fork-ts-checker-webpack-plugin": "^6.0.3",
+    "gulp": "^4.0.2",
+    "gulp-run-command": "^0.0.10",
     "husky": "^4.3.0",
     "mocha": "^7.1.1",
+    "ts-loader": "^8.0.11",
     "ts-node": "^8.9.0",
-    "typescript": "^4.0.3",
+    "types-tsconfig": "^1.2.0",
+    "typescript": "^4.1.2",
     "vsce": "^1.75.0",
-    "vscode-debugadapter-testsupport": "^1.40.3"
+    "vscode-debugadapter-testsupport": "^1.40.3",
+    "webpack": "^5.6.0",
+    "webpack-merge": "^5.4.0"
   }
 }

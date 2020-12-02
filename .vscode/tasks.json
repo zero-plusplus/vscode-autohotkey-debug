@@ -36,12 +36,12 @@
       "command": "${command:workbench.action.reloadWindow}"
     },
     {
-      "label": "subtask: build",
+      "label": "subtask:build",
       "type": "shell",
       "command": "yarn build"
     },
     {
-      "label": "subtask: build:without-lint",
+      "label": "subtask:build:without-lint",
       "type": "shell",
       "command": "yarn build:without-lint"
     },

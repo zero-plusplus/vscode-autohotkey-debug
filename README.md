@@ -39,6 +39,8 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * If you're interested in supporting the development(bug reports, sponsorship, etc.), look [here](#development-support)
 
 # News
+In `1.6.5`, the build environment has changed significantly. This reduces the size of the extension file by a tenth and drastically reduces the installation time. However, there may be some bugs from this. If this is the case, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues) and temporarily downgrade the extension.
+
 `1.6.0` is a big update, so there may be some bugs in it. If you find it, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
 ### Important Notices
@@ -49,6 +51,11 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.6.5` - 202x-xx-xx
+    * Changed: Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed
+    * Fixed: [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
+    * Fixed: v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`
+
 * `1.6.4` - 2020-11-02
     * Fixed: [#68](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/68) Debug adapter does not exit successfully if a syntax error occurs
 

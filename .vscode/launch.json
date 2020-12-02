@@ -16,7 +16,7 @@
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
-      "preLaunchTask": "subtask: build",
+      "preLaunchTask": "subtask:build",
     },
     {
       "name": "Extension Test without lint",
@@ -30,13 +30,36 @@
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
-      "preLaunchTask": "subtask: build:without-lint",
+      "preLaunchTask": "subtask:build:without-lint",
     },
+    {
+        "name": "Gulp Test:build",
+        "type": "node",
+        "request": "launch",
+        "program": "${workspaceFolder}/node_modules/gulp/bin/gulp.js",
+        "args": [
+            "build"
+        ],
+        "skipFiles": [
+            "<node_internals>/**"
+        ]
+    },{
+      "name": "Gulp Test:bundle",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/gulp/bin/gulp.js",
+      "args": [
+          "bundle"
+      ],
+      "skipFiles": [
+          "<node_internals>/**"
+      ]
+  },
     {
       "name": "Mocha Tests",
       "type": "node",
       "request": "launch",
-      "preLaunchTask": "subtask: build",
+      "preLaunchTask": "subtask:build",
       "cwd": "${workspaceFolder}",
       "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
       "args": [

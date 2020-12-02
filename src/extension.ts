@@ -16,7 +16,7 @@ import {
   window,
 } from 'vscode';
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
-import { defaults, isString, range } from 'underscore';
+import { defaults, isString, range } from 'lodash';
 import * as isPortTaken from 'is-port-taken';
 import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider } from './CompletionItemProvider';

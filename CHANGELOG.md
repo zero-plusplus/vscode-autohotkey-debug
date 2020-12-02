@@ -14,6 +14,14 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.5] - 202x-xx-xx
+### Changed
+* Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed
+
+### Fixed
+* [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
+* v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`
+
 ## [1.6.4] - 2020-11-02
 ### Fixed
 * [#68](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/68) Debug adapter does not exit successfully if a syntax error occurs
@@ -297,6 +305,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.4..v1.6.5
 [1.6.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.3..v1.6.4
 [1.6.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.2..v1.6.3
 [1.6.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.1..v1.6.2
