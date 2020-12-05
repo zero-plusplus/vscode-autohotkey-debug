@@ -372,7 +372,19 @@ If you see `VariableName` in this document, it's the name of the variable displa
 The object's child elements are the same as in the running script, and can be specified in dot notation(e.g. `object.field`) or bracket notation(e.g. `array[1]`). Which notation is available depends on the version of AutoHotkey, v1 can use either notation.
 
 #### About A_DebuggerName
-This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
+This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging. **However, please note the following when using this variable.**
+
+This variable is not a SuperGlobal variable, unlike the other built-in variables, due to a specification issue. I recommend adding the following code to the auto-run section to elevate it to SuperGlobal variable.
+```ahk
+global A_DebuggerName := A_DebuggerName ; Elevated to SuperGlobal
+```
+
+If using AuotHotkey v2.
+```ahk
+if (IsSet(A_DebuggerName)) {
+  global A_DebuggerName := A_DebuggerName ; Elevated to SuperGlobal
+}
+```
 
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
