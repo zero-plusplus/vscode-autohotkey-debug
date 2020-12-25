@@ -53,14 +53,14 @@ export const completionItemProvider = {
   session: null,
   async provideCompletionItems(document, position, token, context) {
     if (!this.useIntelliSenseInDebugging) {
-      return [];
+      return null;
     }
     if (!this.session) {
-      return [];
+      return null;
     }
     else if (this.session.socketClosed) {
       this.session = null;
-      return [];
+      return null;
     }
 
     const word = findWord(document, position, this.ahkVersion);
