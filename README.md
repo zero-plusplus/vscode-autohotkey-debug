@@ -366,7 +366,7 @@ The object's child elements are the same as in the running script, and can be sp
 #### About A_DebuggerName
 This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging. **However, please note the following when using this variable.**
 
-This variable is not a SuperGlobal variable, unlike the other built-in variables, due to a specification issue. I recommend adding the following code to the auto-run section to elevate it to SuperGlobal variable.
+This variable is not a [SuperGlobal variable](https://www.autohotkey.com/docs/Functions.htm#SuperGlobal), unlike the other built-in variables, due to a specification issue. I recommend adding the following code to the [Auto-execute Section](https://www.autohotkey.com/docs/Scripts.htm#auto) to elevate it to SuperGlobal variable.
 ```ahk
 global A_DebuggerName := A_DebuggerName ; Elevated to SuperGlobal
 ```
