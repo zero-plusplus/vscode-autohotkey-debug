@@ -51,6 +51,9 @@ In `1.6.5`, the build environment has changed significantly. This reduces the si
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.6.6` - 2020-12-26
+    * Fixed: [#76](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/76) Intellisense Code Completion behaving oddly
+
 * `1.6.5` - 2020-12-02
     * Changed: Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed
     * Fixed: [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
@@ -58,17 +61,6 @@ In `1.6.5`, the build environment has changed significantly. This reduces the si
 
 * `1.6.4` - 2020-11-02
     * Fixed: [#68](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/68) Debug adapter does not exit successfully if a syntax error occurs
-
-* `1.6.3 [YANKED]` - 2020-11-02 |**Don't install. Please use `1.6.4`**|
-    * Fixed: [#65](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/65) If a conditional breakpoint that returns false is passed, the pause button will not work until the next stop
-    * Fixed: [#66](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/66) When resume debugging, PerfTips will remain visible until the next stop
-    * Fixed: Improve termination process
-
-* `1.6.2` - 2020-10-26
-    * Changed: [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Whenever possible, the default value of `runtimeArgs` is set to `[ "ErrorStdOut=UTF-8"]`
-    * Changed: [#64](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/64) Default value of `port` to `9002`
-    * Changed: Improve error message when an invalid value is set by launch.json
-    * Fix: [#63](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/63) Can't get environment variables in the script
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -372,7 +364,19 @@ If you see `VariableName` in this document, it's the name of the variable displa
 The object's child elements are the same as in the running script, and can be specified in dot notation(e.g. `object.field`) or bracket notation(e.g. `array[1]`). Which notation is available depends on the version of AutoHotkey, v1 can use either notation.
 
 #### About A_DebuggerName
-This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging.
+This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging. **However, please note the following when using this variable.**
+
+This variable is not a SuperGlobal variable, unlike the other built-in variables, due to a specification issue. I recommend adding the following code to the auto-run section to elevate it to SuperGlobal variable.
+```ahk
+global A_DebuggerName := A_DebuggerName ; Elevated to SuperGlobal
+```
+
+If using AuotHotkey v2.
+```ahk
+if (IsSet(A_DebuggerName)) {
+  global A_DebuggerName := A_DebuggerName ; Elevated to SuperGlobal
+}
+```
 
 ### Rewriting variables
 ![rewriting-variables](image/rewriting-variables.gif)
