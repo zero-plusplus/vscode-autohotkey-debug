@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "yarn gulp build",
+    "watch": "yarn gulp watch",
     "clean": "yarn gulp clean",
     "test": "yarn lint && mocha -r ts-node/register ./test/**/*.test.ts",
     "lint": "yarn gulp lint",

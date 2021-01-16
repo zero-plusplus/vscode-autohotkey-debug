@@ -16,7 +16,7 @@
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
-      "preLaunchTask": "subtask:build",
+      "preLaunchTask": "subtask:watch",
     },
     {
       "name": "Extension Test without lint",
