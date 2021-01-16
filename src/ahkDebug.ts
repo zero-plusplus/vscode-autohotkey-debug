@@ -454,7 +454,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
     const endFrame = startFrame + maxLevels;
 
-    const allStackFrames = this.currentStackFrames; // The most recent stack frame is always retrieved by checkContinuationStatus, which is executed immediately before, so you won't get a null.
+    const allStackFrames = this.currentStackFrames;
     const stackFrames = allStackFrames.slice(startFrame, endFrame);
 
     if (0 < stackFrames.length) {
