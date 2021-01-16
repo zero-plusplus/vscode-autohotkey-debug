@@ -95,7 +95,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly checkContinuationStatusPending: Array<Promise<void>> = [];
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames: dbgp.StackFrame[] | null = null;
-  private currentStackFrames: dbgp.StackFrame[] | null = null;
+  private currentStackFrames: dbgp.StackFrame[] = [];
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
   private stackFramesWhenStepOut: dbgp.StackFrame[] | null = null;
   private stackFramesWhenStepOver: dbgp.StackFrame[] | null = null;
@@ -449,7 +449,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
     const endFrame = startFrame + maxLevels;
 
-    const allStackFrames: dbgp.StackFrame[] = this.currentStackFrames!; // The most recent stack frame is always retrieved by checkContinuationStatus, which is executed immediately before, so you won't get a null.
+    const allStackFrames = this.currentStackFrames; // The most recent stack frame is always retrieved by checkContinuationStatus, which is executed immediately before, so you won't get a null.
     const stackFrames = allStackFrames.slice(startFrame, endFrame);
 
     if (0 < stackFrames.length) {
@@ -1046,6 +1046,12 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       this.prevStackFrames = this.currentStackFrames;
       const { stackFrames } = await this.session!.sendStackGetCommand();
+      if (stackFrames.length === 0) {
+        this.currentStackFrames = [];
+        await this.sendStoppedEvent('pause');
+        return;
+      }
+
       const { fileUri, line } = stackFrames[0];
       this.currentStackFrames = stackFrames;
       const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, line);
@@ -1109,7 +1115,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     await serializePromise(this.checkContinuationStatusPending);
   }
   private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints: LineBreakpoints | null): Promise<void> {
-    if (!this.currentMetaVariables || !this.currentStackFrames) {
+    if (!this.currentMetaVariables || this.currentStackFrames.length === 0) {
       throw Error(`This message shouldn't appear.`);
     }
 
@@ -1246,7 +1252,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.checkContinuationStatus(result);
   }
   private async processLogpoint(lineBreakpoints: LineBreakpoints | null): Promise<void> {
-    if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
+    if (this.currentStackFrames.length === 0) {
       throw Error(`This message shouldn't appear.`);
     }
     if (!lineBreakpoints) {
@@ -1375,11 +1381,9 @@ export class AhkDebugSession extends LoggingDebugSession {
         event.body.variablesReference = variablesReference;
       }
 
-      if (this.currentStackFrames) {
-        const { fileUri, line } = this.currentStackFrames[0];
-        event.body.source = { path: fileUri };
-        event.body.line = line;
-      }
+      const { fileUri, line } = this.currentStackFrames[0];
+      event.body.source = { path: fileUri };
+      event.body.line = line;
       this.sendEvent(event);
     }
   }
@@ -1461,7 +1465,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (!this.config.usePerfTips) {
       return;
     }
-    if (!this.currentStackFrames) {
+    if (this.currentStackFrames.length === 0) {
       return;
     }
 

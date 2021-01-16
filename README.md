@@ -48,6 +48,9 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.6.6` - 2021-xx-xx
+    * Fixed: [#85](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/85) Pause button is not working when the script is in a waiting state
+
 * `1.6.5` - 2020-12-02
     * Changed: Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed
     * Fixed: [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
@@ -55,11 +58,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 * `1.6.4` - 2020-11-02
     * Fixed: [#68](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/68) Debug adapter does not exit successfully if a syntax error occurs
-
-* `1.6.3 [YANKED]` - 2020-11-02 |**Don't install. Please use `1.6.4`**|
-    * Fixed: [#65](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/65) If a conditional breakpoint that returns false is passed, the pause button will not work until the next stop
-    * Fixed: [#66](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/66) When resume debugging, PerfTips will remain visible until the next stop
-    * Fixed: Improve termination process
 
 See [CHANGELOG](CHANGELOG.md) for details.
 

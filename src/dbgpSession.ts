@@ -631,6 +631,10 @@ export class Session extends EventEmitter {
   }
   public async fetchLatestProperty(propertyName: string, maxDepth?: number): Promise<Property | null> {
     const { stackFrames } = await this.sendStackGetCommand();
+    if (stackFrames.length === 0) {
+      return null;
+    }
+
     const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
     for await (const context of contexts) {
       const { properties } = await this.sendPropertyGetCommand(context, propertyName, maxDepth);
@@ -763,6 +767,9 @@ export class Session extends EventEmitter {
   }
   public async fetchLatestProperties(maxDepth?: number): Promise<Property[]> {
     const { stackFrames } = await this.sendStackGetCommand();
+    if (stackFrames.length === 0) {
+      return [];
+    }
     const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
 
     const propertyMap = new CaseInsensitiveMap<string, Property>();
