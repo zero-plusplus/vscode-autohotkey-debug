@@ -39,9 +39,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * If you're interested in supporting the development(bug reports, sponsorship, etc.), look [here](#development-support)
 
 # News
-In `1.6.5`, the build environment has changed significantly. This reduces the size of the extension file by a tenth and drastically reduces the installation time. However, there may be some bugs from this. If this is the case, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues) and temporarily downgrade the extension.
-
-`1.6.0` is a big update, so there may be some bugs in it. If you find it, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
 ### Important Notices
 * From `1.6.0`, `Advanced output` has been removed. This was not a feasible feature. Please use [Output directive](#output-directive) instead
@@ -63,12 +60,6 @@ In `1.6.5`, the build environment has changed significantly. This reduces the si
     * Fixed: [#65](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/65) If a conditional breakpoint that returns false is passed, the pause button will not work until the next stop
     * Fixed: [#66](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/66) When resume debugging, PerfTips will remain visible until the next stop
     * Fixed: Improve termination process
-
-* `1.6.2` - 2020-10-26
-    * Changed: [#56](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/56) Whenever possible, the default value of `runtimeArgs` is set to `[ "ErrorStdOut=UTF-8"]`
-    * Changed: [#64](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/64) Default value of `port` to `9002`
-    * Changed: Improve error message when an invalid value is set by launch.json
-    * Fix: [#63](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/63) Can't get environment variables in the script
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
