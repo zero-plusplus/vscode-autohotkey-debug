@@ -1390,9 +1390,11 @@ export class AhkDebugSession extends LoggingDebugSession {
         event.body.variablesReference = variablesReference;
       }
 
-      const { fileUri, line } = this.currentStackFrames[0];
-      event.body.source = { path: fileUri };
-      event.body.line = line;
+      if (0 < this.currentStackFrames.length) {
+        const { fileUri, line } = this.currentStackFrames[0];
+        event.body.source = { path: fileUri };
+        event.body.line = line;
+      }
       this.sendEvent(event);
     }
   }
