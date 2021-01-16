@@ -1053,7 +1053,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       this.prevStackFrames = this.currentStackFrames;
       const { stackFrames } = await this.session!.sendStackGetCommand();
-      if (stackFrames.length === 0) {
+
+      const isScriptIdling = stackFrames.length === 0;
+      if (isScriptIdling) {
         this.currentStackFrames = [];
         await this.sendStoppedEvent('pause');
         return;
