@@ -20,6 +20,7 @@ import {
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
+import * as AsyncLock from 'async-lock';
 import { range } from 'lodash';
 import { rtrim } from 'underscore.string';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
@@ -72,6 +73,7 @@ export const serializePromise = async(promises: Array<Promise<void>>): Promise<v
   }, Promise.resolve());
 };
 
+const asyncLock = new AsyncLock();
 export class AhkDebugSession extends LoggingDebugSession {
   private readonly traceLogger: TraceLogger;
   private autoExecutingOnAdvancedBreakpoint = false;
@@ -715,75 +717,77 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.traceLogger.log('evaluateRequest');
-    if (this.session!.socketClosed || this.isTerminateRequested) {
-      this.sendResponse(response);
-      return;
-    }
-
-    const propertyName = args.expression;
-    try {
-      if (!args.frameId) {
-        throw Error('Error: Cannot evaluate code without a session');
+    return asyncLock.acquire('evaluateRequest', async() => {
+      this.traceLogger.log('evaluateRequest');
+      if (this.session!.socketClosed || this.isTerminateRequested) {
+        this.sendResponse(response);
+        return;
       }
 
-      const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
-      if (metaVariableParsed.status) {
-        const metaVariableName = metaVariableParsed.value.value;
-        if (this.currentMetaVariables?.has(metaVariableName)) {
-          response.body = {
-            result: this.currentMetaVariables.get(metaVariableName)!,
-            type: 'metavariable',
-            variablesReference: 0,
-          };
-          this.sendResponse(response);
-          return;
+      const propertyName = args.expression;
+      try {
+        if (!args.frameId) {
+          throw Error('Error: Cannot evaluate code without a session');
         }
-        throw Error('not available');
-      }
 
-      const propertyNameParsed = this.ahkParser.PropertyName.parse(propertyName);
-      if (!propertyNameParsed.status) {
-        throw Error('Error: Only the property name or meta variable is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`, `{metaVariableName}`');
-      }
-      const stackFrame = this.stackFramesByFrameId.get(args.frameId);
-      if (!stackFrame) {
-        throw Error('Error: Could not get stack frame');
-      }
+        const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
+        if (metaVariableParsed.status) {
+          const metaVariableName = metaVariableParsed.value.value;
+          if (this.currentMetaVariables?.has(metaVariableName)) {
+            response.body = {
+              result: this.currentMetaVariables.get(metaVariableName)!,
+              type: 'metavariable',
+              variablesReference: 0,
+            };
+            this.sendResponse(response);
+            return;
+          }
+          throw Error('not available');
+        }
 
-      const property = await this.session!.safeFetchLatestProperty(propertyName);
-      if (property === null) {
-        throw Error('not available');
-      }
+        const propertyNameParsed = this.ahkParser.PropertyName.parse(propertyName);
+        if (!propertyNameParsed.status) {
+          throw Error('Error: Only the property name or meta variable is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`, `{metaVariableName}`');
+        }
+        const stackFrame = this.stackFramesByFrameId.get(args.frameId);
+        if (!stackFrame) {
+          throw Error('Error: Could not get stack frame');
+        }
 
-      let variablesReference = 0, indexedVariables, namedVariables;
-      if (property instanceof dbgp.ObjectProperty) {
-        variablesReference = this.variablesReferenceCounter++;
-        this.objectPropertiesByVariablesReference.set(variablesReference, property);
+        const property = await this.session!.safeFetchLatestProperty(propertyName);
+        if (property === null) {
+          throw Error('not available');
+        }
 
-        const maxIndex = property.maxIndex;
-        if (maxIndex !== null) {
-          if (100 < maxIndex) {
-            indexedVariables = maxIndex;
-            namedVariables = 1;
+        let variablesReference = 0, indexedVariables, namedVariables;
+        if (property instanceof dbgp.ObjectProperty) {
+          variablesReference = this.variablesReferenceCounter++;
+          this.objectPropertiesByVariablesReference.set(variablesReference, property);
+
+          const maxIndex = property.maxIndex;
+          if (maxIndex !== null) {
+            if (100 < maxIndex) {
+              indexedVariables = maxIndex;
+              namedVariables = 1;
+            }
           }
         }
-      }
 
-      response.body = {
-        result: this.formatProperty(property),
-        type: property.type,
-        variablesReference,
-        indexedVariables,
-        namedVariables,
-      };
-      this.sendResponse(response);
-    }
-    catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-      response.body = { result: errorMessage, variablesReference: 0 };
-      this.sendResponse(response);
-    }
+        response.body = {
+          result: this.formatProperty(property),
+          type: property.type,
+          variablesReference,
+          indexedVariables,
+          namedVariables,
+        };
+        this.sendResponse(response);
+      }
+      catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
+        response.body = { result: errorMessage, variablesReference: 0 };
+        this.sendResponse(response);
+      }
+    });
   }
   protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void {
     this.traceLogger.log('sourceRequest');
