@@ -49,6 +49,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
 * `1.6.6` - 2021-xx-xx
+    * Fixed: [#84](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/84) If a script changed state waiting due by step execution, PerfTips will remain visible
     * Fixed: [#85](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/85) Pause button is not working when the script is in a waiting state
 
 * `1.6.5` - 2020-12-02

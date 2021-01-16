@@ -364,6 +364,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.pauseRequested = false;
     this.isPaused = false;
 
+    this.clearPerfTipsDecorations();
     const result = await this.session!.sendContinuationCommand('step_over');
     this.checkContinuationStatus(result);
   }
@@ -378,6 +379,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.pauseRequested = false;
     this.isPaused = false;
 
+    this.clearPerfTipsDecorations();
     const result = await this.session!.sendContinuationCommand('step_into');
     this.checkContinuationStatus(result);
   }
@@ -392,6 +394,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.pauseRequested = false;
     this.isPaused = false;
 
+    this.clearPerfTipsDecorations();
     const result = await this.session!.sendContinuationCommand('step_out');
     this.checkContinuationStatus(result);
   }
