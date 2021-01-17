@@ -48,7 +48,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
-* `1.6.6` - 2021-xx-xx
+* `1.6.6` - 2021-01-17
     * Fixed: [#84](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/84) If a script changed state waiting due by step execution, PerfTips will remain visible
     * Fixed: [#85](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/85) Pause button is not working when the script is in a waiting state
     * Fixed: [#86](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/86) v2 only bug. When watch expression contains more than one expression, the value may not be retrieved correctly

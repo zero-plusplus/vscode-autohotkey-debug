@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.6.6] - 2021-xx-xx
+## [1.6.6] - 2021-01-17
 ### Fixed
 * [#84](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/84) If a script changed state waiting due by step execution, PerfTips will remain visible
 * [#85](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/85) Pause button is not working when the script is in a waiting state
