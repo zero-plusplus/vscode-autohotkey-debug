@@ -548,9 +548,9 @@ export class Session extends EventEmitter {
   public async sendPropertyGetCommand(context: Context, name: string, maxDepth?: number): Promise<PropertyGetResponse> {
     const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
 
-    this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
+    await this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
     const dbgpResponse = await this.sendCommand('property_get', `-n ${name.replace(/<base>/ug, 'base')} -c ${context.id} -d ${context.stackFrame.level}`);
-    this.sendFeatureSetCommand('max_depth', maxDepth_backup);
+    await this.sendFeatureSetCommand('max_depth', maxDepth_backup);
 
     return new PropertyGetResponse(dbgpResponse, context);
   }
@@ -599,9 +599,9 @@ export class Session extends EventEmitter {
   public async sendContextGetCommand(context: Context, maxDepth?: number): Promise<ContextGetResponse> {
     const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
 
-    this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
+    await this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
     const dbgpResponse = await this.sendCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`);
-    this.sendFeatureSetCommand('max_depth', maxDepth_backup);
+    await this.sendFeatureSetCommand('max_depth', maxDepth_backup);
 
     return new ContextGetResponse(dbgpResponse, context);
   }
@@ -631,6 +631,10 @@ export class Session extends EventEmitter {
   }
   public async fetchLatestProperty(propertyName: string, maxDepth?: number): Promise<Property | null> {
     const { stackFrames } = await this.sendStackGetCommand();
+    if (stackFrames.length === 0) {
+      return null;
+    }
+
     const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
     for await (const context of contexts) {
       const { properties } = await this.sendPropertyGetCommand(context, propertyName, maxDepth);
@@ -763,6 +767,9 @@ export class Session extends EventEmitter {
   }
   public async fetchLatestProperties(maxDepth?: number): Promise<Property[]> {
     const { stackFrames } = await this.sendStackGetCommand();
+    if (stackFrames.length === 0) {
+      return [];
+    }
     const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
 
     const propertyMap = new CaseInsensitiveMap<string, Property>();

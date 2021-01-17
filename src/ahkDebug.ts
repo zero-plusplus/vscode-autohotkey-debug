@@ -20,6 +20,7 @@ import {
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
+import * as AsyncLock from 'async-lock';
 import { range } from 'lodash';
 import { rtrim } from 'underscore.string';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
@@ -72,6 +73,7 @@ export const serializePromise = async(promises: Array<Promise<void>>): Promise<v
   }, Promise.resolve());
 };
 
+const asyncLock = new AsyncLock();
 export class AhkDebugSession extends LoggingDebugSession {
   private readonly traceLogger: TraceLogger;
   private autoExecutingOnAdvancedBreakpoint = false;
@@ -95,7 +97,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly checkContinuationStatusPending: Array<Promise<void>> = [];
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames: dbgp.StackFrame[] | null = null;
-  private currentStackFrames: dbgp.StackFrame[] | null = null;
+  private currentStackFrames: dbgp.StackFrame[] = [];
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
   private stackFramesWhenStepOut: dbgp.StackFrame[] | null = null;
   private stackFramesWhenStepOver: dbgp.StackFrame[] | null = null;
@@ -364,6 +366,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.pauseRequested = false;
     this.isPaused = false;
 
+    this.clearPerfTipsDecorations();
     const result = await this.session!.sendContinuationCommand('step_over');
     this.checkContinuationStatus(result);
   }
@@ -378,6 +381,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.pauseRequested = false;
     this.isPaused = false;
 
+    this.clearPerfTipsDecorations();
     const result = await this.session!.sendContinuationCommand('step_into');
     this.checkContinuationStatus(result);
   }
@@ -392,6 +396,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.pauseRequested = false;
     this.isPaused = false;
 
+    this.clearPerfTipsDecorations();
     const result = await this.session!.sendContinuationCommand('step_out');
     this.checkContinuationStatus(result);
   }
@@ -449,7 +454,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
     const endFrame = startFrame + maxLevels;
 
-    const allStackFrames: dbgp.StackFrame[] = this.currentStackFrames!; // The most recent stack frame is always retrieved by checkContinuationStatus, which is executed immediately before, so you won't get a null.
+    const allStackFrames = this.currentStackFrames;
     const stackFrames = allStackFrames.slice(startFrame, endFrame);
 
     if (0 < stackFrames.length) {
@@ -712,75 +717,77 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.traceLogger.log('evaluateRequest');
-    if (this.session!.socketClosed || this.isTerminateRequested) {
-      this.sendResponse(response);
-      return;
-    }
-
-    const propertyName = args.expression;
-    try {
-      if (!args.frameId) {
-        throw Error('Error: Cannot evaluate code without a session');
+    return asyncLock.acquire('evaluateRequest', async() => {
+      this.traceLogger.log('evaluateRequest');
+      if (this.session!.socketClosed || this.isTerminateRequested) {
+        this.sendResponse(response);
+        return;
       }
 
-      const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
-      if (metaVariableParsed.status) {
-        const metaVariableName = metaVariableParsed.value.value;
-        if (this.currentMetaVariables?.has(metaVariableName)) {
-          response.body = {
-            result: this.currentMetaVariables.get(metaVariableName)!,
-            type: 'metavariable',
-            variablesReference: 0,
-          };
-          this.sendResponse(response);
-          return;
+      const propertyName = args.expression;
+      try {
+        if (!args.frameId) {
+          throw Error('Error: Cannot evaluate code without a session');
         }
-        throw Error('not available');
-      }
 
-      const propertyNameParsed = this.ahkParser.PropertyName.parse(propertyName);
-      if (!propertyNameParsed.status) {
-        throw Error('Error: Only the property name or meta variable is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`, `{metaVariableName}`');
-      }
-      const stackFrame = this.stackFramesByFrameId.get(args.frameId);
-      if (!stackFrame) {
-        throw Error('Error: Could not get stack frame');
-      }
+        const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
+        if (metaVariableParsed.status) {
+          const metaVariableName = metaVariableParsed.value.value;
+          if (this.currentMetaVariables?.has(metaVariableName)) {
+            response.body = {
+              result: this.currentMetaVariables.get(metaVariableName)!,
+              type: 'metavariable',
+              variablesReference: 0,
+            };
+            this.sendResponse(response);
+            return;
+          }
+          throw Error('not available');
+        }
 
-      const property = await this.session!.safeFetchLatestProperty(propertyName);
-      if (property === null) {
-        throw Error('not available');
-      }
+        const propertyNameParsed = this.ahkParser.PropertyName.parse(propertyName);
+        if (!propertyNameParsed.status) {
+          throw Error('Error: Only the property name or meta variable is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`, `{metaVariableName}`');
+        }
+        const stackFrame = this.stackFramesByFrameId.get(args.frameId);
+        if (!stackFrame) {
+          throw Error('Error: Could not get stack frame');
+        }
 
-      let variablesReference = 0, indexedVariables, namedVariables;
-      if (property instanceof dbgp.ObjectProperty) {
-        variablesReference = this.variablesReferenceCounter++;
-        this.objectPropertiesByVariablesReference.set(variablesReference, property);
+        const property = await this.session!.safeFetchLatestProperty(propertyName);
+        if (property === null) {
+          throw Error('not available');
+        }
 
-        const maxIndex = property.maxIndex;
-        if (maxIndex !== null) {
-          if (100 < maxIndex) {
-            indexedVariables = maxIndex;
-            namedVariables = 1;
+        let variablesReference = 0, indexedVariables, namedVariables;
+        if (property instanceof dbgp.ObjectProperty) {
+          variablesReference = this.variablesReferenceCounter++;
+          this.objectPropertiesByVariablesReference.set(variablesReference, property);
+
+          const maxIndex = property.maxIndex;
+          if (maxIndex !== null) {
+            if (100 < maxIndex) {
+              indexedVariables = maxIndex;
+              namedVariables = 1;
+            }
           }
         }
-      }
 
-      response.body = {
-        result: this.formatProperty(property),
-        type: property.type,
-        variablesReference,
-        indexedVariables,
-        namedVariables,
-      };
-      this.sendResponse(response);
-    }
-    catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-      response.body = { result: errorMessage, variablesReference: 0 };
-      this.sendResponse(response);
-    }
+        response.body = {
+          result: this.formatProperty(property),
+          type: property.type,
+          variablesReference,
+          indexedVariables,
+          namedVariables,
+        };
+        this.sendResponse(response);
+      }
+      catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
+        response.body = { result: errorMessage, variablesReference: 0 };
+        this.sendResponse(response);
+      }
+    });
   }
   protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void {
     this.traceLogger.log('sourceRequest');
@@ -992,10 +999,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       else if (-1 < errorMessage.search(/^Error in #include file /u)) {
         fixed = errorMessage.replace(/Error in #include file "(.+)":\n\s*(.+)/gmu, `$1:${line} : ==> $2`);
       }
-      return `${fixed
-        .replace(/\n(Specifically:)/u, '     $1')
-        .substr(0, fixed.indexOf('Line#'))
-        .replace(/\s+$/u, '')}\n`;
+
+      fixed = fixed.replace(/\n(Specifically:)/u, '     $1');
+      fixed = fixed.substr(0, fixed.indexOf('Line#'));
+      return `${fixed.replace(/\s+$/u, '')}\n`;
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
@@ -1046,6 +1053,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       this.prevStackFrames = this.currentStackFrames;
       const { stackFrames } = await this.session!.sendStackGetCommand();
+
+      const isScriptIdling = stackFrames.length === 0;
+      if (isScriptIdling) {
+        this.currentStackFrames = [];
+        await this.sendStoppedEvent('pause');
+        return;
+      }
+
       const { fileUri, line } = stackFrames[0];
       this.currentStackFrames = stackFrames;
       const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, line);
@@ -1109,7 +1124,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     await serializePromise(this.checkContinuationStatusPending);
   }
   private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints: LineBreakpoints | null): Promise<void> {
-    if (!this.currentMetaVariables || !this.currentStackFrames) {
+    if (!this.currentMetaVariables || this.currentStackFrames.length === 0) {
       throw Error(`This message shouldn't appear.`);
     }
 
@@ -1246,7 +1261,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.checkContinuationStatus(result);
   }
   private async processLogpoint(lineBreakpoints: LineBreakpoints | null): Promise<void> {
-    if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
+    if (this.currentStackFrames.length === 0) {
       throw Error(`This message shouldn't appear.`);
     }
     if (!lineBreakpoints) {
@@ -1375,7 +1390,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         event.body.variablesReference = variablesReference;
       }
 
-      if (this.currentStackFrames) {
+      if (0 < this.currentStackFrames.length) {
         const { fileUri, line } = this.currentStackFrames[0];
         event.body.source = { path: fileUri };
         event.body.line = line;
@@ -1461,7 +1476,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (!this.config.usePerfTips) {
       return;
     }
-    if (!this.currentStackFrames) {
+    if (this.currentStackFrames.length === 0) {
       return;
     }
 
