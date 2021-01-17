@@ -999,10 +999,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       else if (-1 < errorMessage.search(/^Error in #include file /u)) {
         fixed = errorMessage.replace(/Error in #include file "(.+)":\n\s*(.+)/gmu, `$1:${line} : ==> $2`);
       }
-      return `${fixed
-        .replace(/\n(Specifically:)/u, '     $1')
-        .substr(0, fixed.indexOf('Line#'))
-        .replace(/\s+$/u, '')}\n`;
+
+      fixed = fixed.replace(/\n(Specifically:)/u, '     $1');
+      fixed = fixed.substr(0, fixed.indexOf('Line#'));
+      return `${fixed.replace(/\s+$/u, '')}\n`;
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }

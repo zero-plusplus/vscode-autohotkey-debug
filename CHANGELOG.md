@@ -19,6 +19,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#84](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/84) If a script changed state waiting due by step execution, PerfTips will remain visible
 * [#85](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/85) Pause button is not working when the script is in a waiting state
 * [#86](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/86) v2 only bug. When watch expression contains more than one expression, the value may not be retrieved correctly
+* [#87](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/87) Some error messages may displayed in the debug console will be part missing
 
 ## [1.6.5] - 2020-12-02
 ### Changed
