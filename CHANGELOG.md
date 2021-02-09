@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.7] - 2021-xx-xx
+### Fixed
+* [#89](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/89) Elements of sparse array is collapsed unnecessarily
+
 ## [1.6.6] - 2021-01-17
 ### Fixed
 * [#84](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/84) If a script changed state waiting due by step execution, PerfTips will remain visible
@@ -312,6 +316,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.6..v1.6.7
 [1.6.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.5..v1.6.6
 [1.6.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.4..v1.6.5
 [1.6.4]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.3..v1.6.4

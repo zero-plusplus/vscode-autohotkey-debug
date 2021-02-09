@@ -188,7 +188,7 @@ export abstract class Property {
   }
 }
 export class ObjectProperty extends Property {
-  public readonly isArray: boolean = false;
+  public isArray = false;
   public hasChildren: boolean;
   public className: string;
   public children: Property[] = [];
