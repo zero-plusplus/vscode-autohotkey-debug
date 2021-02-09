@@ -36,7 +36,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 * If you want to know what the next version of the plan is, check out the [milestones](https://github.com/zero-plusplus/vscode-autohotkey-debug/milestones). Also if you want to see the latest progress, you can check the [commit history](https://github.com/zero-plusplus/vscode-autohotkey-debug/commits/develop) of the develop branch
 
-* If you're interested in supporting the development(bug reports, sponsorship, etc.), look [here](#development-support)
+* If you're interested in supporting the development(bug reports, sponsorship, etc.), look [here](#development-support). **But, pull requests are not accepted**
 
 # News
 
@@ -743,7 +743,7 @@ e.g.
 
 # Development support
 ## About source code contributes
-I am currently not accepting contributions.
+I am currently not accepting contributions (Pull Request).
 
 I understand that this is a folly to throw away the strength of open-source software, but I believe that I should do all the implementation because the development of this extension includes the purpose of measuring my skills as a programmer.
 
