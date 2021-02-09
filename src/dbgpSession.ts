@@ -222,18 +222,20 @@ export class ObjectProperty extends Property {
 
     if (propertyNode.property) {
       const properties = Array.isArray(propertyNode.property) ? propertyNode.property : [ propertyNode.property ];
-      const spraceChecker: number[] = [];
+      const indexes: number[] = [];
       properties.forEach((propertyNode) => {
         const child = Property.from(propertyNode, context);
         if (child.index) {
-          spraceChecker.push(child.index);
+          indexes.push(child.index);
         }
         this.children.push(child);
       });
 
       if (this.maxIndex) {
         this.isArray = true;
-        if (this.maxIndex !== spraceChecker.length) {
+
+        const isSparseArray = this.maxIndex !== indexes.length;
+        if (isSparseArray) {
           this.isArray = false;
         }
       }
