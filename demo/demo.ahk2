@@ -1,4 +1,4 @@
-#SingleInstance Force
+﻿#SingleInstance Force
 globalVar := "Global"
 global SuperGlobalVar := "SuperGlobal"
 
@@ -34,16 +34,20 @@ demo()
 
     ; Objects
     arr_empty := []
-    arr := [str, int]
-    arr_big := Util_CreateBigArray()
-    arr_like := Map(1, str, 2, int, "size", 2)
+    arr := [ str, int, Util_CreateLargeArray() ]
+    arr_maxsize := Util_CreateMaxSizeArray()
+    arr_like := Map()
+    for i, value in  Util_CreateLargeArray() {
+        arr_like[i] := value
+    }
+    arr_like["size"] := arr_like.count
     arr_sparse := Map(1, str, 9000, int)
-    obj_specialkey := Map([1, 2, 3], "value", "spaced key", "value2")
+    obj_specialkey := Map([ 1, 2, 3 ], "value", "spaced key", "value2")
 
     obj_empty := {}
     obj := { str: str, int: int, arr: arr }
 
-    mp := Map("key", "value", [1, 2, 3], "value2")
+    mp := Map("key", "value", [ 1, 2, 3 ], "value2")
     buf := BufferAlloc(50)
 
     fatArrow := () => "fatArrow"

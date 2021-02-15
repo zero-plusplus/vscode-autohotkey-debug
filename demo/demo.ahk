@@ -1,4 +1,4 @@
-#SingleInstance Force
+﻿#SingleInstance Force
 #Warn All, StdOut
 globalVar := "Global"
 global SuperGlobalVar := "SuperGlobal"
@@ -35,8 +35,10 @@ demo()
 
     ; Objects
     arr_empty := []
-    arr := [str, int, Util_CreateBigArray()]
-    arr_big := Util_CreateBigArray()
+    arr := [ str, int, Util_CreateLargeArray() ]
+    arr_maxsize := Util_CreateMaxSizeArray()
+    arr_like := Util_CreateLargeArray()
+    arr_like.size := arr_like.length()
     arr_sparse := { 1: str, 9000: int }
 
     obj_empty := {}
