@@ -536,8 +536,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.objectPropertiesByVariablesReference.set(variablesReference, objectProperty);
 
         let indexedVariables, namedVariables;
-        const maxIndex = objectProperty.maxIndex;
-        if (maxIndex !== null) {
+        if (objectProperty.isArray) {
+          const maxIndex = objectProperty.maxIndex!;
           if (100 < maxIndex) {
             indexedVariables = maxIndex;
             namedVariables = 1;
@@ -605,12 +605,13 @@ export class AhkDebugSession extends LoggingDebugSession {
           const { properties } = await this.session!.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName);
           const property = properties[0];
           if (property instanceof dbgp.ObjectProperty) {
+            objectProperty.isArray = property.isArray;
             objectProperty.children = property.children;
           }
         }
 
-        const maxIndex = objectProperty.maxIndex;
-        if (maxIndex !== null) {
+        if (objectProperty.isArray) {
+          const maxIndex = objectProperty.maxIndex!;
           if (100 < maxIndex) {
             indexedVariables = maxIndex;
             namedVariables = 1;
@@ -764,8 +765,8 @@ export class AhkDebugSession extends LoggingDebugSession {
           variablesReference = this.variablesReferenceCounter++;
           this.objectPropertiesByVariablesReference.set(variablesReference, property);
 
-          const maxIndex = property.maxIndex;
-          if (maxIndex !== null) {
+          if (property.isArray) {
+            const maxIndex = property.maxIndex!;
             if (100 < maxIndex) {
               indexedVariables = maxIndex;
               namedVariables = 1;

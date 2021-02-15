@@ -36,7 +36,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 * If you want to know what the next version of the plan is, check out the [milestones](https://github.com/zero-plusplus/vscode-autohotkey-debug/milestones). Also if you want to see the latest progress, you can check the [commit history](https://github.com/zero-plusplus/vscode-autohotkey-debug/commits/develop) of the develop branch
 
-* If you're interested in supporting the development(bug reports, sponsorship, etc.), look [here](#development-support)
+* If you're interested in supporting the development(bug reports, sponsorship, etc.), look [here](#development-support). **Note: Pull Request is not accepted**
 
 # News
 
@@ -48,6 +48,9 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.6.7` - 2021-xx-xx
+    * Fixed: [#89](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/89) Elements of sparse array is collapsed unnecessarily
+
 * `1.6.6` - 2021-01-17
     * Fixed: [#84](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/84) If a script changed state waiting due by step execution, PerfTips will remain visible
     * Fixed: [#85](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/85) Pause button is not working when the script is in a waiting state
@@ -58,9 +61,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Changed: Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed
     * Fixed: [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
     * Fixed: v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`
-
-* `1.6.4` - 2020-11-02
-    * Fixed: [#68](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/68) Debug adapter does not exit successfully if a syntax error occurs
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -743,7 +743,7 @@ e.g.
 
 # Development support
 ## About source code contributes
-I am currently not accepting contributions.
+I am currently not accepting contributions (Pull Request).
 
 I understand that this is a folly to throw away the strength of open-source software, but I believe that I should do all the implementation because the development of this extension includes the purpose of measuring my skills as a programmer.
 
