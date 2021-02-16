@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.6.7] - 2021-xx-xx
+## [1.6.7] - 2021-02-16
 ### Fixed
 * [#89](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/89) Elements of sparse array is collapsed unnecessarily
 
