@@ -750,7 +750,11 @@ I understand that this is a folly to throw away the strength of open-source soft
 However, suggestions are welcome. Let's make this extension even better together!
 
 ## About bug reports and feature requests
-It is accepted on [Github issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues). (Github account required). Basically, I will reply to you by the same day or the next day, so feel free to report.
+If you find a bug, look at [Known issues](#known-issues) first.
+
+Bugs that are not listed there and feature requests  there are accepted on [Github issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues) (Github account required).
+
+Basically, I will reply to you by the same day or the next day, so feel free to report.
 
 ## About GitHub Sponsors
 I am looking for [GitHub Sponsors](https://github.com/sponsors/zero-plusplus) for $1-$100 per month. However, please note the following.
