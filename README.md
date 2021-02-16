@@ -26,7 +26,6 @@
 * [Development support](#development-support)
 
 # Before reading
-Please read the following first.
 * This document has been translated from Japanese to English using [DeepL Translate](https://www.deepl.com/home)
 
 * **This extension will not work alone.**
