@@ -82,7 +82,7 @@ If you find a bug, please report it to [issues](https://github.com/zero-plusplus
 
 # Installation
 1. Install [AutoHotkey](https://www.autohotkey.com/)
-2. Install an extension to support AutoHotkey (the famous ` slevesque.vscode-autohotkey`)
+2. Install an extension to support AutoHotkey (the famous `slevesque.vscode-autohotkey`)
 3. Press `Ctrl + P`, type `ext install zero-plusplus.vscode-autohotkey-debug`
 
 If you want to use AutoHotkey v2, or AutoHotkey_H edit the `runtime` in [launch.json](#customize-launchjson).
