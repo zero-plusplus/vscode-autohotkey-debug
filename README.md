@@ -174,7 +174,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>
         If a port is already in use, a confirmation message will appear asking if you want to use a different port. If this message is annoying, you can give the debug adapter permission to use the port using the <code>"start-end"</code> format.
 <br />
-        e.g. <code>"9000-9010"</code>
+        e.g. <code>"9002-9010"</code>
     </td>
 </tr>
 <tr>
