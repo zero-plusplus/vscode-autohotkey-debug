@@ -684,7 +684,7 @@ export class Session extends EventEmitter {
       return this.fetchLatestProperty(name, _maxDepth);
     }
 
-    // utils
+    // #region util
     const getProperty = (property: ObjectProperty, key: string): Property | null => {
       for (const child of property.children) {
         if (equalsIgnoreCase(key, child.name)) {
@@ -753,6 +753,7 @@ export class Session extends EventEmitter {
       }
       return null;
     };
+    // #endregion util
 
     const propertyPathArray = name.split('.');
     const topProperty = await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth);
