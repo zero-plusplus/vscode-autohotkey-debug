@@ -677,11 +677,11 @@ export class Session extends EventEmitter {
     }
     return null;
   }
-  public async safeFetchLatestProperty(propertyName: string, maxDepth?: number): Promise<Property | null> {
+  public async safeFetchLatestProperty(name: string, maxDepth?: number): Promise<Property | null> {
     const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    if (!propertyName.includes('.') || propertyName.includes('[') || ahkVersion === 1) {
-      return this.fetchLatestProperty(propertyName, _maxDepth);
+    if (!name.includes('.') || name.includes('[') || ahkVersion === 1) {
+      return this.fetchLatestProperty(name, _maxDepth);
     }
 
     // utils
@@ -754,7 +754,7 @@ export class Session extends EventEmitter {
       return null;
     };
 
-    const propertyPathArray = propertyName.split('.');
+    const propertyPathArray = name.split('.');
     const topProperty = await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth);
     if (topProperty === null || topProperty instanceof PrimitiveProperty) {
       return null;
