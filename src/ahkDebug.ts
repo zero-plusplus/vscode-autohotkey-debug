@@ -602,8 +602,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         const loadedChildren = objectProperty.hasChildren && 0 < objectProperty.children.length;
         if (!loadedChildren) {
           // eslint-disable-next-line no-await-in-loop
-          const { properties } = await this.session!.sendPropertyGetCommand(objectProperty.context, objectProperty.fullName);
-          const property = properties[0];
+          const property = await this.session!.safeFetchProperty(objectProperty.context, objectProperty.fullName);
           if (property instanceof dbgp.ObjectProperty) {
             objectProperty.isArray = property.isArray;
             objectProperty.children = property.children;
