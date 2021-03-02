@@ -47,7 +47,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
-* `1.6.8` - 2021-xx-xx
+* `1.6.8` - 2021-03-02
     * [#91](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/91) v2 only bug. The value of the variable with the specific data becomes `<error>`
 
 * `1.6.7` - 2021-02-16
