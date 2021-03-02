@@ -84,9 +84,10 @@ However, the implementation is a bit different, so there may be some inherent bu
 If you find a bug, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
 # Installation
-1. Install [AutoHotkey](https://www.autohotkey.com/)
-2. Install an extension to support AutoHotkey (the famous `slevesque.vscode-autohotkey`)
-3. Press `Ctrl + P`, type `ext install zero-plusplus.vscode-autohotkey-debug`
+1. Install [Visual Studio Code](https://code.visualstudio.com/) with version `1.45.0` or higher
+2. Install [AutoHotkey](https://www.autohotkey.com/)
+3. Install an extension to support AutoHotkey (the famous `slevesque.vscode-autohotkey`)
+4. Press `Ctrl + P`, type `ext install zero-plusplus.vscode-autohotkey-debug`
 
 If you want to use AutoHotkey v2, or AutoHotkey_H edit the `runtime` in [launch.json](#customize-launchjson).
 
