@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.8] - 2021-xx-xx
+### Fixed
+* [#91](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/91) v2 only bug. The value of the variable with the specific data becomes `<error>`
+
 ## [1.6.7] - 2021-02-16
 ### Fixed
 * [#89](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/89) Elements of sparse array is collapsed unnecessarily
@@ -316,6 +320,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.8]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.7..v1.6.8
 [1.6.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.6..v1.6.7
 [1.6.6]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.5..v1.6.6
 [1.6.5]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.4..v1.6.5

@@ -677,14 +677,72 @@ export class Session extends EventEmitter {
     }
     return null;
   }
-  public async safeFetchLatestProperty(propertyName: string, maxDepth?: number): Promise<Property | null> {
+  public async safeFetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | null> {
     const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    if (!propertyName.includes('.') || propertyName.includes('[') || ahkVersion === 1) {
-      return this.fetchLatestProperty(propertyName, _maxDepth);
+    if (!name.includes('.') || name.includes('[') || ahkVersion === 1) {
+      const { properties } = await this.sendPropertyGetCommand(context, name, _maxDepth);
+      return 0 < properties.length ? properties[0] : null;
     }
 
-    // utils
+    const propertyPathArray = name.split('.');
+    const { properties } = await this.sendPropertyGetCommand(context, propertyPathArray[0], propertyPathArray.length + _maxDepth);
+    if (properties.length === 0) {
+      return null;
+    }
+    const topProperty = properties[0];
+    if (topProperty instanceof PrimitiveProperty) {
+      return null;
+    }
+    propertyPathArray.shift();
+
+    // #region util
+    const getProperty = (property: ObjectProperty, key: string): Property | null => {
+      for (const child of property.children) {
+        if (equalsIgnoreCase(key, child.name)) {
+          return child;
+        }
+      }
+      return null;
+    };
+    const getDeepProprety = (property: ObjectProperty, keys: string[]): Property | null => {
+      let currentProperty = property;
+
+      for (const i of range(keys.length)) {
+        const key = keys[i];
+        const child = getProperty(currentProperty, key);
+        if (child) {
+          const isLastLoop = i === keys.length - 1;
+          if (isLastLoop) {
+            return child;
+          }
+          else if (child instanceof PrimitiveProperty) {
+            return null;
+          }
+
+          currentProperty = child as ObjectProperty;
+          continue;
+        }
+        break;
+      }
+      return null;
+    };
+    // #endregion util
+
+    const child = getDeepProprety(topProperty as ObjectProperty, propertyPathArray);
+    if (child) {
+      return child;
+    }
+    return null;
+  }
+  public async safeFetchLatestProperty(name: string, maxDepth?: number): Promise<Property | null> {
+    const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
+    const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
+    if (!name.includes('.') || name.includes('[') || ahkVersion === 1) {
+      return this.fetchLatestProperty(name, _maxDepth);
+    }
+
+    // #region util
     const getProperty = (property: ObjectProperty, key: string): Property | null => {
       for (const child of property.children) {
         if (equalsIgnoreCase(key, child.name)) {
@@ -753,8 +811,9 @@ export class Session extends EventEmitter {
       }
       return null;
     };
+    // #endregion util
 
-    const propertyPathArray = propertyName.split('.');
+    const propertyPathArray = name.split('.');
     const topProperty = await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth);
     if (topProperty === null || topProperty instanceof PrimitiveProperty) {
       return null;
