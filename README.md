@@ -48,6 +48,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
 * `1.6.9` - 2021-xx-xx
+    * Changed: Change the font used for the main icon
     * Fixed: [#95](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/95) Slow performance of conditional breakpoints, and crashes after 6000 more than uses
 
 * `1.6.8` - 2021-03-02

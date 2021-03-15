@@ -15,6 +15,9 @@ Also want to check the development status, check the [commit history](https://gi
 
 ## [Released]
 ## [1.6.9] - 2021-xx-xx
+### Changed
+* Change the font used for the main icon
+
 ### Fixed
 * [#95](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/95) Slow performance of conditional breakpoints, and crashes after 6000 more than uses
 
