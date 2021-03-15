@@ -94,7 +94,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   private breakpointManager?: BreakpointManager;
   private readonly settingBreakpointPending: Array<Promise<void>> = [];
-  private readonly checkContinuationStatusPending: Array<Promise<void>> = [];
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames: dbgp.StackFrame[] | null = null;
   private currentStackFrames: dbgp.StackFrame[] = [];
@@ -1022,106 +1021,102 @@ export class AhkDebugSession extends LoggingDebugSession {
     return null;
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
-    this.checkContinuationStatusPending.push((async(): Promise<void> => {
-      if (this.session!.socketClosed || this.isTerminateRequested) {
-        return;
-      }
-      if (response.status !== 'break') {
-        return;
-      }
-      if (this.isPaused) {
-        return;
-      }
-      this.clearPerfTipsDecorations();
+    if (this.session!.socketClosed || this.isTerminateRequested) {
+      return;
+    }
+    if (response.status !== 'break') {
+      return;
+    }
+    if (this.isPaused) {
+      return;
+    }
+    this.clearPerfTipsDecorations();
 
-      // Prepare
-      const prevMetaVariables = this.currentMetaVariables;
-      this.currentMetaVariables = new CaseInsensitiveMap<string, string>();
-      this.currentMetaVariables.set('hitCount', '-1');
-      if (prevMetaVariables) {
-        const elapsedTime_ns = parseFloat(prevMetaVariables.get('elapsedTime_ns')!) + response.elapsedTime.ns;
-        const elapsedTime_ms = parseFloat(prevMetaVariables.get('elapsedTime_ms')!) + response.elapsedTime.ms;
-        const elapsedTime_s = parseFloat(prevMetaVariables.get('elapsedTime_s')!) + response.elapsedTime.s;
-        this.currentMetaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
-        this.currentMetaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
-        this.currentMetaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
-      }
-      else {
-        this.currentMetaVariables.set('elapsedTime_ns', toFixed(response.elapsedTime.ns, 3));
-        this.currentMetaVariables.set('elapsedTime_ms', toFixed(response.elapsedTime.ms, 3));
-        this.currentMetaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
-      }
-      this.prevStackFrames = this.currentStackFrames;
-      const { stackFrames } = await this.session!.sendStackGetCommand();
+    // Prepare
+    const prevMetaVariables = this.currentMetaVariables;
+    this.currentMetaVariables = new CaseInsensitiveMap<string, string>();
+    this.currentMetaVariables.set('hitCount', '-1');
+    if (prevMetaVariables) {
+      const elapsedTime_ns = parseFloat(prevMetaVariables.get('elapsedTime_ns')!) + response.elapsedTime.ns;
+      const elapsedTime_ms = parseFloat(prevMetaVariables.get('elapsedTime_ms')!) + response.elapsedTime.ms;
+      const elapsedTime_s = parseFloat(prevMetaVariables.get('elapsedTime_s')!) + response.elapsedTime.s;
+      this.currentMetaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
+      this.currentMetaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
+      this.currentMetaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
+    }
+    else {
+      this.currentMetaVariables.set('elapsedTime_ns', toFixed(response.elapsedTime.ns, 3));
+      this.currentMetaVariables.set('elapsedTime_ms', toFixed(response.elapsedTime.ms, 3));
+      this.currentMetaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
+    }
+    this.prevStackFrames = this.currentStackFrames;
+    const { stackFrames } = await this.session!.sendStackGetCommand();
 
-      const isScriptIdling = stackFrames.length === 0;
-      if (isScriptIdling) {
-        this.currentStackFrames = [];
-        await this.sendStoppedEvent('pause');
-        return;
-      }
+    const isScriptIdling = stackFrames.length === 0;
+    if (isScriptIdling) {
+      this.currentStackFrames = [];
+      await this.sendStoppedEvent('pause');
+      return;
+    }
 
-      const { fileUri, line } = stackFrames[0];
-      this.currentStackFrames = stackFrames;
-      const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, line);
-      let stopReason: StopReason = 'step';
-      if (lineBreakpoints) {
-        lineBreakpoints.incrementHitCount();
-        if (0 < lineBreakpoints.length) {
-          stopReason = lineBreakpoints[0].hidden
-            ? 'hidden breakpoint'
-            : 'breakpoint';
-        }
+    const { fileUri, line } = stackFrames[0];
+    this.currentStackFrames = stackFrames;
+    const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, line);
+    let stopReason: StopReason = 'step';
+    if (lineBreakpoints) {
+      lineBreakpoints.incrementHitCount();
+      if (0 < lineBreakpoints.length) {
+        stopReason = lineBreakpoints[0].hidden
+          ? 'hidden breakpoint'
+          : 'breakpoint';
       }
+    }
 
-      // Pause
-      if (response.commandName === 'break') {
-        this.currentMetaVariables.set('elapsedTime_ns', '-1');
-        this.currentMetaVariables.set('elapsedTime_ms', '-1');
-        this.currentMetaVariables.set('elapsedTime_s', '-1');
-        await this.processLogpoint(lineBreakpoints);
-        await this.sendStoppedEvent('pause');
-        return;
-      }
-
-      // Paused on step
-      if (response.commandName.includes('step')) {
-        await this.processStepExecution(response.commandName as dbgp.StepCommandName, lineBreakpoints);
-        return;
-      }
-
-      // Paused on breakpoint
+    // Pause
+    if (response.commandName === 'break') {
+      this.currentMetaVariables.set('elapsedTime_ns', '-1');
+      this.currentMetaVariables.set('elapsedTime_ms', '-1');
+      this.currentMetaVariables.set('elapsedTime_s', '-1');
       await this.processLogpoint(lineBreakpoints);
-      const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
-      if (matchedBreakpoint) {
-        this.currentMetaVariables.set('hitCount', String(matchedBreakpoint.hitCount));
-        await this.sendStoppedEvent(stopReason);
-        return;
-      }
+      await this.sendStoppedEvent('pause');
+      return;
+    }
 
-      // Interruptive pause
-      if (this.pauseRequested) {
-        this.currentMetaVariables.set('elapsedTime_ns', '-1');
-        this.currentMetaVariables.set('elapsedTime_ms', '-1');
-        this.currentMetaVariables.set('elapsedTime_s', '-1');
-        await this.session!.sendBreakCommand();
-        await this.sendStoppedEvent('pause');
-        return;
-      }
+    // Paused on step
+    if (response.commandName.includes('step')) {
+      await this.processStepExecution(response.commandName as dbgp.StepCommandName, lineBreakpoints);
+      return;
+    }
 
-      // Re-check in case an interruption has occurred
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (this.isPaused) {
-        return;
-      }
+    // Paused on breakpoint
+    await this.processLogpoint(lineBreakpoints);
+    const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
+    if (matchedBreakpoint) {
+      this.currentMetaVariables.set('hitCount', String(matchedBreakpoint.hitCount));
+      await this.sendStoppedEvent(stopReason);
+      return;
+    }
 
-      // Auto execution
-      this.autoExecutingOnAdvancedBreakpoint = true;
-      const result = await this.session!.sendRunCommand();
-      await this.checkContinuationStatus(result);
-    })());
+    // Interruptive pause
+    if (this.pauseRequested) {
+      this.currentMetaVariables.set('elapsedTime_ns', '-1');
+      this.currentMetaVariables.set('elapsedTime_ms', '-1');
+      this.currentMetaVariables.set('elapsedTime_s', '-1');
+      await this.session!.sendBreakCommand();
+      await this.sendStoppedEvent('pause');
+      return;
+    }
 
-    await serializePromise(this.checkContinuationStatusPending);
+    // Re-check in case an interruption has occurred
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (this.isPaused) {
+      return;
+    }
+
+    // Auto execution
+    this.autoExecutingOnAdvancedBreakpoint = true;
+    const result = await this.session!.sendRunCommand();
+    await this.checkContinuationStatus(result);
   }
   private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints: LineBreakpoints | null): Promise<void> {
     if (!this.currentMetaVariables || this.currentStackFrames.length === 0) {

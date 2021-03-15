@@ -47,22 +47,14 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
 
 ### Update
+* `1.6.9` - 2021-xx-xx
+    * Fixed: [#95](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/95) Slow performance of conditional breakpoints, and crashes after 6000 more than uses
+
 * `1.6.8` - 2021-03-02
-    * [#91](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/91) v2 only bug. The value of the variable with the specific data becomes `<error>`
+    * Fixed: [#91](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/91) v2 only bug. The value of the variable with the specific data becomes `<error>`
 
 * `1.6.7` - 2021-02-16
     * Fixed: [#89](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/89) Elements of sparse array is collapsed unnecessarily
-
-* `1.6.6` - 2021-01-17
-    * Fixed: [#84](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/84) If a script changed state waiting due by step execution, PerfTips will remain visible
-    * Fixed: [#85](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/85) Pause button is not working when the script is in a waiting state
-    * Fixed: [#86](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/86) v2 only bug. When watch expression contains more than one expression, the value may not be retrieved correctly
-    * Fixed: [#87](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/87) Some error messages may displayed in the debug console will be part missing
-
-* `1.6.5` - 2020-12-02
-    * Changed: Bundled the extension files and also removed unnecessary files to run. This reduced the file size by a tenth and greatly improved the installation speed
-    * Fixed: [#73](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/73) Sparse array being treated as array in `Data inspection`
-    * Fixed: v2 only bug. `Loaded scripts` will not work properly if a relative path is used for `#Include`
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
