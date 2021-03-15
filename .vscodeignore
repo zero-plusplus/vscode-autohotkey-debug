@@ -1,5 +1,6 @@
 .github/
 .vscode/
+build/**/*.ts
 demo/
 image/
 !image/icon.png
