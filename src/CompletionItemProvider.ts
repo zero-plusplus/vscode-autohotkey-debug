@@ -40,12 +40,15 @@ const createKind = (property: dbgp.Property): vscode.CompletionItemKind => {
 };
 const createDetail = (property: dbgp.Property): string => {
   const kindName = vscode.CompletionItemKind[createKind(property)].toLowerCase();
+  const context = property.fullName.includes('.') || property.fullName.includes('[')
+    ? ''
+    : `[${property.context.name}] `;
   if (kindName === 'class') {
-    return `[${property.context.name}] (${kindName}) ${(property as dbgp.ObjectProperty).className}`;
+    return `${context}(${kindName}) ${(property as dbgp.ObjectProperty).className}`;
   }
 
   const type = property instanceof dbgp.ObjectProperty ? property.className : property.type;
-  return `[${property.context.name}] (${kindName}) ${property.fullName}: ${type}`;
+  return `${context}(${kindName}) ${property.fullName}: ${type}`;
 };
 export const completionItemProvider = {
   useIntelliSenseInDebugging: true,
