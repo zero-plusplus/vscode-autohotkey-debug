@@ -615,9 +615,17 @@ If you want to output curly brackets directly, prefix it with `\`. e.g. `\{notVa
 ## IntelliSense in debugging
 ![intellisense](image/intellisense.gif)
 
-The variables that are displayed in the [Data inspection](#data-inspection) will be suggested. This is a limited feature, but can be very useful for editing the source code while debugging.
+**Since this feature is achieved using the debugger, it only works during debugging.**
+
+The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
 
 If you don't need this feature, set `useIntelliSenseInDebugging ` to `false`.
+If you don't need this feature, set `useIntelliSenseInDebugging` to `false` in [launch.json](#customize-launchjson).
+
+### **For AutoHotkey v2 user**
+The dynamic properties in v2 will execute a script for each read, so you may get an error message when proposing them. Due to its nature, unexpected bugs may occur.
+
+If this is the case, please follow the instructions above to turn off this feature.
 
 ## Debug console
 ![debug-console](image/debug-console.jpg)
@@ -734,8 +742,7 @@ e.g.
 * If more than one information is displayed on the call stack, the file path and line number information for the bottommost information (i.e. `Auto-execute thread` or `Timer thread`) is incorrect
 
 ##  v2 only bug
-* The following seems to have been fixed in [a136](https://www.autohotkey.com/boards/viewtopic.php?f=37&t=2120&sid=e7d43fe09e912b95ab2d1747a47f8bad&start=80#p401370)
-    * An error occurs when try to access or overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection) and [Intellisense](#intellisense-in-debugging)
+* ~~An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection)~~ Fixed in [AutoHotkey-v2-a136](https://www.autohotkey.com/boards/viewtopic.php?f=37&t=2120&sid=e7d43fe09e912b95ab2d1747a47f8bad&start=80#p401370)
 
 # Development support
 ## About source code contributes
