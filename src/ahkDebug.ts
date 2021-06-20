@@ -105,7 +105,9 @@ export class AhkDebugSession extends LoggingDebugSession {
   constructor() {
     super('autohotkey-debug.txt');
 
-    this.traceLogger = new TraceLogger((e) => this.sendEvent(e));
+    this.traceLogger = new TraceLogger((e): void => {
+      this.sendEvent(e);
+    });
     this.setDebuggerColumnsStartAt1(true);
     this.setDebuggerLinesStartAt1(true);
     this.setDebuggerPathFormat('uri');

@@ -1,36 +1,18 @@
-const { javascript, typescript } = require('@zero-plusplus/eslint-my-rules');
+const { preset } = require('@zero-plusplus/eslint-my-rules');
 
 module.exports = {
+  root: true,
   overrides: [
     {
-      files: '*.js',
-      env: {
-        node: true,
-        es6: true,
+      ...preset.js.default,
+      rules: {
+        ...preset.js.default.rules,
       },
-      parserOptions: {
-        ecmaVersion: 2018,
-        sourceType: 'module',
-      },
-      rules: { ...javascript.rules },
     },
     {
-      files: '*.ts',
-      env: {
-        node: true,
-        es6: true,
-        mocha: true,
-      },
-      parser: typescript.parserName,
-      parserOptions: {
-        ecmaVersion: 2018,
-        sourceType: 'module',
-        tsconfigRootDir: './',
-        project: [ './tsconfig.json' ],
-      },
-      plugins: [ typescript.pluginName ],
+      ...preset.ts.default,
       rules: {
-        ...typescript.rules,
+        ...preset.ts.default.rules,
       },
     },
   ],

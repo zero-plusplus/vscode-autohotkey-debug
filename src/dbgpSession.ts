@@ -480,7 +480,9 @@ export class Session extends EventEmitter {
     super();
 
     this.socket = socket
-      .on('data', (packet: Buffer): void => this.handlePacket(packet))
+      .on('data', (packet: Buffer): void => {
+        this.handlePacket(packet);
+      })
       .on('error', (error: Error) => this.emit('error', error))
       .on('close', () => this.emit('close'));
 
