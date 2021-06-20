@@ -73,6 +73,7 @@ export const completionItemProvider = {
       completionItem.kind = createKind(property);
       completionItem.insertText = property.name;
       completionItem.detail = createDetail(property);
+      completionItem.sortText = '^';
       return completionItem;
     });
   },
