@@ -6,7 +6,7 @@ import * as he from 'he';
 import * as convertHrTime from 'convert-hrtime';
 import { range, uniqBy } from 'lodash';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { equalsIgnoreCase, startsWithIgnoreCase } from './util/stringUtils';
+import { equalsIgnoreCase } from './util/stringUtils';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -682,7 +682,8 @@ export class Session extends EventEmitter {
   public async safeFetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | null> {
     const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    if (!name.includes('.') || name.includes('[') || ahkVersion === 1) {
+    const isSafetyProperty = ahkVersion === 1 || !name.includes('.') || name.includes('[') || (/\.base$/ui).test('.base');
+    if (isSafetyProperty) {
       const { properties } = await this.sendPropertyGetCommand(context, name, _maxDepth);
       return 0 < properties.length ? properties[0] : null;
     }
@@ -740,7 +741,8 @@ export class Session extends EventEmitter {
   public async safeFetchLatestProperty(name: string, maxDepth?: number): Promise<Property | null> {
     const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    if (!name.includes('.') || name.includes('[') || ahkVersion === 1) {
+    const isSafetyProperty = ahkVersion === 1 || !name.includes('.') || name.includes('[') || (/\.base$/ui).test('.base');
+    if (isSafetyProperty) {
       return this.fetchLatestProperty(name, _maxDepth);
     }
 
@@ -847,37 +849,28 @@ export class Session extends EventEmitter {
     }
     return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
   }
-  public async fetchSuggestList(searchText: string): Promise<Property[]> {
-    const filterCallback = (property: Property): boolean => startsWithIgnoreCase(property.fullName, searchText);
-    if (!searchText.includes('.')) {
-      const properties = await this.fetchLatestProperties();
-      if (searchText === '') {
-        return properties;
-      }
-      return properties.filter(filterCallback);
-    }
+  public async fetchSuggestList(variablePath: string): Promise<Property[]> {
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
       const children = [ ...property.children ];
-      const base = await this.fetchLatestProperty(`${property.fullName}.base`);
+      const base = await this.safeFetchLatestProperty(`${property.fullName}.base`, 1);
       if (base instanceof ObjectProperty) {
         children.push(...await getInheritedChildren(base));
       }
       return children;
     };
 
-    const parentName = searchText.split('.').slice(0, -1).join('.');
-    const property = await this.safeFetchLatestProperty(parentName);
-    if (property === null) {
-      return [];
-    }
-    if (property instanceof ObjectProperty) {
-      const children = (await getInheritedChildren(property)).filter(filterCallback);
-      return uniqBy(children, (property) => property.name.toLowerCase());
-    }
-    else if (startsWithIgnoreCase(property.fullName, searchText)) {
-      return [ property ];
+    if (!variablePath.includes('.')) {
+      const properties = await this.fetchLatestProperties();
+      return properties;
     }
 
+    const fixedVariablePath = variablePath.replace(/\.$/u, '');
+    const property = await this.safeFetchLatestProperty(fixedVariablePath);
+
+    if (property instanceof ObjectProperty) {
+      const children = (await getInheritedChildren(property));
+      return uniqBy(children, (property) => property.name.toLowerCase());
+    }
     return [];
   }
   public async close(): Promise<void> {

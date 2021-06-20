@@ -68,16 +68,20 @@ export const completionItemProvider = {
     }
 
     const word = findWord(document, position, this.ahkVersion);
-    const suggestList = await this.session.fetchSuggestList(word);
-    return suggestList.map((property): vscode.CompletionItem => {
+    const properties = await this.session.fetchSuggestList(word);
+
+    // Index accesses such as `arr[1]` will be inserted as `arr.[1]` or `arr[[1]]`, so don't show them until you know how to deal with them.
+    const fixedProperties = properties.filter((property) => !property.name.startsWith('['));
+
+    return fixedProperties.map((property): vscode.CompletionItem => {
       const completionItem = new vscode.CompletionItem(property.name);
       completionItem.kind = createKind(property);
       completionItem.insertText = property.name;
       completionItem.detail = createDetail(property);
 
       const depth = count(property.fullName, '.');
-      const priority = property.name.startsWith('__') ? 2 : 1;
-      completionItem.sortText = `${priority}:${depth}:${property.fullName}`;
+      const priority = property.name.startsWith('__') ? 1 : 0;
+      completionItem.sortText = `@:${priority}:${depth}:${property.name}`;
 
       return completionItem;
     });
