@@ -1,3 +1,4 @@
+import { count } from 'underscore.string';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
 
@@ -73,7 +74,11 @@ export const completionItemProvider = {
       completionItem.kind = createKind(property);
       completionItem.insertText = property.name;
       completionItem.detail = createDetail(property);
-      completionItem.sortText = '^';
+
+      const depth = count(property.fullName, '.');
+      const priority = property.name.startsWith('__') ? 2 : 1;
+      completionItem.sortText = `${priority}:${depth}:${property.fullName}`;
+
       return completionItem;
     });
   },

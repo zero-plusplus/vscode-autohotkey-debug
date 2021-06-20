@@ -4,7 +4,7 @@ import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import * as convertHrTime from 'convert-hrtime';
-import { range } from 'lodash';
+import { range, uniqBy } from 'lodash';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { equalsIgnoreCase, startsWithIgnoreCase } from './util/stringUtils';
 
@@ -856,14 +856,23 @@ export class Session extends EventEmitter {
       }
       return properties.filter(filterCallback);
     }
+    const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
+      const children = [ ...property.children ];
+      const base = await this.fetchLatestProperty(`${property.fullName}.base`);
+      if (base instanceof ObjectProperty) {
+        children.push(...await getInheritedChildren(base));
+      }
+      return children;
+    };
 
     const parentName = searchText.split('.').slice(0, -1).join('.');
     const property = await this.safeFetchLatestProperty(parentName);
     if (property === null) {
       return [];
     }
-    else if (property instanceof ObjectProperty) {
-      return property.children.filter(filterCallback);
+    if (property instanceof ObjectProperty) {
+      const children = (await getInheritedChildren(property)).filter(filterCallback);
+      return uniqBy(children, (property) => property.name.toLowerCase());
     }
     else if (startsWithIgnoreCase(property.fullName, searchText)) {
       return [ property ];

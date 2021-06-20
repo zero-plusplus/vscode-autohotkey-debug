@@ -79,4 +79,5 @@ class Clazz extends ClazzBase
 }
 class ClazzBase
 {
+    baseField := "baseField"
 }

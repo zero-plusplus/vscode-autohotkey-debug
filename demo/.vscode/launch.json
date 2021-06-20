@@ -6,6 +6,8 @@
             "request": "launch",
             "name": "AutoHotkey Debug",
             "program": "${file}",
+            "runtime_v1": "AutoHotkey.exe",
+            "runtime_v2": "v2/AutoHotkey.exe",
             "args": [],
             "stopOnEntry": false,
             "useDebugDirective": true,
