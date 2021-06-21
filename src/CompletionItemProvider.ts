@@ -73,12 +73,14 @@ export const completionItemProvider = {
 
     const properties = await this.session.fetchSuggestList(word);
     const fixedProperties = properties.filter((property) => {
-      if (property.name.startsWith('[')) {
-        return triggerCharacter === '[';
+      if (triggerCharacter === '[' && property.name.startsWith('[')) {
+        const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
+        return !isIndexKeyByObject;
       }
-
-      const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
-      return !isIndexKeyByObject;
+      else if (triggerCharacter === '.' && property.name.startsWith('[')) {
+        return false;
+      }
+      return true;
     });
 
     return fixedProperties.map((property): vscode.CompletionItem => {
