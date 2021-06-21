@@ -46,6 +46,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
 * `1.6.10` - 2021-xx-xx
+    * Changed: Intellisense now works with bracket notation (e.g. `object["key"]`)
     * Fixed: [#104](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/104) Inherited members are not displayed in IntelliSense
 
 * `1.6.9` - 2021-03-15
@@ -617,7 +618,7 @@ If you want to output curly brackets directly, prefix it with `\`. e.g. `\{notVa
 
 **Since this feature is achieved using the debugger, it only works during debugging.**
 
-The variables that are displayed in the [Data inspection](#data-inspection) will be suggested.
+The variables that are displayed in the [Data inspection](#data-inspection) will be suggested. Supports dot notation(e.g. `object.field`) and bracket notation(e.g. `object["field"]`, `array[1]`)
 
 If you don't need this feature, set `useIntelliSenseInDebugging ` to `false`.
 If you don't need this feature, set `useIntelliSenseInDebugging` to `false` in [launch.json](#customize-launchjson).

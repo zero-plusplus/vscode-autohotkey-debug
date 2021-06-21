@@ -859,11 +859,6 @@ export class Session extends EventEmitter {
       return children;
     };
 
-    if (!variablePath.includes('.')) {
-      const properties = await this.fetchLatestProperties();
-      return properties;
-    }
-
     const fixedVariablePath = variablePath.replace(/\.$/u, '');
     const property = await this.safeFetchLatestProperty(fixedVariablePath);
 
@@ -871,7 +866,7 @@ export class Session extends EventEmitter {
       const children = (await getInheritedChildren(property));
       return uniqBy(children, (property) => property.name.toLowerCase());
     }
-    return [];
+    return this.fetchLatestProperties();
   }
   public async close(): Promise<void> {
     this.removeAllListeners();

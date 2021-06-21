@@ -10,7 +10,7 @@ export interface CompletionItemProvider extends vscode.CompletionItemProvider {
 
 const findWord = (document: vscode.TextDocument, position: vscode.Position, ahkVersion: 1 | 2): string => {
   const temp = document.lineAt(position).text.slice(0, position.character);
-  const regexp = ahkVersion === 1 ? /[\w#@$.]+$/ui : /[\w.]+$/ui;
+  const regexp = ahkVersion === 1 ? /[\w#@$]+$/ui : /[\w]+$/ui;
   const word = temp.slice(temp.search(regexp)).trim();
   return word;
 };
@@ -67,11 +67,19 @@ export const completionItemProvider = {
       return [];
     }
 
-    const word = findWord(document, position, this.ahkVersion);
-    const properties = await this.session.fetchSuggestList(word);
+    const fixedPosition = new vscode.Position(position.line, 0 < position.character ? position.character - 1 : position.character);
+    const triggerCharacter = context.triggerCharacter ?? document.getText(new vscode.Range(fixedPosition, position));
+    const word = findWord(document, fixedPosition, this.ahkVersion);
 
-    // Index accesses such as `arr[1]` will be inserted as `arr.[1]` or `arr[[1]]`, so don't show them until you know how to deal with them.
-    const fixedProperties = properties.filter((property) => !property.name.startsWith('['));
+    const properties = await this.session.fetchSuggestList(word);
+    const fixedProperties = properties.filter((property) => {
+      if (property.name.startsWith('[')) {
+        return triggerCharacter === '[';
+      }
+
+      const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
+      return !isIndexKeyByObject;
+    });
 
     return fixedProperties.map((property): vscode.CompletionItem => {
       const completionItem = new vscode.CompletionItem(property.name);
@@ -82,6 +90,28 @@ export const completionItemProvider = {
       const depth = count(property.fullName, '.');
       const priority = property.name.startsWith('__') ? 1 : 0;
       completionItem.sortText = `@:${priority}:${depth}:${property.name}`;
+
+      if (triggerCharacter === '[') {
+        completionItem.range = {
+          inserting: new vscode.Range(fixedPosition, fixedPosition),
+          replacing: new vscode.Range(fixedPosition, fixedPosition),
+        };
+        completionItem.command = {
+          title: '',
+          command: 'cursorRight',
+        };
+        if (!property.name.startsWith('[')) {
+          const fixedName = `["${property.name}"]`;
+          completionItem.label = fixedName;
+          completionItem.insertText = fixedName;
+        }
+
+        const nextCharPosition = new vscode.Position(position.line, position.character + 1);
+        const nextChar = document.getText(new vscode.Range(position, nextCharPosition));
+        if (nextChar === ']') {
+          completionItem.insertText = completionItem.insertText.slice(0, -1);
+        }
+      }
 
       return completionItem;
     });
