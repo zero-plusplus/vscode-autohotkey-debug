@@ -744,6 +744,8 @@ e.g.
 ##  v2 only bug
 * ~~An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection)~~ Fixed in [AutoHotkey-v2-a136](https://www.autohotkey.com/boards/viewtopic.php?f=37&t=2120&sid=e7d43fe09e912b95ab2d1747a47f8bad&start=80#p401370)
 
+* [#105](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/105) Breakpoints on lines with [Fat arrow function](https://lexikos.github.io/v2/docs/Variables.htm#fat-arrow) assigned to variable do not work
+
 # Development support
 ## About source code contributes
 I am currently not accepting contributions (Pull Request).
