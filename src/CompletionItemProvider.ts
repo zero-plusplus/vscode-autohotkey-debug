@@ -10,7 +10,7 @@ export interface CompletionItemProvider extends vscode.CompletionItemProvider {
 
 const findWord = (document: vscode.TextDocument, position: vscode.Position, ahkVersion: 1 | 2): string => {
   const temp = document.lineAt(position).text.slice(0, position.character);
-  const regexp = ahkVersion === 1 ? /[\w#@$]+$/ui : /[\w]+$/ui;
+  const regexp = ahkVersion === 1 ? /[\w#@$[\]."']+$/ui : /[\w[\]."']+$/ui;
   const word = temp.slice(temp.search(regexp)).trim();
   return word;
 };

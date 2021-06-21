@@ -862,7 +862,10 @@ export class Session extends EventEmitter {
     const fixedVariablePath = variablePath.replace(/\.$/u, '');
     const property = await this.safeFetchLatestProperty(fixedVariablePath);
 
-    if (property instanceof ObjectProperty) {
+    if (property instanceof PrimitiveProperty) {
+      return [];
+    }
+    else if (property instanceof ObjectProperty) {
       const children = (await getInheritedChildren(property));
       return uniqBy(children, (property) => property.name.toLowerCase());
     }
