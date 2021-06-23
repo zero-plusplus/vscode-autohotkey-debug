@@ -67,17 +67,34 @@ export const completionItemProvider = {
       return [];
     }
 
-    const fixedPosition = new vscode.Position(position.line, 0 < position.character ? position.character - 1 : position.character);
-    const triggerCharacter = context.triggerCharacter ?? document.getText(new vscode.Range(fixedPosition, position));
-    const word = findWord(document, fixedPosition, this.ahkVersion);
+    const getPrevText = (length: number): string => {
+      const fixPosition = (original: vscode.Position, offsetCharacer: number): vscode.Position => {
+        return new vscode.Position(original.line, Math.max(original.character + offsetCharacer, 0));
+      };
+      return document.getText(new vscode.Range(fixPosition(position, -(length)), position));
+    };
 
-    const properties = await this.session.fetchSuggestList(word);
+    const prevCharacter = context.triggerCharacter ?? getPrevText(1);
+    const word = findWord(document, position, this.ahkVersion);
+    const isBracketNotation = (): boolean => {
+      const prevText = getPrevText(2);
+      return (this.ahkVersion === 2 ? [ '["', `['` ] : [ '["' ]).includes(prevText);
+    };
+
+    let fixedWord: string | undefined;
+    if (isBracketNotation()) {
+      fixedWord = `${word.slice(0, -2)}.`;
+    }
+    else if (prevCharacter === '[') {
+      fixedWord = '';
+    }
+
+    const properties = await this.session.fetchSuggestList(fixedWord ?? word);
     const fixedProperties = properties.filter((property) => {
-      if (triggerCharacter === '[' && property.name.startsWith('[')) {
-        const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
-        return !isIndexKeyByObject;
+      if (isBracketNotation()) {
+        return !property.isIndexKey;
       }
-      else if (triggerCharacter === '.' && property.name.startsWith('[')) {
+      else if (prevCharacter === '.' && property.name.startsWith('[')) {
         return false;
       }
       return true;
@@ -93,26 +110,10 @@ export const completionItemProvider = {
       const priority = property.name.startsWith('__') ? 1 : 0;
       completionItem.sortText = `@:${priority}:${depth}:${property.name}`;
 
-      if (triggerCharacter === '[') {
-        completionItem.range = {
-          inserting: new vscode.Range(fixedPosition, fixedPosition),
-          replacing: new vscode.Range(fixedPosition, fixedPosition),
-        };
-        completionItem.command = {
-          title: '',
-          command: 'cursorRight',
-        };
-        if (!property.name.startsWith('[')) {
-          const fixedName = `["${property.name}"]`;
-          completionItem.label = fixedName;
-          completionItem.insertText = fixedName;
-        }
-
-        const nextCharPosition = new vscode.Position(position.line, position.character + 1);
-        const nextChar = document.getText(new vscode.Range(position, nextCharPosition));
-        if (nextChar === ']') {
-          completionItem.insertText = completionItem.insertText.slice(0, -1);
-        }
+      if (property.name.startsWith('[')) {
+        const fixedLabel = property.name.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
+        completionItem.label = fixedLabel;
+        completionItem.insertText = fixedLabel;
       }
 
       return completionItem;

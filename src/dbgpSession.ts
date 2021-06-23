@@ -859,15 +859,19 @@ export class Session extends EventEmitter {
       return children;
     };
 
-    const fixedVariablePath = variablePath.replace(/\.$/u, '');
-    const property = await this.safeFetchLatestProperty(fixedVariablePath);
+    const endsWithAccessSignRegexp = /(\.|\[)$/u;
+    const fixedVariablePath = variablePath.replace(endsWithAccessSignRegexp, '');
 
-    if (property instanceof PrimitiveProperty) {
+    const property = await this.safeFetchLatestProperty(fixedVariablePath);
+    if (property) {
+      if (property instanceof ObjectProperty) {
+        const children = (await getInheritedChildren(property));
+        return uniqBy(children, (property) => property.name.toLowerCase());
+      }
       return [];
     }
-    else if (property instanceof ObjectProperty) {
-      const children = (await getInheritedChildren(property));
-      return uniqBy(children, (property) => property.name.toLowerCase());
+    else if (variablePath.includes('.') || variablePath.includes('[')) {
+      return [];
     }
     return this.fetchLatestProperties();
   }

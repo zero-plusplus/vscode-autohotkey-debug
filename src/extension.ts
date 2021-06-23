@@ -332,5 +332,5 @@ export const activate = function(context: ExtensionContext): void {
   context.subscriptions.push(debug.registerDebugConfigurationProvider('autohotkey', provider));
   context.subscriptions.push(debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
 
-  context.subscriptions.push(languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2', 'autohotkey' ], completionItemProvider, '.', '['));
+  context.subscriptions.push(languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2', 'autohotkey' ], completionItemProvider, '.'));
 };
