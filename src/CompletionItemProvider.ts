@@ -75,14 +75,11 @@ export const completionItemProvider = {
     const getPrevText = (length: number): string => {
       return document.getText(new vscode.Range(fixPosition(position, -(length)), position));
     };
-
-
-    const prevCharacter = context.triggerCharacter ?? getPrevText(1);
-    const word = findWord();
-    const findBracketNotationOffset = (): number => {
-      if (prevCharacter === '.') {
+    const findBracketNotationOffset = (word: string): number => {
+      if (word.endsWith('.')) {
         return -1;
       }
+
       const bracketNotationRegExp = this.ahkVersion === 2 ? /\[("|')/u : /\["/u;
       const lastQuote = lastIndexOf(word, this.ahkVersion === 2 ? /"|'/u : /"/u);
       if (-1 < lastQuote) {
@@ -95,10 +92,15 @@ export const completionItemProvider = {
       return -1;
     };
 
+
+    const prevCharacter = context.triggerCharacter ?? getPrevText(1);
+    const word = findWord();
+    const bracketNotationOffset = findBracketNotationOffset(word);
+    const isBracketNotation = -1 < bracketNotationOffset;
+
     let fixedWord = word;
-    const offset = findBracketNotationOffset();
-    if (-1 < offset) {
-      fixedWord = findWord(-offset);
+    if (isBracketNotation) {
+      fixedWord = findWord(-bracketNotationOffset);
     }
     else if ((/(\[|\])\s*$/u).test(word)) {
       fixedWord = '';
@@ -106,7 +108,7 @@ export const completionItemProvider = {
 
     const properties = await this.session.fetchSuggestList(fixedWord);
     const fixedProperties = properties.filter((property) => {
-      if (-1 < findBracketNotationOffset()) {
+      if (isBracketNotation) {
         // If the key is an object, it will look such as `[Object(9655936)]`
         const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
         if (isIndexKeyByObject) {
