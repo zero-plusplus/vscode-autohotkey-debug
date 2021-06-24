@@ -66,11 +66,17 @@ export const completionItemProvider = {
     const fixPosition = (original: vscode.Position, offset: number): vscode.Position => {
       return new vscode.Position(original.line, Math.max(original.character + offset, 0));
     };
+    const fixQuote = (word: string): string => {
+      if (this.ahkVersion === 1) {
+        return word;
+      }
+      return word.replace(/`'/gu, '`"').replace(/'/gu, '"');
+    };
     const findWord = (offset = 0): string => {
       const temp = document.lineAt(position).text.slice(0, fixPosition(position, offset).character);
       const regexp = this.ahkVersion === 1 ? /[\w#@$[\]."']+$/ui : /[\w[\]."']+$/ui;
       const word = temp.slice(temp.search(regexp)).trim();
-      return word;
+      return fixQuote(word);
     };
     const getPrevText = (length: number): string => {
       return document.getText(new vscode.Range(fixPosition(position, -(length)), position));
