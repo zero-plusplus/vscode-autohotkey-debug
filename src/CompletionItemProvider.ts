@@ -1,6 +1,7 @@
 import { count } from 'underscore.string';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
+import { lastIndexOf } from './util/stringUtils';
 
 export interface CompletionItemProvider extends vscode.CompletionItemProvider {
   useIntelliSenseInDebugging: boolean;
@@ -8,12 +9,6 @@ export interface CompletionItemProvider extends vscode.CompletionItemProvider {
   session: dbgp.Session | null;
 }
 
-const findWord = (document: vscode.TextDocument, position: vscode.Position, ahkVersion: 1 | 2): string => {
-  const temp = document.lineAt(position).text.slice(0, position.character);
-  const regexp = ahkVersion === 1 ? /[\w#@$[\]."']+$/ui : /[\w[\]."']+$/ui;
-  const word = temp.slice(temp.search(regexp)).trim();
-  return word;
-};
 const createKind = (property: dbgp.Property): vscode.CompletionItemKind => {
   let kind: vscode.CompletionItemKind = property.fullName.includes('.')
     ? vscode.CompletionItemKind.Field
@@ -67,36 +62,62 @@ export const completionItemProvider = {
       return [];
     }
 
+
+    const fixPosition = (original: vscode.Position, offset: number): vscode.Position => {
+      return new vscode.Position(original.line, Math.max(original.character + offset, 0));
+    };
+    const findWord = (offset = 0): string => {
+      const temp = document.lineAt(position).text.slice(0, fixPosition(position, offset).character);
+      const regexp = this.ahkVersion === 1 ? /[\w#@$[\]."']+$/ui : /[\w[\]."']+$/ui;
+      const word = temp.slice(temp.search(regexp)).trim();
+      return word;
+    };
     const getPrevText = (length: number): string => {
-      const fixPosition = (original: vscode.Position, offsetCharacer: number): vscode.Position => {
-        return new vscode.Position(original.line, Math.max(original.character + offsetCharacer, 0));
-      };
       return document.getText(new vscode.Range(fixPosition(position, -(length)), position));
     };
 
+
     const prevCharacter = context.triggerCharacter ?? getPrevText(1);
-    const word = findWord(document, position, this.ahkVersion);
-    const isBracketNotation = (): boolean => {
-      const prevText = getPrevText(2);
-      return (this.ahkVersion === 2 ? [ '["', `['` ] : [ '["' ]).includes(prevText);
+    const word = findWord();
+    const findBracketNotationOffset = (): number => {
+      if (prevCharacter === '.') {
+        return -1;
+      }
+      const bracketNotationRegExp = this.ahkVersion === 2 ? /\[("|')/u : /\["/u;
+      const lastQuote = lastIndexOf(word, this.ahkVersion === 2 ? /"|'/u : /"/u);
+      if (-1 < lastQuote) {
+        const bracketQuoteIndex = (word.length - lastQuote) + 1;
+        const bracketQuote = getPrevText(bracketQuoteIndex);
+        if (bracketNotationRegExp.test(bracketQuote)) {
+          return bracketQuoteIndex;
+        }
+      }
+      return -1;
     };
 
-    let fixedWord: string | undefined;
-    if (isBracketNotation()) {
-      fixedWord = `${word.slice(0, -2)}.`;
+    let fixedWord = word;
+    const offset = findBracketNotationOffset();
+    if (-1 < offset) {
+      fixedWord = findWord(-offset);
     }
-    else if (prevCharacter === '[') {
+    else if ((/(\[|\])\s*$/u).test(word)) {
       fixedWord = '';
     }
 
-    const properties = await this.session.fetchSuggestList(fixedWord ?? word);
+    const properties = await this.session.fetchSuggestList(fixedWord);
     const fixedProperties = properties.filter((property) => {
-      if (isBracketNotation()) {
+      if (-1 < findBracketNotationOffset()) {
+        // If the key is an object, it will look such as `[Object(9655936)]`
+        const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
+        if (isIndexKeyByObject) {
+          return false;
+        }
         return !property.isIndexKey;
       }
       else if (prevCharacter === '.' && property.name.startsWith('[')) {
         return false;
       }
+
       return true;
     });
 
