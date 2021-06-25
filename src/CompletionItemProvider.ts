@@ -63,8 +63,8 @@ export const completionItemProvider = {
     }
 
 
-    const fixPosition = (original: vscode.Position, offset: number): vscode.Position => {
-      return new vscode.Position(original.line, Math.max(original.character + offset, 0));
+    const fixPosition = (offset: number): vscode.Position => {
+      return new vscode.Position(position.line, Math.max(position.character + offset, 0));
     };
     const fixQuote = (word: string): string => {
       if (this.ahkVersion === 1) {
@@ -73,13 +73,13 @@ export const completionItemProvider = {
       return word.replace(/`'/gu, '`"').replace(/'/gu, '"');
     };
     const findWord = (offset = 0): string => {
-      const temp = document.lineAt(position).text.slice(0, fixPosition(position, offset).character);
+      const temp = document.lineAt(position).text.slice(0, fixPosition(offset).character);
       const regexp = this.ahkVersion === 1 ? /[\w#@$[\]."']+$/ui : /[\w[\]."']+$/ui;
       const word = temp.slice(temp.search(regexp)).trim();
       return fixQuote(word);
     };
     const getPrevText = (length: number): string => {
-      return document.getText(new vscode.Range(fixPosition(position, -(length)), position));
+      return document.getText(new vscode.Range(fixPosition(-length), position));
     };
     const findBracketNotationOffset = (word: string): number => {
       if (word.endsWith('.')) {
@@ -99,7 +99,7 @@ export const completionItemProvider = {
     };
 
 
-    const prevCharacter = context.triggerCharacter ?? getPrevText(1);
+    const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
     const word = findWord();
     const bracketNotationOffset = findBracketNotationOffset(word);
     const isBracketNotation = -1 < bracketNotationOffset;
@@ -114,18 +114,10 @@ export const completionItemProvider = {
 
     const properties = await this.session.fetchSuggestList(fixedWord);
     const fixedProperties = properties.filter((property) => {
-      if (isBracketNotation) {
-        // If the key is an object, it will look such as `[Object(9655936)]`
-        const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
-        if (isIndexKeyByObject) {
-          return false;
-        }
-        return !property.isIndexKey;
-      }
-      else if (prevCharacter === '.' && property.name.startsWith('[')) {
+      const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
+      if (isIndexKeyByObject) {
         return false;
       }
-
       return true;
     });
 
@@ -142,7 +134,24 @@ export const completionItemProvider = {
       if (property.name.startsWith('[')) {
         const fixedLabel = property.name.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
         completionItem.label = fixedLabel;
-        completionItem.insertText = fixedLabel;
+
+        if (triggerCharacter === '.') {
+          // Since I could not use the range property to replace the dots as shown below, I will use TextEdit
+          // completionItem.range = {
+          //   inserting: new vscode.Range(fixedPosition, fixedPosition),
+          //   replacing: new vscode.Range(fixedPosition, position),
+          // };
+
+          // This is a strange implementation because I don't know the specs very well.
+          const replaceRange = new vscode.Range(fixPosition(-1), position);
+          const a = property.name.slice(0, 1);
+          const b = property.name.slice(1);
+          completionItem.additionalTextEdits = [ new vscode.TextEdit(replaceRange, a) ];
+          completionItem.insertText = b;
+        }
+        else {
+          completionItem.insertText = fixedLabel;
+        }
       }
 
       return completionItem;
