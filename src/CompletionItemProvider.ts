@@ -114,6 +114,9 @@ export const completionItemProvider = {
 
     const properties = await this.session.fetchSuggestList(fixedWord);
     const fixedProperties = properties.filter((property) => {
+      if (property.isIndexKey) {
+        return false;
+      }
       const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
       if (isIndexKeyByObject) {
         return false;
