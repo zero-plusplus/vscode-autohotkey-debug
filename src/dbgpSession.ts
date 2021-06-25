@@ -859,9 +859,7 @@ export class Session extends EventEmitter {
       return children;
     };
 
-    const endsWithAccessSignRegexp = /(\.|\[)$/u;
-    const fixedVariablePath = variablePath.replace(endsWithAccessSignRegexp, '');
-
+    const fixedVariablePath = variablePath.endsWith('.') ? variablePath.slice(0, -1) : variablePath;
     const property = await this.safeFetchLatestProperty(fixedVariablePath);
     if (property) {
       if (property instanceof ObjectProperty) {
