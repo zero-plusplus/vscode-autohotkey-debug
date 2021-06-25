@@ -624,9 +624,10 @@ If you don't need this feature, set `useIntelliSenseInDebugging ` to `false`.
 If you don't need this feature, set `useIntelliSenseInDebugging` to `false` in [launch.json](#customize-launchjson).
 
 ### **For AutoHotkey v2 user**
-Please note the following two points.
+Please note the following points.
 * Because v2 dynamically determines how to access the elements of an object, it may suggest a syntax that cannot be used in practice. For example, an object cannot be accessed as `object["field"]`, but IntelliSense will suggest `["field"]`
 * The dynamic properties in v2 will execute a script for each read, which may result in an AutoHotkey error when suggestion
+* If an element with a key that contains spaces, such as `myMap["spaced key"].key"`, the subsequent key suggestions will not work properly
 
 If this is the case, please follow the instructions above to turn off this feature.
 
