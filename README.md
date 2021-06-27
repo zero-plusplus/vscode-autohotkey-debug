@@ -1,3 +1,5 @@
+**Translated by [DeepL Tranlator](https://www.deepl.com/translator)**
+
 # TOC
 * [Before reading](#before-reading)
 * [News](#news)
@@ -26,8 +28,6 @@
 * [Development support](#development-support)
 
 # Before reading
-* This document has been translated from Japanese to English using [DeepL Translate](https://www.deepl.com/home)
-
 * **This extension will not work alone.**
 A separate extension that supports the AutoHotkey language is required(The most famous is [slevesque.vscode-autohotkey](https://marketplace.visualstudio.com/items?itemName=slevesque.vscode-autohotkey)). If you are using AutoHotkey v2, another extension that supports it required. (e.g. [dudelmoser.vscode-autohotkey2](https://marketplace.visualstudio.com/items?itemName=dudelmoser.vscode-autohotkey2))
 
@@ -44,18 +44,17 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 * From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
-* The specification that [VariableName](#about-variablename) is case sensitive was my mistake, not a spec in the AutoHotkey debugger. This bug was fixed in `1.3.0`, but I wasn't aware of it myself, so the correction was delayed. I'm sorry
-
 ### Update
+* `1.6.10` - 2021-xx-xx
+    * Changed: Intellisense now works with bracket notation (e.g. `object["key"]`)
+    * Fixed: [#104](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/104) Inherited members are not displayed in IntelliSense
+
 * `1.6.9` - 2021-03-15
     * Changed: Change the font used for the main icon
     * Fixed: [#95](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/95) Slow performance of conditional breakpoints, and crashes after 6000 more than uses
 
 * `1.6.8` - 2021-03-02
     * Fixed: [#91](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/91) v2 only bug. The value of the variable with the specific data becomes `<error>`
-
-* `1.6.7` - 2021-02-16
-    * Fixed: [#89](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/89) Elements of sparse array is collapsed unnecessarily
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -112,7 +111,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>string</td>
     <td>
         The name of the settings. I recommend giving it a unique and easily understood name.<br />
-        <strong>default: <code>AutoHotkey Debug</code></strong>
+        <strong>default: <code>"AutoHotkey Debug"</code></strong>
     </td>
 </tr>
 <tr>
@@ -256,7 +255,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
-    <td><code>.format</code></td>
+    <td><code>format</code></td>
     <td>string</td>
     <td>
         Content to be displayed. See the Log point's <a href="#embedding-value">Embedding value</a> for instructions on how to embed the variables.<br />
@@ -264,7 +263,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
-    <td><code>.fontColor</code></td>
+    <td><code>fontColor</code></td>
     <td>string</td>
     <td>
         Set the <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/color">color</a> of CSS.<br />
@@ -272,7 +271,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
-    <td><code>.fontStyle</code></td>
+    <td><code>fontStyle</code></td>
     <td>string</td>
     <td>
         Set the <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/font-style">font-style</a> of CSS.<br />
@@ -293,12 +292,12 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>Advanced settings. You can set the properties starting with <code>.</code> below.</td>
 </tr>
 <tr>
-    <td><code>.useBreakpointDirective</code></td>
+    <td><code>useBreakpointDirective</code></td>
     <td>boolean</td>
     <td>Enable / disable <a href="#breakpoint-directive">Breakpoint directive</a>.</td>
 </tr>
 <tr>
-    <td><code>.useOutputDirective</code></td>
+    <td><code>useOutputDirective</code></td>
     <td>boolean</td>
     <td>Enable / disable <a href="#output-directive">Output directive</a>.</td>
 </tr>
@@ -617,9 +616,20 @@ If you want to output curly brackets directly, prefix it with `\`. e.g. `\{notVa
 ## IntelliSense in debugging
 ![intellisense](image/intellisense.gif)
 
-The variables that are displayed in the [Data inspection](#data-inspection) will be suggested. This is a limited feature, but can be very useful for editing the source code while debugging.
+**Since this feature is achieved using the debugger, it only works during debugging.**
+
+The variables that are displayed in the [Data inspection](#data-inspection) will be suggested. Supports dot notation(e.g. `object.field`) and bracket notation(e.g. `object["field"]`, `array[1]`)
 
 If you don't need this feature, set `useIntelliSenseInDebugging ` to `false`.
+If you don't need this feature, set `useIntelliSenseInDebugging` to `false` in [launch.json](#customize-launchjson).
+
+### **For AutoHotkey v2 user**
+Please note the following points.
+* Because v2 dynamically determines how to access the elements of an object, it may suggest a syntax that cannot be used in practice. For example, an object cannot be accessed as `object["field"]`, but IntelliSense will suggest `["field"]`
+* The dynamic properties in v2 will execute a script for each read, which may result in an AutoHotkey error when suggestion
+* If an element with a key that contains spaces, such as `myMap["spaced key"].key"`, the subsequent key suggestions will not work properly
+
+If this is the case, please follow the instructions above to turn off this feature.
 
 ## Debug console
 ![debug-console](image/debug-console.jpg)
@@ -735,7 +745,10 @@ e.g.
 
 * If more than one information is displayed on the call stack, the file path and line number information for the bottommost information (i.e. `Auto-execute thread` or `Timer thread`) is incorrect
 
-* v2 only bug. An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection)
+##  v2 only bug
+* ~~An error occurs when try to overwrite [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property) in the [Data inspection](#data-inspection)~~ Fixed in [AutoHotkey-v2-a136](https://www.autohotkey.com/boards/viewtopic.php?f=37&t=2120&sid=e7d43fe09e912b95ab2d1747a47f8bad&start=80#p401370)
+
+* [#105](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/105) Breakpoints on lines with [Fat arrow function](https://lexikos.github.io/v2/docs/Variables.htm#fat-arrow) assigned to variable do not work
 
 # Development support
 ## About source code contributes
@@ -753,7 +766,6 @@ Bugs that are not listed there and feature requests  there are accepted on [Gith
 Basically, I will reply to you by the same day or the next day, so feel free to report.
 
 ## About GitHub Sponsors
-I am looking for [GitHub Sponsors](https://github.com/sponsors/zero-plusplus) for $1-$100 per month. However, please note the following.
+If you like it, please [donate or sponsor](https://github.com/sponsors/zero-plusplus) (Github account required).
 
-1. There is no rewards for sponsors. This is because development is a priority.
-2. I will not stop development just because I don't have a sponsor. So there is no need to be forced to become a sponsor
+I have not set a reward to concentrate on development. Thank you for your understanding.

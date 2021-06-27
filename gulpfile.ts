@@ -19,7 +19,7 @@ const tscheck = async(): Promise<void> => {
 const eslint = async(): Promise<void> => {
   const tsconfig = JSON.parse(readFileSync('./tsconfig.json', 'utf-8')) as TSConfigJSON;
 
-  const eslint = new ESLint(eslintrc);
+  const eslint = new ESLint({ ...eslintrc, fix: true, cache: true });
   const results = await eslint.lintFiles(tsconfig.include!).catch((err) => {
     throw err;
   });

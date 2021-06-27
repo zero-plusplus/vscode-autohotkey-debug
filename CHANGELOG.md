@@ -14,6 +14,13 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.10] - 2021-xx-xx
+### Changed
+* Intellisense now works with dot notation (e.g. `object["key"]`)
+
+### Fixed
+* [#104](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/104) Inherited members are not displayed in IntelliSense
+
 ## [1.6.9] - 2021-03-15
 ### Changed
 * Change the font used for the main icon
@@ -327,6 +334,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.10]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.9..v1.6.10
 [1.6.9]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.8..v1.6.9
 [1.6.8]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.7..v1.6.8
 [1.6.7]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.6..v1.6.7

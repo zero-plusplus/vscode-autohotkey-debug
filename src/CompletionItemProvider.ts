@@ -1,5 +1,7 @@
+import { count } from 'underscore.string';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
+import { lastIndexOf } from './util/stringUtils';
 
 export interface CompletionItemProvider extends vscode.CompletionItemProvider {
   useIntelliSenseInDebugging: boolean;
@@ -7,12 +9,6 @@ export interface CompletionItemProvider extends vscode.CompletionItemProvider {
   session: dbgp.Session | null;
 }
 
-const findWord = (document: vscode.TextDocument, position: vscode.Position, ahkVersion: 1 | 2): string => {
-  const temp = document.lineAt(position).text.slice(0, position.character);
-  const regexp = ahkVersion === 1 ? /[\w#@$.]+$/ui : /[\w.]+$/ui;
-  const word = temp.slice(temp.search(regexp)).trim();
-  return word;
-};
 const createKind = (property: dbgp.Property): vscode.CompletionItemKind => {
   let kind: vscode.CompletionItemKind = property.fullName.includes('.')
     ? vscode.CompletionItemKind.Field
@@ -40,12 +36,15 @@ const createKind = (property: dbgp.Property): vscode.CompletionItemKind => {
 };
 const createDetail = (property: dbgp.Property): string => {
   const kindName = vscode.CompletionItemKind[createKind(property)].toLowerCase();
+  const context = property.fullName.includes('.') || property.fullName.includes('[')
+    ? ''
+    : `[${property.context.name}] `;
   if (kindName === 'class') {
-    return `[${property.context.name}] (${kindName}) ${(property as dbgp.ObjectProperty).className}`;
+    return `${context}(${kindName}) ${(property as dbgp.ObjectProperty).className}`;
   }
 
   const type = property instanceof dbgp.ObjectProperty ? property.className : property.type;
-  return `[${property.context.name}] (${kindName}) ${property.fullName}: ${type}`;
+  return `${context}(${kindName}) ${property.fullName}: ${type}`;
 };
 export const completionItemProvider = {
   useIntelliSenseInDebugging: true,
@@ -63,13 +62,101 @@ export const completionItemProvider = {
       return [];
     }
 
-    const word = findWord(document, position, this.ahkVersion);
-    const suggestList = await this.session.fetchSuggestList(word);
-    return suggestList.map((property): vscode.CompletionItem => {
+
+    const fixPosition = (offset: number): vscode.Position => {
+      return new vscode.Position(position.line, Math.max(position.character + offset, 0));
+    };
+    const fixQuote = (word: string): string => {
+      if (this.ahkVersion === 1) {
+        return word;
+      }
+      return word.replace(/`'/gu, '`"').replace(/'/gu, '"');
+    };
+    const findWord = (offset = 0): string => {
+      const temp = document.lineAt(position).text.slice(0, fixPosition(offset).character);
+      const regexp = this.ahkVersion === 1 ? /[\w#@$[\]."']+$/ui : /[\w[\]."']+$/ui;
+      const word = temp.slice(temp.search(regexp)).trim();
+      return fixQuote(word);
+    };
+    const getPrevText = (length: number): string => {
+      return document.getText(new vscode.Range(fixPosition(-length), position));
+    };
+    const findBracketNotationOffset = (word: string): number => {
+      if (word.endsWith('.')) {
+        return -1;
+      }
+
+      const bracketNotationRegExp = this.ahkVersion === 2 ? /\[("|')/u : /\["/u;
+      const lastQuote = lastIndexOf(word, this.ahkVersion === 2 ? /"|'/u : /"/u);
+      if (-1 < lastQuote) {
+        const bracketQuoteIndex = (word.length - lastQuote) + 1;
+        const bracketQuote = getPrevText(bracketQuoteIndex);
+        if (bracketNotationRegExp.test(bracketQuote)) {
+          return bracketQuoteIndex;
+        }
+      }
+      return -1;
+    };
+
+
+    const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
+    const word = findWord();
+    const bracketNotationOffset = findBracketNotationOffset(word);
+    const isBracketNotation = -1 < bracketNotationOffset;
+
+    let fixedWord = word;
+    if (isBracketNotation) {
+      fixedWord = findWord(-bracketNotationOffset);
+    }
+    else if ((/(\[|\])\s*$/u).test(word)) {
+      fixedWord = '';
+    }
+
+    const properties = await this.session.fetchSuggestList(fixedWord);
+    const fixedProperties = properties.filter((property) => {
+      if (property.isIndexKey) {
+        return false;
+      }
+      const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
+      if (isIndexKeyByObject) {
+        return false;
+      }
+      return true;
+    });
+
+    return fixedProperties.map((property): vscode.CompletionItem => {
       const completionItem = new vscode.CompletionItem(property.name);
       completionItem.kind = createKind(property);
       completionItem.insertText = property.name;
       completionItem.detail = createDetail(property);
+
+      const depth = count(property.fullName, '.');
+      const priority = property.name.startsWith('__') ? 1 : 0;
+      completionItem.sortText = `@:${priority}:${depth}:${property.name}`;
+
+      if (property.name.startsWith('[')) {
+        const fixedLabel = property.name.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
+        completionItem.label = fixedLabel;
+
+        if (triggerCharacter === '.') {
+          // Since I could not use the range property to replace the dots as shown below, I will use TextEdit
+          // completionItem.range = {
+          //   inserting: new vscode.Range(fixedPosition, fixedPosition),
+          //   replacing: new vscode.Range(fixedPosition, position),
+          // };
+
+          // This is a strange implementation because I don't know the specs very well.
+          const replaceRange = new vscode.Range(fixPosition(-1), position);
+          const a = property.name.slice(0, 1);
+          const b = property.name.slice(1);
+          completionItem.additionalTextEdits = [ new vscode.TextEdit(replaceRange, a) ];
+          completionItem.insertText = b;
+        }
+        else {
+          completionItem.insertText = fixedLabel;
+        }
+      }
+
       return completionItem;
     });
   },
