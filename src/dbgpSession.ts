@@ -817,7 +817,7 @@ export class Session extends EventEmitter {
     };
     // #endregion util
 
-    const propertyPathArray = name.replace('[', '.[').split('.');
+    const propertyPathArray = name.replace(ahkVersion === 2 ? /\[(?="|')/gu : /\[(?="(?!"))/gu, '.[').split('.');
     const topProperty = await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth);
     if (topProperty === null || topProperty instanceof PrimitiveProperty) {
       return null;
