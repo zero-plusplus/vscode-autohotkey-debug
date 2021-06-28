@@ -859,7 +859,15 @@ export class Session extends EventEmitter {
       return children;
     };
 
-    const fixedVariablePath = variablePath.endsWith('.') ? variablePath.slice(0, -1) : variablePath;
+
+    let fixedVariablePath = variablePath;
+    if (variablePath.endsWith('.')) {
+      fixedVariablePath = variablePath.slice(0, -1);
+    }
+    else if (variablePath.includes('.')) {
+      fixedVariablePath = variablePath.split('.').slice(0, -1).join('.');
+    }
+
     const property = await this.safeFetchLatestProperty(fixedVariablePath);
     if (property) {
       if (property instanceof ObjectProperty) {
