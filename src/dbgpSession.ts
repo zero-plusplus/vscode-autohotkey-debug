@@ -6,7 +6,7 @@ import * as he from 'he';
 import * as convertHrTime from 'convert-hrtime';
 import { range, uniqBy } from 'lodash';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { equalsIgnoreCase } from './util/stringUtils';
+import { equalsIgnoreCase, splitVariablePath } from './util/stringUtils';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -739,7 +739,7 @@ export class Session extends EventEmitter {
     return null;
   }
   public async safeFetchLatestProperty(name: string, maxDepth?: number): Promise<Property | null> {
-    const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
+    const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10) as 1 | 2;
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
     const isSafetyProperty = ahkVersion === 1 || (/\.base$/ui).test(name);
     if (isSafetyProperty) {
@@ -817,7 +817,7 @@ export class Session extends EventEmitter {
     };
     // #endregion util
 
-    const propertyPathArray = name.replace(ahkVersion === 2 ? /\[(?="|')/gu : /\[(?="(?!"))/gu, '.[').split('.');
+    const propertyPathArray = splitVariablePath(ahkVersion, name);
     const topProperty = await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth);
     if (propertyPathArray.length === 1) {
       return topProperty;
