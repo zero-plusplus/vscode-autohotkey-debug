@@ -1813,6 +1813,19 @@ esbuild-loader@^2.4.0:
     loader-utils "^2.0.0"
     webpack-sources "^2.0.0"
 
+esbuild-register@^2.6.0:
+  version "2.6.0"
+  resolved "https://registry.yarnpkg.com/esbuild-register/-/esbuild-register-2.6.0.tgz#9f19a54c82be751dd87673d6a66d7b9e1cdd8498"
+  integrity sha512-2u4AtnCXP5nivtIxZryiZOUcEQkOzFS7UhAqibUEmaTAThJ48gDLYTBF/Fsz+5r0hbV1jrFE6PQvPDUrKZNt/Q==
+  dependencies:
+    esbuild "^0.12.8"
+    jsonc-parser "^3.0.0"
+
+esbuild@^0.12.8:
+  version "0.12.11"
+  resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.12.11.tgz#ab24f78cabf481e7dc747e7db15f9c5091beaa14"
+  integrity sha512-h83GwI6lYOrnSv5hSY2i2XZ191v3haj2IGDzwrkfWHhuO/kVMX3RYjhwRNG9E5VSxVLPaUjTVwrv8HWLvhk2nQ==
+
 esbuild@^0.7.3:
   version "0.7.22"
   resolved "https://registry.yarnpkg.com/esbuild/-/esbuild-0.7.22.tgz#9149b903f8128b7c45a754046c24199d76bbe08e"
@@ -3171,6 +3184,11 @@ json5@^2.1.2:
   integrity sha512-KXPvOm8K9IJKFM0bmdn8QXh7udDh1g/giieX0NLCaMnb4hEiVFqnop2ImTXCc5e0/oHz3LTqmHGtExn5hfMkOA==
   dependencies:
     minimist "^1.2.5"
+
+jsonc-parser@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/jsonc-parser/-/jsonc-parser-3.0.0.tgz#abdd785701c7e7eaca8a9ec8cf070ca51a745a22"
+  integrity sha512-fQzRfAbIBnR0IQvftw9FJveWiHp72Fg20giDrHz6TdfB12UH/uue0D3hm57UB5KgAVuniLMCaS8P1IMj9NR7cA==
 
 jsonfile@^6.0.1:
   version "6.1.0"
@@ -4628,7 +4646,7 @@ source-map-resolve@^0.5.0:
     source-map-url "^0.4.0"
     urix "^0.1.0"
 
-source-map-support@^0.5.17, source-map-support@~0.5.19:
+source-map-support@^0.5.17, source-map-support@^0.5.19, source-map-support@~0.5.19:
   version "0.5.19"
   resolved "https://registry.yarnpkg.com/source-map-support/-/source-map-support-0.5.19.tgz#a98b62f86dcaf4f67399648c085291ab9e8fed61"
   integrity sha512-Wonm7zOCIJzBGQdB+thsPar0kYuCIzYvxZwlBa87yi/Mdjv7Tip2cyVbLj5o0cFPN4EVkuTwb3GDDyUx2DGnGw==

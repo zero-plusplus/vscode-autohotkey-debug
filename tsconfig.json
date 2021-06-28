@@ -6,6 +6,10 @@
 			"ESNext",
 			"DOM"
 		],
+		"types": [
+			"node",
+			"mocha"
+		],
 
 		"outDir": "build",
 		"sourceMap": true,

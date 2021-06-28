@@ -43,7 +43,8 @@
         "skipFiles": [
             "<node_internals>/**"
         ]
-    },{
+    },
+    {
       "name": "Gulp Test:bundle",
       "type": "node",
       "request": "launch",
@@ -54,7 +55,7 @@
       "skipFiles": [
           "<node_internals>/**"
       ]
-  },
+    },
     {
       "name": "Mocha Tests",
       "type": "node",
@@ -72,6 +73,25 @@
       "skipFiles": [
         "<node_internals>/**"
       ]
-    }
+    },
+    {
+        "name": "Mocha Selected Tests",
+        "type": "pwa-node",
+        "request": "launch",
+        "cwd": "${workspaceFolder}",
+        "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+        "args": [
+          "${file}"
+        ],
+        "sourceMaps": true,
+        "internalConsoleOptions": "openOnSessionStart",
+        "resolveSourceMapLocations": [
+            "${workspaceFolder}/**",
+            "!**/node_modules/**"
+        ],
+        "skipFiles": [
+          "<node_internals>/**"
+        ]
+    },
   ]
 }
