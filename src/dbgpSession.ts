@@ -682,7 +682,7 @@ export class Session extends EventEmitter {
   public async safeFetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | null> {
     const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    const isSafetyProperty = ahkVersion === 1 || !name.includes('.') || name.includes('[') || (/\.base$/ui).test('.base');
+    const isSafetyProperty = ahkVersion === 1 || (!name.includes('.') && !name.includes('[')) || (name.includes('[') && !name.includes('.')) || (/\.base$/ui).test(name);
     if (isSafetyProperty) {
       const { properties } = await this.sendPropertyGetCommand(context, name, _maxDepth);
       return 0 < properties.length ? properties[0] : null;
@@ -741,7 +741,7 @@ export class Session extends EventEmitter {
   public async safeFetchLatestProperty(name: string, maxDepth?: number): Promise<Property | null> {
     const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    const isSafetyProperty = ahkVersion === 1 || !name.includes('.') || name.includes('[') || (/\.base$/ui).test('.base');
+    const isSafetyProperty = ahkVersion === 1 || (!name.includes('.') && !name.includes('[')) || (name.includes('[') && !name.includes('.')) || (/\.base$/ui).test(name);
     if (isSafetyProperty) {
       return this.fetchLatestProperty(name, _maxDepth);
     }
