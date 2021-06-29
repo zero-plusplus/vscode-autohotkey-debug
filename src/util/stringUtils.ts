@@ -53,8 +53,16 @@ export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): stri
     }
 
     switch (char) {
-      case '"':
       case `'`: {
+        if (ahkVersion === 2) {
+          quote = char;
+          part += char;
+          continue;
+        }
+        part += char;
+        continue;
+      }
+      case '"': {
         quote = char;
         part += char;
         continue;
@@ -62,6 +70,10 @@ export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): stri
       case '.': {
         result.push(part);
         part = '';
+
+        if (!nextChar) {
+          result.push('');
+        }
         continue;
       }
       case '[': {
