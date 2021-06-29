@@ -1,7 +1,7 @@
 import { count } from 'underscore.string';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
-import { lastIndexOf } from './util/stringUtils';
+import { splitVariablePath } from './util/util';
 
 export interface CompletionItemProvider extends vscode.CompletionItemProvider {
   useIntelliSenseInDebugging: boolean;
@@ -62,7 +62,7 @@ export const completionItemProvider = {
       return [];
     }
 
-
+    // #region util
     const fixPosition = (offset: number): vscode.Position => {
       return new vscode.Position(position.line, Math.max(position.character + offset, 0));
     };
@@ -74,45 +74,20 @@ export const completionItemProvider = {
     };
     const findWord = (offset = 0): string => {
       const temp = document.lineAt(position).text.slice(0, fixPosition(offset).character);
-      const regexp = this.ahkVersion === 1 ? /[\w#@$[\]."']+$/ui : /[\w[\]."']+$/ui;
+      const regexp = this.ahkVersion === 1 ? /[^\s\r\n]+$/ui : /[^\s\r\n]+$/ui;
       const word = temp.slice(temp.search(regexp)).trim();
       return fixQuote(word);
     };
     const getPrevText = (length: number): string => {
       return document.getText(new vscode.Range(fixPosition(-length), position));
     };
-    const findBracketNotationOffset = (word: string): number => {
-      if (word.endsWith('.')) {
-        return -1;
-      }
+    // #endregion util
 
-      const bracketNotationRegExp = this.ahkVersion === 2 ? /\[("|')/u : /\["/u;
-      const lastQuote = lastIndexOf(word, this.ahkVersion === 2 ? /"|'/u : /"/u);
-      if (-1 < lastQuote) {
-        const bracketQuoteIndex = (word.length - lastQuote) + 1;
-        const bracketQuote = getPrevText(bracketQuoteIndex);
-        if (bracketNotationRegExp.test(bracketQuote)) {
-          return bracketQuoteIndex;
-        }
-      }
-      return -1;
-    };
-
-
-    const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
     const word = findWord();
-    const bracketNotationOffset = findBracketNotationOffset(word);
-    const isBracketNotation = -1 < bracketNotationOffset;
+    const isBracketNotation = splitVariablePath(this.ahkVersion, word).pop()?.startsWith('[') ?? false;
+    const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
 
-    let fixedWord = word;
-    if (isBracketNotation) {
-      fixedWord = findWord(-bracketNotationOffset);
-    }
-    else if ((/(\[|\])\s*$/u).test(word)) {
-      fixedWord = '';
-    }
-
-    const properties = await this.session.fetchSuggestList(fixedWord);
+    const properties = await this.session.fetchSuggestList(word);
     const fixedProperties = properties.filter((property) => {
       if (property.isIndexKey) {
         return false;
@@ -138,7 +113,7 @@ export const completionItemProvider = {
         const fixedLabel = property.name.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
         completionItem.label = fixedLabel;
 
-        if (triggerCharacter === '.') {
+        if (!isBracketNotation && triggerCharacter === '.') {
           // Since I could not use the range property to replace the dots as shown below, I will use TextEdit
           // completionItem.range = {
           //   inserting: new vscode.Range(fixedPosition, fixedPosition),

@@ -6,7 +6,8 @@ import * as he from 'he';
 import * as convertHrTime from 'convert-hrtime';
 import { range, uniqBy } from 'lodash';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { equalsIgnoreCase, splitVariablePath } from './util/stringUtils';
+import { equalsIgnoreCase } from './util/stringUtils';
+import { joinVariablePathArray, splitVariablePath } from './util/util';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -853,6 +854,7 @@ export class Session extends EventEmitter {
     return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
   }
   public async fetchSuggestList(variablePath: string): Promise<Property[]> {
+    // #region util
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
       const children = [ ...property.children ];
       const base = await this.safeFetchLatestProperty(`${property.fullName}.base`, 1);
@@ -861,28 +863,50 @@ export class Session extends EventEmitter {
       }
       return children;
     };
-
-
-    let fixedVariablePath = variablePath;
-    if (variablePath.endsWith('.')) {
-      fixedVariablePath = variablePath.slice(0, -1);
-    }
-    else if (variablePath.includes('.')) {
-      fixedVariablePath = variablePath.split('.').slice(0, -1).join('.');
-    }
-
-    const property = await this.safeFetchLatestProperty(fixedVariablePath);
-    if (property) {
+    const getChildren = async(variablePathOrProperty: string | Property): Promise<Property[] | null> => {
+      const property = typeof variablePathOrProperty === 'string' ? await this.safeFetchLatestProperty(variablePathOrProperty) : variablePathOrProperty;
       if (property instanceof ObjectProperty) {
         const children = (await getInheritedChildren(property));
         return uniqBy(children, (property) => property.name.toLowerCase());
       }
+      return null;
+    };
+    // #endregion util
+
+    if (variablePath.endsWith('[') || variablePath.endsWith(']')) {
+      return this.fetchLatestProperties();
+    }
+
+    const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10) as 1 | 2;
+    const propertyPathArray = splitVariablePath(ahkVersion, variablePath);
+    if (propertyPathArray.length === 0) {
+      return this.fetchLatestProperties();
+    }
+    if (propertyPathArray.length === 1) {
+      return await getChildren(propertyPathArray[0]) ?? [];
+    }
+
+    const lastPath = propertyPathArray[propertyPathArray.length - 1];
+    if (lastPath === '' || lastPath.startsWith('[')) {
+      const closeQuoteRegExp = ahkVersion === 2 ? /(?<!\[|`)("|')$/u : /(?!\[|")"$/u;
+      if (closeQuoteRegExp.test(lastPath)) {
+        return this.fetchLatestProperties();
+      }
+
+      const fixedVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
+      const children = await getChildren(fixedVariablePath);
+      if (children) {
+        return children;
+      }
       return [];
     }
-    else if (variablePath.includes('.') || variablePath.includes('[')) {
-      return [];
+
+    const parentVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
+    const children = await getChildren(parentVariablePath);
+    if (children) {
+      return children;
     }
-    return this.fetchLatestProperties();
+    return [];
   }
   public async close(): Promise<void> {
     this.removeAllListeners();

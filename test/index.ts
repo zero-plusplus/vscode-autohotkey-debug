@@ -1,5 +1,5 @@
 import * as assert from 'assert';
-import { splitVariablePath } from '../src/util/stringUtils';
+import { splitVariablePath } from '../src/util/util';
 
 suite('splitVariablePath', () => {
   test('v1', () => {
