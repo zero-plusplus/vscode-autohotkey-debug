@@ -84,11 +84,15 @@ export const completionItemProvider = {
     // #endregion util
 
     const word = findWord();
-    const isBracketNotation = splitVariablePath(this.ahkVersion, word).pop()?.startsWith('[') ?? false;
+    const lastWordPathPart = splitVariablePath(this.ahkVersion, word).pop() ?? '';
+    const isBracketNotation = lastWordPathPart.startsWith('[');
     const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
 
     const properties = await this.session.fetchSuggestList(word);
     const fixedProperties = properties.filter((property) => {
+      if (isBracketNotation && !property.fullName.toLocaleLowerCase().startsWith(word.toLowerCase())) {
+        return false;
+      }
       if (property.isIndexKey) {
         return false;
       }
@@ -110,7 +114,9 @@ export const completionItemProvider = {
       completionItem.sortText = `@:${priority}:${depth}:${property.name}`;
 
       if (property.name.startsWith('[')) {
-        const fixedLabel = property.name.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
+        const fixLabel = (label: string): string => label.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
+
+        const fixedLabel = fixLabel(property.name);
         completionItem.label = fixedLabel;
 
         if (!isBracketNotation && triggerCharacter === '.') {
@@ -126,6 +132,11 @@ export const completionItemProvider = {
           const b = property.name.slice(1);
           completionItem.additionalTextEdits = [ new vscode.TextEdit(replaceRange, a) ];
           completionItem.insertText = b;
+        }
+        else if (lastWordPathPart.startsWith('[')) {
+          const fixedLastWordPathPart = fixLabel(lastWordPathPart);
+          completionItem.insertText = fixedLabel.slice(fixedLastWordPathPart.length);
+          completionItem.range = new vscode.Range(position, position);
         }
         else {
           completionItem.insertText = fixedLabel;
