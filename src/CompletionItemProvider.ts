@@ -90,7 +90,7 @@ export const completionItemProvider = {
 
     const properties = await this.session.fetchSuggestList(word);
     const fixedProperties = properties.filter((property) => {
-      if (isBracketNotation && !property.fullName.toLocaleLowerCase().startsWith(word.toLowerCase())) {
+      if (isBracketNotation && property.name.startsWith('[') && !property.fullName.toLocaleLowerCase().startsWith(word.toLowerCase())) {
         return false;
       }
       if (property.isIndexKey) {
