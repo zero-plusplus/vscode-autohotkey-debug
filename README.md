@@ -618,18 +618,21 @@ If you want to output curly brackets directly, prefix it with `\`. e.g. `\{notVa
 
 **Since this feature is achieved using the debugger, it only works during debugging.**
 
-The variables that are displayed in the [Data inspection](#data-inspection) will be suggested. Supports dot notation(e.g. `object.field`) and bracket notation(e.g. `object["field"]`, `array[1]`)
+The variables that are displayed in the [Data inspection](#data-inspection) will be suggested. Supports dot notation (e.g. `object.field`) and bracket notation (e.g. `object["field"]`).
 
-If you don't need this feature, set `useIntelliSenseInDebugging ` to `false`.
+If you use suggestion with bracket notation, please note the following
+* Like dot notation, it is suggested when you type a `.`, such as `object.`. Otherwise, you need to type up to `object["` and then type `Ctrl + Space`
+
+* If the object key is a number as array, it will not be suggested
+
+* If the object key contains spaces, it will not be suggested such as `object["k e y"]`. This limitation is an implementation issue. It may be resolved in the future
+
+* To access more child elements following the bracket notation, specify the key as a primitive value or a variable with that value. Otherwise, the child element suggestions will not work. e.g. `object["key"].child`, `object[key].child`, `array[1].child`
+
+* In v2, an AutoHotkey error may occur when suggestions a child element of a dynamic property
+
+
 If you don't need this feature, set `useIntelliSenseInDebugging` to `false` in [launch.json](#customize-launchjson).
-
-### **For AutoHotkey v2 user**
-Please note the following points.
-* Because v2 dynamically determines how to access the elements of an object, it may suggest a syntax that cannot be used in practice. For example, an object cannot be accessed as `object["field"]`, but IntelliSense will suggest `["field"]`
-* The dynamic properties in v2 will execute a script for each read, which may result in an AutoHotkey error when suggestion
-* If an element with a key that contains spaces, such as `myMap["spaced key"].key"`, the subsequent key suggestions will not work properly
-
-If this is the case, please follow the instructions above to turn off this feature.
 
 ## Debug console
 ![debug-console](image/debug-console.jpg)
