@@ -1,7 +1,7 @@
 import { count } from 'underscore.string';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
-import { splitVariablePath } from './util/util';
+import { joinVariablePathArray, splitVariablePath } from './util/util';
 
 export interface CompletionItemProvider extends vscode.CompletionItemProvider {
   useIntelliSenseInDebugging: boolean;
@@ -81,9 +81,27 @@ export const completionItemProvider = {
     const getPrevText = (length: number): string => {
       return document.getText(new vscode.Range(fixPosition(-length), position));
     };
+    const resolveVariablePath = async(variablePath: string): Promise<string> => {
+      const resolvedVariablePathArray: string[] = [];
+      for await (const pathPart of splitVariablePath(this.ahkVersion, variablePath)) {
+        const isBracketNotationWithVariable = (): boolean => (this.ahkVersion === 2 ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
+
+        let resolvedPathPart = pathPart;
+        if (isBracketNotationWithVariable()) {
+          const _variablePath = pathPart.slice(1, -1);
+          const property = await this.session!.safeFetchLatestProperty(_variablePath);
+          if (property instanceof dbgp.PrimitiveProperty) {
+            const escapedValue = property.value.replace(/"/gu, this.ahkVersion === 2 ? '`"' : '""');
+            resolvedPathPart = `["${escapedValue}"]`;
+          }
+        }
+        resolvedVariablePathArray.push(resolvedPathPart);
+      }
+      return joinVariablePathArray(resolvedVariablePathArray);
+    };
     // #endregion util
 
-    const word = findWord();
+    const word = await resolveVariablePath(findWord());
     const lastWordPathPart = splitVariablePath(this.ahkVersion, word).pop() ?? '';
     const isBracketNotation = lastWordPathPart.startsWith('[');
     const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
