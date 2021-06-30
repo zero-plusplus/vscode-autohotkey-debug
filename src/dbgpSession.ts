@@ -467,6 +467,10 @@ export class SourceResponse extends Response {
 export class Session extends EventEmitter {
   public readonly DEFAULT_DEPTH = 1;
   public readonly id: number = 1;
+  private _ahkVersion!: 1 | 2;
+  public get ahkVersion(): 1 | 2 {
+    return this._ahkVersion;
+  }
   private readonly socket: Socket;
   private readonly pendingCommands = new Map<number, Command>();
   private transactionCounter = 1;
@@ -495,6 +499,9 @@ export class Session extends EventEmitter {
           this.sendStdoutCommand('redirect'),
           this.sendStderrCommand('redirect'),
           this.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code'),
+          this.sendFeatureGetCommand('language_version').then((response) => {
+            this._ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
+          }),
         ]).then(() => {
           this.emit('init', initPacket);
         });
@@ -681,9 +688,8 @@ export class Session extends EventEmitter {
     return null;
   }
   public async safeFetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | null> {
-    const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10);
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    const isSafetyProperty = ahkVersion === 1 || (/\.base$/ui).test(name);
+    const isSafetyProperty = this.ahkVersion === 1 || (/\.base$/ui).test(name);
     if (isSafetyProperty) {
       const { properties } = await this.sendPropertyGetCommand(context, name, _maxDepth);
       return 0 < properties.length ? properties[0] : null;
@@ -740,9 +746,8 @@ export class Session extends EventEmitter {
     return null;
   }
   public async safeFetchLatestProperty(name: string, maxDepth?: number): Promise<Property | null> {
-    const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10) as 1 | 2;
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    const isSafetyProperty = ahkVersion === 1 || (/\.base$/ui).test(name);
+    const isSafetyProperty = this.ahkVersion === 1 || (/\.base$/ui).test(name);
     if (isSafetyProperty) {
       return this.fetchLatestProperty(name, _maxDepth);
     }
@@ -818,7 +823,7 @@ export class Session extends EventEmitter {
     };
     // #endregion util
 
-    const propertyPathArray = splitVariablePath(ahkVersion, name);
+    const propertyPathArray = splitVariablePath(this.ahkVersion, name);
     const topProperty = await this.fetchLatestProperty(propertyPathArray[0], propertyPathArray.length + _maxDepth);
     if (propertyPathArray.length === 1) {
       return topProperty;
@@ -877,8 +882,7 @@ export class Session extends EventEmitter {
       return this.fetchLatestProperties();
     }
 
-    const ahkVersion = parseInt((await this.sendFeatureGetCommand('language_version')).value, 10) as 1 | 2;
-    const propertyPathArray = splitVariablePath(ahkVersion, variablePath);
+    const propertyPathArray = splitVariablePath(this.ahkVersion, variablePath);
     if (propertyPathArray.length === 0) {
       return this.fetchLatestProperties();
     }
@@ -886,7 +890,7 @@ export class Session extends EventEmitter {
     const lastPath = propertyPathArray[propertyPathArray.length - 1];
     const isBracketNotation = 1 < propertyPathArray.length && (lastPath === '' || lastPath.startsWith('['));
     if (isBracketNotation) {
-      const closeQuoteRegExp = ahkVersion === 2 ? /(?<!\[|`)("|')$/u : /(?!\[|")"$/u;
+      const closeQuoteRegExp = this.ahkVersion === 2 ? /(?<!\[|`)("|')$/u : /(?!\[|")"$/u;
       if (closeQuoteRegExp.test(lastPath)) {
         return this.fetchLatestProperties();
       }

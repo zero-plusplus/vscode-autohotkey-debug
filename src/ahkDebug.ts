@@ -83,7 +83,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   private server?: net.Server;
   private session?: dbgp.Session;
   private ahkProcess?: ChildProcessWithoutNullStreams;
-  private ahkVersion!: 1 | 2;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
   private readonly contextByVariablesReference = new Map<number, dbgp.Context>();
@@ -215,17 +214,13 @@ export class AhkDebugSession extends LoggingDebugSession {
                   if (typeof this.session === 'undefined') {
                     return;
                   }
-                  this.session.sendFeatureGetCommand('language_version').then((response) => {
-                    this.ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
-                    completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
-                    completionItemProvider.ahkVersion = this.ahkVersion;
-                    completionItemProvider.session = this.session ?? null;
-                    this.ahkParser = createParser(this.ahkVersion);
-                    this.conditionalEvaluator = new ConditionalEvaluator(this.session!, this.ahkVersion);
 
-                    // Request breakpoints from VS Code
-                    this.sendEvent(new InitializedEvent());
-                  });
+                  completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
+                  completionItemProvider.ahkVersion = this.session.ahkVersion;
+                  completionItemProvider.session = this.session;
+                  this.ahkParser = createParser(this.session.ahkVersion);
+                  this.conditionalEvaluator = new ConditionalEvaluator(this.session, this.session.ahkVersion);
+                  this.sendEvent(new InitializedEvent());
                 })
                 .on('warning', (warning: string) => {
                   this.sendEvent(new OutputEvent(`${warning}\n`));
@@ -651,12 +646,12 @@ export class AhkDebugSession extends LoggingDebugSession {
           typeName = 'integer';
           data = String(parseInt(number.value, 16));
         }
-        else if (this.ahkVersion === 2 && number.type === 'Scientific') {
+        else if (this.session!.ahkVersion === 2 && number.type === 'Scientific') {
           typeName = 'float';
           data = `${String(parseFloat(number.value))}.0`;
         }
         else {
-          if (this.ahkVersion === 2) {
+          if (this.session!.ahkVersion === 2) {
             typeName = 'float';
           }
           data = String(number.value);
@@ -827,7 +822,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const resolver = new AhkIncludeResolver({
       rootPath: this.config.program,
       runtimePath: this.config.runtime,
-      version: this.ahkVersion,
+      version: this.session!.ahkVersion,
     });
     this.loadedSources.push(this.config.program);
     this.loadedSources.push(...resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]));
@@ -921,7 +916,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     // this.printLogMessage(`elapsedTime: ${DEBUG_s}s`);
   }
   private escapeDebuggerToClient(str: string): string {
-    const version = this.ahkVersion;
+    const version = this.session!.ahkVersion;
     return str
       .replace(/"/gu, version === 1 ? '""' : '`"')
       .replace(/\r\n/gu, '`r`n')
