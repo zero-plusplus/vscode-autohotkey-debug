@@ -882,16 +882,10 @@ export class Session extends EventEmitter {
     if (propertyPathArray.length === 0) {
       return this.fetchLatestProperties();
     }
-    if (propertyPathArray.length === 1) {
-      const parentProperty = await this.safeFetchLatestProperty(propertyPathArray[0]);
-      if (!parentProperty) {
-        return this.fetchLatestProperties();
-      }
-      return await getChildren(parentProperty) ?? [];
-    }
 
     const lastPath = propertyPathArray[propertyPathArray.length - 1];
-    if (lastPath === '' || lastPath.startsWith('[')) {
+    const isBracketNotation = 1 < propertyPathArray.length && (lastPath === '' || lastPath.startsWith('['));
+    if (isBracketNotation) {
       const closeQuoteRegExp = ahkVersion === 2 ? /(?<!\[|`)("|')$/u : /(?!\[|")"$/u;
       if (closeQuoteRegExp.test(lastPath)) {
         return this.fetchLatestProperties();
@@ -906,11 +900,11 @@ export class Session extends EventEmitter {
     }
 
     const parentVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
-    const children = await getChildren(parentVariablePath);
-    if (children) {
-      return children;
+    const parentProperty = await this.safeFetchLatestProperty(parentVariablePath);
+    if (!parentProperty) {
+      return this.fetchLatestProperties();
     }
-    return [];
+    return await getChildren(parentProperty) ?? [];
   }
   public async close(): Promise<void> {
     this.removeAllListeners();
