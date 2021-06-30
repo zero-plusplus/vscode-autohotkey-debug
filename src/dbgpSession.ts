@@ -883,7 +883,11 @@ export class Session extends EventEmitter {
       return this.fetchLatestProperties();
     }
     if (propertyPathArray.length === 1) {
-      return await getChildren(propertyPathArray[0]) ?? [];
+      const parentProperty = await this.safeFetchLatestProperty(propertyPathArray[0]);
+      if (!parentProperty) {
+        return this.fetchLatestProperties();
+      }
+      return await getChildren(parentProperty) ?? [];
     }
 
     const lastPath = propertyPathArray[propertyPathArray.length - 1];
