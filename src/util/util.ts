@@ -70,8 +70,10 @@ export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): stri
         continue;
       }
       case '.': {
-        result.push(part);
-        part = '';
+        if (part) {
+          result.push(part);
+          part = '';
+        }
 
         if (!nextChar) {
           result.push('');
