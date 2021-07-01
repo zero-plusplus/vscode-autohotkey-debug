@@ -885,7 +885,7 @@ export class Session extends EventEmitter {
     }
 
     const propertyPathArray = splitVariablePath(this.ahkVersion, variablePath);
-    if (propertyPathArray.length === 0) {
+    if (propertyPathArray.length === 0 || propertyPathArray.length === 1) {
       return this.fetchLatestProperties();
     }
 
