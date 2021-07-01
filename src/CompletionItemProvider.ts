@@ -76,7 +76,7 @@ export const completionItemProvider = {
       const result: string[] = [];
       let quote = '', bracketCount = 0;
       if (closeBracketIndex < openBracketIndex) {
-        quote = targetText.charAt(openBracketIndex + 1);
+        quote = targetText.charAt(openBracketIndex);
         bracketCount = 1;
       }
       for (let i = 0; i < chars.length; i++) {
