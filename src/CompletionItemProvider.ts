@@ -82,21 +82,30 @@ export const completionItemProvider = {
       for (let i = 0; i < chars.length; i++) {
         const char = chars[i];
         const nextChar = chars[i + 1] as string | undefined;
-        nextChar;
 
         if (quote) {
-          if (this.ahkVersion === 2 && quote === `'` && char === '"') {
-            result.push('"');
-            result.push('"');
-            continue;
+          if (this.ahkVersion === 2) {
+            if (char === '"' && nextChar === '`') {
+              result.push(char);
+              result.push('"');
+              i++;
+              continue;
+            }
+
+            if (quote === `'` && char === '"') {
+              result.push('"');
+              result.push('"');
+              continue;
+            }
+            else if (quote === `'` && char === `'`) {
+              result.push('"');
+              quote = '';
+              continue;
+            }
           }
 
-          if (this.ahkVersion === 2 && quote === `'` && char === `'`) {
-            result.push('"');
-            quote = '';
-            continue;
-          }
-          else if (quote === char) {
+
+          if (quote === char) {
             result.push(quote);
             quote = '';
             continue;
@@ -182,7 +191,13 @@ export const completionItemProvider = {
       completionItem.sortText = `@:${priority}:${depth}:${property.name}`;
 
       if (property.name.startsWith('[')) {
-        const fixLabel = (label: string): string => label.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
+        const fixQuote = (str: string): string => {
+          return str.replace(/""/gu, '`"');
+        };
+        const fixLabel = (label: string): string => {
+          const fixedLabel = label.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
+          return this.ahkVersion === 2 ? fixQuote(fixedLabel) : fixedLabel;
+        };
 
         const fixedLabel = fixLabel(property.name);
         completionItem.label = fixedLabel;
@@ -196,8 +211,9 @@ export const completionItemProvider = {
 
           // This is a strange implementation because I don't know the specs very well.
           const replaceRange = new vscode.Range(fixPosition(-1), position);
-          const a = property.name.slice(0, 1);
-          const b = property.name.slice(1);
+          const fixedPropertyName = fixQuote(property.name);
+          const a = fixedPropertyName.slice(0, 1);
+          const b = fixedPropertyName.slice(1);
           completionItem.additionalTextEdits = [ new vscode.TextEdit(replaceRange, a) ];
           completionItem.insertText = b;
         }
