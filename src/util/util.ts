@@ -81,7 +81,7 @@ export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): stri
         continue;
       }
       case '[': {
-        if (bracketCount === 0) {
+        if (bracketCount === 0 && part) {
           result.push(part);
           part = '';
         }
