@@ -1,6 +1,7 @@
 import { count } from 'underscore.string';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
+import { lastIndexOf } from './util/stringUtils';
 import { splitVariablePath } from './util/util';
 
 export interface CompletionItemProvider extends vscode.CompletionItemProvider {
@@ -66,17 +67,84 @@ export const completionItemProvider = {
     const fixPosition = (offset: number): vscode.Position => {
       return new vscode.Position(position.line, Math.max(position.character + offset, 0));
     };
-    const fixQuote = (word: string): string => {
-      if (this.ahkVersion === 1) {
-        return word;
-      }
-      return word.replace(/`'/gu, '`"').replace(/'/gu, '"');
-    };
     const findWord = (offset = 0): string => {
-      const temp = document.lineAt(position).text.slice(0, fixPosition(offset).character);
-      const regexp = this.ahkVersion === 1 ? /[^\s\r\n]+$/ui : /[^\s\r\n]+$/ui;
-      const word = temp.slice(temp.search(regexp)).trim();
-      return fixQuote(word);
+      const targetText = document.lineAt(position).text.slice(0, fixPosition(offset).character);
+      const chars = targetText.split('').reverse();
+      const openBracketIndex = lastIndexOf(targetText, this.ahkVersion === 2 ? /(?<=\[)("|')/u : /(?<=\[)(")/u);
+      const closeBracketIndex = lastIndexOf(targetText, this.ahkVersion === 2 ? /("|')(?=\])/u : /"(?=\])/u);
+
+      const result: string[] = [];
+      let quote = '', bracketCount = 0;
+      if (closeBracketIndex < openBracketIndex) {
+        quote = targetText.charAt(openBracketIndex + 1);
+        bracketCount = 1;
+      }
+      for (let i = 0; i < chars.length; i++) {
+        const char = chars[i];
+        const nextChar = chars[i + 1] as string | undefined;
+        nextChar;
+
+        if (quote) {
+          if (this.ahkVersion === 2 && quote === `'` && char === '"') {
+            result.push('"');
+            result.push('"');
+            continue;
+          }
+
+          if (this.ahkVersion === 2 && quote === `'` && char === `'`) {
+            result.push('"');
+            quote = '';
+            continue;
+          }
+          else if (quote === char) {
+            result.push(quote);
+            quote = '';
+            continue;
+          }
+          result.push(char);
+          continue;
+        }
+        else if (0 < bracketCount && char === '[') {
+          result.push(char);
+          bracketCount--;
+          continue;
+        }
+
+        switch (char) {
+          case `'`: {
+            if (this.ahkVersion === 2) {
+              quote = char;
+              result.push('"');
+              continue;
+            }
+            result.push(char);
+            continue;
+          }
+          case '"': {
+            quote = char;
+            result.push(char);
+            continue;
+          }
+          case ']': {
+            result.push(char);
+            bracketCount++;
+            continue;
+          }
+          case '.': {
+            result.push(char);
+            continue;
+          }
+          default: {
+            const isIdentifierChar = (this.ahkVersion === 2 ? /[\w_]/u : /[\w_$@#]/u).test(char);
+            if (isIdentifierChar) {
+              result.push(char);
+              continue;
+            }
+          }
+        }
+        break;
+      }
+      return result.reverse().join('');
     };
     const getPrevText = (length: number): string => {
       return document.getText(new vscode.Range(fixPosition(-length), position));

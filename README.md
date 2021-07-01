@@ -627,8 +627,6 @@ If you use suggestion with bracket notation, please note the following
 
 * If the object key is a number as array, it will not be suggested
 
-* If the object key contains a space, as in `object["k e y"].child`, the suggestion for the child element that follows will not work. This limitation is an implementation issue. It may be resolved in the future
-
 * To access more child elements following the bracket notation, specify the key as a primitive value or a variable. Otherwise, the child element suggestions will not work. e.g. `object["key"].child`, `object[key].child`, `array[1].child`
 
 * In v2, an AutoHotkey error may occur when suggestions a child element of a [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property)
