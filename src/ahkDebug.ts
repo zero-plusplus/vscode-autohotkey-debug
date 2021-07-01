@@ -743,7 +743,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const propertyNameParsed = this.ahkParser.PropertyName.parse(propertyName);
         if (!propertyNameParsed.status) {
-          throw Error('Error: Only the property name or meta variable is supported. e.g. `prop`,` prop.field`, `prop[0]`, `prop["spaced key"]`, `prop.<base>`, `{metaVariableName}`');
+          throw Error('Error: Only the property name or meta variable is supported. e.g. `variable`,` object.field`, `array[1]`, `map["spaced key"]`, `prop.<base>`, `{hitCount}`');
         }
         const stackFrame = this.stackFramesByFrameId.get(args.frameId);
         if (!stackFrame) {

@@ -45,8 +45,8 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
 ### Update
-* `1.6.10` - 2021-xx-xx
-    * Changed: Intellisense now works with bracket notation (e.g. `object["key"]`)
+    * Changed: Intellisense now works with bracket notation (e.g.
+    * Changed: Variable name or path (e.g. `map[key]`, `map[obj.field]`) can now be specified for bracket notation access in Conditional breakpoint, Log point, and Watch expression`object["key"]`)
     * Fixed: [#104](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/104) Inherited members are not displayed in IntelliSense
 
 * `1.6.9` - 2021-03-15
@@ -358,6 +358,8 @@ If you see `VariableName` in this document, it's the name of the variable displa
 
 The object's child elements are the same as in the running script, and can be specified in dot notation(e.g. `object.field`) or bracket notation(e.g. `array[1]`). Which notation is available depends on the version of AutoHotkey, v1 can use either notation.
 
+In the case of bracket notation, the `VariableName` can be specified such as `map2[map[object.field]]`.
+
 #### About A_DebuggerName
 This is a variable that is only set when you are debugging, and also in SciTE4AutoHotkey. By using this variable, you can write code that only runs during debugging. **However, please note the following when using this variable.**
 
@@ -471,7 +473,7 @@ e.g.
 
 * `Operand` :　`VariableName` or `Primitive`
 
-* `VariableName` :　See [VariableName](#about-variablename) for details. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`
+* `VariableName` :　See [VariableName](#about-variablename) for details. e.g. `variable`, `object.field`, `object["spaced key"]`, `array[1]`, `map[key]`
 
 * `MetaVariableName` :　See [MetaVariable](#metavariable) for details. e.g. `{hitCount}`
 
@@ -627,9 +629,9 @@ If you use suggestion with bracket notation, please note the following
 
 * If the object key contains a space, as in `object["k e y"].child`, the suggestion for the child element that follows will not work. This limitation is an implementation issue. It may be resolved in the future
 
-* To access more child elements following the bracket notation, specify the key as a primitive value or a variable with that value. Otherwise, the child element suggestions will not work. e.g. `object["key"].child`, `object[key].child`, `array[1].child`
+* To access more child elements following the bracket notation, specify the key as a primitive value or a variable. Otherwise, the child element suggestions will not work. e.g. `object["key"].child`, `object[key].child`, `array[1].child`
 
-* In v2, an AutoHotkey error may occur when suggestions a child element of a dynamic property
+* In v2, an AutoHotkey error may occur when suggestions a child element of a [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property)
 
 
 If you don't need this feature, set `useIntelliSenseInDebugging` to `false` in [launch.json](#customize-launchjson).

@@ -17,6 +17,7 @@ Also want to check the development status, check the [commit history](https://gi
 ## [1.6.10] - 2021-xx-xx
 ### Changed
 * Intellisense now works with dot notation (e.g. `object["key"]`)
+* Variable name or path (e.g. `map[key]`, `map[obj.field]`) can now be specified for bracket notation access in Conditional breakpoint, Log point, and Watch expression
 
 ### Fixed
 * [#104](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/104) Inherited members are not displayed in IntelliSense

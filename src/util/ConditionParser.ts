@@ -163,9 +163,14 @@ export const createParser = function(version: 1 | 2): P.Language {
     IndexAccesor(rules) {
       return P.seq(
         P.string('['),
-        rules.Primitive,
+        P.alt(rules.Primitive, rules.PropertyName),
         P.string(']'),
-      ).map((result) => `${result[0]}${result[1].value.value.value as string}${result[2]}`);
+      ).map((result) => {
+        if ('type' in result[1] && result[1].type === 'PropertyName') {
+          return `${result[0]}${result[1].value as string}${result[2]}`;
+        }
+        return `${result[0]}${result[1].value.value.value as string}${result[2]}`;
+      });
     },
     BaseAccesor(rules) {
       return P.string('.<base>');

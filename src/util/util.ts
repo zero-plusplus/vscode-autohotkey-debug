@@ -1,8 +1,20 @@
+import * as dbgp from '../dbgpSession';
+
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export const isNumberLike = (value: any): boolean => {
+  if (typeof value === 'string') {
+    return value.trim() !== '' && !isNaN((value as any) - 0);
+  }
+  if (typeof value === 'number') {
+    return true;
+  }
+  return false;
+};
 export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): string[] => {
   const result: string[] = [];
 
   const chars = variablePath.split('');
-  let part = '', quote: '' | '"' | '\'' = '', bracket: '' | '[' = '';
+  let part = '', quote: '' | '"' | '\'' = '', bracketCount = 0;
   for (let i = 0; i < chars.length; i++) {
     const char = chars[i];
     // const prevChar = chars[i - 1] as string | undefined;
@@ -27,9 +39,18 @@ export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): stri
       }
       continue;
     }
-    else if (bracket && char === ']') {
+    else if (0 < bracketCount && char === ']') {
       part += char;
-      bracket = '';
+      if (bracketCount === 1) {
+        result.push(part);
+        part = '';
+      }
+
+      bracketCount--;
+      continue;
+    }
+    else if (0 < bracketCount && char === '.') {
+      part += char;
       continue;
     }
 
@@ -58,10 +79,13 @@ export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): stri
         continue;
       }
       case '[': {
-        result.push(part);
+        if (bracketCount === 0) {
+          result.push(part);
+          part = '';
+        }
 
-        part = char;
-        bracket = char;
+        part += char;
+        bracketCount++;
         continue;
       }
       default: {
@@ -82,4 +106,25 @@ export const joinVariablePathArray = (pathArray: string[]): string => {
     }
     return part;
   }).join('');
+};
+export const resolveVariablePath = async(session: dbgp.Session, variablePath: string): Promise<string> => {
+  const resolvedVariablePathArray: string[] = [];
+  for await (const pathPart of splitVariablePath(session.ahkVersion, variablePath)) {
+    const isBracketNotationWithVariable = (): boolean => (session.ahkVersion === 2 ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
+
+    let resolvedPathPart = pathPart;
+    if (isBracketNotationWithVariable()) {
+      const _variablePath = pathPart.slice(1, -1);
+      const property = await session.safeFetchLatestProperty(_variablePath);
+      if (property instanceof dbgp.PrimitiveProperty) {
+        const escapedValue = property.value.replace(/"/gu, session.ahkVersion === 2 ? '`"' : '""');
+        resolvedPathPart = isNumberLike(escapedValue) ? `[${escapedValue}]` : `["${escapedValue}"]`;
+      }
+      else if (property instanceof dbgp.ObjectProperty) {
+        resolvedPathPart = `[Object(${property.address})]`;
+      }
+    }
+    resolvedVariablePathArray.push(resolvedPathPart);
+  }
+  return joinVariablePathArray(resolvedVariablePathArray);
 };
