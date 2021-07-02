@@ -70,12 +70,12 @@ export const completionItemProvider = {
     const findWord = (offset = 0): string => {
       const targetText = document.lineAt(position).text.slice(0, fixPosition(offset).character);
       const chars = targetText.split('').reverse();
-      const openBracketIndex = lastIndexOf(targetText, this.ahkVersion === 2 ? /(?<=\[)("|')/u : /(?<=\[)(")/u);
-      const closeBracketIndex = lastIndexOf(targetText, this.ahkVersion === 2 ? /("|')(?=\])/u : /"(?=\])/u);
+      const openBracketIndex = lastIndexOf(targetText, this.ahkVersion === 2 ? /(?<=\[\s*)("|')/u : /(?<=\[\s*)(")/u);
+      const closeBracketIndex = lastIndexOf(targetText, this.ahkVersion === 2 ? /("|')\s*(?=\])/u : /"\s*(?=\])/u);
 
       const result: string[] = [];
       let quote = '', bracketCount = 0;
-      if (closeBracketIndex < openBracketIndex) {
+      if (-1 < openBracketIndex && closeBracketIndex < openBracketIndex) {
         quote = targetText.charAt(openBracketIndex);
         bracketCount = 1;
       }
@@ -103,7 +103,6 @@ export const completionItemProvider = {
               continue;
             }
           }
-
 
           if (quote === char) {
             result.push(quote);
@@ -147,6 +146,16 @@ export const completionItemProvider = {
             const isIdentifierChar = (this.ahkVersion === 2 ? /[\w_]/u : /[\w_$@#]/u).test(char);
             if (isIdentifierChar) {
               result.push(char);
+              continue;
+            }
+
+            // Skip spaces
+            if (0 < bracketCount && (/\s/u).test(char)) {
+              const openBracketIndex = chars.slice(i).findIndex((char) => (this.ahkVersion === 2 ? /\[|"|'/u : /\[|"/u).test(char));
+              const containsNotSpace = Boolean(chars.slice(i, openBracketIndex).find((char) => (/[^\s]/u).test(char)));
+              if (containsNotSpace) {
+                break;
+              }
               continue;
             }
           }
