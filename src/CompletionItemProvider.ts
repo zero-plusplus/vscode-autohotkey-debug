@@ -151,11 +151,6 @@ export const completionItemProvider = {
 
             // Skip spaces
             if (0 < bracketCount && (/\s/u).test(char)) {
-              const openBracketIndex = chars.slice(i).findIndex((char) => (this.ahkVersion === 2 ? /\[|"|'/u : /\[|"/u).test(char));
-              const containsNotSpace = Boolean(chars.slice(i, openBracketIndex).find((char) => (/[^\s]/u).test(char)));
-              if (containsNotSpace) {
-                break;
-              }
               continue;
             }
           }
