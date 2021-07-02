@@ -9,6 +9,7 @@
             "runtime_v1": "AutoHotkey.exe",
             "runtime_v2": "v2/AutoHotkey.exe",
             "args": [],
+            "port": "9002-9010",
             "stopOnEntry": false,
             "useDebugDirective": true,
             "usePerfTips": true,
