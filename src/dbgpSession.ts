@@ -890,7 +890,7 @@ export class Session extends EventEmitter {
     }
 
     const lastPath = propertyPathArray[propertyPathArray.length - 1];
-    const isBracketNotation = 1 < propertyPathArray.length && (lastPath === '' || lastPath.startsWith('['));
+    const isBracketNotation = lastPath.startsWith('[');
     if (isBracketNotation) {
       const openQuoteRegExp = this.ahkVersion === 2 ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
       if (openQuoteRegExp.test(lastPath)) {
@@ -912,7 +912,7 @@ export class Session extends EventEmitter {
     const parentVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
     const parentProperty = await this.safeFetchLatestProperty(parentVariablePath);
     if (!parentProperty) {
-      return this.fetchLatestProperties();
+      return [];
     }
     return await getChildren(parentProperty) ?? [];
   }
