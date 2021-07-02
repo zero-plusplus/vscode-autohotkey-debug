@@ -892,7 +892,11 @@ export class Session extends EventEmitter {
     const lastPath = propertyPathArray[propertyPathArray.length - 1];
     const isBracketNotation = 1 < propertyPathArray.length && (lastPath === '' || lastPath.startsWith('['));
     if (isBracketNotation) {
-      const closeQuoteRegExp = this.ahkVersion === 2 ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
+      const openQuoteRegExp = this.ahkVersion === 2 ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
+      if (openQuoteRegExp.test(lastPath)) {
+        return this.fetchLatestProperties();
+      }
+      const closeQuoteRegExp = this.ahkVersion === 2 ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
       if (closeQuoteRegExp.test(lastPath)) {
         return this.fetchLatestProperties();
       }
