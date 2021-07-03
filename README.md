@@ -46,7 +46,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
     * Changed: Intellisense now works with dot notation (e.g. `object["key"]`)
-    * Changed: Variable name or path (e.g. `map[key]`, `map[obj.field]`) can now be specified for bracket notation access in Conditional breakpoint, Log point, and Watch expression
+    * Changed: Variable name (e.g. `map[key]`, `map[obj.field]`) can now be specified for bracket notation access in Conditional breakpoint, Log point, and Watch expression
     * Fixed: [#104](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/104) Inherited members are not displayed in IntelliSense
 
 * `1.6.9` - 2021-03-15
