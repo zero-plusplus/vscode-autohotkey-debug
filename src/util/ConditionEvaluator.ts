@@ -89,11 +89,9 @@ const logicalOperators: { [key: string]: Operator} = {
 export class ConditionalEvaluator {
   private readonly session: dbgp.Session;
   private readonly parser: Parser;
-  private readonly ahkVersion: 1 | 2;
-  constructor(session: dbgp.Session, version: 1 | 2) {
+  constructor(session: dbgp.Session) {
     this.session = session;
-    this.parser = createParser(version);
-    this.ahkVersion = version;
+    this.parser = createParser(this.session.ahkVersion);
   }
   public async eval(expressions: string, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
     const parsed = this.parser.Expressions.parse(expressions);
@@ -129,7 +127,7 @@ export class ConditionalEvaluator {
         const getValue = async(parsed): Promise<string | number | null> => {
           const value = await this.evalValue(parsed, metaVariables);
 
-          if (this.ahkVersion === 1 && value === null) {
+          if (this.session.ahkVersion.mejor === 1 && value === null) {
             return '';
           }
 

@@ -7,7 +7,7 @@ import * as convertHrTime from 'convert-hrtime';
 import { range, uniqBy } from 'lodash';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { equalsIgnoreCase } from './util/stringUtils';
-import { joinVariablePathArray, resolveVariablePath, splitVariablePath } from './util/util';
+import { AhkVersion, joinVariablePathArray, resolveVariablePath, splitVariablePath } from './util/util';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -467,8 +467,8 @@ export class SourceResponse extends Response {
 export class Session extends EventEmitter {
   public readonly DEFAULT_DEPTH = 1;
   public readonly id: number = 1;
-  private _ahkVersion!: 1 | 2;
-  public get ahkVersion(): 1 | 2 {
+  private _ahkVersion!: AhkVersion;
+  public get ahkVersion(): AhkVersion {
     return this._ahkVersion;
   }
   private readonly socket: Socket;
@@ -500,7 +500,7 @@ export class Session extends EventEmitter {
           this.sendStderrCommand('redirect'),
           this.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code'),
           this.sendFeatureGetCommand('language_version').then((response) => {
-            this._ahkVersion = parseInt(response.value.charAt(0), 10) as 1 | 2;
+            this._ahkVersion = new AhkVersion(response.value);
           }),
         ]).then(() => {
           this.emit('init', initPacket);
@@ -689,7 +689,7 @@ export class Session extends EventEmitter {
   }
   public async safeFetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | null> {
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    const isSafetyProperty = this.ahkVersion === 1 || (/\.base$/ui).test(name);
+    const isSafetyProperty = this.ahkVersion.mejor === 1 || (/\.base$/ui).test(name);
     if (isSafetyProperty) {
       const { properties } = await this.sendPropertyGetCommand(context, name, _maxDepth);
       return 0 < properties.length ? properties[0] : null;
@@ -749,7 +749,7 @@ export class Session extends EventEmitter {
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
     const resolvedName = await resolveVariablePath(this, name);
 
-    const isSafetyProperty = this.ahkVersion === 1 || (/\.base$/ui).test(resolvedName);
+    const isSafetyProperty = this.ahkVersion.mejor === 1 || (/\.base$/ui).test(resolvedName);
     if (isSafetyProperty) {
       return this.fetchLatestProperty(resolvedName, _maxDepth);
     }
@@ -898,11 +898,11 @@ export class Session extends EventEmitter {
     const lastPath = propertyPathArray[propertyPathArray.length - 1];
     const isBracketNotation = lastPath.startsWith('[');
     if (isBracketNotation) {
-      const openQuoteRegExp = this.ahkVersion === 2 ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
+      const openQuoteRegExp = this.ahkVersion.mejor === 2 ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
       if (openQuoteRegExp.test(lastPath)) {
         return this.fetchLatestProperties();
       }
-      const closeQuoteRegExp = this.ahkVersion === 2 ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
+      const closeQuoteRegExp = this.ahkVersion.mejor === 2 ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
       if (closeQuoteRegExp.test(lastPath)) {
         return this.fetchLatestProperties();
       }

@@ -6,7 +6,6 @@ import { splitVariablePath } from './util/util';
 
 export interface CompletionItemProvider extends vscode.CompletionItemProvider {
   useIntelliSenseInDebugging: boolean;
-  ahkVersion: 1 | 2;
   session: dbgp.Session | null;
 }
 
@@ -70,8 +69,8 @@ export const completionItemProvider = {
     const findWord = (offset = 0): string => {
       const targetText = document.lineAt(position).text.slice(0, fixPosition(offset).character);
       const chars = targetText.split('').reverse();
-      const openBracketIndex = lastIndexOf(targetText, this.ahkVersion === 2 ? /(?<=\[\s*)("|')/u : /(?<=\[\s*)(")/u);
-      const closeBracketIndex = lastIndexOf(targetText, this.ahkVersion === 2 ? /("|')\s*(?=\])/u : /"\s*(?=\])/u);
+      const openBracketIndex = lastIndexOf(targetText, this.session!.ahkVersion.mejor === 2 ? /(?<=\[\s*)("|')/u : /(?<=\[\s*)(")/u);
+      const closeBracketIndex = lastIndexOf(targetText, this.session!.ahkVersion.mejor === 2 ? /("|')\s*(?=\])/u : /"\s*(?=\])/u);
 
       const result: string[] = [];
       let quote = '', bracketCount = 0;
@@ -84,7 +83,7 @@ export const completionItemProvider = {
         const nextChar = chars[i + 1] as string | undefined;
 
         if (quote) {
-          if (this.ahkVersion === 2) {
+          if (this.session!.ahkVersion.mejor === 2) {
             if (char === '"' && nextChar === '`') {
               result.push(char);
               result.push('"');
@@ -120,7 +119,7 @@ export const completionItemProvider = {
 
         switch (char) {
           case `'`: {
-            if (this.ahkVersion === 2) {
+            if (this.session!.ahkVersion.mejor === 2) {
               quote = char;
               result.push('"');
               continue;
@@ -143,7 +142,7 @@ export const completionItemProvider = {
             continue;
           }
           default: {
-            const isIdentifierChar = (this.ahkVersion === 2 ? /[\w_]/u : /[\w_$@#]/u).test(char);
+            const isIdentifierChar = (this.session!.ahkVersion.mejor === 2 ? /[\w_]/u : /[\w_$@#]/u).test(char);
             if (isIdentifierChar) {
               result.push(char);
               continue;
@@ -165,7 +164,7 @@ export const completionItemProvider = {
     // #endregion util
 
     const word = findWord();
-    const lastWordPathPart = splitVariablePath(this.ahkVersion, word).pop() ?? '';
+    const lastWordPathPart = splitVariablePath(this.session.ahkVersion, word).pop() ?? '';
     const isBracketNotation = lastWordPathPart.startsWith('[');
     const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
 
@@ -200,7 +199,7 @@ export const completionItemProvider = {
         };
         const fixLabel = (label: string): string => {
           const fixedLabel = label.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
-          return this.ahkVersion === 2 ? fixQuote(fixedLabel) : fixedLabel;
+          return this.session!.ahkVersion.mejor === 2 ? fixQuote(fixedLabel) : fixedLabel;
         };
 
         const fixedLabel = fixLabel(property.name);

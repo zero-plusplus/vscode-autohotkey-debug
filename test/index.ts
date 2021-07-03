@@ -1,9 +1,9 @@
 import * as assert from 'assert';
-import { splitVariablePath } from '../src/util/util';
+import { AhkVersion, splitVariablePath } from '../src/util/util';
 
 suite('splitVariablePath', () => {
   test('v1', () => {
-    const ahkVersion = 1;
+    const ahkVersion = new AhkVersion('1.1.00');
     assert.deepStrictEqual(splitVariablePath(ahkVersion, 'a'), [ 'a' ]);
     assert.deepStrictEqual(splitVariablePath(ahkVersion, 'a.'), [ 'a', '' ]);
     assert.deepStrictEqual(splitVariablePath(ahkVersion, 'a.b'), [ 'a', 'b' ]);
@@ -15,7 +15,7 @@ suite('splitVariablePath', () => {
     assert.deepStrictEqual(splitVariablePath(ahkVersion, 'a b.test'), [ 'a b', 'test' ]);
   });
   test('v2', () => {
-    const ahkVersion = 2;
+    const ahkVersion = new AhkVersion('2.0.00');
     assert.deepStrictEqual(splitVariablePath(ahkVersion, 'a'), [ 'a' ]);
     assert.deepStrictEqual(splitVariablePath(ahkVersion, 'a.b'), [ 'a', 'b' ]);
     assert.deepStrictEqual(splitVariablePath(ahkVersion, `a.b['c']`), [ 'a', 'b', `['c']` ]);

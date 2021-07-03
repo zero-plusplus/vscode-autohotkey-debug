@@ -1,7 +1,8 @@
 import * as P from 'parsimmon';
+import { AhkVersion } from './util';
 
 export type Parser = P.Language;
-export const createParser = function(version: 1 | 2): P.Language {
+export const createParser = function(version: AhkVersion): P.Language {
   return P.createLanguage({
     _(rules) {
       return P.regex(/\s*/u);
@@ -10,21 +11,21 @@ export const createParser = function(version: 1 | 2): P.Language {
       return P.whitespace;
     },
     StringLiteral(rules) {
-      return version === 1
+      return version.mejor === 1
         ? rules.StringDoubleLiteral
         : P.alt(rules.StringDoubleLiteral, rules.StringSingleLiteral);
     },
     StringDoubleLiteral(rules) {
       return P.seq(
         P.string('"'),
-        version === 1
+        version.mejor === 1
           ? P.regex(/(?:``|""|[^"\n])*/ui)
           : P.regex(/(?:``|`"|[^"\n])*/ui),
         P.string('"'),
       ).map((result) => {
         const convertedEscape = result[1]
-          .replace(version === 1 ? /""/gu : /`"/gu, '"')
-          .replace(version === 1 ? /`(,|%|`|;|:)/gu : /`(`|;|:|\{)/gu, '$1')
+          .replace(version.mejor === 1 ? /""/gu : /`"/gu, '"')
+          .replace(version.mejor === 1 ? /`(,|%|`|;|:)/gu : /`(`|;|:|\{)/gu, '$1')
           .replace(/`n/gu, '\n')
           .replace(/`r/gu, '\r')
           .replace(/`b/gu, '\b')
@@ -112,7 +113,7 @@ export const createParser = function(version: 1 | 2): P.Language {
     },
     ScientificLiteral(rules) {
       return P.seq(
-        version === 1
+        version.mejor === 1
           ? rules.FloatLiteral
           : P.alt(rules.FloatLiteral, rules.IntegerLiteral),
         P.regex(/e[+]?\d+/ui),
@@ -150,7 +151,7 @@ export const createParser = function(version: 1 | 2): P.Language {
       });
     },
     Identifer(rules) {
-      return version === 1
+      return version.mejor === 1
         ? P.regex(/[\w#@$]+/ui)
         : P.regex(/[\w]+/ui);
     },

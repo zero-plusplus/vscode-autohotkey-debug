@@ -216,10 +216,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                   }
 
                   completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
-                  completionItemProvider.ahkVersion = this.session.ahkVersion;
                   completionItemProvider.session = this.session;
                   this.ahkParser = createParser(this.session.ahkVersion);
-                  this.conditionalEvaluator = new ConditionalEvaluator(this.session, this.session.ahkVersion);
+                  this.conditionalEvaluator = new ConditionalEvaluator(this.session);
                   this.sendEvent(new InitializedEvent());
                 })
                 .on('warning', (warning: string) => {
@@ -646,12 +645,12 @@ export class AhkDebugSession extends LoggingDebugSession {
           typeName = 'integer';
           data = String(parseInt(number.value, 16));
         }
-        else if (this.session!.ahkVersion === 2 && number.type === 'Scientific') {
+        else if (this.session!.ahkVersion.mejor === 2 && number.type === 'Scientific') {
           typeName = 'float';
           data = `${String(parseFloat(number.value))}.0`;
         }
         else {
-          if (this.session!.ahkVersion === 2) {
+          if (this.session!.ahkVersion.mejor === 2) {
             typeName = 'float';
           }
           data = String(number.value);
@@ -822,7 +821,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const resolver = new AhkIncludeResolver({
       rootPath: this.config.program,
       runtimePath: this.config.runtime,
-      version: this.session!.ahkVersion,
+      version: this.session!.ahkVersion.mejor as 1 | 2,
     });
     this.loadedSources.push(this.config.program);
     this.loadedSources.push(...resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]));
@@ -918,7 +917,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private escapeDebuggerToClient(str: string): string {
     const version = this.session!.ahkVersion;
     return str
-      .replace(/"/gu, version === 1 ? '""' : '`"')
+      .replace(/"/gu, version.mejor === 1 ? '""' : '`"')
       .replace(/\r\n/gu, '`r`n')
       .replace(/\n/gu, '`n')
       .replace(/\r/gu, '`r')
