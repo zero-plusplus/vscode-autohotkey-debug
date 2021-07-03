@@ -889,6 +889,12 @@ export class Session extends EventEmitter {
       return this.fetchLatestProperties();
     }
 
+    // e.g. `object..field`
+    const isMultipleDot = propertyPathArray.slice(-2).every((part) => part === '');
+    if (isMultipleDot) {
+      return [];
+    }
+
     const lastPath = propertyPathArray[propertyPathArray.length - 1];
     const isBracketNotation = lastPath.startsWith('[');
     if (isBracketNotation) {
