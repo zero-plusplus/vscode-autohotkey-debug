@@ -890,7 +890,7 @@ export class Session extends EventEmitter {
     }
 
     // e.g. `object..field`
-    const isMultipleDot = propertyPathArray.slice(-2).every((part) => part === '');
+    const isMultipleDot = (/\.{2,}$/u).test(variablePath);
     if (isMultipleDot) {
       return [];
     }

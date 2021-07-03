@@ -17,7 +17,7 @@ export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): stri
   let part = '', quote: '' | '"' | '\'' = '', bracketCount = 0;
   for (let i = 0; i < chars.length; i++) {
     const char = chars[i];
-    // const prevChar = chars[i - 1] as string | undefined;
+    const prevChar = chars[i - 1] as string | undefined;
     const nextChar = chars[i + 1] as string | undefined;
     // const isIdentifierChar = (): boolean => (ahkVersion === 1 ? /^[\w_@#$]$/u : /^[\w_]$/u).test(char);
 
@@ -70,8 +70,10 @@ export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): stri
         continue;
       }
       case '.': {
-        result.push(part);
-        part = '';
+        if (part || prevChar === '.') {
+          result.push(part);
+          part = '';
+        }
         continue;
       }
       case '[': {
@@ -90,9 +92,15 @@ export const splitVariablePath = (ahkVersion: 1 | 2, variablePath: string): stri
       }
     }
   }
+
   if (part !== '') {
     result.push(part);
   }
+  const lastChar = chars[chars.length - 1];
+  if (lastChar === '.') {
+    result.push('');
+  }
+
   return result;
 };
 export const joinVariablePathArray = (pathArray: string[]): string => {
