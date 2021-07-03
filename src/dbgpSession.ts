@@ -749,7 +749,7 @@ export class Session extends EventEmitter {
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
     const resolvedName = await resolveVariablePath(this, name);
 
-    const isSafetyProperty = this.ahkVersion.mejor === 1 || (/\.base$/ui).test(resolvedName);
+    const isSafetyProperty = this.ahkVersion.mejor === 1 || (/\.base$/ui).test(resolvedName) || 136 <= this.ahkVersion.alpha;
     if (isSafetyProperty) {
       return this.fetchLatestProperty(resolvedName, _maxDepth);
     }
