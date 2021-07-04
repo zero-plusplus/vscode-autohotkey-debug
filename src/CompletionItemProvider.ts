@@ -221,9 +221,10 @@ export const completionItemProvider = {
           completionItem.insertText = b;
         }
         else if (lastWordPathPart.startsWith('[')) {
+          completionItem.insertText = fixLabel(property.name); // fixedLabel.slice(fixedLastWordPathPart.length);
+
           const fixedLastWordPathPart = fixLabel(lastWordPathPart);
-          completionItem.insertText = fixedLabel.slice(fixedLastWordPathPart.length);
-          completionItem.range = new vscode.Range(position, position);
+          completionItem.range = new vscode.Range(fixPosition(-fixedLastWordPathPart.length), position);
         }
         else {
           completionItem.insertText = fixedLabel;
