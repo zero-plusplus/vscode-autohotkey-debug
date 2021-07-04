@@ -157,7 +157,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
-    <td rowspan=2>port</td>
+    <td>port</td>
     <td>number</td>
     <td>
         A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.<br />
@@ -165,6 +165,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
+    <td></td>
     <td>string</td>
     <td>
         If a port is already in use, a confirmation message will appear asking if you want to use a different port. If this message is annoying, you can give the debug adapter permission to use the port using the <code>"start-end"</code> format.
@@ -234,7 +235,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
-    <td rowspan=3>usePerfTips</td>
+    <td>usePerfTips</td>
     <td>boolean</td>
     <td>
         Enable / disable <a href="#perftips-optional">PerfTips</a>.<br />
@@ -242,6 +243,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
+    <td></td>
     <td>string</td>
     <td>
         Short hand for setting only <code>.format</code>.<br />
@@ -249,9 +251,10 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
+    <td></td>
     <td>object</td>
     <td>
-        Advanced settings. You can set the properties starting with <code>.</code> below.
+        Advanced settings. See the following properties for details.
     </td>
 </tr>
 <tr>
@@ -279,7 +282,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
-    <td rowspan=2>useDebugDirective</td>
+    <td>useDebugDirective</td>
     <td>boolean</td>
     <td>
         <strong>Note that if you enable, debug startup is slow.</strong><br /><br />
@@ -288,8 +291,9 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     </td>
 </tr>
 <tr>
+    <td></td>
     <td>object</td>
-    <td>Advanced settings. You can set the properties starting with <code>.</code> below.</td>
+    <td>Advanced settings. See the following properties for details.</td>
 </tr>
 <tr>
     <td><code>useBreakpointDirective</code></td>
