@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.6.10] - 2021-xx-xx
+## [1.6.10] - 2021-07-04
 ### Changed
 * Intellisense now works with dot notation (e.g. `object["key"]`)
 * Variable name (e.g. `map[key]`, `map[obj.field]`) can now be specified for bracket notation access in Conditional breakpoint, Log point, and Watch expression
