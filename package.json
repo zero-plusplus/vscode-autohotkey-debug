@@ -1,6 +1,6 @@
 {
   "name": "vscode-autohotkey-debug",
-  "version": "1.6.9",
+  "version": "1.6.10",
   "description": "Debugging support for AutoHotkey(includes H) v1 and v2",
   "author": "zero-plusplus <git@zero-plusplus.com>",
   "license": "MIT",
