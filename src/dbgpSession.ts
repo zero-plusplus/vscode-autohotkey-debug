@@ -684,6 +684,17 @@ export class Session extends EventEmitter {
       }
       return joinVariablePathArray(resolvedVariablePathArray);
     };
+    const findInheritedProperty = async(context: Context, parentName: string, key: string): Promise<Property | null> => {
+      const baseProperty = await this.fetchProperty(context, `${parentName}.base`);
+      if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
+        return null;
+      }
+      const property = await this.evaluate(`${baseProperty.fullName}.${key}`);
+      if (property) {
+        return property;
+      }
+      return findInheritedProperty(context, baseProperty.fullName, key);
+    };
     // #endregion util
     const { stackFrames } = await this.sendStackGetCommand();
     if (stackFrames.length === 0) {
@@ -697,6 +708,18 @@ export class Session extends EventEmitter {
       const property = await this.fetchProperty(context, resolvedName, _maxDepth);
       if (property) {
         return property;
+      }
+
+      const variablePathArray = splitVariablePath(this.ahkVersion, resolvedName);
+      if (variablePathArray.length < 2) {
+        continue;
+      }
+      const shortName = variablePathArray.pop()!;
+      const parentName = joinVariablePathArray(variablePathArray);
+
+      const inheritedProperty = await findInheritedProperty(context, parentName, shortName);
+      if (inheritedProperty) {
+        return inheritedProperty;
       }
     }
     return null;
