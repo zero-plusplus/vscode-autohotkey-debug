@@ -685,6 +685,11 @@ export class Session extends EventEmitter {
       return joinVariablePathArray(resolvedVariablePathArray);
     };
     const findInheritedProperty = async(context: Context, parentName: string, key: string): Promise<Property | null> => {
+      // Common to v1 and v2, do not search for inherited properties when using bracket notation
+      if (key.startsWith('[')) {
+        return null;
+      }
+
       const baseProperty = await this.fetchProperty(context, `${parentName}.base`);
       if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
         return null;
