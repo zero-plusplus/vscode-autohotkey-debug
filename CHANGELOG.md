@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.12] - 2021-xx-xx
+### Fixed
+* [#110](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/110) Suppressing an error when obtaining a non-existent key in bracket notation
+
 ## [1.6.11] - 2021-07-08
 ### Fixed
 * [#108](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/108) v2 only bug. In data inspection, dynamic property values may not be displayed correctly
@@ -340,6 +344,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.12]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.11..v1.6.12
 [1.6.11]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.10..v1.6.11
 [1.6.10]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.9..v1.6.10
 [1.6.9]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.8..v1.6.9
