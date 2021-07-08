@@ -1,6 +1,5 @@
-import * as dbgp from '../dbgpSession';
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export const isNumberLike = (value: any): boolean => {
   if (typeof value === 'string') {
     return value.trim() !== '' && !isNaN((value as any) - 0);
@@ -110,27 +109,6 @@ export const joinVariablePathArray = (pathArray: string[]): string => {
     }
     return part;
   }).join('');
-};
-export const resolveVariablePath = async(session: dbgp.Session, variablePath: string): Promise<string> => {
-  const resolvedVariablePathArray: string[] = [];
-  for await (const pathPart of splitVariablePath(session.ahkVersion, variablePath)) {
-    const isBracketNotationWithVariable = (): boolean => (session.ahkVersion.mejor === 2 ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
-
-    let resolvedPathPart = pathPart;
-    if (isBracketNotationWithVariable()) {
-      const _variablePath = pathPart.slice(1, -1);
-      const property = await session.fetchLatestProperty(_variablePath);
-      if (property instanceof dbgp.PrimitiveProperty) {
-        const escapedValue = property.value.replace(/"/gu, session.ahkVersion.mejor === 2 ? '`"' : '""');
-        resolvedPathPart = isNumberLike(escapedValue) ? `[${escapedValue}]` : `["${escapedValue}"]`;
-      }
-      else if (property instanceof dbgp.ObjectProperty) {
-        resolvedPathPart = `[Object(${property.address})]`;
-      }
-    }
-    resolvedVariablePathArray.push(resolvedPathPart);
-  }
-  return joinVariablePathArray(resolvedVariablePathArray);
 };
 export class AhkVersion {
   public readonly full: string;

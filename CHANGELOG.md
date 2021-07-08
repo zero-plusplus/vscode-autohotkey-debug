@@ -14,6 +14,11 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.11] - 2021-xx-xx
+### Fixed
+* [#108](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/108) v2 only bug. In data inspection, dynamic property values may not be displayed correctly
+* [#109](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/109) v2 only bug. In data inspection, etc., significant performance degradation when retrieving child elements of objects with depths greater than 7. e.g. `a.b.c.d.e.f.g`
+
 ## [1.6.10] - 2021-07-04
 ### Changed
 * Intellisense now works with dot notation (e.g. `object["key"]`)
@@ -335,6 +340,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.11]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.10..v1.6.11
 [1.6.10]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.9..v1.6.10
 [1.6.9]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.8..v1.6.9
 [1.6.8]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.7..v1.6.8

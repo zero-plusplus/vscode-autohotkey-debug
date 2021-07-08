@@ -597,7 +597,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         const loadedChildren = objectProperty.hasChildren && 0 < objectProperty.children.length;
         if (!loadedChildren) {
           // eslint-disable-next-line no-await-in-loop
-          const property = await this.session!.safeFetchProperty(objectProperty.context, objectProperty.fullName);
+          const property = await this.session!.fetchProperty(objectProperty.context, objectProperty.fullName);
           if (property instanceof dbgp.ObjectProperty) {
             objectProperty.isArray = property.isArray;
             objectProperty.children = property.children;
@@ -749,7 +749,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           throw Error('Error: Could not get stack frame');
         }
 
-        const property = await this.session!.safeFetchLatestProperty(propertyName);
+        const property = await this.session!.evaluate(propertyName);
         if (property === null) {
           throw Error('not available');
         }
@@ -1424,7 +1424,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else {
-        const property = await this.session!.safeFetchLatestProperty(variableName);
+        const property = await this.session!.evaluate(variableName);
 
         if (property) {
           if (property instanceof dbgp.ObjectProperty) {
