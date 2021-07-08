@@ -159,10 +159,10 @@ export class ConditionalEvaluator {
         if (operatorType.type === 'IsOperator') {
           if (valueA instanceof dbgp.ObjectProperty && valueB instanceof dbgp.ObjectProperty) {
             let baseName = `${valueA.fullName}.base`;
-            let baseClassNameProperty = await this.session.fetchLatestProperty(`${baseName}.__class`);
+            let baseClassNameProperty = await this.session.evaluate(`${baseName}.__class`);
             while (baseClassNameProperty !== null) {
               // eslint-disable-next-line no-await-in-loop
-              baseClassNameProperty = await this.session.fetchLatestProperty(`${baseName}.__class`);
+              baseClassNameProperty = await this.session.evaluate(`${baseName}.__class`);
               if (baseClassNameProperty instanceof dbgp.PrimitiveProperty) {
                 if (valueB.fullName === baseClassNameProperty.value) {
                   result = true;
@@ -240,7 +240,7 @@ export class ConditionalEvaluator {
         else if (operatorType.type === 'InOperator' && valueB instanceof dbgp.ObjectProperty) {
           if (valueA instanceof dbgp.PrimitiveProperty || typeof valueA === 'string') {
             const keyName = valueA instanceof dbgp.PrimitiveProperty ? valueA.value : valueA;
-            const property = await this.session.safeFetchLatestProperty(`${valueB.fullName}.${keyName}`);
+            const property = await this.session.evaluate(`${valueB.fullName}.${keyName}`);
             if (property !== null) {
               result = true;
             }
@@ -301,7 +301,7 @@ export class ConditionalEvaluator {
 
     const propertyName = parsed.value;
     if (parsed?.extraInfo === 'countof') {
-      const property = await this.session.safeFetchLatestProperty(propertyName);
+      const property = await this.session.evaluate(propertyName);
       if (property instanceof dbgp.ObjectProperty) {
         const maxIndex = property.maxIndex;
         if (maxIndex) {
@@ -315,7 +315,7 @@ export class ConditionalEvaluator {
       }
       return null;
     }
-    return this.session.safeFetchLatestProperty(propertyName);
+    return this.session.evaluate(propertyName);
   }
   private async evalValue(parsed, metaVariables: CaseInsensitiveMap<string, string>): Promise<string | dbgp.Property | null> {
     if (!('type' in parsed || 'value' in parsed)) {

@@ -636,7 +636,6 @@ If you use suggestion with bracket notation, please note the following
 
 Note the following additional points for v2 users.
 * AutoHotkey error may occur when suggestions a child element of a [dynamic property](https://lexikos.github.io/v2/docs/Objects.htm#Custom_Classes_property). This is caused by the `get` or `set` function of the dynamic property being executed
-* Suggesting a child element with more than seven depths, such as `a.b.c.d.e.f.g`, can be extremely time consuming. This is due to a workaround for the issue in [#51](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/51)
 
 If you don't need this feature, set `useIntelliSenseInDebugging` to `false` in [launch.json](#customize-launchjson).
 
