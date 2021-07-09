@@ -45,6 +45,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
 ### Update
+* `1.6.12` - 2021-07-09
     * Changed: [#110](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/110) Suppressing an error when retrieving a non-existent key in bracket notation
 
 * `1.6.11` - 2021-07-08

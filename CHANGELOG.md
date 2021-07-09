@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.6.12] - 2021-xx-xx
+## [1.6.12] - 2021-07-09
 ### Fixed
 * [#110](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/110) Suppressing an error when retrieving a non-existent key in bracket notation
 
