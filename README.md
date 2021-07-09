@@ -45,6 +45,9 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
 ### Update
+* `1.6.12` - 2021-xx-xx
+    * Changed: [#110](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/110) Suppressing an error when obtaining a non-existent key in bracket notation
+
 * `1.6.11` - 2021-07-08
     * Changed: [#108](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/108) v2 only bug. In data inspection, dynamic property values may not be displayed correctly
     * Changed: [#109](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/109) v2 only bug. In data inspection, etc., significant performance degradation when retrieving child elements of objects with depths greater than 7. e.g. `a.b.c.d.e.f.g`
@@ -53,10 +56,6 @@ A separate extension that supports the AutoHotkey language is required(The most 
     * Changed: Intellisense now works with dot notation (e.g. `object["key"]`)
     * Changed: Variable name (e.g. `map[key]`, `map[obj.field]`) can now be specified for bracket notation access in Conditional breakpoint, Log point, and Watch expression
     * Fixed: [#104](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/104) Inherited members are not displayed in IntelliSense
-
-* `1.6.9` - 2021-03-15
-    * Changed: Change the font used for the main icon
-    * Fixed: [#95](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/95) Slow performance of conditional breakpoints, and crashes after 6000 more than uses
 
 See [CHANGELOG](CHANGELOG.md) for details.
 

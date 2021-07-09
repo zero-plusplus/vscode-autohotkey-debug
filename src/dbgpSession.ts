@@ -4,7 +4,7 @@ import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import * as convertHrTime from 'convert-hrtime';
-import { uniqBy } from 'lodash';
+import { range, uniqBy } from 'lodash';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { AhkVersion, isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
 
@@ -685,11 +685,6 @@ export class Session extends EventEmitter {
       return joinVariablePathArray(resolvedVariablePathArray);
     };
     const findInheritedProperty = async(context: Context, parentName: string, key: string): Promise<Property | null> => {
-      // Common to v1 and v2, do not search for inherited properties when using bracket notation
-      if (key.startsWith('[')) {
-        return null;
-      }
-
       const baseProperty = await this.fetchProperty(context, `${parentName}.base`);
       if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
         return null;
@@ -699,6 +694,32 @@ export class Session extends EventEmitter {
         return property;
       }
       return findInheritedProperty(context, baseProperty.fullName, key);
+    };
+    const safeFetchProperty = async(context: Context, name: string, maxDepth?: number): Promise<Property | null> => {
+      const variablePathArray = splitVariablePath(this.ahkVersion, name);
+      const bracketNotationIndex = variablePathArray.findIndex((part) => part.startsWith('['));
+      if (bracketNotationIndex === -1) {
+        return this.fetchProperty(context, name);
+      }
+
+      let variablePath = variablePathArray.shift()!;
+      for await (const i of range(variablePathArray.length)) {
+        const part = variablePathArray[i];
+        if (!part.startsWith('[')) {
+          variablePath += `.${part}`;
+          continue;
+        }
+
+        const property = await this.fetchProperty(context, variablePath, maxDepth);
+        if (!(property && property instanceof ObjectProperty)) {
+          return null;
+        }
+        const hasChild = Boolean(property.children.find((child) => child.name === part));
+        if (!hasChild) {
+          return null;
+        }
+      }
+      return this.fetchProperty(context, name, maxDepth);
     };
     // #endregion util
     const { stackFrames } = await this.sendStackGetCommand();
@@ -710,7 +731,7 @@ export class Session extends EventEmitter {
     const resolvedName = await resolveVariablePath(name);
     const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
     for await (const context of contexts) {
-      const property = await this.fetchProperty(context, resolvedName, _maxDepth);
+      const property = await safeFetchProperty(context, resolvedName, _maxDepth);
       if (property) {
         return property;
       }
@@ -721,6 +742,11 @@ export class Session extends EventEmitter {
       }
       const shortName = variablePathArray.pop()!;
       const parentName = joinVariablePathArray(variablePathArray);
+
+      // Common to v1 and v2, do not search for inherited properties when using bracket notation
+      if (shortName.startsWith('[')) {
+        continue;
+      }
 
       const inheritedProperty = await findInheritedProperty(context, parentName, shortName);
       if (inheritedProperty) {
