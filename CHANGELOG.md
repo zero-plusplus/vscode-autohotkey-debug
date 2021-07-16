@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.13] - 2021-07-16
+### Fixed
+* [#111](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/111) Inherited child elements are not displayed on hover
+
 ## [1.6.12] - 2021-07-09
 ### Fixed
 * [#110](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/110) Suppressing an error when retrieving a non-existent key in bracket notation
@@ -344,6 +348,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.13]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.12..v1.6.13
 [1.6.12]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.11..v1.6.12
 [1.6.11]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.10..v1.6.11
 [1.6.10]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.9..v1.6.10

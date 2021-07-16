@@ -115,6 +115,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     response.body = {
       supportsConditionalBreakpoints: true,
       supportsConfigurationDoneRequest: true,
+      supportsEvaluateForHovers: true,
       supportsHitConditionalBreakpoints: true,
       supportsLoadedSourcesRequest: true,
       supportsLogPoints: true,
@@ -778,8 +779,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendResponse(response);
       }
       catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-        response.body = { result: errorMessage, variablesReference: 0 };
+        if (args.context !== 'hover') {
+          const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
+          response.body = { result: errorMessage, variablesReference: 0 };
+        }
         this.sendResponse(response);
       }
     });
