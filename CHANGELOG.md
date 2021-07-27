@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.6.14] - 2021-07-xx
+### Fixed
+* [#112](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/112) AutoHotkey2-beta.1 does not set `/ErrorStdOut=UTF-8` automatically
+
 ## [1.6.13] - 2021-07-16
 ### Fixed
 * [#111](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/111) Inherited child elements are not displayed on hover
@@ -348,6 +352,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.6.14]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.13..v1.6.14
 [1.6.13]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.12..v1.6.13
 [1.6.12]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.11..v1.6.12
 [1.6.11]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.10..v1.6.11

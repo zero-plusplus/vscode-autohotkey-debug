@@ -117,6 +117,7 @@ export class AhkVersion {
   public readonly teeny: number = 0;
   public readonly patch: number = 0;
   public readonly alpha: number = 0;
+  public readonly beta: number = 0;
   constructor(version: string) {
     const splitedVersion = version.split('.').map((part) => {
       const versionPart = parseInt(part, 10);
@@ -134,7 +135,12 @@ export class AhkVersion {
     if (alphaMatch) {
       this.alpha = typeof alphaMatch[1] === 'undefined' ? 0 : parseInt(alphaMatch[1], 10); // Note: AutoHotkey_H does not have the alpha code set. It is always `2.0-alpha`
     }
-    else {
+    const betaMatch = version.match(/-(?:beta\.)(\d+)/u);
+    if (betaMatch) {
+      this.beta = typeof betaMatch[1] === 'undefined' ? 0 : parseInt(betaMatch[1], 10);
+    }
+
+    if (this.alpha === 0 && this.beta === 0) {
       this.teeny = splitedVersion[2] ?? 0;
       this.patch = splitedVersion[3] ?? 0;
     }
