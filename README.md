@@ -45,7 +45,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
 ### Update
-* `1.6.14` - 2021-07-xx
+* `1.6.14` - 2021-07-27
     * Fixed: [#112](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/112) AutoHotkey2-beta.1 does not set `/ErrorStdOut=UTF-8` automatically
 
 * `1.6.13` - 2021-07-16

@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.6.14] - 2021-07-xx
+## [1.6.14] - 2021-07-27
 ### Fixed
 * [#112](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/112) AutoHotkey2-beta.1 does not set `/ErrorStdOut=UTF-8` automatically
 
