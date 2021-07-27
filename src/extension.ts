@@ -107,7 +107,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
             : [ '/ErrorStdOut' ];
         }
         if (typeof config.runtimeArgs_v2 === 'undefined') {
-          config.runtimeArgs_v2 = ahkVersion.alpha && 112 <= ahkVersion.alpha
+          config.runtimeArgs_v2 = 112 <= ahkVersion.alpha || 0 < ahkVersion.beta
             ? [ '/ErrorStdOut=UTF-8' ]
             : [ '/ErrorStdOut' ];
         }
