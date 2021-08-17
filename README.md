@@ -45,14 +45,14 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
 ### Update
+* `1.7.0` - 2021-xx-xx
+    * Added: [#54](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/54) `useAutoJumpToError` to launch.json
+
 * `1.6.14` - 2021-07-27
     * Fixed: [#112](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/112) AutoHotkey2-beta.1 does not set `/ErrorStdOut=UTF-8` automatically
 
 * `1.6.13` - 2021-07-16
     * Fixed: [#111](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/111) Inherited child elements are not displayed on hover
-
-* `1.6.12` - 2021-07-09
-    * Changed: [#110](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/110) Suppressing an error when retrieving a non-existent key in bracket notation
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
