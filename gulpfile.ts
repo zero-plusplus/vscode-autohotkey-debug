@@ -71,7 +71,7 @@ const bundle = gulp.series(clean, bundleWithoutClean);
 const bundleDebugWithoutClean = gulp.parallel(bundleMainDebug);
 const bundleDebug = gulp.series(clean, bundleDebugWithoutClean);
 const vscePackage = async(): Promise<void> => {
-  await run('vsce package --yarn')();
+  await run('vsce package')();
 };
 const watchMain = async(): Promise<void> => {
   return run('tsc -w')();

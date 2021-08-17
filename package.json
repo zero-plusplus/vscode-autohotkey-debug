@@ -13,13 +13,13 @@
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug/issues"
   },
   "scripts": {
-    "build": "yarn gulp build",
-    "watch": "yarn gulp watch",
-    "clean": "yarn gulp clean",
-    "test": "yarn lint && mocha -r ts-node/register ./test/**/*.test.ts",
-    "lint": "yarn gulp lint",
-    "package": "yarn gulp packaging",
-    "vscode:prepublish": "yarn gulp bundleWithoutClean"
+    "build": "npx gulp build",
+    "watch": "npx gulp watch",
+    "clean": "npx gulp clean",
+    "test": "npm run lint && mocha -r ts-node/register ./test/**/*.test.ts",
+    "lint": "npx gulp lint",
+    "package": "npx gulp packaging",
+    "vscode:prepublish": "npx gulp bundleWithoutClean"
   },
   "publisher": "zero-plusplus",
   "engines": {
