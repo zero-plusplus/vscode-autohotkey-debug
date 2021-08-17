@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.7.1] - 2021-xx-xx
+### Fixed
+* [#118](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/118) `Copy Value` does not work in Variables View
+
 ## [1.7.0] - 2021-08-17
 ### Added
 * [#54](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/54) `useAutoJumpToError` to launch.json
@@ -356,6 +360,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.7.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.0..v1.7.1
 [1.7.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.14..v1.7.0
 [1.6.14]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.13..v1.6.14
 [1.6.13]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.12..v1.6.13
