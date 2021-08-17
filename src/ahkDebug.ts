@@ -732,6 +732,12 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
     return asyncLock.acquire('evaluateRequest', async() => {
       this.traceLogger.log('evaluateRequest');
+
+      if (args.context === 'variables') {
+        this.sendResponse(response);
+        return;
+      }
+
       if (this.session!.socketClosed || this.isTerminateRequested) {
         this.sendResponse(response);
         return;
