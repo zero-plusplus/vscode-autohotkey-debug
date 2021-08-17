@@ -41,6 +41,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       useIntelliSenseInDebugging: true,
       usePerfTips: false,
       useDebugDirective: false,
+      useAutoJumpToError: false,
       trace: false,
     });
 
@@ -307,6 +308,13 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         return;
       }
       defaults(config.useDebugDirective, defaultDirectiveComment);
+    })();
+
+    // init useAutoJumpToError
+    ((): void => {
+      if (!isBoolean(config.useAutoJumpToError)) {
+        throw Error('`useAutoJumpToError` must be a boolean.');
+      }
     })();
 
     // init trace
