@@ -38,18 +38,18 @@
     {
       "label": "subtask:build",
       "type": "shell",
-      "command": "yarn build"
+      "command": "npm run build"
     },
     {
       "label": "subtask:build:without-lint",
       "type": "shell",
-      "command": "yarn build:without-lint"
+      "command": "npm run build:without-lint"
     },
     {
       "label": "subtask:watch",
       "type": "shell",
       "isBackground": true,
-      "command": "yarn watch",
+      "command": "npm run watch",
       "problemMatcher": [
           {
           "owner": "gulp",
