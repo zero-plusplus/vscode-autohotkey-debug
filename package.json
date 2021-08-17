@@ -229,6 +229,11 @@
                 "description": "Enable / disable Debug directive. See the README for detailed instructions on how to set it up.",
                 "default": false
               },
+              "useAutoJumpToError": {
+                "type": "boolean",
+                "description": "Open the error source when debugging is terminated due to an load-time error. This takes precedence over `openFileOnExit`.",
+                "default": false
+              },
               "trace": {
                 "type": "boolean",
                 "description": "No changes are required. This is a settings for developers to use to find bugs. Enable / disable display trace informaiton for debugger adapter.",

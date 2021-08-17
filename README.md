@@ -215,6 +215,15 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
         e.g. <code>"${file}"</code>
     </td>
 </tr>
+<tr>
+    <td>useAutoJumpToError</td>
+    <td>boolean</td>
+    <td>
+        Open the error source when debugging is terminated due to an <b>load-time error</b>. If you want it to work even with run-time errors, you need to use <a href="https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a">this library</a>.<br />
+        This takes precedence over <code>openFileOnExit</code>.<br />
+        <strong>default: <code>false</code><strong>
+    </td>
+</tr>
 </table>
 
 ## Advanced settings

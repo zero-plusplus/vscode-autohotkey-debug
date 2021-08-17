@@ -60,6 +60,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     useBreakpointDirective: boolean;
     useOutputDirective: boolean;
   };
+  useAutoJumpToError: boolean;
   openFileOnExit: string;
   trace: boolean;
 }
@@ -101,6 +102,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private stackFramesWhenStepOver: dbgp.StackFrame[] | null = null;
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   private readonly loadedSources: string[] = [];
+  private errorMessage = '';
   constructor() {
     super('autohotkey-debug.txt');
 
@@ -143,7 +145,20 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.session?.close();
     this.server?.close();
 
-    if (this.config.openFileOnExit) {
+    let jumpToError = false;
+    if (this.config.useAutoJumpToError && this.errorMessage) {
+      const match = this.errorMessage.match(/^(?<filePath>.+):(?<line>\d+)(?=\s:\s==>)/u);
+      if (match?.groups) {
+        const { filePath, line } = match.groups;
+        const doc = await vscode.workspace.openTextDocument(filePath);
+        const position = new vscode.Position(parseInt(line, 10) - 1, 0);
+        vscode.window.showTextDocument(doc, {
+          selection: new vscode.Range(position, position),
+        });
+        jumpToError = true;
+      }
+    }
+    if (!jumpToError && this.config.openFileOnExit) {
       if (pathExistsSync(this.config.openFileOnExit)) {
         const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
         vscode.window.showTextDocument(doc);
@@ -201,6 +216,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       });
       ahkProcess.stderr.on('data', (data: Buffer) => {
         const fixedData = this.fixPathOfRuntimeError(String(data));
+        this.errorMessage = fixedData;
         this.sendEvent(new OutputEvent(fixedData, 'stderr'));
       });
       this.ahkProcess = ahkProcess;
@@ -240,6 +256,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 })
                 .on('stderr', (data) => {
                   const fixedData = this.fixPathOfRuntimeError(String(data));
+                  this.errorMessage = fixedData;
                   this.sendEvent(new OutputEvent(fixedData, 'stderr'));
                 });
 

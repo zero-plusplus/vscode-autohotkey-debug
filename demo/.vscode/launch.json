@@ -15,6 +15,7 @@
             "usePerfTips": true,
             "openFileOnExit": "${file}",
             "internalConsoleOptions": "openOnSessionStart",
+            "useAutoJumpToError": true,
             "trace": false
         },
         {
