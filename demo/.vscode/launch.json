@@ -2,9 +2,9 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "AutoHotkey Debug",
             "type": "autohotkey",
             "request": "launch",
-            "name": "AutoHotkey Debug",
             "program": "${file}",
             "runtime_v1": "AutoHotkey.exe",
             "runtime_v2": "v2/AutoHotkey.exe",
@@ -16,6 +16,23 @@
             "openFileOnExit": "${file}",
             "internalConsoleOptions": "openOnSessionStart",
             "useAutoJumpToError": true,
+            "trace": false
+        },
+        {
+            "name": "AutoHotkey Debug (UIA)",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${file}",
+            "runtime": "AutoHotkeyU64_UIA.exe",
+            "args": [],
+            "port": "9002-9010",
+            "stopOnEntry": false,
+            "useDebugDirective": true,
+            "usePerfTips": true,
+            "openFileOnExit": "${file}",
+            "internalConsoleOptions": "openOnSessionStart",
+            "useAutoJumpToError": true,
+            "useUIAVersion": true,
             "trace": false
         },
         {

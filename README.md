@@ -63,15 +63,26 @@ It also runs asynchronously, so it runs very fast. Best of all, VSCode's debug U
 
 See [Features](#features) for details.
 
-### Unsupported
+## Unsupported
 The following features cannot be implemented due to specifications.
 * Attach to a running script
 
-### About AutoHotkey_H
+## About AutoHotkey_H
 I'm not familiar with [AutoHotkey_H](https://hotkeyit.github.io/v2/), but like AutoHotkey, it uses [DBGP](https://xdebug.org/) and should be able to be debugged without problems.
 However, the implementation is a bit different, so there may be some inherent bugs that may occur.
 
 If you find a bug, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
+
+## About UIA version of AutoHotkey
+Read more about UIA [here](https://www.autohotkey.com/docs/Program.htm#Installer_uiAccess).
+
+There was a issue with my extension that it was not possible to debug the UIA version of AutoHotkey.
+The limitation has been avoided, but please be aware of the following limitations compared to normal debugging.
+
+* The runtime argument `/ErrorStdOut` will be ignored. This is due to the limitation of not being able to get the error message in case of a read error. For this reason, do not use the `#ErrorStdOut` directive
+* Output to stderr using `FileOpen` or `FileAppend` does not work. Please use `OutputDebug` instead
+
+In addition to the above issues, other limitations may also occur. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
 # Installation
 1. Install [Visual Studio Code](https://code.visualstudio.com/) with version `1.45.0` or higher
@@ -311,6 +322,14 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td><code>useOutputDirective</code></td>
     <td>boolean</td>
     <td>Enable / disable <a href="#output-directive">Output directive</a>.</td>
+</tr>
+<tr>
+    <td><code>useUIAVersion</code></td>
+    <td>boolean</td>
+    <td>If set to <code>true</code>, debugging of the <a href="https://www.autohotkey.com/docs/Program.htm#Installer_uiAccess">UIA version of AutoHotkey</a> will be possible. Unlike normal debugging, there are some limitations. Please check them <a href=#about-uia-version-of-autohotkey>here</a>.<br />
+    If you don't know about UIA, you don't need to worry about this setting.<br />
+    <strong>default: <code>false</code><strong>
+    </td>
 </tr>
 </table>
 

@@ -9,6 +9,16 @@ export const isNumberLike = (value: any): boolean => {
   }
   return false;
 };
+export const timeoutPromise = async<T>(promise: Promise<T>, timeout: number): Promise<T | void> => {
+  return Promise.race([
+    promise, new Promise<void>((resolve, reject) => {
+      const id = setTimeout(() => {
+        clearTimeout(id);
+        reject(new Error('timeout'));
+      }, timeout);
+    }),
+  ]);
+};
 export const splitVariablePath = (ahkVersion: AhkVersion, variablePath: string): string[] => {
   const result: string[] = [];
 

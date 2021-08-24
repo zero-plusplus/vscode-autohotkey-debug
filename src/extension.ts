@@ -22,7 +22,18 @@ import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
 
+const ahkPathResolve = (filePath: string, cwd?: string): string => {
+  let _filePath = filePath;
+  if (!path.isAbsolute(filePath)) {
+    _filePath = path.resolve(cwd ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey`, filePath);
+  }
+  if (path.extname(_filePath) === '') {
+    _filePath += '.exe';
+  }
+  return _filePath;
+};
 const normalizePath = (filePath: string): string => (filePath ? path.normalize(filePath) : filePath); // If pass in an empty string, path.normalize returns '.'
+
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
     defaults(config, {
@@ -42,6 +53,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       usePerfTips: false,
       useDebugDirective: false,
       useAutoJumpToError: false,
+      useUIAVersion: false,
       trace: false,
     });
 
@@ -80,13 +92,8 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         throw Error('`runtime` must be a string.');
       }
       if (config.runtime) {
-        if (!path.isAbsolute(config.runtime)) {
-          const ahkPath = `${String(process.env.PROGRAMFILES)}/AutoHotkey`;
-          config.runtime = path.resolve(ahkPath, config.runtime);
-        }
-        if (path.extname(config.runtime) === '') {
-          config.runtime += '.exe';
-        }
+        config.runtime = ahkPathResolve(config.runtime);
+        return;
       }
 
       if (!existsSync(config.runtime)) {
@@ -94,9 +101,22 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       }
     })();
 
+    // init useUIAVersion
+    ((): void => {
+      if (!isBoolean(config.useUIAVersion)) {
+        throw Error('`useUIAVersion` must be a boolean.');
+      }
+    })();
+
     // init runtimeArgs
     ((): void => {
-      if (typeof config.runtimeArgs === 'undefined') {
+      if (config.useUIAVersion) {
+        if (!config.runtimeArgs) {
+          config.runtimeArgs = [];
+        }
+        return;
+      }
+      else if (typeof config.runtimeArgs === 'undefined') {
         const ahkVersion = getAhkVersion(config.runtime, { env: config.env });
         if (ahkVersion === null) {
           throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);

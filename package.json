@@ -234,6 +234,11 @@
                 "description": "Open the error source when debugging is terminated due to an load-time error. This takes precedence over `openFileOnExit`.",
                 "default": false
               },
+              "useUIAVersion": {
+                "type": "boolean",
+                "description": "If you don't know about UIA, ignore it. This setting must be `true` if you want to use the UIA version of AutoHotkey. There are some limitations, please check the README.",
+                "default": false
+              },
               "trace": {
                 "type": "boolean",
                 "description": "No changes are required. This is a settings for developers to use to find bugs. Enable / disable display trace informaiton for debugger adapter.",

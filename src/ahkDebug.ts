@@ -1,10 +1,8 @@
 import * as path from 'path';
 import * as net from 'net';
 import { stat } from 'fs';
-import {
-  ChildProcessWithoutNullStreams,
-  spawn,
-} from 'child_process';
+
+
 import * as vscode from 'vscode';
 import {
   InitializedEvent,
@@ -39,6 +37,8 @@ import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
+import { AutoHotkeyLauncher, AutoHotkeyScriptHandler } from './util/AutoHotkeyLuncher';
+import { timeoutPromise } from './util/util';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
   program: string;
@@ -61,6 +61,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     useOutputDirective: boolean;
   };
   useAutoJumpToError: boolean;
+  useUIAVersion: boolean;
   openFileOnExit: string;
   trace: boolean;
 }
@@ -83,7 +84,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private isTerminateRequested = false;
   private server?: net.Server;
   private session?: dbgp.Session;
-  private ahkProcess?: ChildProcessWithoutNullStreams;
+  private scriptHandler?: AutoHotkeyScriptHandler;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
   private readonly contextByVariablesReference = new Map<number, dbgp.Context>();
@@ -132,15 +133,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.clearPerfTipsDecorations();
 
     if (this.session?.socketWritable) {
-      await Promise.race([
-        this.session.sendStopCommand(),
-        new Promise<void>((resolve) => {
-          setTimeout(() => {
-            this.ahkProcess?.kill();
-            resolve();
-          }, 500);
-        }),
-      ]);
+      await timeoutPromise(this.session.sendStopCommand(), 500);
     }
     await this.session?.close();
     this.server?.close();
@@ -183,43 +176,29 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.config = args;
 
     try {
-      const runtimeArgs: string[] = [];
-      if (!args.noDebug) {
-        runtimeArgs.push(`/Debug=${String(args.hostname)}:${String(args.port)}`);
-      }
-      runtimeArgs.push(...this.config.runtimeArgs);
-      runtimeArgs.push(`${args.program}`);
-      runtimeArgs.push(...args.args);
-      this.sendEvent(new OutputEvent(`${this.config.runtime} ${runtimeArgs.join(' ')}\n`, 'console'));
-      const ahkProcess = spawn(
-        this.config.runtime,
-        runtimeArgs,
-        {
-          cwd: path.dirname(args.program),
-          env: args.env,
-        },
-      );
-      ahkProcess.on('close', (exitCode) => {
-        if (this.isTerminateRequested) {
-          return;
-        }
+      this.scriptHandler = new AutoHotkeyLauncher(this.config).launch();
+      this.scriptHandler.event
+        .on('close', (exitCode?: number) => {
+          if (this.isTerminateRequested) {
+            return;
+          }
 
-        if (exitCode) {
-          const category = exitCode === 0 ? 'console' : 'stderr';
-          this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
-        }
-        this.sendTerminateEvent();
-      });
-      ahkProcess.stdout.on('data', (data: string | Buffer) => {
-        const fixedData = this.fixPathOfRuntimeError(String(data));
-        this.sendEvent(new OutputEvent(fixedData, 'stdout'));
-      });
-      ahkProcess.stderr.on('data', (data: Buffer) => {
-        const fixedData = this.fixPathOfRuntimeError(String(data));
-        this.errorMessage = fixedData;
-        this.sendEvent(new OutputEvent(fixedData, 'stderr'));
-      });
-      this.ahkProcess = ahkProcess;
+          if (exitCode) {
+            const category = exitCode === 0 ? 'console' : 'stderr';
+            this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
+          }
+          this.sendTerminateEvent();
+        })
+        .on('stdout', (message: string) => {
+          const fixedData = this.fixPathOfRuntimeError(message);
+          this.sendEvent(new OutputEvent(fixedData, 'stdout'));
+        })
+        .on('stderr', (message: string) => {
+          const fixedData = this.fixPathOfRuntimeError(String(message));
+          this.errorMessage = fixedData;
+          this.sendEvent(new OutputEvent(fixedData, 'stderr'));
+        });
+      this.sendEvent(new OutputEvent(`${this.scriptHandler.command}`, 'console'));
 
       await new Promise<void>((resolve, reject) => {
         this.server = net.createServer()
@@ -252,12 +231,10 @@ export class AhkDebugSession extends LoggingDebugSession {
                   this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
                 })
                 .on('stdout', (data) => {
-                  this.sendEvent(new OutputEvent(data, 'stdout'));
+                  this.scriptHandler!.event.emit('stdout', String(data));
                 })
                 .on('stderr', (data) => {
-                  const fixedData = this.fixPathOfRuntimeError(String(data));
-                  this.errorMessage = fixedData;
-                  this.sendEvent(new OutputEvent(fixedData, 'stderr'));
+                  this.scriptHandler!.event.emit('stderr', String(data));
                 });
 
               this.breakpointManager = new BreakpointManager(this.session);
@@ -273,11 +250,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-      const message = {
-        id: 2,
-        format: errorMessage,
-      } as DebugProtocol.Message;
-      this.sendErrorResponse(response, message);
+      this.sendErrorResponse(response, { id: 2, format: errorMessage });
       this.sendTerminateEvent();
       return;
     }
