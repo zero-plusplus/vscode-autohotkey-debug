@@ -1,13 +1,14 @@
 **Translated by [DeepL Tranlator](https://www.deepl.com/translator)**
 
 # TOC
+The link may not work when viewed from VSCode. I recommend that you view it from [here](https://marketplace.visualstudio.com/items?itemName=zero-plusplus.vscode-autohotkey-debug).
 * [Before reading](#before-reading)
 * [News](#news)
 * [Overview](#overview)
 * [Installation](#installation)
 * [Usage](#usage)
 * [Customize launch.json](#customize-launchjson)
-* [MetaVariable](#metavariable) ***NEW***
+* [MetaVariable](#metavariable)
 * [Features](#features)
     * [Data inspection](#data-inspection)
     * [Call stack](#call-stack)
@@ -18,12 +19,12 @@
         * [Conditional breakpoint](#conditional-breakpoint)
         * [Hit conditional breakpoint](#hit-conditional-breakpoint)
         * [Log point](#log-point)
-    * [IntelliSense in debugging](#intellisense-in-debugging) ***NEW***
+    * [IntelliSense in debugging](#intellisense-in-debugging)
     * [Debug console](#debug-console)
-    * [PerfTips (Optional)](#perftips-optional) ***NEW***
+    * [PerfTips (Optional)](#perftips-optional)
     * [Debug directive (Optional)](#debug-directive-optional)
-        * [Breakpoint directive](#breakpoint-directive) ***NEW***
-        * [Output directive](#output-directive) ***NEW***
+        * [Breakpoint directive](#breakpoint-directive)
+        * [Output directive](#output-directive)
 * [Known issues](#known-issues)
 * [Development support](#development-support)
 
