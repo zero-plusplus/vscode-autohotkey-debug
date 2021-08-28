@@ -13,6 +13,7 @@ module.exports = {
       ...preset.ts.default,
       rules: {
         ...preset.ts.default.rules,
+        'no-undefined': 'off',
       },
     },
   ],

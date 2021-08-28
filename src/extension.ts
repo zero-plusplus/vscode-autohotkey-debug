@@ -80,10 +80,10 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     })();
 
     // init runtime
-    ((): void => {
+    await (async(): Promise<void> => {
       if (typeof config.runtime === 'undefined') {
-        const editor = window.activeTextEditor;
-        config.runtime = editor && editor.document.languageId.toLowerCase() === 'ahk'
+        const doc = await workspace.openTextDocument(config.program);
+        config.runtime = doc.languageId.toLowerCase() === 'ahk'
           ? config.runtime_v1
           : config.runtime_v2; // ahk2 or ah2
       }
@@ -109,7 +109,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     })();
 
     // init runtimeArgs
-    ((): void => {
+    await (async(): Promise<void> => {
       if (config.useUIAVersion) {
         if (!config.runtimeArgs) {
           config.runtimeArgs = [];
@@ -133,8 +133,8 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
             : [ '/ErrorStdOut' ];
         }
 
-        const editor = window.activeTextEditor;
-        config.runtimeArgs = editor && editor.document.languageId.toLowerCase() === 'ahk'
+        const doc = await workspace.openTextDocument(config.program);
+        config.runtimeArgs = doc.languageId.toLowerCase() === 'ahk'
           ? config.runtimeArgs_v1
           : config.runtimeArgs_v2; // ahk2 or ah2
 
