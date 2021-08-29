@@ -14,6 +14,7 @@ import {
   debug,
   languages,
   window,
+  workspace,
 } from 'vscode';
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
 import { defaults, isString, range } from 'lodash';
