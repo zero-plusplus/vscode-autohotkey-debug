@@ -143,11 +143,28 @@ export class AhkDebugSession extends LoggingDebugSession {
       const match = this.errorMessage.match(/^(?<filePath>.+):(?<line>\d+)(?=\s:\s==>)/u);
       if (match?.groups) {
         const { filePath, line } = match.groups;
+        const _line = parseInt(line, 10) - 1;
+
         const doc = await vscode.workspace.openTextDocument(filePath);
-        const position = new vscode.Position(parseInt(line, 10) - 1, 0);
-        vscode.window.showTextDocument(doc, {
-          selection: new vscode.Range(position, position),
+        const lineRange = doc.lineAt(_line).range;
+        const lineText = doc.getText(lineRange);
+        const leadingSpace = lineText.match(/^(?<space>\s*)/u)?.groups?.space ?? '';
+        const trailingSpace = lineText.match(/(?<space>\s+)$/u)?.groups?.space ?? '';
+        const startPosition = new vscode.Position(_line, leadingSpace.length);
+        const endPosition = new vscode.Position(_line, lineText.length - trailingSpace.length);
+        const editor = await vscode.window.showTextDocument(doc, {
+          selection: new vscode.Range(startPosition, startPosition),
         });
+
+        const decorationType = vscode.window.createTextEditorDecorationType({
+          backgroundColor: new vscode.ThemeColor('editor.symbolHighlightBackground'),
+        });
+        const decoration: vscode.DecorationOptions = { range: new vscode.Range(startPosition, endPosition) };
+        editor.setDecorations(decorationType, [ decoration ]);
+        setTimeout(() => {
+          editor.setDecorations(decorationType, []);
+        }, 500);
+
         jumpToError = true;
       }
     }

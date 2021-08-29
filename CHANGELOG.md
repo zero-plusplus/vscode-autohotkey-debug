@@ -18,6 +18,9 @@ Also want to check the development status, check the [commit history](https://gi
 ### Added
 * [#78](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/78) `useUIAVersion` to launch.json
 
+### Changed
+* [#129](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/129) Only when using `useAutoJumpToError`. When jumping to an error, highlight the jump destination for a short while
+
 ## [1.7.1] - 2021-08-17
 ### Fixed
 * [#118](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/118) `Copy Value` does not work in Variables View
