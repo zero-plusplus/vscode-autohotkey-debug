@@ -39,6 +39,7 @@ import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyScriptHandler } from './util/AutoHotkeyLuncher';
 import { timeoutPromise } from './util/util';
+import { isNumber } from 'ts-predicates';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
   program: string;
@@ -200,7 +201,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             return;
           }
 
-          if (exitCode) {
+          if (isNumber(exitCode)) {
             const category = exitCode === 0 ? 'console' : 'stderr';
             this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
           }
