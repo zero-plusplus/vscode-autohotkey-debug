@@ -45,6 +45,18 @@
             "args": [],
             "stopOnEntry": false,
             "maxChildren": 10000
-        }
+        },
+        {
+            "name": "AutoHotkey Attach",
+            "type": "autohotkey",
+            "request": "attach",
+            "runtime": "AutoHotkey.exe",
+            "program": "${file}",
+            "hostname": "127.0.0.1",
+            "useDebugDirective": true,
+            "openFileOnExit": "${file}",
+            "useAutoJumpToError": true,
+            "trace": false,
+        },
     ]
 }

@@ -17,3 +17,19 @@ export const lastIndexOf = (str: string, searchText: string | RegExp, fromIndex?
   const result = [ ...fixedString.matchAll(regexp) ].pop();
   return result?.index ?? -1;
 };
+
+export const escapePcreRegExEscape = (str: string): string => {
+  return str
+    .replace(/\\/gu, '\\\\')
+    .replace(/\./gu, '\\.')
+    .replace(/\*/gu, '\\*')
+    .replace(/\?/gu, '\\?')
+    .replace(/\+/gu, '\\+')
+    .replace(/\[/gu, '\\[')
+    .replace(/\{/gu, '\\{')
+    .replace(/\|/gu, '\\|')
+    .replace(/\(/gu, '\\(')
+    .replace(/\)/gu, '\\)')
+    .replace(/\^/gu, '\\^')
+    .replace(/\$/gu, '\\$');
+};

@@ -16,6 +16,7 @@ Also want to check the development status, check the [commit history](https://gi
 ## [Released]
 ## [1.8.0] - 2021-xx-xx
 ### Added
+* [#67](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/67) Support attach mode
 * [#78](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/78) `useUIAVersion` to launch.json
 
 ### Changed
@@ -370,7 +371,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[1.7.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.1..v1.8.0
+[1.8.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.1..v1.8.0
 [1.7.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.0..v1.7.1
 [1.7.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.14..v1.7.0
 [1.6.14]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.13..v1.6.14

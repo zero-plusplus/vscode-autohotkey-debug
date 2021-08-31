@@ -47,6 +47,7 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 ### Update
 * `1.8.0` - 2021-xx-xx
+    * Added: [#67](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/67) Support attach mode
     * Added: [#78](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/78) `useUIAVersion` to launch.json
     * Changed: [#129](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/129) Only when using `useAutoJumpToError`. When jumping to an error, highlight the jump destination for a short while
     * Fixed: [#130](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/130) When the error code is `0`, the debug exit message is not displayed
@@ -66,10 +67,6 @@ It also runs asynchronously, so it runs very fast. Best of all, VSCode's debug U
 
 See [Features](#features) for details.
 
-## Unsupported
-The following features cannot be implemented due to specifications.
-* Attach to a running script
-
 ## About AutoHotkey_H
 I'm not familiar with [AutoHotkey_H](https://hotkeyit.github.io/v2/), but like AutoHotkey, it uses [DBGP](https://xdebug.org/) and should be able to be debugged without problems.
 However, the implementation is a bit different, so there may be some inherent bugs that may occur.
@@ -83,7 +80,12 @@ There was a issue with my extension that it was not possible to debug the UIA ve
 The limitation has been avoided, but please be aware of the following limitations compared to normal debugging.
 
 * The runtime argument `/ErrorStdOut` will be ignored. This is due to the limitation of not being able to get the error message in case of a read error. For this reason, do not use the `#ErrorStdOut` directive
-* Output to stderr using `FileOpen` or `FileAppend` does not work. Please use `OutputDebug` instead
+* It is not possible to display messages to in the debug console by following code. Please use `OutputDebug` instead.
+    ```ahk
+    FileAppend("message", "**")          ; Not displayed
+    FileOpen("**", "w").write("message") ; Not displayed
+    OutputDebug("message")               ; Displayed
+    ```
 
 In addition to the above issues, other limitations may also occur. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
@@ -111,7 +113,15 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
 * `${file}` :　It will be replaced with the path of the currently open file
 * `${workspaceFolder}` :　It will be replaced with the path of the folder opened in the VS code
 
-## Basic settings
+You also need to know about the two debug modes. There are two modes, `launch` and `attach`, which can be set via `request`.
+
+`launch` is the general debug mode. It launches the specified script and starts the debugger at the same time.
+
+On the other hand, `attach` is a mode to debug a script that is already running. This mode has the same [limitations](#about-uia-version-of-autohotkey) as when using `useUIAVersion`.
+
+Note that most of these modes use the same settings, but some of them are different.
+
+## Basic settings (launch mode)
 <table>
 <tr>
     <th>Name</th>
@@ -134,7 +144,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
 <tr>
     <td>request</td>
     <td>string</td>
-    <td>Specify <code>"launch"</code>. VSCode also supports <code>"attach"</code>, but this extension does not support it. So its value is fixed.</td>
+    <td>Specify <code>"launch"</code>.</td>
 </tr>
 <tr>
     <td>runtime</td>
@@ -240,7 +250,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
 </tr>
 </table>
 
-## Advanced settings
+## Advanced settings (launch mode)
 <table>
 <tr>
     <th>Name</th>
@@ -332,6 +342,62 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td>If set to <code>true</code>, debugging of the <a href="https://www.autohotkey.com/docs/Program.htm#Installer_uiAccess">UIA version of AutoHotkey</a> will be possible. Unlike normal debugging, there are some limitations. Please check them <a href=#about-uia-version-of-autohotkey>here</a>.<br />
     If you don't know about UIA, you don't need to worry about this setting.<br />
     <strong>default: <code>false</code><strong>
+    </td>
+</tr>
+</table>
+
+## Settings (atatch mode)
+The following settings are exactly the same as in launch mode.
+* `hostname`
+* `port`
+* `maxChildren`
+* `openFileOnExit`
+* `useIntelliSenseInDebugging`
+* `usePerfTips`
+* `useDebugDirective`
+* `useAutoJumpToError`
+
+The following are not supported in `attach` mode.
+* `runtimeArgs`
+* `runtimeArgs_v1`
+* `runtimeArgs_v2`
+* `args`
+* `env`
+* `useUIAVersion`
+
+The following are settings for `attach` mode only. Some of them have the same name as `launch` mode, but the meaning may be slightly different.
+<table>
+<tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td>request</td>
+    <td>string</td>
+    <td>Specify <code>"attach"</code>.</td>
+</tr>
+<tr>
+    <td>runtime</td>
+    <td>string</td>
+    <td>
+        The path to AutoHotkey.exe to run the script to attach to the <code>program</code>.
+    </td>
+</tr>
+<tr>
+    <td>program</td>
+    <td>string</td>
+    <td>
+        The path of the script file you want to attach.<br />
+        <b>Unlike the launch mode, it cannot be omitted.</b>
+    </td>
+</tr>
+<tr>
+    <td>stopOnEntry</td>
+    <td>string</td>
+    <td>
+        If <code>true</code>, it will break immediately after attach.<br />
+        <strong>default: <code>false</code></strong>
     </td>
 </tr>
 </table>

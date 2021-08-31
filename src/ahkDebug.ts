@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as net from 'net';
 import { stat } from 'fs';
-
+import { EventEmitter } from 'events';
 
 import * as vscode from 'vscode';
 import {
@@ -37,12 +37,13 @@ import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
-import { AutoHotkeyLauncher, AutoHotkeyScriptHandler } from './util/AutoHotkeyLuncher';
+import { AutoHotkeyLauncher } from './util/AutoHotkeyLuncher';
 import { timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 
-export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
+  request: 'launch' | 'attach';
   runtime: string;
   runtimeArgs: string[];
   args: string[];
@@ -85,7 +86,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private isTerminateRequested = false;
   private server?: net.Server;
   private session?: dbgp.Session;
-  private scriptHandler?: AutoHotkeyScriptHandler;
+  private scriptEventEmitter?: EventEmitter;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
   private readonly contextByVariablesReference = new Map<number, dbgp.Context>();
@@ -105,6 +106,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   private readonly loadedSources: string[] = [];
   private errorMessage = '';
+  private exitCode?: number | undefined;
   constructor() {
     super('autohotkey-debug.txt');
 
@@ -124,69 +126,33 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportsLoadedSourcesRequest: true,
       supportsLogPoints: true,
       supportsSetVariable: true,
+      supportTerminateDebuggee: true,
     };
 
     this.sendResponse(response);
   }
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('disconnectRequest');
-    this.isTerminateRequested = true;
     this.clearPerfTipsDecorations();
-
     if (this.session?.socketWritable) {
-      await timeoutPromise(this.session.sendStopCommand(), 500);
+      await timeoutPromise(args.terminateDebuggee ? this.session.sendStopCommand() : this.session.sendDetachCommand(), 500);
+    }
+    if (isNumber(this.exitCode)) {
+      this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr'));
+    }
+    else {
+      this.sendEvent(new OutputEvent(args.terminateDebuggee ? 'Debugging stopped' : 'Attaching stopped', 'console'));
     }
     await this.session?.close();
     this.server?.close();
+    this.isTerminateRequested = true;
 
-    let jumpToError = false;
-    if (this.config.useAutoJumpToError && this.errorMessage) {
-      const match = this.errorMessage.match(/^(?<filePath>.+):(?<line>\d+)(?=\s:\s==>)/u);
-      if (match?.groups) {
-        const { filePath, line } = match.groups;
-        const _line = parseInt(line, 10) - 1;
-
-        const doc = await vscode.workspace.openTextDocument(filePath);
-        const lineRange = doc.lineAt(_line).range;
-        const lineText = doc.getText(lineRange);
-        const leadingSpace = lineText.match(/^(?<space>\s*)/u)?.groups?.space ?? '';
-        const trailingSpace = lineText.match(/(?<space>\s+)$/u)?.groups?.space ?? '';
-        const startPosition = new vscode.Position(_line, leadingSpace.length);
-        const endPosition = new vscode.Position(_line, lineText.length - trailingSpace.length);
-        const editor = await vscode.window.showTextDocument(doc, {
-          selection: new vscode.Range(startPosition, startPosition),
-        });
-
-        const decorationType = vscode.window.createTextEditorDecorationType({
-          backgroundColor: new vscode.ThemeColor('editor.symbolHighlightBackground'),
-        });
-        const decoration: vscode.DecorationOptions = { range: new vscode.Range(startPosition, endPosition) };
-        editor.setDecorations(decorationType, [ decoration ]);
-        setTimeout(() => {
-          editor.setDecorations(decorationType, []);
-        }, 500);
-
-        jumpToError = true;
-      }
-    }
-    if (!jumpToError && this.config.openFileOnExit) {
-      if (pathExistsSync(this.config.openFileOnExit)) {
-        const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
-        vscode.window.showTextDocument(doc);
-      }
-      else {
-        const message = {
-          id: 1,
-          format: `File not found. Value of \`openFileOnExit\` in launch.json: \`${this.config.openFileOnExit}\``,
-        } as DebugProtocol.Message;
-        // For some reason, the error message could not be displayed by the following method.
-        // this.sendErrorResponse(response, message);
-        vscode.window.showErrorMessage(message.format);
-      }
+    const jumpToError = await this.jumpToError();
+    if (!jumpToError) {
+      this.openFileOnExit();
     }
 
     this.sendResponse(response);
-    this.shutdown();
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): Promise<void> {
     this.traceLogger.enable = args.trace;
@@ -194,16 +160,16 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.config = args;
 
     try {
-      this.scriptHandler = new AutoHotkeyLauncher(this.config).launch();
-      this.scriptHandler.event
+      const scriptHandler = new AutoHotkeyLauncher(this.config).launch();
+      this.scriptEventEmitter = scriptHandler.event;
+      this.scriptEventEmitter
         .on('close', (exitCode?: number) => {
           if (this.isTerminateRequested) {
             return;
           }
 
           if (isNumber(exitCode)) {
-            const category = exitCode === 0 ? 'console' : 'stderr';
-            this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
+            this.exitCode = exitCode;
           }
           this.sendTerminateEvent();
         })
@@ -212,59 +178,12 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.sendEvent(new OutputEvent(fixedData, 'stdout'));
         })
         .on('stderr', (message: string) => {
-          const fixedData = this.fixPathOfRuntimeError(String(message));
-          this.errorMessage = fixedData;
-          this.sendEvent(new OutputEvent(fixedData, 'stderr'));
+          this.errorMessage = this.fixPathOfRuntimeError(message);
+          this.sendEvent(new OutputEvent(this.errorMessage, 'stderr'));
         });
-      this.sendEvent(new OutputEvent(`${this.scriptHandler.command}`, 'console'));
+      this.sendEvent(new OutputEvent(`${scriptHandler.command}`, 'console'));
 
-      await new Promise<void>((resolve, reject) => {
-        this.server = net.createServer()
-          .listen(args.port, args.hostname)
-          .on('connection', (socket) => {
-            try {
-              this.session = new dbgp.Session(socket)
-                .on('init', (initPacket: dbgp.InitPacket) => {
-                  if (typeof this.session === 'undefined') {
-                    return;
-                  }
-
-                  completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
-                  completionItemProvider.session = this.session;
-                  this.ahkParser = createParser(this.session.ahkVersion);
-                  this.conditionalEvaluator = new ConditionalEvaluator(this.session);
-                  this.sendEvent(new InitializedEvent());
-                })
-                .on('warning', (warning: string) => {
-                  this.sendEvent(new OutputEvent(`${warning}\n`));
-                })
-                .on('error', (error?: Error) => {
-                  if (error) {
-                    this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
-                  }
-
-                  this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-                })
-                .on('close', () => {
-                  this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-                })
-                .on('stdout', (data) => {
-                  this.scriptHandler!.event.emit('stdout', String(data));
-                })
-                .on('stderr', (data) => {
-                  this.scriptHandler!.event.emit('stderr', String(data));
-                });
-
-              this.breakpointManager = new BreakpointManager(this.session);
-              this.sendEvent(new ThreadEvent('Session started.', this.session.id));
-              resolve();
-            }
-            catch (error: unknown) {
-              this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
-              reject(error);
-            }
-          });
-      });
+      await this.createServer(args);
     }
     catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
@@ -273,6 +192,43 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
+    this.sendResponse(response);
+  }
+  protected async attachRequest(response: DebugProtocol.AttachResponse, args: LaunchRequestArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.enable = args.trace;
+    this.traceLogger.log('attachRequest');
+    this.config = args;
+    const success = new AutoHotkeyLauncher(this.config).attach();
+    if (!success) {
+      this.sendEvent(new OutputEvent(`The attach failed. The specified script has not been executed.\nSpecified: ${this.config.program}\n`, 'stderr'));
+      this.sendTerminateEvent();
+      this.sendResponse(response);
+      return;
+    }
+    this.scriptEventEmitter = new EventEmitter();
+    this.scriptEventEmitter
+      .on('close', (exitCode?: number) => {
+        if (this.isTerminateRequested) {
+          return;
+        }
+
+        if (isNumber(exitCode)) {
+          const category = exitCode === 0 ? 'console' : 'stderr';
+          this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
+        }
+        this.sendTerminateEvent();
+      })
+      .on('stdout', (message: string) => {
+        const fixedData = this.fixPathOfRuntimeError(message);
+        this.sendEvent(new OutputEvent(fixedData, 'stdout'));
+      })
+      .on('stderr', (message: string) => {
+        const fixedData = this.fixPathOfRuntimeError(String(message));
+        this.errorMessage = fixedData;
+        this.sendEvent(new OutputEvent(fixedData, 'stderr'));
+      });
+
+    await this.createServer(args);
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
@@ -1532,6 +1488,105 @@ export class AhkDebugSession extends LoggingDebugSession {
       for (const decorationType of this.perfTipsDecorationTypes) {
         editor.setDecorations(decorationType, []);
       }
+    }
+  }
+  private async createServer(args: LaunchRequestArguments): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.server = net.createServer()
+        .listen(args.port, args.hostname)
+        .on('connection', (socket) => {
+          try {
+            this.session = new dbgp.Session(socket)
+              .on('init', (initPacket: dbgp.InitPacket) => {
+                if (typeof this.session === 'undefined') {
+                  return;
+                }
+
+                completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
+                completionItemProvider.session = this.session;
+                this.ahkParser = createParser(this.session.ahkVersion);
+                this.conditionalEvaluator = new ConditionalEvaluator(this.session);
+                this.sendEvent(new InitializedEvent());
+              })
+              .on('warning', (warning: string) => {
+                this.sendEvent(new OutputEvent(`${warning}\n`));
+              })
+              .on('error', (error?: Error) => {
+                if (error) {
+                  this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
+                }
+
+                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+              })
+              .on('close', () => {
+                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+              })
+              .on('stdout', (data) => {
+                this.scriptEventEmitter!.emit('stdout', String(data));
+              })
+              .on('stderr', (data) => {
+                this.scriptEventEmitter!.emit('stderr', String(data));
+              });
+
+            this.breakpointManager = new BreakpointManager(this.session);
+            this.sendEvent(new ThreadEvent('Session started.', this.session.id));
+            resolve();
+          }
+          catch (error: unknown) {
+            this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
+            reject(error);
+          }
+        });
+    });
+  }
+  private async jumpToError(): Promise<boolean> {
+    if (this.config.useAutoJumpToError && this.errorMessage) {
+      const match = this.errorMessage.match(/^(?<filePath>.+):(?<line>\d+)(?=\s:\s==>)/u);
+      if (match?.groups) {
+        const { filePath, line } = match.groups;
+        const _line = parseInt(line, 10) - 1;
+
+        const doc = await vscode.workspace.openTextDocument(filePath);
+        const lineRange = doc.lineAt(_line).range;
+        const lineText = doc.getText(lineRange);
+        const leadingSpace = lineText.match(/^(?<space>\s*)/u)?.groups?.space ?? '';
+        const trailingSpace = lineText.match(/(?<space>\s+)$/u)?.groups?.space ?? '';
+        const startPosition = new vscode.Position(_line, leadingSpace.length);
+        const endPosition = new vscode.Position(_line, lineText.length - trailingSpace.length);
+        const editor = await vscode.window.showTextDocument(doc, {
+          selection: new vscode.Range(startPosition, startPosition),
+        });
+
+        const decorationType = vscode.window.createTextEditorDecorationType({
+          backgroundColor: new vscode.ThemeColor('editor.symbolHighlightBackground'),
+        });
+        const decoration: vscode.DecorationOptions = { range: new vscode.Range(startPosition, endPosition) };
+        editor.setDecorations(decorationType, [ decoration ]);
+        setTimeout(() => {
+          editor.setDecorations(decorationType, []);
+        }, 500);
+
+        return true;
+      }
+    }
+    return false;
+  }
+  private async openFileOnExit(): Promise<void> {
+    if (!this.config.openFileOnExit) {
+      return;
+    }
+    if (pathExistsSync(this.config.openFileOnExit)) {
+      const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
+      vscode.window.showTextDocument(doc);
+    }
+    else {
+      const message = {
+        id: 1,
+        format: `File not found. Value of \`openFileOnExit\` in launch.json: \`${this.config.openFileOnExit}\``,
+      } as DebugProtocol.Message;
+      // For some reason, the error message could not be displayed by the following method.
+      // this.sendErrorResponse(response, message);
+      vscode.window.showErrorMessage(message.format);
     }
   }
 }

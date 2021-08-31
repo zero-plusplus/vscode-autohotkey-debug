@@ -72,12 +72,11 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       if (config.request === 'launch') {
         return;
       }
-
-      const commonErrorMessage = '`type` must be "launch".';
       if (config.request === 'attach') {
-        throw Error(`${commonErrorMessage} "attach" is not supported.`);
+        return;
       }
-      throw Error(commonErrorMessage);
+
+      throw Error('`request` must be "launch" or "attach".');
     })();
 
     // init runtime
@@ -154,6 +153,9 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       if (!isString(config.hostname)) {
         throw Error('`hostname` must be a string.');
       }
+      if (config.hostname.toLowerCase() === 'localhost') {
+        config.hostname = '127.0.0.1';
+      }
     })();
 
     // init port
@@ -221,8 +223,11 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       if (!isString(config.program)) {
         throw Error('`program` must be a string.');
       }
-      if (!existsSync(config.program)) {
+      if (config.request === 'launch' && !existsSync(config.program)) {
         throw Error(`\`program\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.program))}"`);
+      }
+      if (config.program) {
+        config.program = path.resolve(config.program);
       }
     })();
 
@@ -354,7 +359,7 @@ class InlineDebugAdapterFactory implements DebugAdapterDescriptorFactory {
   }
 }
 
-export const activate = function(context: ExtensionContext): void {
+export const activate = (context: ExtensionContext): void => {
   const provider = new AhkConfigurationProvider();
 
   context.subscriptions.push(debug.registerDebugConfigurationProvider('ahk', provider));

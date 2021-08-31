@@ -154,7 +154,7 @@
               },
               "stopOnEntry": {
                 "type": "boolean",
-                "description": "If false, it runs until it stops at a breakpoint. Set it to true if you want it to stop at the first line, as in SciTE4AutoHotkey.",
+                "description": "If true, it will break immediately after attach.",
                 "default": false
               },
               "maxChildren": {
@@ -237,6 +237,123 @@
               "useUIAVersion": {
                 "type": "boolean",
                 "description": "If you don't know about UIA, ignore it. This setting must be `true` if you want to use the UIA version of AutoHotkey. There are some limitations, please check the README.",
+                "default": false
+              },
+              "trace": {
+                "type": "boolean",
+                "description": "No changes are required. This is a settings for developers to use to find bugs. Enable / disable display trace informaiton for debugger adapter.",
+                "default": false
+              }
+            }
+          },
+          "attach": {
+            "properties": {
+              "runtime": {
+                "type": "string",
+                "description": "The path to AutoHotkey.exe to run the script to attach to the `program`. If you specify a relative path, the current directory is \"C:/Program Files/AutoHotkey\". Also extension(i.e. \".exe\") is optional.",
+                "default": "AutoHotkey.exe"
+              },
+              "hostname": {
+                "type": "string",
+                "description": "No changes are required.",
+                "default": "localhost"
+              },
+              "port": {
+                "type": [
+                  "string",
+                  "number"
+                ],
+                "examples": [
+                  "9002-9010"
+                ],
+                "description": "A port to be assigned to the debugger. Basically, you don't need to change it, but if you want to debug more than one at the same time, you need to set different ports for each.",
+                "default": 9002
+              },
+              "program": {
+                "type": "string",
+                "description": "The path of the script file you want to attach.",
+                "default": ""
+              },
+              "stopOnEntry": {
+                "type": "boolean",
+                "description": "If false, it runs until it stops at a breakpoint. Set it to true if you want it to stop at the first line, as in SciTE4AutoHotkey.",
+                "default": false
+              },
+              "maxChildren": {
+                "type": "number",
+                "description": "The maximum number of child elements of the object to be retrieved. Basically, there is no need to change it.",
+                "default": 10000
+              },
+              "openFileOnExit": {
+                "type": "string",
+                "description": "The absolute path of the script you want to open when the debugging is finished. This is useful if you want to quickly edit a specific script.",
+                "default": "${file}"
+              },
+              "useIntelliSenseInDebugging": {
+                "type": "boolean",
+                "description": "Enable / disable IntelliSense in Debugging. If you have installed another extension that supports IntelliSense, it is recommended to disable this feature.",
+                "default": true
+              },
+              "usePerfTips": {
+                "type": [
+                  "boolean",
+                  "string",
+                  "object"
+                ],
+                "examples": [
+                  "{{elapsedTime_s}}s elapsed"
+                ],
+                "properties": {
+                  "format": {
+                    "type": "string",
+                    "description": "Content to be displayed. See the README for detailed instructions on how to set it up.",
+                    "examples": [
+                      "{{elapsedTime_s}}s elapsed"
+                    ],
+                    "default": "{{elapsedTime_s}}s elapsed"
+                  },
+                  "fontColor": {
+                    "type": "string",
+                    "description": "Set the `color` of CSS.",
+                    "default": "gray"
+                  },
+                  "fontStyle": {
+                    "type": "string",
+                    "description": "Set the `font-style` of CSS.",
+                    "default": "italic",
+                    "examples": [
+                      "normal",
+                      "italic",
+                      "oblique"
+                    ]
+                  }
+                },
+                "description": "Enable / disable PerfTips. See the README for detailed instructions on how to set it up.",
+                "default": false
+              },
+              "useDebugDirective": {
+                "type": [
+                  "boolean",
+                  "object"
+                ],
+                "properties": {
+                  "useBreakpointDirective": {
+                    "type": "boolean",
+                    "description": "Enable / disable Breakpoint directive.",
+                    "default": true
+                  },
+                  "useOutputDirective": {
+                    "type": "boolean",
+                    "description": "Enable / disable Output directive.",
+                    "default": true
+                  }
+                },
+                "description": "Enable / disable Debug directive. See the README for detailed instructions on how to set it up.",
+                "default": false
+              },
+              "useAutoJumpToError": {
+                "type": "boolean",
+                "description": "Open the error source when debugging is terminated due to an load-time error. This takes precedence over `openFileOnExit`.",
                 "default": false
               },
               "trace": {
