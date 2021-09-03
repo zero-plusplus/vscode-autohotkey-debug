@@ -137,12 +137,18 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (this.session?.socketWritable) {
       await timeoutPromise(args.terminateDebuggee ? this.session.sendStopCommand() : this.session.sendDetachCommand(), 500);
     }
+
     if (isNumber(this.exitCode)) {
       this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr'));
     }
-    else {
-      this.sendEvent(new OutputEvent(args.terminateDebuggee ? 'Debugging stopped' : 'Attaching stopped', 'console'));
+
+    if (args.terminateDebuggee) {
+      this.sendEvent(new OutputEvent(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.', 'console'));
     }
+    else if (this.scriptEventEmitter) {
+      this.sendEvent(new OutputEvent('Attaching stopped.', 'console'));
+    }
+
     await this.session?.close();
     this.server?.close();
     this.isTerminateRequested = true;
@@ -200,11 +206,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.config = args;
     const success = new AutoHotkeyLauncher(this.config).attach();
     if (!success) {
-      this.sendEvent(new OutputEvent(`The attach failed. The specified script has not been executed.\nSpecified: ${this.config.program}\n`, 'stderr'));
+      this.sendEvent(new OutputEvent(`Failed to attach "${this.config.program}".\n`, 'stderr'));
       this.sendTerminateEvent();
       this.sendResponse(response);
       return;
     }
+
+    this.sendEvent(new OutputEvent(`Attached to "${this.config.program}".\n`, 'console'));
     this.scriptEventEmitter = new EventEmitter();
     this.scriptEventEmitter
       .on('close', (exitCode?: number) => {
