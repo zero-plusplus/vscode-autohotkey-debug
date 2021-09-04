@@ -1,3 +1,4 @@
+/* eslint-disable require-atomic-updates */
 import { existsSync } from 'fs';
 import * as path from 'path';
 import {
@@ -22,6 +23,7 @@ import * as isPortTaken from 'is-port-taken';
 import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
+import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -45,7 +47,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtime_v2: 'v2/AutoHotkey.exe',
       hostname: 'localhost',
       port: 9002,
-      program: '${file}',
+      program: config.request === 'launch' ? '${file}' : undefined,
       args: [],
       env: {},
       stopOnEntry: false,
@@ -82,7 +84,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     // init runtime
     await (async(): Promise<void> => {
       if (typeof config.runtime === 'undefined') {
-        const doc = await workspace.openTextDocument(config.program);
+        const doc = await workspace.openTextDocument(config.program ?? window.activeTextEditor?.document.uri.fsPath);
         config.runtime = doc.languageId.toLowerCase() === 'ahk'
           ? config.runtime_v1
           : config.runtime_v2; // ahk2 or ah2
@@ -202,7 +204,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       for await (const port of portRange.range) {
         const portUsed = await isPortTaken(port, config.hostname);
         if (!portUsed) {
-          // eslint-disable-next-line require-atomic-updates
           config.port = port;
           return;
         }
@@ -219,7 +220,13 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     })();
 
     // init program
-    ((): void => {
+    await (async(): Promise<void> => {
+      if (config.request === 'attach' && config.program === undefined) {
+        const scriptPathList = getRunningAhkScriptList(config.runtime);
+        const scriptPath = await window.showQuickPick(scriptPathList);
+        config.program = scriptPath ?? '';
+        return;
+      }
       if (!isString(config.program)) {
         throw Error('`program` must be a string.');
       }

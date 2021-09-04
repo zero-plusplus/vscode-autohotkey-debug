@@ -203,7 +203,16 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async attachRequest(response: DebugProtocol.AttachResponse, args: LaunchRequestArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.enable = args.trace;
     this.traceLogger.log('attachRequest');
+
     this.config = args;
+
+    if (!this.config.program) {
+      this.sendEvent(new OutputEvent(`Canceled attach.\n`, 'console'));
+      this.sendTerminateEvent();
+      this.sendResponse(response);
+      return;
+    }
+
     const success = new AutoHotkeyLauncher(this.config).attach();
     if (!success) {
       this.sendEvent(new OutputEvent(`Failed to attach "${this.config.program}".\n`, 'stderr'));

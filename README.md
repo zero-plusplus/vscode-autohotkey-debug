@@ -389,7 +389,7 @@ The following are settings for `attach` mode only. Some of them have the same na
     <td>string</td>
     <td>
         The path of the script file you want to attach.<br />
-        <b>Unlike the launch mode, it cannot be omitted.</b>
+        If omitted, you can select a script to attach from the list of AutoHotkey scripts that are already running.
     </td>
 </tr>
 <tr>
