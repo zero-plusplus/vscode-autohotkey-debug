@@ -1,7 +1,6 @@
 import * as path from 'path';
 import * as net from 'net';
 import { stat } from 'fs';
-import { EventEmitter } from 'events';
 
 import * as vscode from 'vscode';
 import {
@@ -37,7 +36,7 @@ import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
-import { AutoHotkeyLauncher } from './util/AutoHotkeyLuncher';
+import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
 import { timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 
@@ -86,7 +85,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private isTerminateRequested = false;
   private server?: net.Server;
   private session?: dbgp.Session;
-  private scriptEventEmitter?: EventEmitter;
+  private ahkProcess?: AutoHotkeyProcess;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
   private readonly contextByVariablesReference = new Map<number, dbgp.Context>();
@@ -140,12 +139,12 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (isNumber(this.exitCode)) {
       this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr'));
+      this.sendEvent(new OutputEvent('Debugging stopped.', 'console'));
     }
-
-    if (args.terminateDebuggee) {
+    else if (args.terminateDebuggee) {
       this.sendEvent(new OutputEvent(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.', 'console'));
     }
-    else if (this.scriptEventEmitter) {
+    else if (this.config.request === 'attach' && this.ahkProcess) {
       this.sendEvent(new OutputEvent('Attaching stopped.', 'console'));
     }
 
@@ -166,9 +165,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.config = args;
 
     try {
-      const scriptHandler = new AutoHotkeyLauncher(this.config).launch();
-      this.scriptEventEmitter = scriptHandler.event;
-      this.scriptEventEmitter
+      this.ahkProcess = new AutoHotkeyLauncher(this.config).launch();
+      this.ahkProcess.event
         .on('close', (exitCode?: number) => {
           if (this.isTerminateRequested) {
             return;
@@ -187,7 +185,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.errorMessage = this.fixPathOfRuntimeError(message);
           this.sendEvent(new OutputEvent(this.errorMessage, 'stderr'));
         });
-      this.sendEvent(new OutputEvent(`${scriptHandler.command}`, 'console'));
+      this.sendEvent(new OutputEvent(`${this.ahkProcess.command}`, 'console'));
 
       await this.createServer(args);
     }
@@ -213,8 +211,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const success = new AutoHotkeyLauncher(this.config).attach();
-    if (!success) {
+    const ahkProcess = new AutoHotkeyLauncher(this.config).attach();
+    if (!ahkProcess) {
       this.sendEvent(new OutputEvent(`Failed to attach "${this.config.program}".\n`, 'stderr'));
       this.sendTerminateEvent();
       this.sendResponse(response);
@@ -222,8 +220,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     this.sendEvent(new OutputEvent(`Attached to "${this.config.program}".\n`, 'console'));
-    this.scriptEventEmitter = new EventEmitter();
-    this.scriptEventEmitter
+    this.ahkProcess = ahkProcess;
+    this.ahkProcess.event
       .on('close', (exitCode?: number) => {
         if (this.isTerminateRequested) {
           return;
@@ -1539,10 +1537,10 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
               })
               .on('stdout', (data) => {
-                this.scriptEventEmitter!.emit('stdout', String(data));
+                this.ahkProcess!.event.emit('stdout', String(data));
               })
               .on('stderr', (data) => {
-                this.scriptEventEmitter!.emit('stderr', String(data));
+                this.ahkProcess!.event.emit('stderr', String(data));
               });
 
             this.breakpointManager = new BreakpointManager(this.session);

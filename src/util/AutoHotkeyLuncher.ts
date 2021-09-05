@@ -5,7 +5,7 @@ import { LaunchRequestArguments } from '../ahkDebug';
 import { getAhkVersion } from './getAhkVersion';
 import { escapePcreRegExEscape } from './stringUtils';
 
-export type AutoHotkeyScriptHandler = {
+export type AutoHotkeyProcess = {
   command: string;
   event: EventEmitter;
   close: () => void;
@@ -16,13 +16,13 @@ export class AutoHotkeyLauncher {
   constructor(launchRequest: LaunchRequestArguments) {
     this.launchRequest = launchRequest;
   }
-  public launch(): AutoHotkeyScriptHandler {
+  public launch(): AutoHotkeyProcess {
     if (this.launchRequest.useUIAVersion) {
       return this.launchByCmd();
     }
     return this.launchByNode();
   }
-  public launchByNode(): AutoHotkeyScriptHandler {
+  public launchByNode(): AutoHotkeyProcess {
     const { noDebug, runtime, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
 
     const launchArgs = [
@@ -51,7 +51,7 @@ export class AutoHotkeyLauncher {
       },
     };
   }
-  public launchByCmd(): AutoHotkeyScriptHandler {
+  public launchByCmd(): AutoHotkeyProcess {
     const { noDebug, runtime, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
     const _runtimeArgs = runtimeArgs.filter((arg) => arg.toLowerCase() !== '/errorstdout');
     const launchArgs = [
@@ -80,7 +80,7 @@ export class AutoHotkeyLauncher {
       },
     };
   }
-  public attach(): boolean {
+  public attach(): AutoHotkeyProcess | false {
     const { runtime, program, hostname, port } = this.launchRequest;
 
     const version = getAhkVersion(runtime);
@@ -110,6 +110,10 @@ export class AutoHotkeyLauncher {
       return false;
     }
 
-    return result.status === 0;
+    return {
+      command: '',
+      event: new EventEmitter(),
+      close: (): void => {},
+    };
   }
 }
