@@ -117,7 +117,7 @@ You also need to know about the two debug modes. There are two modes, `launch` a
 
 `launch` is the general debug mode. It launches the specified script and starts the debugger at the same time.
 
-On the other hand, `attach` is a mode to debug a script that is already running. This mode has the same [limitations](#about-uia-version-of-autohotkey) as when using `useUIAVersion`.
+On the other hand, `attach` is a mode to debug a script that is already running.
 
 Note that most of these modes use the same settings, but some of them are different.
 
@@ -347,6 +347,8 @@ Note that most of these modes use the same settings, but some of them are differ
 </table>
 
 ## Settings (atatch mode)
+This mode has the same [limitations](#about-uia-version-of-autohotkey) as when using `useUIAVersion` of `launch` mode.
+
 The following settings are exactly the same as in launch mode.
 * `hostname`
 * `port`
