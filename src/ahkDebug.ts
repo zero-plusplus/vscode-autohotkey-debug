@@ -550,6 +550,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     for (const property of properties) {
       let variablesReference = 0, indexedVariables, namedVariables;
 
+      // Fix: [#133](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/133)
+      if (property.fullName.includes('<enum>')) {
+        continue;
+      }
+
       if (args.filter) {
         if (args.filter === 'named' && property.isIndexKey) {
           continue;
