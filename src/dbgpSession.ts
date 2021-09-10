@@ -4,7 +4,7 @@ import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import * as convertHrTime from 'convert-hrtime';
-import { range, uniqBy } from 'lodash';
+import { range, uniq, uniqBy } from 'lodash';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { AhkVersion, isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
 
@@ -651,6 +651,20 @@ export class Session extends EventEmitter {
   }
   public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
+  }
+  public async fetchAllVariableNames(): Promise<string[]> {
+    const { stackFrames } = await this.sendStackGetCommand();
+    if (stackFrames.length === 0) {
+      return [];
+    }
+
+    const variableNames: string[] = [];
+    const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
+    for await (const context of contexts) {
+      const { properties } = await this.sendContextGetCommand(context);
+      variableNames.push(...properties.map((property) => property.name));
+    }
+    return uniq(variableNames);
   }
   public async fetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | null> {
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);

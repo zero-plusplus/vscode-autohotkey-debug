@@ -742,6 +742,15 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const property = await this.session!.evaluate(propertyName);
         if (property === null) {
+          if (args.context === 'hover' && (await this.session!.fetchAllVariableNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
+            response.body = {
+              result: 'Not initialized',
+              type: 'undefined',
+              variablesReference: -1,
+            };
+            this.sendResponse(response);
+            return;
+          }
           throw Error('not available');
         }
 
