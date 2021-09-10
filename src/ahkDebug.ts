@@ -710,7 +710,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
-      const propertyName = args.expression;
+      const propertyName = args.context === 'hover' ? args.expression.replace(/^&/u, '') : args.expression;
       try {
         if (!args.frameId) {
           throw Error('Error: Cannot evaluate code without a session');
