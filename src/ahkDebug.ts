@@ -1019,6 +1019,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     return null;
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
+    this.traceLogger.log('checkContinuationStatus');
     if (this.session!.socketClosed || this.isTerminateRequested) {
       return;
     }
