@@ -66,6 +66,9 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       config.type = 'autohotkey';
     }
 
+    if (config.openFileOnExit === '${file}' && !window.activeTextEditor) {
+      config.openFileOnExit = undefined;
+    }
     return config;
   }
   public async resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): Promise<DebugConfiguration> {
