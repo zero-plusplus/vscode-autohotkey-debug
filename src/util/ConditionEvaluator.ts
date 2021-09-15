@@ -340,6 +340,9 @@ export class ConditionalEvaluator {
         }
         return String(primitive.value);
       }
+      if (primitive.type === 'Boolean') {
+        return String(primitive.value);
+      }
 
       const number = primitive.value;
       if (parsed?.extraInfo === 'countof') {
