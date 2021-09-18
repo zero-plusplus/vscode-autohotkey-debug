@@ -153,18 +153,20 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    if (isNumber(this.exitCode)) {
-      this.sendOutputEvent(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr');
-      this.sendOutputEvent('Debugging stopped.', 'console');
-    }
-    else if (args.terminateDebuggee === true && !this.config.cancelReason) {
-      this.sendOutputEvent(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.', 'console');
-    }
-    else if (args.terminateDebuggee === false && !this.config.cancelReason) {
-      this.sendOutputEvent('Debugging disconnected. AutoHotkey script is continued.', 'console');
-    }
-    else if (this.config.request === 'attach' && this.ahkProcess) {
-      this.sendOutputEvent('Attaching stopped.', 'console');
+    if (!args.restart) {
+      if (isNumber(this.exitCode)) {
+        this.sendOutputEvent(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr');
+        this.sendOutputEvent('Debugging stopped.', 'console');
+      }
+      else if (args.terminateDebuggee === true && !this.config.cancelReason) {
+        this.sendOutputEvent(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.', 'console');
+      }
+      else if (args.terminateDebuggee === false && !this.config.cancelReason) {
+        this.sendOutputEvent('Debugging disconnected. AutoHotkey script is continued.', 'console');
+      }
+      else if (this.config.request === 'attach' && this.ahkProcess) {
+        this.sendOutputEvent('Attaching stopped.', 'console');
+      }
     }
 
     await this.session?.close();
