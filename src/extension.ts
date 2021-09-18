@@ -58,6 +58,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       useAutoJumpToError: false,
       useUIAVersion: false,
       trace: false,
+      cancelReason: undefined,
     });
 
     // Deprecated. I''ll get rid of it eventually
@@ -224,11 +225,25 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
 
     // init program
     await (async(): Promise<void> => {
-      if (config.request === 'attach' && config.program === undefined) {
+      if (config.request === 'attach') {
         const scriptPathList = getRunningAhkScriptList(config.runtime);
-        const scriptPath = await window.showQuickPick(scriptPathList);
-        config.program = scriptPath ?? '';
-        return;
+        if (scriptPathList.length === 0) {
+          config.cancelReason = `Canceled the attachment because no running AutoHotkey script was found.`;
+          return;
+        }
+        if (config.program === undefined) {
+          const scriptPath = await window.showQuickPick(scriptPathList);
+          if (scriptPath) {
+            config.program = scriptPath;
+            return;
+          }
+          config.cancelReason = `Cancel the attach.`;
+          return;
+        }
+        const isRunning = scriptPathList.map((scriptPath) => path.resolve(scriptPath.toLocaleLowerCase())).includes(path.resolve(config.program).toLowerCase());
+        if (!isRunning) {
+          config.cancelReason = `Canceled the attach because "${String(config.program)}" is not running.`;
+        }
       }
       if (!isString(config.program)) {
         throw Error('`program` must be a string.');

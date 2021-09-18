@@ -65,6 +65,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   useUIAVersion: boolean;
   openFileOnExit: string;
   trace: boolean;
+  cancelReason?: string;
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
@@ -150,10 +151,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr'));
       this.sendEvent(new OutputEvent('Debugging stopped.', 'console'));
     }
-    else if (args.terminateDebuggee === true) {
+    else if (args.terminateDebuggee === true && !this.config.cancelReason) {
       this.sendEvent(new OutputEvent(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.', 'console'));
     }
-    else if (args.terminateDebuggee === false) {
+    else if (args.terminateDebuggee === false && !this.config.cancelReason) {
       this.sendEvent(new OutputEvent('Debugging disconnected. AutoHotkey script is continued.', 'console'));
     }
     else if (this.config.request === 'attach' && this.ahkProcess) {
@@ -216,8 +217,8 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.config = args;
 
-    if (!this.config.program) {
-      this.sendEvent(new OutputEvent(`Canceled attach.\n`, 'console'));
+    if (this.config.cancelReason) {
+      this.sendEvent(new OutputEvent(`${this.config.cancelReason}\n`, 'console'));
       this.sendTerminateEvent();
       this.sendResponse(response);
       return;
