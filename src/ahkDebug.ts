@@ -140,7 +140,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         });
       }
       else {
-        this.ahkProcess?.disconnect();
         await timeoutPromise(this.session.sendDetachCommand(), 500).catch(() => {
           this.ahkProcess?.close();
         });

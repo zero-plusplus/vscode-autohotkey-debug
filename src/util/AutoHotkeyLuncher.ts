@@ -9,7 +9,6 @@ export type AutoHotkeyProcess = {
   command: string;
   event: EventEmitter;
   close: () => void;
-  disconnect: () => void;
 };
 
 export class AutoHotkeyLauncher {
@@ -47,9 +46,6 @@ export class AutoHotkeyLauncher {
     return {
       command: `"${runtime}" ${launchArgs.join(' ')}\n`,
       event,
-      disconnect: (): void => {
-        ahkProcess.disconnect();
-      },
       close: (): void => {
         ahkProcess.kill();
       },
@@ -79,8 +75,6 @@ export class AutoHotkeyLauncher {
     return {
       command: `"${runtime}" ${launchArgs.join(' ')}\n`,
       event,
-      disconnect: (): void => {
-      },
       close: (): void => {
         ahkProcess.kill();
       },
@@ -119,7 +113,6 @@ export class AutoHotkeyLauncher {
     return {
       command: '',
       event: new EventEmitter(),
-      disconnect: (): void => {},
       close: (): void => {},
     };
   }
