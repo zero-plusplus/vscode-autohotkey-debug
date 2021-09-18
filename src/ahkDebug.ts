@@ -134,15 +134,28 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.traceLogger.log('disconnectRequest');
     this.clearPerfTipsDecorations();
     if (this.session?.socketWritable) {
-      await timeoutPromise(args.terminateDebuggee ? this.session.sendStopCommand() : this.session.sendDetachCommand(), 500);
+      if (args.terminateDebuggee === undefined || args.terminateDebuggee) {
+        await timeoutPromise(this.session.sendStopCommand(), 500).catch(() => {
+          this.ahkProcess?.close();
+        });
+      }
+      else {
+        this.ahkProcess?.disconnect();
+        await timeoutPromise(this.session.sendDetachCommand(), 500).catch(() => {
+          this.ahkProcess?.close();
+        });
+      }
     }
 
     if (isNumber(this.exitCode)) {
       this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr'));
       this.sendEvent(new OutputEvent('Debugging stopped.', 'console'));
     }
-    else if (args.terminateDebuggee) {
+    else if (args.terminateDebuggee === true) {
       this.sendEvent(new OutputEvent(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.', 'console'));
+    }
+    else if (args.terminateDebuggee === false) {
+      this.sendEvent(new OutputEvent('Debugging disconnected. AutoHotkey script is continued.', 'console'));
     }
     else if (this.config.request === 'attach' && this.ahkProcess) {
       this.sendEvent(new OutputEvent('Attaching stopped.', 'console'));
