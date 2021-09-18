@@ -134,8 +134,14 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('disconnectRequest');
     this.clearPerfTipsDecorations();
+
     if (this.session?.socketWritable) {
-      if (args.terminateDebuggee === undefined || args.terminateDebuggee) {
+      if (args.restart && this.config.request === 'attach') {
+        await timeoutPromise(this.session.sendDetachCommand(), 500).catch(() => {
+          this.ahkProcess?.close();
+        });
+      }
+      else if (args.terminateDebuggee === undefined || args.terminateDebuggee) {
         await timeoutPromise(this.session.sendStopCommand(), 500).catch(() => {
           this.ahkProcess?.close();
         });
