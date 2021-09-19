@@ -41,5 +41,9 @@ export const getRunningAhkScriptList = (ahkRuntime: string, options?: SpawnSyncO
   if (result.error) {
     return [];
   }
-  return result.stdout.toString().split('\n');
+  const scriptList = result.stdout.toString();
+  if (scriptList) {
+    return scriptList.split('\n');
+  }
+  return [];
 };
