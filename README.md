@@ -34,16 +34,12 @@ A separate extension that supports the AutoHotkey language is required(The most 
 
 * Before you update, please look at the [News](#news) below this first. It may contain important information. Also, there may be a fatal bug in the new version. If this is the case, please refer to [CHANGELOG](CHANGELOG.md) to downgrade it
 
-* If you want to know what the next version of the plan is, check out the [milestones](https://github.com/zero-plusplus/vscode-autohotkey-debug/milestones). Also if you want to see the latest progress, you can check the [commit history](https://github.com/zero-plusplus/vscode-autohotkey-debug/commits/develop) of the develop branch
-
 * If you're interested in supporting the development(bug reports, sponsorship, etc.), look [here](#development-support). **Note: Pull Request is not accepted**
 
 # News
 
 ### Important Notices
-* From `1.6.0`, `Advanced output` has been removed. This was not a feasible feature. Please use [Output directive](#output-directive) instead
-
-* From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
+Since `1.8.0` is a relatively large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
 ### Update
 * `1.8.0` - 2021-xx-xx
@@ -68,11 +64,10 @@ A separate extension that supports the AutoHotkey language is required(The most 
 See [CHANGELOG](CHANGELOG.md) for details.
 
 # Overview
-This extension was designed to be upwardly compatible with the SciTE4AutoHotkey debug adapter.
-So you can use all of it's features as well as new features such as [Conditional breakpoint](#conditional-breakpoint).
-It also runs asynchronously, so it runs very fast. Best of all, VSCode's debug UI is great!
 
-See [Features](#features) for details.
+This extension has all the debugging features of SciTE4AutoHotkey, plus many advanced features such as [Conditional breakpoint](#conditional-breakpoint).
+
+The amount of text used to describe these features is quite large, so if you have any questions, I recommend that you ask them in the [discussion](https://github.com/zero-plusplus/vscode-autohotkey-debug/discussions). (Github account required).
 
 ## About AutoHotkey_H
 I'm not familiar with [AutoHotkey_H](https://hotkeyit.github.io/v2/), but like AutoHotkey, it uses [DBGP](https://xdebug.org/) and should be able to be debugged without problems.
@@ -126,7 +121,7 @@ You also need to know about the two debug modes. There are two modes, `launch` a
 
 On the other hand, `attach` is a mode to debug a script that is already running.
 
-Note that most of these modes use the same settings, but some of them are different.
+Note that most of these modes use the same settings, but some of them are [different](#advanced-settings-launch-mode).
 
 ## Basic settings (launch mode)
 <table>
