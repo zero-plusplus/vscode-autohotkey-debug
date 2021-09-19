@@ -354,7 +354,7 @@ Note that most of these modes use the same settings, but some of them are differ
 </table>
 
 ## Settings (atatch mode)
-This mode has the same [limitations](#about-uia-version-of-autohotkey) as when using `useUIAVersion` of `launch` mode.
+**This mode has the same [limitations](#about-uia-version-of-autohotkey) as when using `useUIAVersion` of `launch` mode. Also, it cannot be attached to the UIA version of AutoHotkey.**
 
 The following settings are exactly the same as in launch mode.
 * `hostname`
