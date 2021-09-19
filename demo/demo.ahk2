@@ -74,6 +74,9 @@ class Clazz extends ClazzBase
             return this._staticField_baking := value
         }
     }
+    __Enum() {
+        return this.ownProps()
+    }
 
     field := "instance field"
     _property_baking := "baking"
