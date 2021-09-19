@@ -58,5 +58,17 @@
             "useAutoJumpToError": true,
             "trace": false,
         },
+        {
+            "name": "AutoHotkey Selected Attach",
+            "type": "autohotkey",
+            "request": "attach",
+            "runtime": "AutoHotkey.exe",
+            "hostname": "127.0.0.1",
+            "useDebugDirective": true,
+            "openFileOnExit": "${file}",
+            "useAutoJumpToError": true,
+            "stopOnEntry": true,
+            "trace": false,
+        },
     ]
 }
