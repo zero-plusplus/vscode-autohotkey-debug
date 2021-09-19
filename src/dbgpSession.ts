@@ -225,6 +225,9 @@ export class ObjectProperty extends Property {
       const indexes: number[] = [];
       properties.forEach((propertyNode) => {
         const child = Property.from(propertyNode, context);
+        if (child.name === '<enume>') {
+          return;
+        }
         if (child.index) {
           indexes.push(child.index);
         }
