@@ -14,6 +14,24 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.8.0] - 2021-xx-xx
+### Added
+* [#67](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/67) Support attach mode
+* [#78](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/78) `useUIAVersion` to launch.json
+
+### Changed
+* [#129](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/129) Only when using `useAutoJumpToError`. When jumping to an error, highlight the jump destination for a short while
+* [#131](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/131) Enable the disconnect button
+
+### Fixed
+* [#130](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/130) When the error code is `0`, the debug exit message is not displayed
+* [#133](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/133) v2 only bug. Debugging crashes when trying to look at a child element of an instance of a class with `__Enum` meta-function
+* [#135](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/135) v2 only bug. Hovering over `&variable` does not show variable information
+* [#135](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/135) Information is not displayed when uninitialized variable names are hovered over
+* [#137](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/137) If `${file}` is set to `openFileOnExit` when the editor is not open, an error occurs and debugging cannot be started
+* [#138](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/138) Conditional breakpoints do not recognize boolean values
+* [#139](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/139) v2 only bug. Conditional breakpoints cannot compare numbers in scientific notation correctly
+
 ## [1.7.1] - 2021-08-17
 ### Fixed
 * [#118](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/118) `Copy Value` does not work in Variables View
@@ -360,6 +378,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.8.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.1..v1.8.0
 [1.7.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.0..v1.7.1
 [1.7.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.14..v1.7.0
 [1.6.14]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.13..v1.6.14

@@ -1,13 +1,14 @@
 **Translated by [DeepL Tranlator](https://www.deepl.com/translator)**
 
 # TOC
+The link may not work when viewed from VSCode. I recommend that you view it from [here](https://marketplace.visualstudio.com/items?itemName=zero-plusplus.vscode-autohotkey-debug).
 * [Before reading](#before-reading)
 * [News](#news)
 * [Overview](#overview)
 * [Installation](#installation)
 * [Usage](#usage)
 * [Customize launch.json](#customize-launchjson)
-* [MetaVariable](#metavariable) ***NEW***
+* [MetaVariable](#metavariable)
 * [Features](#features)
     * [Data inspection](#data-inspection)
     * [Call stack](#call-stack)
@@ -18,12 +19,12 @@
         * [Conditional breakpoint](#conditional-breakpoint)
         * [Hit conditional breakpoint](#hit-conditional-breakpoint)
         * [Log point](#log-point)
-    * [IntelliSense in debugging](#intellisense-in-debugging) ***NEW***
+    * [IntelliSense in debugging](#intellisense-in-debugging)
     * [Debug console](#debug-console)
-    * [PerfTips (Optional)](#perftips-optional) ***NEW***
+    * [PerfTips (Optional)](#perftips-optional)
     * [Debug directive (Optional)](#debug-directive-optional)
-        * [Breakpoint directive](#breakpoint-directive) ***NEW***
-        * [Output directive](#output-directive) ***NEW***
+        * [Breakpoint directive](#breakpoint-directive)
+        * [Output directive](#output-directive)
 * [Known issues](#known-issues)
 * [Development support](#development-support)
 
@@ -45,14 +46,24 @@ A separate extension that supports the AutoHotkey language is required(The most 
 * From `1.6.0`, [Advanced breakpoint](#advanced-breakpoint) will always be enabled. This is due to the fact that if you don't set it on the UI, it won't affect performance, and step execution has been improved and is no longer forced to stop. `useAdvancedBreakpoint` has been removed accordingly
 
 ### Update
+* `1.8.0` - 2021-xx-xx
+    * Added: [#67](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/67) Support attach mode
+    * Added: [#78](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/78) `useUIAVersion` to launch.json
+    * Changed: [#129](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/129) Only when using `useAutoJumpToError`. When jumping to an error, highlight the jump destination for a short while
+    * Changed: [#131](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/131) Enable the disconnect button
+    * Fixed: [#130](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/130) When the error code is `0`, the debug exit message is not displayed
+    * Fixed: [#133](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/133) v2 only bug. Debugging crashes when trying to look at a child element of an instance of a class with `__Enum` meta-function
+    * Fixed: [#135](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/135) v2 only bug. Hovering over `&variable` does not show variable information
+    * Fixed: [#135](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/135) Information is not displayed when uninitialized variable names are hovered over
+    * Fixed: [#137](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/137) If `${file}` is set to `openFileOnExit` when the editor is not open, an error occurs and debugging cannot be started
+    * Fixed: [#138](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/138) Conditional breakpoints do not recognize boolean values
+    * Fixed: [#139](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/139) v2 only bug. Conditional breakpoints cannot compare numbers in scientific notation correctly
+
 * `1.7.1` - 2021-08-17
     * Fixed: [#118](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/118) `Copy Value` does not work in Variables View
 
 * `1.7.0` - 2021-08-17
     * Added: [#54](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/54) `useAutoJumpToError` to launch.json
-
-* `1.6.14` - 2021-07-27
-    * Fixed: [#112](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/112) AutoHotkey2-beta.1 does not set `/ErrorStdOut=UTF-8` automatically
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
@@ -63,15 +74,27 @@ It also runs asynchronously, so it runs very fast. Best of all, VSCode's debug U
 
 See [Features](#features) for details.
 
-### Unsupported
-The following features cannot be implemented due to specifications.
-* Attach to a running script
-
-### About AutoHotkey_H
+## About AutoHotkey_H
 I'm not familiar with [AutoHotkey_H](https://hotkeyit.github.io/v2/), but like AutoHotkey, it uses [DBGP](https://xdebug.org/) and should be able to be debugged without problems.
 However, the implementation is a bit different, so there may be some inherent bugs that may occur.
 
 If you find a bug, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
+
+## About UIA version of AutoHotkey
+Read more about UIA [here](https://www.autohotkey.com/docs/Program.htm#Installer_uiAccess).
+
+There was a issue with my extension that it was not possible to debug the UIA version of AutoHotkey.
+The limitation has been avoided, but please be aware of the following limitations compared to normal debugging.
+
+* The runtime argument `/ErrorStdOut` will be ignored. This is due to the limitation of not being able to get the error message in case of a read error. For this reason, do not use the `#ErrorStdOut` directive
+* It is not possible to display messages to in the debug console by following code. Please use `OutputDebug` instead.
+    ```ahk
+    FileAppend("message", "**")          ; Not displayed
+    FileOpen("**", "w").write("message") ; Not displayed
+    OutputDebug("message")               ; Displayed
+    ```
+
+In addition to the above issues, other limitations may also occur. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
 # Installation
 1. Install [Visual Studio Code](https://code.visualstudio.com/) with version `1.45.0` or higher
@@ -97,7 +120,15 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
 * `${file}` :　It will be replaced with the path of the currently open file
 * `${workspaceFolder}` :　It will be replaced with the path of the folder opened in the VS code
 
-## Basic settings
+You also need to know about the two debug modes. There are two modes, `launch` and `attach`, which can be set via `request`.
+
+`launch` is the general debug mode. It launches the specified script and starts the debugger at the same time.
+
+On the other hand, `attach` is a mode to debug a script that is already running.
+
+Note that most of these modes use the same settings, but some of them are different.
+
+## Basic settings (launch mode)
 <table>
 <tr>
     <th>Name</th>
@@ -120,7 +151,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
 <tr>
     <td>request</td>
     <td>string</td>
-    <td>Specify <code>"launch"</code>. VSCode also supports <code>"attach"</code>, but this extension does not support it. So its value is fixed.</td>
+    <td>Specify <code>"launch"</code>.</td>
 </tr>
 <tr>
     <td>runtime</td>
@@ -226,7 +257,7 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
 </tr>
 </table>
 
-## Advanced settings
+## Advanced settings (launch mode)
 <table>
 <tr>
     <th>Name</th>
@@ -311,6 +342,72 @@ It is highly recommended that you learn about [VSCode's variables](https://code.
     <td><code>useOutputDirective</code></td>
     <td>boolean</td>
     <td>Enable / disable <a href="#output-directive">Output directive</a>.</td>
+</tr>
+<tr>
+    <td><code>useUIAVersion</code></td>
+    <td>boolean</td>
+    <td>If set to <code>true</code>, debugging of the <a href="https://www.autohotkey.com/docs/Program.htm#Installer_uiAccess">UIA version of AutoHotkey</a> will be possible. Unlike normal debugging, there are some limitations. Please check them <a href=#about-uia-version-of-autohotkey>here</a>.<br />
+    If you don't know about UIA, you don't need to worry about this setting.<br />
+    <strong>default: <code>false</code><strong>
+    </td>
+</tr>
+</table>
+
+## Settings (atatch mode)
+**This mode has the same [limitations](#about-uia-version-of-autohotkey) as when using `useUIAVersion` of `launch` mode. Also, it cannot be attached to the UIA version of AutoHotkey.**
+
+The following settings are exactly the same as in launch mode.
+* `hostname`
+* `port`
+* `maxChildren`
+* `openFileOnExit`
+* `useIntelliSenseInDebugging`
+* `usePerfTips`
+* `useDebugDirective`
+* `useAutoJumpToError`
+
+The following are not supported in `attach` mode.
+* `runtimeArgs`
+* `runtimeArgs_v1`
+* `runtimeArgs_v2`
+* `args`
+* `env`
+* `useUIAVersion`
+
+The following are settings for `attach` mode only. Some of them have the same name as `launch` mode, but the meaning may be slightly different.
+<table>
+<tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td>request</td>
+    <td>string</td>
+    <td>Specify <code>"attach"</code>.</td>
+</tr>
+<tr>
+    <td>runtime</td>
+    <td>string</td>
+    <td>
+        The path to AutoHotkey.exe to run the script to attach to the <code>program</code>.
+    </td>
+</tr>
+<tr>
+    <td>program</td>
+    <td>string</td>
+    <td>
+        The path of the script file you want to attach.<br />
+        If omitted, you can select a script to attach from the list of AutoHotkey scripts that are already running.
+    </td>
+</tr>
+<tr>
+    <td>stopOnEntry</td>
+    <td>string</td>
+    <td>
+        If <code>true</code>, it will break immediately after attach.<br />
+        <strong>default: <code>false</code></strong>
+    </td>
 </tr>
 </table>
 

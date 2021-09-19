@@ -1,3 +1,4 @@
+/* eslint-disable require-atomic-updates */
 import { existsSync } from 'fs';
 import * as path from 'path';
 import {
@@ -14,6 +15,7 @@ import {
   debug,
   languages,
   window,
+  workspace,
 } from 'vscode';
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
 import { defaults, isString, range } from 'lodash';
@@ -21,8 +23,20 @@ import * as isPortTaken from 'is-port-taken';
 import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
+import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
 
+const ahkPathResolve = (filePath: string, cwd?: string): string => {
+  let _filePath = filePath;
+  if (!path.isAbsolute(filePath)) {
+    _filePath = path.resolve(cwd ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey`, filePath);
+  }
+  if (path.extname(_filePath) === '') {
+    _filePath += '.exe';
+  }
+  return _filePath;
+};
 const normalizePath = (filePath: string): string => (filePath ? path.normalize(filePath) : filePath); // If pass in an empty string, path.normalize returns '.'
+
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
     defaults(config, {
@@ -33,7 +47,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       runtime_v2: 'v2/AutoHotkey.exe',
       hostname: 'localhost',
       port: 9002,
-      program: '${file}',
+      program: config.request === 'launch' || !config.request ? '${file}' : undefined,
       args: [],
       env: {},
       stopOnEntry: false,
@@ -42,7 +56,9 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       usePerfTips: false,
       useDebugDirective: false,
       useAutoJumpToError: false,
+      useUIAVersion: false,
       trace: false,
+      cancelReason: undefined,
     });
 
     // Deprecated. I''ll get rid of it eventually
@@ -51,6 +67,9 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       config.type = 'autohotkey';
     }
 
+    if (config.openFileOnExit === '${file}' && !window.activeTextEditor) {
+      config.openFileOnExit = undefined;
+    }
     return config;
   }
   public async resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): Promise<DebugConfiguration> {
@@ -59,19 +78,18 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       if (config.request === 'launch') {
         return;
       }
-
-      const commonErrorMessage = '`type` must be "launch".';
       if (config.request === 'attach') {
-        throw Error(`${commonErrorMessage} "attach" is not supported.`);
+        return;
       }
-      throw Error(commonErrorMessage);
+
+      throw Error('`request` must be "launch" or "attach".');
     })();
 
     // init runtime
-    ((): void => {
+    await (async(): Promise<void> => {
       if (typeof config.runtime === 'undefined') {
-        const editor = window.activeTextEditor;
-        config.runtime = editor && editor.document.languageId.toLowerCase() === 'ahk'
+        const doc = await workspace.openTextDocument(config.program ?? window.activeTextEditor?.document.uri.fsPath);
+        config.runtime = doc.languageId.toLowerCase() === 'ahk'
           ? config.runtime_v1
           : config.runtime_v2; // ahk2 or ah2
       }
@@ -80,13 +98,8 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         throw Error('`runtime` must be a string.');
       }
       if (config.runtime) {
-        if (!path.isAbsolute(config.runtime)) {
-          const ahkPath = `${String(process.env.PROGRAMFILES)}/AutoHotkey`;
-          config.runtime = path.resolve(ahkPath, config.runtime);
-        }
-        if (path.extname(config.runtime) === '') {
-          config.runtime += '.exe';
-        }
+        config.runtime = ahkPathResolve(config.runtime);
+        return;
       }
 
       if (!existsSync(config.runtime)) {
@@ -94,9 +107,22 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       }
     })();
 
-    // init runtimeArgs
+    // init useUIAVersion
     ((): void => {
-      if (typeof config.runtimeArgs === 'undefined') {
+      if (!isBoolean(config.useUIAVersion)) {
+        throw Error('`useUIAVersion` must be a boolean.');
+      }
+    })();
+
+    // init runtimeArgs
+    await (async(): Promise<void> => {
+      if (config.useUIAVersion) {
+        if (!config.runtimeArgs) {
+          config.runtimeArgs = [];
+        }
+        return;
+      }
+      else if (typeof config.runtimeArgs === 'undefined') {
         const ahkVersion = getAhkVersion(config.runtime, { env: config.env });
         if (ahkVersion === null) {
           throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);
@@ -113,8 +139,8 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
             : [ '/ErrorStdOut' ];
         }
 
-        const editor = window.activeTextEditor;
-        config.runtimeArgs = editor && editor.document.languageId.toLowerCase() === 'ahk'
+        const doc = await workspace.openTextDocument(config.program);
+        config.runtimeArgs = doc.languageId.toLowerCase() === 'ahk'
           ? config.runtimeArgs_v1
           : config.runtimeArgs_v2; // ahk2 or ah2
 
@@ -132,6 +158,9 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     ((): void => {
       if (!isString(config.hostname)) {
         throw Error('`hostname` must be a string.');
+      }
+      if (config.hostname.toLowerCase() === 'localhost') {
+        config.hostname = '127.0.0.1';
       }
     })();
 
@@ -179,7 +208,6 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       for await (const port of portRange.range) {
         const portUsed = await isPortTaken(port, config.hostname);
         if (!portUsed) {
-          // eslint-disable-next-line require-atomic-updates
           config.port = port;
           return;
         }
@@ -196,12 +224,35 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     })();
 
     // init program
-    ((): void => {
+    await (async(): Promise<void> => {
+      if (config.request === 'attach') {
+        const scriptPathList = getRunningAhkScriptList(config.runtime);
+        if (scriptPathList.length === 0) {
+          config.cancelReason = `Canceled the attachment because no running AutoHotkey script was found.`;
+          return;
+        }
+        if (config.program === undefined) {
+          const scriptPath = await window.showQuickPick(scriptPathList);
+          if (scriptPath) {
+            config.program = scriptPath;
+            return;
+          }
+          config.cancelReason = `Cancel the attach.`;
+          return;
+        }
+        const isRunning = scriptPathList.map((scriptPath) => path.resolve(scriptPath.toLocaleLowerCase())).includes(path.resolve(config.program).toLowerCase());
+        if (!isRunning) {
+          config.cancelReason = `Canceled the attach because "${String(config.program)}" is not running.`;
+        }
+      }
       if (!isString(config.program)) {
         throw Error('`program` must be a string.');
       }
-      if (!existsSync(config.program)) {
+      if (config.request === 'launch' && !existsSync(config.program)) {
         throw Error(`\`program\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.program))}"`);
+      }
+      if (config.program) {
+        config.program = path.resolve(config.program);
       }
     })();
 
@@ -333,7 +384,7 @@ class InlineDebugAdapterFactory implements DebugAdapterDescriptorFactory {
   }
 }
 
-export const activate = function(context: ExtensionContext): void {
+export const activate = (context: ExtensionContext): void => {
   const provider = new AhkConfigurationProvider();
 
   context.subscriptions.push(debug.registerDebugConfigurationProvider('ahk', provider));

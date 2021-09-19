@@ -1,0 +1,10 @@
+﻿#SingleInstance
+SetTimer LoopFn, 1000
+LoopFn() {
+  a := ""
+  b := ""
+  c := ""
+  FileOpen("*", "w").writeLine("stdout")
+  FileOpen("**", "w").writeLine("stderr")
+  OutputDebug("outputdebug")
+}

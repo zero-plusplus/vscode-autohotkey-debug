@@ -118,9 +118,10 @@ export const createParser = function(version: AhkVersion): P.Language {
           : P.alt(rules.FloatLiteral, rules.IntegerLiteral),
         P.regex(/e[+]?\d+/ui),
       ).map((result) => {
+        const rawValue = `${String(result[0].value)}${result[1]}`;
         return {
           type: 'Scientific',
-          value: `${String(result[0].value)}${result[1]}`,
+          value: version.mejor === 1 ? rawValue : Number(rawValue).toFixed(1),
         };
       });
     },

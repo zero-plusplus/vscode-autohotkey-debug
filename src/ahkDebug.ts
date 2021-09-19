@@ -1,10 +1,7 @@
 import * as path from 'path';
 import * as net from 'net';
 import { stat } from 'fs';
-import {
-  ChildProcessWithoutNullStreams,
-  spawn,
-} from 'child_process';
+
 import * as vscode from 'vscode';
 import {
   InitializedEvent,
@@ -39,9 +36,13 @@ import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
+import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
+import { timeoutPromise } from './util/util';
+import { isNumber } from 'ts-predicates';
 
-export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments {
+export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
+  request: 'launch' | 'attach';
   runtime: string;
   runtimeArgs: string[];
   args: string[];
@@ -61,8 +62,10 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     useOutputDirective: boolean;
   };
   useAutoJumpToError: boolean;
+  useUIAVersion: boolean;
   openFileOnExit: string;
   trace: boolean;
+  cancelReason?: string;
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
@@ -83,7 +86,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private isTerminateRequested = false;
   private server?: net.Server;
   private session?: dbgp.Session;
-  private ahkProcess?: ChildProcessWithoutNullStreams;
+  private ahkProcess?: AutoHotkeyProcess;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
   private readonly contextByVariablesReference = new Map<number, dbgp.Context>();
@@ -103,6 +106,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   private readonly loadedSources: string[] = [];
   private errorMessage = '';
+  private exitCode?: number | undefined;
   constructor() {
     super('autohotkey-debug.txt');
 
@@ -122,60 +126,59 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportsLoadedSourcesRequest: true,
       supportsLogPoints: true,
       supportsSetVariable: true,
+      supportTerminateDebuggee: true,
     };
 
     this.sendResponse(response);
   }
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('disconnectRequest');
-    this.isTerminateRequested = true;
     this.clearPerfTipsDecorations();
 
     if (this.session?.socketWritable) {
-      await Promise.race([
-        this.session.sendStopCommand(),
-        new Promise<void>((resolve) => {
-          setTimeout(() => {
-            this.ahkProcess?.kill();
-            resolve();
-          }, 500);
-        }),
-      ]);
-    }
-    await this.session?.close();
-    this.server?.close();
-
-    let jumpToError = false;
-    if (this.config.useAutoJumpToError && this.errorMessage) {
-      const match = this.errorMessage.match(/^(?<filePath>.+):(?<line>\d+)(?=\s:\s==>)/u);
-      if (match?.groups) {
-        const { filePath, line } = match.groups;
-        const doc = await vscode.workspace.openTextDocument(filePath);
-        const position = new vscode.Position(parseInt(line, 10) - 1, 0);
-        vscode.window.showTextDocument(doc, {
-          selection: new vscode.Range(position, position),
+      if (args.restart && this.config.request === 'attach') {
+        await timeoutPromise(this.session.sendDetachCommand(), 500).catch(() => {
+          this.ahkProcess?.close();
         });
-        jumpToError = true;
       }
-    }
-    if (!jumpToError && this.config.openFileOnExit) {
-      if (pathExistsSync(this.config.openFileOnExit)) {
-        const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
-        vscode.window.showTextDocument(doc);
+      else if (args.terminateDebuggee === undefined || args.terminateDebuggee) {
+        await timeoutPromise(this.session.sendStopCommand(), 500).catch(() => {
+          this.ahkProcess?.close();
+        });
       }
       else {
-        const message = {
-          id: 1,
-          format: `File not found. Value of \`openFileOnExit\` in launch.json: \`${this.config.openFileOnExit}\``,
-        } as DebugProtocol.Message;
-        // For some reason, the error message could not be displayed by the following method.
-        // this.sendErrorResponse(response, message);
-        vscode.window.showErrorMessage(message.format);
+        await timeoutPromise(this.session.sendDetachCommand(), 500).catch(() => {
+          this.ahkProcess?.close();
+        });
       }
+    }
+
+    if (!args.restart) {
+      if (isNumber(this.exitCode)) {
+        this.sendOutputEvent(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr');
+        this.sendOutputEvent('Debugging stopped.', 'console');
+      }
+      else if (args.terminateDebuggee === true && !this.config.cancelReason) {
+        this.sendOutputEvent(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.', 'console');
+      }
+      else if (args.terminateDebuggee === false && !this.config.cancelReason) {
+        this.sendOutputEvent('Debugging disconnected. AutoHotkey script is continued.', 'console');
+      }
+      else if (this.config.request === 'attach' && this.ahkProcess) {
+        this.sendOutputEvent('Attaching stopped.', 'console');
+      }
+    }
+
+    await this.session?.close();
+    this.server?.close();
+    this.isTerminateRequested = true;
+
+    const jumpToError = await this.jumpToError();
+    if (!jumpToError) {
+      this.openFileOnExit();
     }
 
     this.sendResponse(response);
-    this.shutdown();
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): Promise<void> {
     this.traceLogger.enable = args.trace;
@@ -183,105 +186,84 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.config = args;
 
     try {
-      const runtimeArgs: string[] = [];
-      if (!args.noDebug) {
-        runtimeArgs.push(`/Debug=${String(args.hostname)}:${String(args.port)}`);
-      }
-      runtimeArgs.push(...this.config.runtimeArgs);
-      runtimeArgs.push(`${args.program}`);
-      runtimeArgs.push(...args.args);
-      this.sendEvent(new OutputEvent(`${this.config.runtime} ${runtimeArgs.join(' ')}\n`, 'console'));
-      const ahkProcess = spawn(
-        this.config.runtime,
-        runtimeArgs,
-        {
-          cwd: path.dirname(args.program),
-          env: args.env,
-        },
-      );
-      ahkProcess.on('close', (exitCode) => {
-        if (this.isTerminateRequested) {
-          return;
-        }
+      this.ahkProcess = new AutoHotkeyLauncher(this.config).launch();
+      this.ahkProcess.event
+        .on('close', (exitCode?: number) => {
+          if (this.isTerminateRequested) {
+            return;
+          }
 
-        if (exitCode) {
-          const category = exitCode === 0 ? 'console' : 'stderr';
-          this.sendEvent(new OutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category));
-        }
-        this.sendTerminateEvent();
-      });
-      ahkProcess.stdout.on('data', (data: string | Buffer) => {
-        const fixedData = this.fixPathOfRuntimeError(String(data));
-        this.sendEvent(new OutputEvent(fixedData, 'stdout'));
-      });
-      ahkProcess.stderr.on('data', (data: Buffer) => {
-        const fixedData = this.fixPathOfRuntimeError(String(data));
-        this.errorMessage = fixedData;
-        this.sendEvent(new OutputEvent(fixedData, 'stderr'));
-      });
-      this.ahkProcess = ahkProcess;
+          if (isNumber(exitCode)) {
+            this.exitCode = exitCode;
+          }
+          this.sendTerminateEvent();
+        })
+        .on('stdout', (message: string) => {
+          const fixedData = this.fixPathOfRuntimeError(message);
+          this.sendOutputEvent(fixedData, 'stdout');
+        })
+        .on('stderr', (message: string) => {
+          this.errorMessage = this.fixPathOfRuntimeError(message);
+          this.sendOutputEvent(this.errorMessage, 'stderr');
+        });
+      this.sendOutputEvent(`${this.ahkProcess.command}`, 'console');
 
-      await new Promise<void>((resolve, reject) => {
-        this.server = net.createServer()
-          .listen(args.port, args.hostname)
-          .on('connection', (socket) => {
-            try {
-              this.session = new dbgp.Session(socket)
-                .on('init', (initPacket: dbgp.InitPacket) => {
-                  if (typeof this.session === 'undefined') {
-                    return;
-                  }
-
-                  completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
-                  completionItemProvider.session = this.session;
-                  this.ahkParser = createParser(this.session.ahkVersion);
-                  this.conditionalEvaluator = new ConditionalEvaluator(this.session);
-                  this.sendEvent(new InitializedEvent());
-                })
-                .on('warning', (warning: string) => {
-                  this.sendEvent(new OutputEvent(`${warning}\n`));
-                })
-                .on('error', (error?: Error) => {
-                  if (error) {
-                    this.sendEvent(new OutputEvent(`Session closed for the following reasons: ${error.message}\n`));
-                  }
-
-                  this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-                })
-                .on('close', () => {
-                  this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-                })
-                .on('stdout', (data) => {
-                  this.sendEvent(new OutputEvent(data, 'stdout'));
-                })
-                .on('stderr', (data) => {
-                  const fixedData = this.fixPathOfRuntimeError(String(data));
-                  this.errorMessage = fixedData;
-                  this.sendEvent(new OutputEvent(fixedData, 'stderr'));
-                });
-
-              this.breakpointManager = new BreakpointManager(this.session);
-              this.sendEvent(new ThreadEvent('Session started.', this.session.id));
-              resolve();
-            }
-            catch (error: unknown) {
-              this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
-              reject(error);
-            }
-          });
-      });
+      await this.createServer(args);
     }
     catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-      const message = {
-        id: 2,
-        format: errorMessage,
-      } as DebugProtocol.Message;
-      this.sendErrorResponse(response, message);
+      this.sendErrorResponse(response, { id: 2, format: errorMessage });
       this.sendTerminateEvent();
       return;
     }
 
+    this.sendResponse(response);
+  }
+  protected async attachRequest(response: DebugProtocol.AttachResponse, args: LaunchRequestArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.enable = args.trace;
+    this.traceLogger.log('attachRequest');
+    this.config = args;
+
+    if (this.config.cancelReason) {
+      this.sendOutputEvent(`${this.config.cancelReason}\n`, 'console');
+      this.sendTerminateEvent();
+      this.sendResponse(response);
+      return;
+    }
+
+    const ahkProcess = new AutoHotkeyLauncher(this.config).attach();
+    if (!ahkProcess) {
+      this.sendOutputEvent(`Failed to attach "${this.config.program}".\n`, 'stderr');
+      this.sendTerminateEvent();
+      this.sendResponse(response);
+      return;
+    }
+
+    this.sendOutputEvent(`Attached to "${this.config.program}".\n`, 'console');
+    this.ahkProcess = ahkProcess;
+    this.ahkProcess.event
+      .on('close', (exitCode?: number) => {
+        if (this.isTerminateRequested) {
+          return;
+        }
+
+        if (isNumber(exitCode)) {
+          const category = exitCode === 0 ? 'console' : 'stderr';
+          this.sendOutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category);
+        }
+        this.sendTerminateEvent();
+      })
+      .on('stdout', (message: string) => {
+        const fixedData = this.fixPathOfRuntimeError(message);
+        this.sendOutputEvent(fixedData, 'stdout');
+      })
+      .on('stderr', (message: string) => {
+        const fixedData = this.fixPathOfRuntimeError(String(message));
+        this.errorMessage = fixedData;
+        this.sendOutputEvent(fixedData, 'stderr');
+      });
+
+    await this.createServer(args);
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
@@ -588,6 +570,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     for (const property of properties) {
       let variablesReference = 0, indexedVariables, namedVariables;
 
+      // Fix: [#133](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/133)
+      if (property.fullName.includes('<enum>')) {
+        continue;
+      }
+
       if (args.filter) {
         if (args.filter === 'named' && property.isIndexKey) {
           continue;
@@ -743,7 +730,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
-      const propertyName = args.expression;
+      const propertyName = args.context === 'hover' ? args.expression.replace(/^&/u, '') : args.expression;
       try {
         if (!args.frameId) {
           throw Error('Error: Cannot evaluate code without a session');
@@ -775,6 +762,15 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const property = await this.session!.evaluate(propertyName);
         if (property === null) {
+          if (args.context === 'hover' && (await this.session!.fetchAllVariableNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
+            response.body = {
+              result: 'Not initialized',
+              type: 'undefined',
+              variablesReference: -1,
+            };
+            this.sendResponse(response);
+            return;
+          }
           throw Error('not available');
         }
 
@@ -1043,6 +1039,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     return null;
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
+    this.traceLogger.log('checkContinuationStatus');
     if (this.session!.socketClosed || this.isTerminateRequested) {
       return;
     }
@@ -1297,6 +1294,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
   }
+  private sendOutputEvent(message: string, category: 'stdout' | 'stderr' | 'console' = 'stdout'): void {
+    this.sendEvent(new OutputEvent(message, category));
+  }
   private sendTerminateEvent(): void {
     this.traceLogger.log('sendTerminateEvent');
     if (this.isTerminateRequested) {
@@ -1541,6 +1541,105 @@ export class AhkDebugSession extends LoggingDebugSession {
       for (const decorationType of this.perfTipsDecorationTypes) {
         editor.setDecorations(decorationType, []);
       }
+    }
+  }
+  private async createServer(args: LaunchRequestArguments): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      this.server = net.createServer()
+        .listen(args.port, args.hostname)
+        .on('connection', (socket) => {
+          try {
+            this.session = new dbgp.Session(socket)
+              .on('init', (initPacket: dbgp.InitPacket) => {
+                if (typeof this.session === 'undefined') {
+                  return;
+                }
+
+                completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
+                completionItemProvider.session = this.session;
+                this.ahkParser = createParser(this.session.ahkVersion);
+                this.conditionalEvaluator = new ConditionalEvaluator(this.session);
+                this.sendEvent(new InitializedEvent());
+              })
+              .on('warning', (warning: string) => {
+                this.sendOutputEvent(`${warning}\n`);
+              })
+              .on('error', (error?: Error) => {
+                if (error) {
+                  this.sendOutputEvent(`Session closed for the following reasons: ${error.message}\n`);
+                }
+
+                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+              })
+              .on('close', () => {
+                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+              })
+              .on('stdout', (data) => {
+                this.ahkProcess!.event.emit('stdout', String(data));
+              })
+              .on('stderr', (data) => {
+                this.ahkProcess!.event.emit('stderr', String(data));
+              });
+
+            this.breakpointManager = new BreakpointManager(this.session);
+            this.sendEvent(new ThreadEvent('Session started.', this.session.id));
+            resolve();
+          }
+          catch (error: unknown) {
+            this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
+            reject(error);
+          }
+        });
+    });
+  }
+  private async jumpToError(): Promise<boolean> {
+    if (this.config.useAutoJumpToError && this.errorMessage) {
+      const match = this.errorMessage.match(/^(?<filePath>.+):(?<line>\d+)(?=\s:\s==>)/u);
+      if (match?.groups) {
+        const { filePath, line } = match.groups;
+        const _line = parseInt(line, 10) - 1;
+
+        const doc = await vscode.workspace.openTextDocument(filePath);
+        const lineRange = doc.lineAt(_line).range;
+        const lineText = doc.getText(lineRange);
+        const leadingSpace = lineText.match(/^(?<space>\s*)/u)?.groups?.space ?? '';
+        const trailingSpace = lineText.match(/(?<space>\s+)$/u)?.groups?.space ?? '';
+        const startPosition = new vscode.Position(_line, leadingSpace.length);
+        const endPosition = new vscode.Position(_line, lineText.length - trailingSpace.length);
+        const editor = await vscode.window.showTextDocument(doc, {
+          selection: new vscode.Range(startPosition, startPosition),
+        });
+
+        const decorationType = vscode.window.createTextEditorDecorationType({
+          backgroundColor: new vscode.ThemeColor('editor.symbolHighlightBackground'),
+        });
+        const decoration: vscode.DecorationOptions = { range: new vscode.Range(startPosition, endPosition) };
+        editor.setDecorations(decorationType, [ decoration ]);
+        setTimeout(() => {
+          editor.setDecorations(decorationType, []);
+        }, 500);
+
+        return true;
+      }
+    }
+    return false;
+  }
+  private async openFileOnExit(): Promise<void> {
+    if (!this.config.openFileOnExit) {
+      return;
+    }
+    if (pathExistsSync(this.config.openFileOnExit)) {
+      const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
+      vscode.window.showTextDocument(doc);
+    }
+    else {
+      const message = {
+        id: 1,
+        format: `File not found. Value of \`openFileOnExit\` in launch.json: \`${this.config.openFileOnExit}\``,
+      } as DebugProtocol.Message;
+      // For some reason, the error message could not be displayed by the following method.
+      // this.sendErrorResponse(response, message);
+      vscode.window.showErrorMessage(message.format);
     }
   }
 }

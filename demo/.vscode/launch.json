@@ -2,9 +2,9 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "AutoHotkey Debug",
             "type": "autohotkey",
             "request": "launch",
-            "name": "AutoHotkey Debug",
             "program": "${file}",
             "runtime_v1": "AutoHotkey.exe",
             "runtime_v2": "v2/AutoHotkey.exe",
@@ -19,6 +19,23 @@
             "trace": false
         },
         {
+            "name": "AutoHotkey Debug (UIA)",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${file}",
+            "runtime": "AutoHotkeyU64_UIA.exe",
+            "args": [],
+            "port": "9002-9010",
+            "stopOnEntry": false,
+            "useDebugDirective": true,
+            "usePerfTips": true,
+            "openFileOnExit": "${file}",
+            "internalConsoleOptions": "openOnSessionStart",
+            "useAutoJumpToError": true,
+            "useUIAVersion": true,
+            "trace": false
+        },
+        {
             "name": "AutoHotkey_H Debug",
             "request": "launch",
             "type": "autohotkey",
@@ -28,6 +45,30 @@
             "args": [],
             "stopOnEntry": false,
             "maxChildren": 10000
-        }
+        },
+        {
+            "name": "AutoHotkey Attach",
+            "type": "autohotkey",
+            "request": "attach",
+            "runtime": "AutoHotkey.exe",
+            "program": "${file}",
+            "hostname": "127.0.0.1",
+            "useDebugDirective": true,
+            "openFileOnExit": "${file}",
+            "useAutoJumpToError": true,
+            "trace": false,
+        },
+        {
+            "name": "AutoHotkey Selected Attach",
+            "type": "autohotkey",
+            "request": "attach",
+            "runtime": "AutoHotkey.exe",
+            "hostname": "127.0.0.1",
+            "useDebugDirective": true,
+            "openFileOnExit": "${file}",
+            "useAutoJumpToError": true,
+            "stopOnEntry": true,
+            "trace": false,
+        },
     ]
 }
