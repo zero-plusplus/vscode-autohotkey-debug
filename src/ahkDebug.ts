@@ -66,6 +66,8 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   openFileOnExit: string;
   trace: boolean;
   cancelReason?: string;
+  skipFunctions?: string[];
+  skipFiles?: string[];
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
