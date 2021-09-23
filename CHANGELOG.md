@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.8.0] - 2021-xx-xx
+## [1.8.0] - 2021-09-23
 ### Added
 * [#67](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/67) Support attach mode
 * [#78](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/78) `useUIAVersion` to launch.json
