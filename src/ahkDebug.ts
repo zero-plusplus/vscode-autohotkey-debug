@@ -39,6 +39,7 @@ import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
 import { timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
+import * as matcher from 'matcher';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
@@ -82,7 +83,7 @@ export const serializePromise = async(promises: Array<Promise<void>>): Promise<v
 const asyncLock = new AsyncLock();
 export class AhkDebugSession extends LoggingDebugSession {
   private readonly traceLogger: TraceLogger;
-  private autoExecutingOnAdvancedBreakpoint = false;
+  private autoExecuting = false;
   private pauseRequested = false;
   private isPaused = false;
   private isTerminateRequested = false;
@@ -407,7 +408,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.pauseRequested = false;
     this.isPaused = false;
 
-    if (this.autoExecutingOnAdvancedBreakpoint) {
+    if (this.autoExecuting) {
       this.pauseRequested = true;
 
       // Force pause
@@ -1072,7 +1073,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     this.prevStackFrames = this.currentStackFrames;
     const { stackFrames } = await this.session!.sendStackGetCommand();
-
     const isScriptIdling = stackFrames.length === 0;
     if (isScriptIdling) {
       this.currentStackFrames = [];
@@ -1080,7 +1080,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const { fileUri, line } = stackFrames[0];
+    const { fileUri, line, name } = stackFrames[0];
+
     this.currentStackFrames = stackFrames;
     const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, line);
     let stopReason: StopReason = 'step';
@@ -1090,6 +1091,23 @@ export class AhkDebugSession extends LoggingDebugSession {
         stopReason = lineBreakpoints[0].hidden
           ? 'hidden breakpoint'
           : 'breakpoint';
+      }
+    }
+    else if (!this.pauseRequested) {
+      const isSkipFile = this.config.skipFiles?.map((filePath) => URI.file(filePath).fsPath.toLowerCase()).includes(URI.parse(fileUri).fsPath.toLowerCase());
+      if (isSkipFile) {
+        const dbgpResponse = await this.session!.sendStepIntoCommand();
+        this.autoExecuting = true;
+        this.checkContinuationStatus(dbgpResponse);
+        return;
+      }
+      const currentFuncName = name.includes('()') ? name.replace('()', '') : '';
+      const isSkipFunction = 0 < matcher(currentFuncName, this.config.skipFunctions ?? []).length;
+      if (isSkipFunction) {
+        const dbgpResponse = await this.session!.sendStepIntoCommand();
+        this.autoExecuting = true;
+        this.checkContinuationStatus(dbgpResponse);
+        return;
       }
     }
 
@@ -1135,7 +1153,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     // Auto execution
-    this.autoExecutingOnAdvancedBreakpoint = true;
+    this.autoExecuting = true;
     const result = await this.session!.sendRunCommand();
     await this.checkContinuationStatus(result);
   }
@@ -1209,7 +1227,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     // Advanced step
-    this.autoExecutingOnAdvancedBreakpoint = true;
+    this.autoExecuting = true;
     if (this.stackFramesWhenStepOut) {
       // If go back to the same line in a loop
       if (prevStackFrames && equalsIgnoreCase(currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && currentStackFrames[0].line === prevStackFrames[0].line) {
@@ -1318,7 +1336,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.stackFramesWhenStepOver = null;
     this.pauseRequested = false;
     this.isPaused = true;
-    this.autoExecutingOnAdvancedBreakpoint = false;
+    this.autoExecuting = false;
 
     if (this.currentMetaVariables) {
       await this.displayPerfTips(this.currentMetaVariables);

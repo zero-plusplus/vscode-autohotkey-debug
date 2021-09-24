@@ -42,6 +42,9 @@ A separate extension that supports the AutoHotkey language is required(The most 
 Since `1.8.0` is a relatively large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
 
 ### Update
+* `1.9.0` - 2021-xx-xx
+    * Added: [#69](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/69) Support `skipFiles` and `skipFunctions`
+
 * `1.8.0` - 2021-09-23
     * Added: [#67](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/67) Support attach mode
     * Added: [#78](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/78) `useUIAVersion` to launch.json
@@ -57,9 +60,6 @@ Since `1.8.0` is a relatively large update with additions and fixes, there may b
 
 * `1.7.1` - 2021-08-17
     * Fixed: [#118](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/118) `Copy Value` does not work in Variables View
-
-* `1.7.0` - 2021-08-17
-    * Added: [#54](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/54) `useAutoJumpToError` to launch.json
 
 See [CHANGELOG](CHANGELOG.md) for details.
 
