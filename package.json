@@ -244,7 +244,7 @@
                 "items": {
                   "type": "string"
                 },
-                "description": "Array of functions names to skip when executing steps. The path corresponds to wildcard."
+                "description": "Array of functions names to skip when executing steps. The name corresponds to wildcard."
               },
               "skipFiles": {
                 "type": "array",
