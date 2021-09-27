@@ -239,6 +239,20 @@
                 "description": "If you don't know about UIA, ignore it. This setting must be `true` if you want to use the UIA version of AutoHotkey. There are some limitations, please check the README.",
                 "default": false
               },
+              "skipFunctions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of functions names to skip when executing steps. The path corresponds to wildcard."
+              },
+              "skipFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of file paths to skip when executing steps. The path corresponds to glob."
+              },
               "trace": {
                 "type": "boolean",
                 "description": "No changes are required. This is a settings for developers to use to find bugs. Enable / disable display trace informaiton for debugger adapter.",
@@ -384,10 +398,13 @@
     "@zero-plusplus/ahk-include-path-resolver": "^1.0.11",
     "async-lock": "^1.2.8",
     "convert-hrtime": "^3.0.0",
+    "fast-glob": "^3.2.7",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
     "is-port-taken": "^0.0.3",
     "lodash": "^4.17.20",
+    "matcher": "^4.0.0",
+    "normalize-path": "^3.0.0",
     "parsimmon": "^1.13.0",
     "path-exists": "^4.0.0",
     "pcre-to-regexp": "^1.1.0",
@@ -405,8 +422,10 @@
     "@types/gulp": "^4.0.7",
     "@types/he": "^1.1.1",
     "@types/lodash": "^4.14.165",
+    "@types/matcher": "^2.0.0",
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
+    "@types/normalize-path": "^3.0.0",
     "@types/parsimmon": "^1.10.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",

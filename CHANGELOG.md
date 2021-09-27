@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.9.0] - 2021-xx-xx
+### Added
+* [#69](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/69) Support `skipFiles` and `skipFunctions`
+
 ## [1.8.0] - 2021-09-23
 ### Added
 * [#67](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/67) Support attach mode
@@ -378,6 +382,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.9.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.8.0..v1.9.0
 [1.8.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.1..v1.8.0
 [1.7.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.0..v1.7.1
 [1.7.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.6.14..v1.7.0
