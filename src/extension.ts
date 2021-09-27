@@ -1,5 +1,5 @@
 /* eslint-disable require-atomic-updates */
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
 import {
   CancellationToken,
@@ -20,6 +20,7 @@ import {
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
 import { defaults, isString, range } from 'lodash';
 import * as isPortTaken from 'is-port-taken';
+import * as jsonc from 'jsonc-parser';
 import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
@@ -42,6 +43,18 @@ const normalizePath = (filePath: string): string => (filePath ? path.normalize(f
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+    if (config.extends && folder) {
+      const jsonPath = path.resolve(folder.uri.fsPath, '.vscode', 'launch.json');
+      if (existsSync(jsonPath)) {
+        const launchJson = jsonc.parse(readFileSync(jsonPath, { encoding: 'utf-8' }));
+        const extendConfig = launchJson.configurations.find((conf) => conf.name === config.extends);
+        if (!extendConfig) {
+          throw Error(`No matching configuration found. Please modify the \`extends\` attribute. \nSpecified: ${String(config.extends)}`);
+        }
+        defaults(config, extendConfig);
+      }
+    }
+
     defaults(config, {
       name: 'AutoHotkey Debug',
       type: 'autohotkey',

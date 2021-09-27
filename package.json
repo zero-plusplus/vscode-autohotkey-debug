@@ -253,6 +253,10 @@
                 },
                 "description": "Array of file paths to skip when executing steps. The path corresponds to glob."
               },
+              "extends": {
+                "type": "string",
+                "description": "Specifies the `name` attribute of another configuration. Inherits all attributes of the matched configuration."
+              },
               "trace": {
                 "type": "boolean",
                 "description": "No changes are required. This is a settings for developers to use to find bugs. Enable / disable display trace informaiton for debugger adapter.",
@@ -370,6 +374,10 @@
                 "description": "Open the error source when debugging is terminated due to an load-time error. This takes precedence over `openFileOnExit`.",
                 "default": false
               },
+              "extends": {
+                "type": "string",
+                "description": "Specifies the `name` attribute of another configuration. Inherits all attributes of the matched configuration."
+              },
               "trace": {
                 "type": "boolean",
                 "description": "No changes are required. This is a settings for developers to use to find bugs. Enable / disable display trace informaiton for debugger adapter.",
@@ -402,6 +410,7 @@
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
     "is-port-taken": "^0.0.3",
+    "jsonc-parser": "^3.0.0",
     "lodash": "^4.17.20",
     "matcher": "^4.0.0",
     "normalize-path": "^3.0.0",
