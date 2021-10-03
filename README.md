@@ -12,6 +12,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 ### Update
 * `1.9.0` - 2021-xx-xx
     * Added: [#69](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/69) Support `skipFiles` and `skipFunctions`
+    * Added: [#143](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/143) Support the `extends` attribute to launch.json
 
 * `1.8.0` - 2021-09-23
     * Added: [#67](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/67) Support attach mode
