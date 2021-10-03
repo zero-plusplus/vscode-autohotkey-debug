@@ -1,5 +1,5 @@
 /* eslint-disable require-atomic-updates */
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
 import {
   CancellationToken,
@@ -20,10 +20,14 @@ import {
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
 import { defaults, isString, range } from 'lodash';
 import * as isPortTaken from 'is-port-taken';
+import * as jsonc from 'jsonc-parser';
 import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
 import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+import normalizeToUnix = require('normalize-path');
+import * as glob from 'fast-glob';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -39,6 +43,18 @@ const normalizePath = (filePath: string): string => (filePath ? path.normalize(f
 
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+    if (config.extends && folder) {
+      const jsonPath = path.resolve(folder.uri.fsPath, '.vscode', 'launch.json');
+      if (existsSync(jsonPath)) {
+        const launchJson = jsonc.parse(readFileSync(jsonPath, { encoding: 'utf-8' }));
+        const extendConfig = launchJson.configurations.find((conf) => conf.name === config.extends);
+        if (!extendConfig) {
+          throw Error(`No matching configuration found. Please modify the \`extends\` attribute. \nSpecified: ${String(config.extends)}`);
+        }
+        defaults(config, extendConfig);
+      }
+    }
+
     defaults(config, {
       name: 'AutoHotkey Debug',
       type: 'autohotkey',
@@ -366,6 +382,28 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       if (!isBoolean(config.useAutoJumpToError)) {
         throw Error('`useAutoJumpToError` must be a boolean.');
       }
+    })();
+
+    // init skipFunctions
+    ((): void => {
+      if (!config.skipFunctions) {
+        return;
+      }
+      if (!isArray(config.skipFunctions)) {
+        throw Error('`skipFunctions` must be a array of string.');
+      }
+    })();
+
+    // init skipFiles
+    await (async(): Promise<void> => {
+      if (!config.skipFiles) {
+        return;
+      }
+      if (!isArray(config.skipFiles)) {
+        throw Error('`skipFiles` must be a array of string.');
+      }
+      const skipFiles = config.skipFiles.map((filePath) => normalizeToUnix(String(filePath)));
+      config.skipFiles = await glob(skipFiles, { onlyFiles: true, unique: true });
     })();
 
     // init trace
