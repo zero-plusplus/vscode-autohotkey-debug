@@ -33,29 +33,31 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 See [CHANGELOG](CHANGELOG.md) for details.
 
 # Installation
-1. Install [Visual Studio Code](https://code.visualstudio.com/) with version `1.45.0` or higher
+1. Install [VSCode](https://code.visualstudio.com/) with version `1.45.0` or higher
 2. Install [AutoHotkey](https://www.autohotkey.com/)
-3. Install an extension to support AutoHotkey (the famous `slevesque.vscode-autohotkey`)
-4. Press `Ctrl + P`, type `ext install zero-plusplus.vscode-autohotkey-debug`
+3. **Install an another extension to support AutoHotkey** (the famous [slevesque.vscode-autohotkey](https://marketplace.visualstudio.com/items?itemName=slevesque.vscode-autohotkey), If you use v2, use [dudelmoser.vscode-autohotkey2](https://marketplace.visualstudio.com/items?itemName=dudelmoser.vscode-autohotkey2), etc.)
+4. Open VSCode, press `Ctrl + P` then type `ext install zero-plusplus.vscode-autohotkey-debug`
 
-This extension will look for the AutoHotkey runtime to use for debugging as follows.
-* v1: `C:/Program Files/AutoHotkey/AutoHotkey.exe`
-* v2: `C:/Program Files/AutoHotkey/v2/AutoHotkey.exe`
+## For advanced users
+This extension will work without configuration as long as you follow the steps above.
 
-If you want to place the runtime in a different location, or use a different variant of the runtime such as AutoHotkey_H, set the [runtime](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Launch-Mode) attribute in [launch.json](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations).
+However, if you want to use a different version of AutoHotkey for which no installer is provided, you will need to configure it separately.
 
-## About AutoHotkey_H
-I'm not familiar with [AutoHotkey_H](https://hotkeyit.github.io/v2/), but like AutoHotkey, it uses [DBGP](https://xdebug.org/) and should be able to be debugged without problems.
-However, the implementation is a bit different, so there may be some inherent bugs that may occur.
+By default, the runtime is configured for each file extension as shown below, so please place the runtime in the same path.
+* `ahk` - `C:/Program Files/AutoHotkey/AutoHotkey.exe`
+* `ahk2` or `ah2` - `C:/Program Files/AutoHotkey/v2/AutoHotkey.exe`
 
-If you find a bug, please report it to [issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues).
+If you want to place the runtime in a specified folder, you need to set the [runtime](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Launch-Mode) attribute in launch.json.
 
 # Usage
+For basic debugging, you can start by following the steps below.
 1. Open a file with the extension `.ahk`, `.ahk2` or `.ah2`.
-2. Set [Breakpoint](#breakpoint) where you want them
+2. Set [Breakpoint](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Breakpoint) where you want them
 3. Press `F5`
 
-If you want to run without debugging, choose `Run -> Run Without Debugging` from the menu or press `Ctrl + F5`.
+If you want to enable more advanced features and make more detailed settings, please refer to [Debug configurations](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Debug-configurations).
+
+If you need to run the script without debugging, choose `Run -> Run Without Debugging` from the menu or press `Ctrl + F5`.
 
 For more information on how to use many of the other features, see [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki).
 
