@@ -50,9 +50,8 @@ By default, the runtime is configured for each file extension as shown below, so
 If you want to place the runtime in a specified folder, you need to set the [runtime](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Launch-Mode) attribute in launch.json.
 
 # Usage
-For basic debugging, you can start by following the steps below.
 1. Open a file with the extension `.ahk`, `.ahk2` or `.ah2`.
-2. Set [Breakpoint](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Breakpoint) where you want them
+2. (optional) Set [Breakpoint](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Breakpoint) where you want them
 3. Press `F5`
 
 If you want to enable more advanced features and make more detailed settings, please refer to [Debug configurations](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Debug-configurations).
