@@ -411,6 +411,15 @@
               "program": "^\"\\${file}\"",
               "args": []
             }
+          },
+          {
+            "label": "AutoHotkey Attach",
+            "description": "A new configuration for 'attach' a user selected script.",
+            "body": {
+              "name": "AutoHotkey Attach",
+              "type": "autohotkey",
+              "request": "attach"
+            }
           }
         ]
       }

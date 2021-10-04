@@ -12,6 +12,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 ### Update
 * `1.9.1` - 2021-xx-xx
     * Fixed: In launch.json, skipFiles and skipFunctions are not displayed in the IntelliSense in attach mode
+    * Fixed: In launch.json, snippets in attach mode is not displayed
 
 * `1.9.0` - 2021-10-03
     * Added: [#69](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/69) Support `skipFiles` and `skipFunctions` in launch.json

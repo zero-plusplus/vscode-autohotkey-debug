@@ -17,6 +17,7 @@ Also want to check the development status, check the [commit history](https://gi
 ## [1.9.1] - 2021-xx-xx
 ### Fixed
 * In launch.json, skipFiles and skipFunctions are not displayed in the IntelliSense in attach mode
+* In launch.json, snippets in attach mode is not displayed
 
 ## [1.9.0] - 2021-10-03
 ### Added
