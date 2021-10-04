@@ -10,6 +10,9 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 * Since `1.8.0` is a relatively large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)
 
 ### Update
+* `1.9.1` - 2021-xx-xx
+    * Fixed: In launch.json, skipFiles and skipFunctions are not displayed in the IntelliSense in attach mode
+
 * `1.9.0` - 2021-10-03
     * Added: [#69](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/69) Support `skipFiles` and `skipFunctions` in launch.json
     * Added: [#143](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/143) Support `extends` attribute in launch.json
@@ -26,9 +29,6 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Fixed: [#137](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/137) If `${file}` is set to `openFileOnExit` when the editor is not open, an error occurs and debugging cannot be started
     * Fixed: [#138](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/138) Conditional breakpoints do not recognize boolean values
     * Fixed: [#139](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/139) v2 only bug. Conditional breakpoints cannot compare numbers in scientific notation correctly
-
-* `1.7.1` - 2021-08-17
-    * Fixed: [#118](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/118) `Copy Value` does not work in Variables View
 
 See [CHANGELOG](CHANGELOG.md) for details.
 

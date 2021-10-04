@@ -14,6 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.9.1] - 2021-xx-xx
+### Fixed
+* In launch.json, skipFiles and skipFunctions are not displayed in the IntelliSense in attach mode
+
 ## [1.9.0] - 2021-10-03
 ### Added
 * [#69](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/69) Support `skipFiles` and `skipFunctions` attribute in launch.json
@@ -383,6 +387,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.9.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.9.0..v1.9.1
 [1.9.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.8.0..v1.9.0
 [1.8.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.1..v1.8.0
 [1.7.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.0..v1.7.1

@@ -374,6 +374,20 @@
                 "description": "Open the error source when debugging is terminated due to an load-time error. This takes precedence over `openFileOnExit`.",
                 "default": false
               },
+              "skipFunctions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of functions names to skip when executing steps. The name corresponds to wildcard."
+              },
+              "skipFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of file paths to skip when executing steps. The path corresponds to glob."
+              },
               "extends": {
                 "type": "string",
                 "description": "Specifies the `name` attribute of another configuration. Inherits all attributes of the matched configuration."
