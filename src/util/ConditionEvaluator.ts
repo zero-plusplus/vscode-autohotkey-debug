@@ -127,7 +127,7 @@ export class ConditionalEvaluator {
         const getValue = async(parsed): Promise<string | number | null> => {
           const value = await this.evalValue(parsed, metaVariables);
 
-          if (this.session.ahkVersion.mejor === 1 && value === null) {
+          if (this.session.ahkVersion.mejor === 1 && !value) {
             return '';
           }
 
@@ -160,7 +160,7 @@ export class ConditionalEvaluator {
           if (valueA instanceof dbgp.ObjectProperty && valueB instanceof dbgp.ObjectProperty) {
             let baseName = `${valueA.fullName}.base`;
             let baseClassNameProperty = await this.session.evaluate(`${baseName}.__class`);
-            while (baseClassNameProperty !== null) {
+            while (baseClassNameProperty) {
               // eslint-disable-next-line no-await-in-loop
               baseClassNameProperty = await this.session.evaluate(`${baseName}.__class`);
               if (baseClassNameProperty instanceof dbgp.PrimitiveProperty) {
@@ -233,7 +233,7 @@ export class ConditionalEvaluator {
               }
             }
           }
-          else if (valueA === null && valueB === 'undefined') {
+          else if (!valueA && valueB === 'undefined') {
             result = true;
           }
         }
@@ -241,7 +241,7 @@ export class ConditionalEvaluator {
           if (valueA instanceof dbgp.PrimitiveProperty || typeof valueA === 'string') {
             const keyName = valueA instanceof dbgp.PrimitiveProperty ? valueA.value : valueA;
             const property = await this.session.evaluate(`${valueB.fullName}.${keyName}`);
-            if (property !== null) {
+            if (property) {
               result = true;
             }
           }
@@ -294,9 +294,9 @@ export class ConditionalEvaluator {
     }
     return false;
   }
-  private async evalProperty(parsed): Promise<string | dbgp.Property | null> {
+  private async evalProperty(parsed): Promise<string | dbgp.Property | undefined> {
     if (!('type' in parsed || 'value' in parsed)) {
-      return null;
+      return undefined;
     }
 
     const propertyName = parsed.value;
@@ -313,20 +313,20 @@ export class ConditionalEvaluator {
       else if (property instanceof dbgp.PrimitiveProperty) {
         return String(property.value.length);
       }
-      return null;
+      return undefined;
     }
     return this.session.evaluate(propertyName);
   }
-  private async evalValue(parsed, metaVariables: CaseInsensitiveMap<string, string>): Promise<string | dbgp.Property | null> {
+  private async evalValue(parsed, metaVariables: CaseInsensitiveMap<string, string>): Promise<string | dbgp.Property | undefined> {
     if (!('type' in parsed || 'value' in parsed)) {
-      return null;
+      return undefined;
     }
 
     if (parsed.type === 'MetaVariable') {
       if (metaVariables.has(parsed.value)) {
         return metaVariables.get(parsed.value)!;
       }
-      return null;
+      return undefined;
     }
     else if (parsed.type === 'PropertyName') {
       return this.evalProperty(parsed);
@@ -358,6 +358,6 @@ export class ConditionalEvaluator {
       return String(parsed.value);
     }
 
-    return null;
+    return undefined;
   }
 }

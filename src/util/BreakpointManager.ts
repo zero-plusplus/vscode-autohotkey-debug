@@ -95,11 +95,9 @@ export class BreakpointManager {
     const key = this.createKey(fileUri, line);
     return this.breakpointsMap.has(key);
   }
-  public getLineBreakpoints(fileUri: string, line: number): LineBreakpoints | null {
-    const targetFilePath = URI.parse(fileUri).fsPath;
-
+  public getLineBreakpoints(filePath: string, line: number): LineBreakpoints | null {
     for (const [ , lineBreakpoints ] of this.breakpointsMap) {
-      if (!equalsIgnoreCase(targetFilePath, lineBreakpoints.filePath)) {
+      if (!equalsIgnoreCase(filePath, lineBreakpoints.filePath)) {
         continue;
       }
       if (line !== lineBreakpoints.line) {
