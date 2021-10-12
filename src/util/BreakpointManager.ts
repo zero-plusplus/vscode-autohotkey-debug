@@ -96,16 +96,11 @@ export class BreakpointManager {
     return this.breakpointsMap.has(key);
   }
   public getLineBreakpoints(fileUri: string, line: number): LineBreakpoints | null {
-    const targetFilePath = URI.parse(fileUri).fsPath;
-
-    for (const [ , lineBreakpoints ] of this.breakpointsMap) {
-      if (!equalsIgnoreCase(targetFilePath, lineBreakpoints.filePath)) {
-        continue;
+    const key = this.createKey(fileUri, line);
+    for (const [ targetKey, lineBreakpoints ] of this.breakpointsMap) {
+      if (key === targetKey) {
+        return lineBreakpoints;
       }
-      if (line !== lineBreakpoints.line) {
-        continue;
-      }
-      return lineBreakpoints;
     }
     return null;
   }
@@ -193,7 +188,9 @@ export class BreakpointManager {
     // The following encoding differences have been converted to path
     // file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"
     // file:///w:/project/vscode-autohotkey-debug/demo/demo.ahk
-    const filePath = URI.parse(fileUri).fsPath.toLowerCase();
+
+    const uri = URI.parse(fileUri);
+    const filePath = uri.scheme === 'file' ? uri.fsPath.toLowerCase() : fileUri.toLowerCase();
     return `${filePath},${line}`;
   }
 }

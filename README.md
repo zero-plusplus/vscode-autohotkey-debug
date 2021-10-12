@@ -7,12 +7,15 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 ### Important Notices
 * Much of the README content has been migrated to the [Github wiki](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki). If you want to see the description of each feature, please refer to there
 
-* Since `1.8.0` is a relatively large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)
+* Since `1.10.0` is a relatively large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)
 
 ### Update
-* `1.9.1` - 2021-xx-xx
-    * Fixed: In launch.json, skipFiles and skipFunctions are not displayed in the IntelliSense in attach mode
+* `1.10.0` - 2021-xx-xx
+    * Added: [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
+    * Fixed: [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects
+    * Fixed: In launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense in attach mode
     * Fixed: In launch.json, snippets in attach mode is not displayed
+    * Fixed: The breakpoint operation may fail
 
 * `1.9.0` - 2021-10-03
     * Added: [#69](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/69) Support `skipFiles` and `skipFunctions` in launch.json

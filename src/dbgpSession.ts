@@ -195,11 +195,11 @@ export class ObjectProperty extends Property {
   public address: number;
   public page: number;
   public pageSize: number;
-  public get maxIndex(): number | null {
+  public get maxIndex(): number | undefined {
     for (let reverseIndex = this.children.length - 1; 0 <= reverseIndex; reverseIndex--) {
       const property = this.children[reverseIndex];
       const index = property.index;
-      if (index !== null) {
+      if (index) {
         return index;
       }
     }
@@ -208,7 +208,7 @@ export class ObjectProperty extends Property {
     if (isEmptyArrayInV2) {
       return 0;
     }
-    return null;
+    return undefined;
   }
   constructor(propertyNode: XmlNode, context: Context) {
     super(propertyNode, context);
@@ -669,16 +669,16 @@ export class Session extends EventEmitter {
     }
     return uniq(variableNames);
   }
-  public async fetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | null> {
+  public async fetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | undefined> {
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
     const { properties } = await this.sendPropertyGetCommand(context, name, _maxDepth);
     const property = properties[0];
     if (property.type !== 'undefined') {
       return property;
     }
-    return null;
+    return undefined;
   }
-  public async evaluate(name: string, maxDepth?: number): Promise<Property | null> {
+  public async evaluate(name: string, stackFrame?: StackFrame, maxDepth?: number): Promise<Property | undefined> {
     // #region util
     const resolveVariablePath = async(variablePath: string): Promise<string> => {
       const resolvedVariablePathArray: string[] = [];
@@ -712,11 +712,11 @@ export class Session extends EventEmitter {
       }
       return findInheritedProperty(context, baseProperty.fullName, key);
     };
-    const safeFetchProperty = async(context: Context, name: string, maxDepth?: number): Promise<Property | null> => {
+    const safeFetchProperty = async(context: Context, name: string, maxDepth?: number): Promise<Property | undefined> => {
       const variablePathArray = splitVariablePath(this.ahkVersion, name);
       const bracketNotationIndex = variablePathArray.findIndex((part) => part.startsWith('['));
       if (bracketNotationIndex === -1) {
-        return this.fetchProperty(context, name);
+        return this.fetchProperty(context, name, maxDepth);
       }
 
       let variablePath = variablePathArray.shift()!;
@@ -729,24 +729,32 @@ export class Session extends EventEmitter {
 
         const property = await this.fetchProperty(context, variablePath, maxDepth);
         if (!(property && property instanceof ObjectProperty)) {
-          return null;
+          return undefined;
         }
         const hasChild = Boolean(property.children.find((child) => child.name === part));
         if (!hasChild) {
-          return null;
+          return undefined;
         }
       }
       return this.fetchProperty(context, name, maxDepth);
     };
     // #endregion util
-    const { stackFrames } = await this.sendStackGetCommand();
-    if (stackFrames.length === 0) {
-      return null;
+
+    let _stackFrame: StackFrame;
+    if (stackFrame) {
+      _stackFrame = stackFrame;
+    }
+    else {
+      const stackFrames = (await this.sendStackGetCommand()).stackFrames;
+      if (stackFrames.length === 0) {
+        return undefined;
+      }
+      _stackFrame = stackFrames[0];
     }
 
     const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
     const resolvedName = await resolveVariablePath(name);
-    const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
+    const { contexts } = await this.sendContextNamesCommand(_stackFrame);
     for await (const context of contexts) {
       const property = await safeFetchProperty(context, resolvedName, _maxDepth);
       if (property) {
@@ -770,7 +778,7 @@ export class Session extends EventEmitter {
         return inheritedProperty;
       }
     }
-    return null;
+    return undefined;
   }
   public async fetchAllVariables(maxDepth?: number): Promise<Property[]> {
     const { stackFrames } = await this.sendStackGetCommand();
@@ -795,7 +803,7 @@ export class Session extends EventEmitter {
     // #region util
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
       const children = [ ...property.children ];
-      const base = await this.evaluate(`${property.fullName}.base`, 1);
+      const base = await this.evaluate(`${property.fullName}.base`, undefined, 1);
       if (base instanceof ObjectProperty) {
         children.push(...await getInheritedChildren(base));
       }

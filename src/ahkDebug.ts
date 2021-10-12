@@ -4,11 +4,10 @@ import { stat } from 'fs';
 
 import * as vscode from 'vscode';
 import {
+  Handles,
   InitializedEvent,
   LoggingDebugSession,
   OutputEvent,
-  Scope,
-  StackFrame,
   StoppedEvent,
   TerminatedEvent,
   Thread,
@@ -19,7 +18,6 @@ import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import * as AsyncLock from 'async-lock';
 import { range } from 'lodash';
-import { rtrim } from 'underscore.string';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {
   Breakpoint,
@@ -40,7 +38,7 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
-
+import { MatcherData, ScopeSelector, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
   request: 'launch' | 'attach';
@@ -69,6 +67,11 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   cancelReason?: string;
   skipFunctions?: string[];
   skipFiles?: string[];
+  variableCategories?: 'Recommend' | Array<{
+    label: string;
+    source: ScopeSelector;
+    matchers: MatcherData[];
+  }>;
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
@@ -92,20 +95,15 @@ export class AhkDebugSession extends LoggingDebugSession {
   private ahkProcess?: AutoHotkeyProcess;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
-  private readonly contextByVariablesReference = new Map<number, dbgp.Context>();
-  private stackFrameIdCounter = 1;
-  private readonly stackFramesByFrameId = new Map<number, dbgp.StackFrame>();
-  private variablesReferenceCounter = 1;
-  private readonly objectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
-  private readonly logObjectPropertiesByVariablesReference = new Map<number, dbgp.ObjectProperty>();
+  private variableManager?: VariableManager;
+  private readonly logObjectsHandles = new Handles<Variable>();
   private breakpointManager?: BreakpointManager;
-  private readonly settingBreakpointPending: Array<Promise<void>> = [];
   private conditionalEvaluator!: ConditionalEvaluator;
-  private prevStackFrames: dbgp.StackFrame[] | null = null;
-  private currentStackFrames: dbgp.StackFrame[] = [];
+  private prevStackFrames?: StackFrames;
+  private currentStackFrames?: StackFrames;
   private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
-  private stackFramesWhenStepOut: dbgp.StackFrame[] | null = null;
-  private stackFramesWhenStepOver: dbgp.StackFrame[] | null = null;
+  private stackFramesWhenStepOut?: StackFrames;
+  private stackFramesWhenStepOver?: StackFrames;
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   private readonly loadedSources: string[] = [];
   private errorMessage = '';
@@ -270,7 +268,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
-    this.settingBreakpointPending.push((async(): Promise<void> => {
+    return asyncLock.acquire('setBreakPointsRequest', async() => {
       this.traceLogger.log('setBreakPointsRequest');
       if (this.session!.socketClosed || this.isTerminateRequested) {
         this.sendResponse(response);
@@ -319,9 +317,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       response.body = { breakpoints: vscodeBreakpoints };
       this.sendResponse(response);
-    })());
-
-    await serializePromise(this.settingBreakpointPending);
+    });
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('configurationDoneRequest');
@@ -441,7 +437,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     response.body = { threads: [ new Thread(this.session!.id, 'Thread 1') ] };
     this.sendResponse(response);
   }
-  protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): void {
+  protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('stackTraceRequest');
     if (this.session!.socketClosed || this.isTerminateRequested) {
       this.sendResponse(response);
@@ -452,49 +448,27 @@ export class AhkDebugSession extends LoggingDebugSession {
     const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
     const endFrame = startFrame + maxLevels;
 
+    if (!this.currentStackFrames) {
+      this.currentStackFrames = await this.variableManager!.createStackFrames();
+    }
     const allStackFrames = this.currentStackFrames;
     const stackFrames = allStackFrames.slice(startFrame, endFrame);
-
     if (0 < stackFrames.length) {
       response.body = {
         totalFrames: allStackFrames.length,
-        stackFrames: stackFrames.map((stackFrame) => {
-          const id = this.stackFrameIdCounter++;
-          const filePath = URI.parse(stackFrame.fileUri).fsPath;
-          const source = {
-            name: path.basename(filePath),
-            path: filePath,
-          } as DebugProtocol.Source;
-
-          this.stackFramesByFrameId.set(id, stackFrame);
-          return {
-            id,
-            source,
-            name: stackFrame.name,
-            line: stackFrame.line,
-            column: 1,
-          } as StackFrame;
-        }),
+        stackFrames,
       };
     }
     else {
-      const stackFrame = {
-        name: 'Idling (Click me if you want to see the variables)',
-        fileUri: '',
-        level: 0,
-        line: -1,
-        type: 'file',
-      } as dbgp.StackFrame;
-      const id = this.stackFrameIdCounter++;
-
-      this.stackFramesByFrameId.set(id, stackFrame);
       response.body = {
         totalFrames: 1,
         stackFrames: [
           {
-            id,
-            name: stackFrame.name,
-          } as StackFrame,
+            id: -1,
+            column: -1,
+            line: -1,
+            name: 'Idling (Click me if you want to see the variables)',
+          },
         ],
       };
     }
@@ -507,131 +481,57 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
       return;
     }
-
-    const stackFrame = this.stackFramesByFrameId.get(args.frameId);
-    if (typeof stackFrame === 'undefined') {
-      throw new Error(`Unknown frameId ${args.frameId}`);
-    }
-    const { contexts } = await this.session!.sendContextNamesCommand(stackFrame);
-
+    const scopes = await this.variableManager!.createScopes(args.frameId);
     response.body = {
-      scopes: contexts.map((context) => {
-        const variableReference = this.variablesReferenceCounter++;
-
-        this.contextByVariablesReference.set(variableReference, context);
-        return new Scope(context.name, variableReference);
-      }),
+      scopes: scopes.map((scope) => ({
+        name: scope.name,
+        expensive: scope.expensive,
+        variablesReference: scope.variablesReference,
+      })),
     };
 
     this.sendResponse(response);
   }
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('variablesRequest');
-    if (this.logObjectPropertiesByVariablesReference.has(args.variablesReference)) {
-      const objectProperty = this.logObjectPropertiesByVariablesReference.get(args.variablesReference);
-      if (objectProperty) {
-        const variablesReference = this.variablesReferenceCounter++;
-        this.objectPropertiesByVariablesReference.set(variablesReference, objectProperty);
-
-        let indexedVariables, namedVariables;
-        if (objectProperty.isArray) {
-          const maxIndex = objectProperty.maxIndex!;
-          if (100 < maxIndex) {
-            indexedVariables = maxIndex;
-            namedVariables = 1;
-          }
-        }
-        const variable = {
-          name: objectProperty.name,
-          value: this.formatProperty(objectProperty),
-          variablesReference,
-          indexedVariables,
-          namedVariables,
-        } as DebugProtocol.Variable;
-        response.body = { variables: [ variable ] };
-      }
-      this.sendResponse(response);
-      return;
-    }
 
     if (this.session!.socketClosed || this.isTerminateRequested) {
       this.sendResponse(response);
       return;
     }
 
-    let properties: dbgp.Property[] = [];
-    if (this.contextByVariablesReference.has(args.variablesReference)) {
-      const context = this.contextByVariablesReference.get(args.variablesReference)!;
-      properties = (await this.session!.sendContextGetCommand(context)).properties;
-    }
-    else if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
-      const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
-      properties = objectProperty.children;
-    }
-
-    const variables: DebugProtocol.Variable[] = [];
-    for (const property of properties) {
-      let variablesReference = 0, indexedVariables, namedVariables;
-
-      // Fix: [#133](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/133)
-      if (property.fullName.includes('<enum>')) {
-        continue;
-      }
-
-      if (args.filter) {
-        if (args.filter === 'named' && property.isIndexKey) {
-          continue;
-        }
-        if (args.filter === 'indexed') {
-          if (!property.isIndexKey) {
-            continue;
-          }
-          const index = property.index!;
-          const start = args.start! + 1;
-          const end = args.start! + args.count!;
-          const contains = start <= index && index <= end;
-          if (!contains) {
-            continue;
-          }
-        }
-      }
-
-      if (property instanceof dbgp.ObjectProperty) {
-        const objectProperty = property;
-
-        variablesReference = this.variablesReferenceCounter++;
-        this.objectPropertiesByVariablesReference.set(variablesReference, objectProperty);
-
-        const loadedChildren = objectProperty.hasChildren && 0 < objectProperty.children.length;
-        if (!loadedChildren) {
-          // eslint-disable-next-line no-await-in-loop
-          const property = await this.session!.fetchProperty(objectProperty.context, objectProperty.fullName);
-          if (property instanceof dbgp.ObjectProperty) {
-            objectProperty.isArray = property.isArray;
-            objectProperty.children = property.children;
-          }
-        }
-
-        if (objectProperty.isArray) {
-          const maxIndex = objectProperty.maxIndex!;
-          if (100 < maxIndex) {
-            indexedVariables = maxIndex;
-            namedVariables = 1;
-          }
-        }
-      }
-
-      variables.push({
-        name: property.name,
-        type: property.type,
-        value: this.formatProperty(property),
-        variablesReference,
-        indexedVariables,
-        namedVariables,
-      });
+    const loggedVariable = this.logObjectsHandles.get(args.variablesReference) as Variable | undefined;
+    if (loggedVariable) {
+      response.body = {
+        variables: [
+          {
+            name: loggedVariable.name,
+            variablesReference: loggedVariable.variablesReference,
+            value: loggedVariable.value,
+            type: loggedVariable.type,
+            indexedVariables: loggedVariable.indexedVariables,
+            namedVariables: loggedVariable.namedVariables,
+          },
+        ],
+      };
+      this.sendResponse(response);
+      return;
     }
 
-    response.body = { variables };
+    const objectVariable = this.variableManager!.getObjectVariable(args.variablesReference);
+    const variables = objectVariable ? await objectVariable.createChildren(args) : await this.variableManager?.createVariables(args);
+    if (variables) {
+      response.body = {
+        variables: variables.map((variable) => ({
+          name: variable.name,
+          variablesReference: variable.variablesReference,
+          value: variable.value,
+          type: variable.type,
+          indexedVariables: variable.indexedVariables,
+          namedVariables: variable.namedVariables,
+        })),
+      };
+    }
     this.sendResponse(response);
   }
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
@@ -679,14 +579,14 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     let fullName = args.name;
     let context: dbgp.Context;
-    if (this.objectPropertiesByVariablesReference.has(args.variablesReference)) {
-      const objectProperty = this.objectPropertiesByVariablesReference.get(args.variablesReference)!;
+    const objectVariable = this.variableManager!.getObjectVariable(args.variablesReference);
+    if (objectVariable) {
       const name = args.name.startsWith('[') ? args.name : `.${args.name}`;
-      fullName = `${objectProperty.fullName}${name}`;
-      context = objectProperty.context;
+      fullName = `${objectVariable.fullName}${name}`;
+      context = objectVariable.context;
     }
     else {
-      context = this.contextByVariablesReference.get(args.variablesReference)!;
+      context = this.variableManager!.getScope(args.variablesReference)!.context;
     }
 
     try {
@@ -708,7 +608,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       response.body = {
         type: typeName,
         variablesReference: 0,
-        value: this.formatProperty(properties[0]),
+        value: formatProperty(properties[0], this.session?.ahkVersion),
       };
       this.sendResponse(response);
     }
@@ -758,13 +658,13 @@ export class AhkDebugSession extends LoggingDebugSession {
         if (!propertyNameParsed.status) {
           throw Error('Error: Only the property name or meta variable is supported. e.g. `variable`,` object.field`, `array[1]`, `map["spaced key"]`, `prop.<base>`, `{hitCount}`');
         }
-        const stackFrame = this.stackFramesByFrameId.get(args.frameId);
+        const stackFrame = this.variableManager!.getStackFrame(args.frameId);
         if (!stackFrame) {
           throw Error('Error: Could not get stack frame');
         }
 
-        const property = await this.session!.evaluate(propertyName);
-        if (property === null) {
+        const property = await this.session!.evaluate(propertyName, stackFrame.dbgpStackFrame);
+        if (!property) {
           if (args.context === 'hover' && (await this.session!.fetchAllVariableNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
             response.body = {
               result: 'Not initialized',
@@ -777,26 +677,13 @@ export class AhkDebugSession extends LoggingDebugSession {
           throw Error('not available');
         }
 
-        let variablesReference = 0, indexedVariables, namedVariables;
-        if (property instanceof dbgp.ObjectProperty) {
-          variablesReference = this.variablesReferenceCounter++;
-          this.objectPropertiesByVariablesReference.set(variablesReference, property);
-
-          if (property.isArray) {
-            const maxIndex = property.maxIndex!;
-            if (100 < maxIndex) {
-              indexedVariables = maxIndex;
-              namedVariables = 1;
-            }
-          }
-        }
-
+        const variable = new Variable(this.session!, property);
         response.body = {
-          result: this.formatProperty(property),
+          result: formatProperty(property, this.session?.ahkVersion),
           type: property.type,
-          variablesReference,
-          indexedVariables,
-          namedVariables,
+          variablesReference: variable.variablesReference,
+          indexedVariables: variable.indexedVariables,
+          namedVariables: variable.namedVariables,
         };
         this.sendResponse(response);
       }
@@ -939,76 +826,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     // const DEBUG_s = DEBUG_ns / 1e9;
     // this.printLogMessage(`elapsedTime: ${DEBUG_s}s`);
   }
-  private escapeDebuggerToClient(str: string): string {
-    const version = this.session!.ahkVersion;
-    return str
-      .replace(/"/gu, version.mejor === 1 ? '""' : '`"')
-      .replace(/\r\n/gu, '`r`n')
-      .replace(/\n/gu, '`n')
-      .replace(/\r/gu, '`r')
-      .replace(/[\b]/gu, '`b')
-      .replace(/\t/gu, '`t')
-      .replace(/\v/gu, '`v')
-      // eslint-disable-next-line no-control-regex
-      .replace(/[\x07]/gu, '`a')
-      .replace(/\f/gu, '`f');
-  }
-  private formatProperty(property: dbgp.Property): string {
-    const formatPrimitiveProperty = (property: dbgp.PrimitiveProperty): string => {
-      if (property.type === 'string') {
-        return `"${this.escapeDebuggerToClient(property.value)}"`;
-      }
-      else if (property.type === 'undefined') {
-        return 'Not initialized';
-      }
-      return property.value;
-    };
-
-    if (property instanceof dbgp.PrimitiveProperty) {
-      return formatPrimitiveProperty(property);
-    }
-
-    const objectProperty = property as dbgp.ObjectProperty;
-    const maxIndex = objectProperty.maxIndex;
-    const isArray = objectProperty.isArray;
-    let value = isArray
-      ? `${objectProperty.className}(${maxIndex!}) [`
-      : `${objectProperty.className} {`;
-
-    const children = objectProperty.children.slice(0, 100);
-    for (const child of children) {
-      if (child.name === 'base') {
-        continue;
-      }
-
-      const displayValue = child instanceof dbgp.PrimitiveProperty
-        ? formatPrimitiveProperty(child)
-        : (child as dbgp.ObjectProperty).className;
-
-      const objectChild = child as dbgp.ObjectProperty;
-      if (objectProperty.isArray) {
-        if (!objectChild.isIndexKey) {
-          continue;
-        }
-
-        value += `${displayValue}, `;
-        continue;
-      }
-
-      const key = objectChild.isIndexKey
-        ? String(objectChild.index)
-        : objectChild.name;
-      value += `${key}: ${displayValue}, `;
-    }
-
-    if (children.length === 100) {
-      value += '…';
-    }
-
-    value = rtrim(value, ', ');
-    value += isArray ? ']' : '}';
-    return value;
-  }
   private fixPathOfRuntimeError(errorMessage: string): string {
     if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
       const line = parseInt(errorMessage.match(/--->\t(?<line>\d+):/u)!.groups!.line, 10);
@@ -1072,18 +889,17 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.currentMetaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
     }
     this.prevStackFrames = this.currentStackFrames;
-    const { stackFrames } = await this.session!.sendStackGetCommand();
-    const isScriptIdling = stackFrames.length === 0;
-    if (isScriptIdling) {
-      this.currentStackFrames = [];
+    const stackFrames = await this.variableManager!.createStackFrames();
+    if (stackFrames.isIdle) {
+      this.currentStackFrames = undefined;
       await this.sendStoppedEvent('pause');
       return;
     }
 
-    const { fileUri, line, name } = stackFrames[0];
+    const { source, line, name } = stackFrames[0];
 
     this.currentStackFrames = stackFrames;
-    const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(fileUri, line);
+    const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(source.path, line);
     let stopReason: StopReason = 'step';
     if (lineBreakpoints) {
       lineBreakpoints.incrementHitCount();
@@ -1094,7 +910,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
     else if (!this.pauseRequested) {
-      const isSkipFile = this.config.skipFiles?.map((filePath) => URI.file(filePath).fsPath.toLowerCase()).includes(URI.parse(fileUri).fsPath.toLowerCase());
+      const isSkipFile = this.config.skipFiles?.map((filePath) => URI.file(filePath).fsPath.toLowerCase()).includes(source.path.toLowerCase());
       if (isSkipFile) {
         const dbgpResponse = await this.session!.sendStepIntoCommand();
         this.autoExecuting = true;
@@ -1158,13 +974,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.checkContinuationStatus(result);
   }
   private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints: LineBreakpoints | null): Promise<void> {
-    if (!this.currentMetaVariables || this.currentStackFrames.length === 0) {
+    if (!this.currentMetaVariables || this.currentStackFrames?.isIdle) {
       throw Error(`This message shouldn't appear.`);
     }
 
     // Fix a bug that prevented AutoExec thread, Timer thread, from getting proper information when there was more than one call stack
-    const prevStackFrames: dbgp.StackFrame[] | undefined = this.prevStackFrames?.slice();
-    const currentStackFrames = this.currentStackFrames.slice();
+    const prevStackFrames: StackFrames | undefined = this.prevStackFrames?.slice();
+    const currentStackFrames = this.currentStackFrames!.slice();
     if (prevStackFrames && prevStackFrames.length === 1 && 1 < currentStackFrames.length) {
       currentStackFrames.pop();
       currentStackFrames.push(prevStackFrames[0]);
@@ -1201,7 +1017,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const executeByUser = this.stackFramesWhenStepOut === null && this.stackFramesWhenStepOver === null;
+    const executeByUser = !this.stackFramesWhenStepOut && !this.stackFramesWhenStepOver;
     if (executeByUser) {
       // Normal step
       if (!lineBreakpoints) {
@@ -1230,13 +1046,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.autoExecuting = true;
     if (this.stackFramesWhenStepOut) {
       // If go back to the same line in a loop
-      if (prevStackFrames && equalsIgnoreCase(currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && currentStackFrames[0].line === prevStackFrames[0].line) {
+      if (prevStackFrames && equalsIgnoreCase(currentStackFrames[0].source.path, prevStackFrames[0].source.path) && currentStackFrames[0].line === prevStackFrames[0].line) {
         if (matchedBreakpoint) {
           await this.sendStoppedEvent(stopReason);
           return;
         }
       }
-      else if (equalsIgnoreCase(this.stackFramesWhenStepOut[0].fileUri, currentStackFrames[0].fileUri) && this.stackFramesWhenStepOut[0].line === currentStackFrames[0].line) {
+      else if (equalsIgnoreCase(this.stackFramesWhenStepOut[0].source.path, currentStackFrames[0].source.path) && this.stackFramesWhenStepOut[0].line === currentStackFrames[0].line) {
         // One more breath. The final adjustment
         const result = await this.session!.sendContinuationCommand('step_out');
         await this.checkContinuationStatus(result);
@@ -1244,7 +1060,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       // Complated step out
-      if (this.currentStackFrames.length < this.stackFramesWhenStepOut.length) {
+      if (this.currentStackFrames!.length < this.stackFramesWhenStepOut.length) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
@@ -1252,14 +1068,14 @@ export class AhkDebugSession extends LoggingDebugSession {
     else if (this.stackFramesWhenStepOver) {
       // If go back to the same line in a loop
       if (this.stackFramesWhenStepOver.length === currentStackFrames.length) {
-        if (prevStackFrames && equalsIgnoreCase(currentStackFrames[0].fileUri, prevStackFrames[0].fileUri) && currentStackFrames[0].line === prevStackFrames[0].line) {
+        if (prevStackFrames && equalsIgnoreCase(currentStackFrames[0].source.path, prevStackFrames[0].source.path) && currentStackFrames[0].line === prevStackFrames[0].line) {
           await this.sendStoppedEvent(stopReason);
           return;
         }
       }
 
       // One more breath. The final adjustment
-      if (equalsIgnoreCase(this.stackFramesWhenStepOver[0].fileUri, currentStackFrames[0].fileUri) && this.stackFramesWhenStepOver[0].line === currentStackFrames[0].line) {
+      if (equalsIgnoreCase(this.stackFramesWhenStepOver[0].source.path, currentStackFrames[0].source.path) && this.stackFramesWhenStepOver[0].line === currentStackFrames[0].line) {
         const result = await this.session!.sendContinuationCommand('step_over');
         await this.checkContinuationStatus(result);
         return;
@@ -1295,7 +1111,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.checkContinuationStatus(result);
   }
   private async processLogpoint(lineBreakpoints: LineBreakpoints | null): Promise<void> {
-    if (this.currentStackFrames.length === 0) {
+    if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
       throw Error(`This message shouldn't appear.`);
     }
     if (!lineBreakpoints) {
@@ -1332,8 +1148,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.stackFramesWhenStepOut = null;
-    this.stackFramesWhenStepOver = null;
+    this.stackFramesWhenStepOut = undefined;
+    this.stackFramesWhenStepOver = undefined;
     this.pauseRequested = false;
     this.isPaused = true;
     this.autoExecuting = false;
@@ -1420,16 +1236,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       else {
         const property = messageOrProperty;
-        const variablesReference = this.variablesReferenceCounter++;
-        this.logObjectPropertiesByVariablesReference.set(variablesReference, property);
 
-        event = new OutputEvent(this.formatProperty(property), logCategory) as DebugProtocol.OutputEvent;
-        event.body.variablesReference = variablesReference;
+        event = new OutputEvent(formatProperty(property, this.session!.ahkVersion), logCategory) as DebugProtocol.OutputEvent;
+        event.body.variablesReference = this.logObjectsHandles.create(new Variable(this.session!, property));
       }
 
-      if (0 < this.currentStackFrames.length) {
-        const { fileUri, line } = this.currentStackFrames[0];
-        event.body.source = { path: fileUri };
+      if (this.currentStackFrames && 0 < this.currentStackFrames.length) {
+        const { source, line } = this.currentStackFrames[0];
+        event.body.source = source;
         event.body.line = line;
       }
       this.sendEvent(event);
@@ -1470,7 +1284,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else {
-        const property = await this.session!.evaluate(variableName);
+        const property = await this.session!.evaluate(variableName, undefined, 99);
 
         if (property) {
           if (property instanceof dbgp.ObjectProperty) {
@@ -1482,7 +1296,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             results.push(property);
           }
           else if (property instanceof dbgp.PrimitiveProperty) {
-            message += this.escapeDebuggerToClient(property.value);
+            message += escapeAhk(property.value, this.session!.ahkVersion);
           }
         }
         else {
@@ -1513,7 +1327,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (!this.config.usePerfTips) {
       return;
     }
-    if (this.currentStackFrames.length === 0) {
+    if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
       return;
     }
 
@@ -1534,8 +1348,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     });
     this.perfTipsDecorationTypes.push(decorationType);
 
-    const { fileUri, line } = this.currentStackFrames[0];
-    const document = await vscode.workspace.openTextDocument(URI.parse(fileUri).fsPath);
+    const { source, line } = this.currentStackFrames[0];
+    const document = await vscode.workspace.openTextDocument(source.path);
     let line_0base = line - 1;
     if (line_0base === document.lineCount) {
       line_0base--; // I don't know about the details, but if the script stops at the end of the file and it's not a blank line, then line_0base will be the value of `document.lineCount + 1`, so we'll compensate for that
@@ -1602,6 +1416,7 @@ export class AhkDebugSession extends LoggingDebugSession {
               });
 
             this.breakpointManager = new BreakpointManager(this.session);
+            this.variableManager = new VariableManager(this.session, this.config.variableCategories);
             this.sendEvent(new ThreadEvent('Session started.', this.session.id));
             resolve();
           }

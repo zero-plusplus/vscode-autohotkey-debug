@@ -257,6 +257,122 @@
                 "type": "string",
                 "description": "Specifies the `name` attribute of another configuration. Inherits all attributes of the matched configuration."
               },
+              "variableCategories": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "description": "Customize a group of variables for data inspection.",
+                "examples": [
+                  "Recommend",
+                  []
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "object"
+                  ],
+                  "examples": [
+                    "Local",
+                    "Static",
+                    "Global",
+                    {}
+                  ],
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "description": "The title displayed in the group."
+                    },
+                    "source": {
+                      "type": [
+                        "string",
+                        "array"
+                      ],
+                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to include all of them, specify \"*\"",
+                      "examples": [
+                        "Local",
+                        "Static",
+                        "Global",
+                        "*",
+                        []
+                      ],
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "Local",
+                          "Static",
+                          "Global"
+                        ]
+                      }
+                    },
+                    "matchers": {
+                      "type": "array",
+                      "description": "An object representing a match condition. If multiple conditions are specified, all of them will be matched or not.",
+                      "items": {
+                        "type": [
+                          "string",
+                          "object"
+                        ],
+                        "examples": [
+                          "*",
+                          "Local",
+                          "Static",
+                          "Global",
+                          {}
+                        ],
+                        "properties": {
+                          "method": {
+                            "type": "string",
+                            "description": "If you want to filter variable that match the conditions, specify \"exclude\". Otherwise, omit this attribute or specify \"include\".",
+                            "enum": [
+                              "include",
+                              "exclude"
+                            ]
+                          },
+                          "pattern": {
+                            "type": "string",
+                            "description": "Regular expression patterns for variable name."
+                          },
+                          "ignorecase": {
+                            "type": "boolean",
+                            "description": "If true, matcher.pattern will ignore case."
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "The type name recognized by the debugger.",
+                            "enum": [
+                              "undefined",
+                              "string",
+                              "number",
+                              "integer",
+                              "float",
+                              "primitive",
+                              "object"
+                            ]
+                          },
+                          "className": {
+                            "type": "string",
+                            "description": "The class name recognized by the debugger.",
+                            "examples": [
+                              "Class",
+                              "Func",
+                              "Object"
+                            ]
+                          },
+                          "builtin": {
+                            "type": "boolean",
+                            "description": "Whether it is a built-in variable or not."
+                          },
+                          "static": {
+                            "type": "boolean",
+                            "description": "Whether it is a static variable or not."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
               "trace": {
                 "type": "boolean",
                 "description": "No changes are required. This is a settings for developers to use to find bugs. Enable / disable display trace informaiton for debugger adapter.",
@@ -391,6 +507,122 @@
               "extends": {
                 "type": "string",
                 "description": "Specifies the `name` attribute of another configuration. Inherits all attributes of the matched configuration."
+              },
+              "variableCategories": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "description": "Customize a group of variables for data inspection.",
+                "examples": [
+                  "Recommend",
+                  []
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "object"
+                  ],
+                  "examples": [
+                    "Local",
+                    "Static",
+                    "Global",
+                    {}
+                  ],
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "description": "The title displayed in the group."
+                    },
+                    "source": {
+                      "type": [
+                        "string",
+                        "array"
+                      ],
+                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to include all of them, specify \"*\"",
+                      "examples": [
+                        "Local",
+                        "Static",
+                        "Global",
+                        "*",
+                        []
+                      ],
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "Local",
+                          "Static",
+                          "Global"
+                        ]
+                      }
+                    },
+                    "matchers": {
+                      "type": "array",
+                      "description": "An object representing a match condition. If multiple conditions are specified, all of them will be matched or not.",
+                      "items": {
+                        "type": [
+                          "string",
+                          "object"
+                        ],
+                        "examples": [
+                          "*",
+                          "Local",
+                          "Static",
+                          "Global",
+                          {}
+                        ],
+                        "properties": {
+                          "method": {
+                            "type": "string",
+                            "description": "If you want to filter variable that match the conditions, specify \"exclude\". Otherwise, omit this attribute or specify \"include\".",
+                            "enum": [
+                              "include",
+                              "exclude"
+                            ]
+                          },
+                          "pattern": {
+                            "type": "string",
+                            "description": "Regular expression patterns for variable name."
+                          },
+                          "ignorecase": {
+                            "type": "boolean",
+                            "description": "If true, matcher.pattern will ignore case."
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "The type name recognized by the debugger.",
+                            "enum": [
+                              "undefined",
+                              "string",
+                              "number",
+                              "integer",
+                              "float",
+                              "primitive",
+                              "object"
+                            ]
+                          },
+                          "className": {
+                            "type": "string",
+                            "description": "The class name recognized by the debugger.",
+                            "examples": [
+                              "Class",
+                              "Func",
+                              "Object"
+                            ]
+                          },
+                          "builtin": {
+                            "type": "boolean",
+                            "description": "Whether it is a built-in variable or not."
+                          },
+                          "static": {
+                            "type": "boolean",
+                            "description": "Whether it is a static variable or not."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               },
               "trace": {
                 "type": "boolean",

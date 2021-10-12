@@ -14,10 +14,15 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.9.1] - 2021-xx-xx
+## [1.10.0] - 2021-xx-xx
+### Added
+* [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
+
 ### Fixed
-* In launch.json, skipFiles and skipFunctions are not displayed in the IntelliSense in attach mode
+* [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects
+* In launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense in attach mode
 * In launch.json, snippets in attach mode is not displayed
+* The breakpoint operation may fail
 
 ## [1.9.0] - 2021-10-03
 ### Added
@@ -388,7 +393,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[1.9.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.9.0..v1.9.1
+[1.10.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.9.0..v1.10.0
 [1.9.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.8.0..v1.9.0
 [1.8.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.1..v1.8.0
 [1.7.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.0..v1.7.1
