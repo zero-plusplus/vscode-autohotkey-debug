@@ -19,8 +19,10 @@ Also want to check the development status, check the [commit history](https://gi
 * [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
 
 ### Fixed
-* In launch.json, skipFiles and skipFunctions are not displayed in the IntelliSense in attach mode
+* [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects
+* In launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense in attach mode
 * In launch.json, snippets in attach mode is not displayed
+* The breakpoint operation may fail
 
 ## [1.9.0] - 2021-10-03
 ### Added
