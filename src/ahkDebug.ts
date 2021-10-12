@@ -98,7 +98,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   private variableManager?: VariableManager;
   private readonly logObjectsHandles = new Handles<Variable>();
   private breakpointManager?: BreakpointManager;
-  private readonly settingBreakpointPending: Array<Promise<void>> = [];
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames?: StackFrames;
   private currentStackFrames?: StackFrames;
@@ -269,7 +268,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
-    this.settingBreakpointPending.push((async(): Promise<void> => {
+    return asyncLock.acquire('setBreakPointsRequest', async() => {
       this.traceLogger.log('setBreakPointsRequest');
       if (this.session!.socketClosed || this.isTerminateRequested) {
         this.sendResponse(response);
@@ -318,9 +317,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       response.body = { breakpoints: vscodeBreakpoints };
       this.sendResponse(response);
-    })());
-
-    await serializePromise(this.settingBreakpointPending);
+    });
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('configurationDoneRequest');
