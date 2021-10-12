@@ -17,6 +17,7 @@ Also want to check the development status, check the [commit history](https://gi
 ## [1.10.0] - 2021-xx-xx
 ### Added
 * [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
+* [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Support ClearConsole directive
 
 ### Fixed
 * [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects

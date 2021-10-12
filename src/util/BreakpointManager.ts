@@ -13,8 +13,9 @@ export interface BreakpointAdvancedData {
   hitCount: number;
   unverifiedLine?: number;
   unverifiedColumn?: number;
+  action?: () => Promise<void>;
 }
-export type BreakpointKind = 'breakpoint' | 'logpoint' | 'conditional breakpoint' | 'conditional logpoint';
+export type BreakpointKind = 'breakpoint' | 'logpoint' | 'conditional breakpoint' | 'conditional logpoint' | 'actionpoint';
 export class Breakpoint implements BreakpointAdvancedData {
   public id: number;
   public fileUri: string;
@@ -27,10 +28,14 @@ export class Breakpoint implements BreakpointAdvancedData {
   public hitCount = 0;
   public unverifiedLine?: number;
   public unverifiedColumn?: number;
+  public action?: () => Promise<void>;
   public get filePath(): string {
     return URI.parse(this.fileUri).fsPath;
   }
   public get kind(): BreakpointKind {
+    if (this.action) {
+      return 'actionpoint';
+    }
     const logMode = Boolean(this.logMessage || this.logGroup);
     if (this.condition || this.hitCondition) {
       if (logMode) {
@@ -52,6 +57,7 @@ export class Breakpoint implements BreakpointAdvancedData {
     this.hidden = advancedData?.hidden ?? false;
     this.unverifiedLine = advancedData?.unverifiedLine;
     this.unverifiedColumn = advancedData?.unverifiedColumn;
+    this.action = advancedData?.action;
   }
 }
 export class LineBreakpoints extends Array<Breakpoint> {
@@ -76,8 +82,8 @@ export class LineBreakpoints extends Array<Breakpoint> {
   }
   public hasAdvancedBreakpoint(): boolean {
     for (const breakpoint of this) {
-      const { condition, hitCondition, logMessage, logGroup } = breakpoint;
-      if (condition || hitCondition || logMessage || logGroup) {
+      const { condition, hitCondition, logMessage, logGroup, action } = breakpoint;
+      if (condition || hitCondition || logMessage || logGroup || action) {
         return true;
       }
     }

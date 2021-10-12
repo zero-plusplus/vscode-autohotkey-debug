@@ -224,6 +224,11 @@
                     "type": "boolean",
                     "description": "Enable / disable Output directive.",
                     "default": true
+                  },
+                  "useClearConsoleDirective": {
+                    "type": "boolean",
+                    "description": "Enable / disable ClearConsole directive.",
+                    "default": true
                   }
                 },
                 "description": "Enable / disable Debug directive. See the README for detailed instructions on how to set it up.",

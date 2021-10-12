@@ -59,6 +59,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   useDebugDirective: false | {
     useBreakpointDirective: boolean;
     useOutputDirective: boolean;
+    useClearConsoleDirective: boolean;
   };
   useAutoJumpToError: boolean;
   useUIAVersion: boolean;
@@ -746,6 +747,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const {
       useBreakpointDirective,
       useOutputDirective,
+      useClearConsoleDirective,
     } = this.config.useDebugDirective;
 
     const filePathList = this.getAllLoadedSourcePath();
@@ -814,6 +816,21 @@ export class AhkDebugSession extends LoggingDebugSession {
             logMessage,
             logGroup,
             hidden: true,
+          } as BreakpointAdvancedData;
+          await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
+        }
+        else if (useClearConsoleDirective && directiveType === 'clearconsole') {
+          const advancedData = {
+            condition,
+            hitCondition,
+            logMessage,
+            hidden: true,
+            action: async() => {
+              // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
+              await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+              await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+              await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+            },
           } as BreakpointAdvancedData;
           await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
         }
@@ -932,6 +949,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.currentMetaVariables.set('elapsedTime_ns', '-1');
       this.currentMetaVariables.set('elapsedTime_ms', '-1');
       this.currentMetaVariables.set('elapsedTime_s', '-1');
+      await this.processActionpoint(lineBreakpoints);
       await this.processLogpoint(lineBreakpoints);
       await this.sendStoppedEvent('pause');
       return;
@@ -945,6 +963,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     // Paused on breakpoint
     await this.processLogpoint(lineBreakpoints);
+    await this.processActionpoint(lineBreakpoints);
     const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
     if (matchedBreakpoint) {
       this.currentMetaVariables.set('hitCount', String(matchedBreakpoint.hitCount));
@@ -1009,6 +1028,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     else {
       await this.processLogpoint(lineBreakpoints);
+      await this.processActionpoint(lineBreakpoints);
     }
 
     // step_into is always stop
@@ -1127,6 +1147,26 @@ export class AhkDebugSession extends LoggingDebugSession {
           continue;
         }
         await this.printLogMessage(breakpoint, 'stdout');
+      }
+    }
+  }
+  private async processActionpoint(lineBreakpoints: LineBreakpoints | null): Promise<void> {
+    if (!lineBreakpoints) {
+      return;
+    }
+    if (!lineBreakpoints.hasAdvancedBreakpoint()) {
+      return;
+    }
+
+    for await (const breakpoint of lineBreakpoints) {
+      if (!await this.evalCondition(breakpoint)) {
+        continue;
+      }
+      if (breakpoint.kind === 'actionpoint' && breakpoint.action) {
+        await breakpoint.action();
+        if (breakpoint.logMessage) {
+          await this.printLogMessage(breakpoint, 'stdout');
+        }
       }
     }
   }
