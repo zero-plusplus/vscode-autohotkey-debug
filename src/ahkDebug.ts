@@ -38,7 +38,7 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
-import { ScopeSelector, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { MatcherData, ScopeSelector, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
   request: 'launch' | 'attach';
@@ -67,10 +67,10 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   cancelReason?: string;
   skipFunctions?: string[];
   skipFiles?: string[];
-  variableCategories?: 'Recommend' | Array<ScopeSelector | {
+  variableCategories?: 'Recommend' | Array<{
     label: string;
     source: ScopeSelector;
-
+    matchers: MatcherData[];
   }>;
 }
 

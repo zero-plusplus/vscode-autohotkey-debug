@@ -16,7 +16,83 @@
             "openFileOnExit": "${file}",
             "internalConsoleOptions": "openOnSessionStart",
             "useAutoJumpToError": true,
-            "trace": false
+            "trace": false,
+            "variableCategories": "Recommend"
+        },
+        {
+            "name": "VariableCategories Test",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${file}",
+            "runtime_v1": "AutoHotkey.exe",
+            "runtime_v2": "v2/AutoHotkey.exe",
+            "args": [],
+            "port": "9002-9010",
+            "stopOnEntry": false,
+            "useDebugDirective": true,
+            "usePerfTips": true,
+            "openFileOnExit": "${file}",
+            "internalConsoleOptions": "openOnSessionStart",
+            "useAutoJumpToError": true,
+            "trace": false,
+            "variableCategories": [
+                "Local",
+                {
+                    "label": "Global",
+                    "source": "Global",
+                    "matchers": [
+                        {
+                            "method": "exclude",
+                            "builtin": true,
+                        }
+                    ],
+                },
+                {
+                    "label": "Built-in Func",
+                    "source": "Global",
+                    "matchers": [
+                        {
+                            "method": "exclude",
+                            "pattern": "\\d"
+                        },
+                        {
+                            "className": "Func",
+                            "builtin": true,
+                        },
+                    ],
+                },
+                {
+                    "label": "Built-in Global",
+                    "source": "Global",
+                    "matchers": [
+                        {
+                            "method": "exclude",
+                            "pattern": "\\d"
+                        },
+                        {
+                            "method": "exclude",
+                            "className": "Func",
+                        },
+                        {
+                            "builtin": true,
+                        }
+                    ],
+                },
+                {
+                    "label": "Constant",
+                    "source": "Global",
+                    "matchers": [
+                        {
+                            "pattern": "^[A-Z_]+$",
+                            "ignorecase": false,
+                        }
+                    ],
+                },
+                {
+                    "label": "All",
+                    "source": "*",
+                },
+            ]
         },
         {
             "name": "AutoHotkey Debug (UIA)",

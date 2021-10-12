@@ -10,7 +10,8 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 * Since `1.8.0` is a relatively large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)
 
 ### Update
-* `1.9.1` - 2021-xx-xx
+* `1.10.0` - 2021-xx-xx
+    * Added: [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
     * Fixed: In launch.json, skipFiles and skipFunctions are not displayed in the IntelliSense in attach mode
     * Fixed: In launch.json, snippets in attach mode is not displayed
 

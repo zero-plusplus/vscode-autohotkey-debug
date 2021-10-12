@@ -5,6 +5,7 @@ import { URI } from 'vscode-uri';
 import * as dbgp from '../dbgpSession';
 import { rtrim } from 'underscore.string';
 import { AhkVersion } from './util';
+import { equalsIgnoreCase } from './stringUtils';
 
 export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
   return str
@@ -76,18 +77,22 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
   return value;
 };
 
-const handles = new DebugAdapter.Handles<StackFrame | Scope | Variable>();
-export type ScopeNames = 'Local' | 'Static' | 'Global';
-export type ScopeSelector = '*' | ScopeNames;
-export type Matcher = ScopeSelector | {
+const handles = new DebugAdapter.Handles<StackFrame | Scope | Category | Variable>();
+export type ScopeName = 'Local' | 'Static' | 'Global';
+export type ScopeSelector = '*' | ScopeName;
+export type MatcherData = {
+  method?: 'include' | 'exclude';
+  ignorecase?: boolean;
   pattern?: string;
   static?: boolean;
   builtin?: boolean;
+  type?: string;
+  className?: string;
 };
 export type CategoryData = {
   label: string;
   source: ScopeSelector;
-  matchers?: Matcher[];
+  matchers?: MatcherData[];
 };
 export type Categories = 'Recommend' | Array<ScopeSelector | CategoryData>;
 
@@ -131,6 +136,87 @@ export class Scope implements DebugAdapter.Scope {
     });
   }
 }
+export class Category implements Scope {
+  public readonly scopes: Scope[];
+  public readonly data: CategoryData;
+  public readonly variablesReference: number;
+  public readonly expensive: boolean;
+  public get context(): dbgp.Context {
+    return this.scopes[0].context;
+  }
+  public get session(): dbgp.Session {
+    return this.scopes[0].session;
+  }
+  public get name(): string {
+    return this.data.label;
+  }
+  constructor(scopes: Scope[], categoryData: CategoryData, expensive = false) {
+    this.variablesReference = handles.create(this);
+    this.expensive = expensive;
+    this.scopes = scopes;
+    this.data = categoryData;
+  }
+  public async createVariables(args: DebugProtocol.VariablesArguments): Promise<Variable[]> {
+    const sourceScopes = this.scopes.filter((scope) => {
+      if (this.data.source === '*') {
+        return true;
+      }
+      const sourceNames = typeof this.data.source === 'string' ? [ this.data.source ] : this.data.source;
+      return sourceNames.some((sourceName) => equalsIgnoreCase(scope.name, sourceName));
+    });
+
+    const sourceVariables: Variable[] = [];
+    for await (const scope of sourceScopes) {
+      sourceVariables.push(...await scope.createVariables(args));
+    }
+
+    const matchers = this.data.matchers;
+    if (!matchers) {
+      return sourceVariables;
+    }
+
+    let variables: Variable[] = sourceVariables.slice();
+    for (const matcher of matchers) {
+      variables = variables.filter((variable) => {
+        const testers: Array<(() => boolean)> = [];
+        if (matcher.pattern) {
+          const regex = new RegExp(matcher.pattern, matcher.ignorecase ? 'iu' : 'u');
+          testers.push(() => regex.test(variable.name));
+        }
+        if (matcher.builtin) {
+          testers.push(() => {
+            if (variable.property.facet === 'Builtin') {
+              return true;
+            }
+            if ((/(^A_)|^\d$/ui).test(variable.name)) {
+              return true;
+            }
+            const globalVariableNames = this.session.ahkVersion.mejor === 2
+              ? [ 'Abs', 'ACos', 'Any', 'Array', 'ASin', 'ATan', 'BlockInput', 'BoundFunc', 'Break', 'Buffer', 'CallbackCreate', 'CallbackFree', 'CaretGetPos', 'Catch', 'Ceil', 'Chr', 'Class', 'Click', 'ClipboardAll', 'ClipWait', 'Closure', 'ComCall', 'ComObjActive', 'ComObjArray', 'ComObjConnect', 'ComObject', 'ComObjFlags', 'ComObjFromPtr', 'ComObjGet', 'ComObjQuery', 'ComObjType', 'ComObjValue', 'ComValue', 'ComValueRef', 'Continue', 'ControlAddItem', 'ControlChooseIndex', 'ControlChooseString', 'ControlClick', 'ControlDeleteItem', 'ControlFindItem', 'ControlFocus', 'ControlGetChecked', 'ControlGetChoice', 'ControlGetClassNN', 'ControlGetEnabled', 'ControlGetExStyle', 'ControlGetFocus', 'ControlGetHwnd', 'ControlGetIndex', 'ControlGetItems', 'ControlGetPos', 'ControlGetStyl', 'ControlGetText', 'ControlGetVisible', 'ControlHide', 'ControlHideDropDown', 'ControlMove', 'ControlSen', 'ControlSendText', 'ControlSetChecked', 'ControlSetEnabled', 'ControlSetExStyle', 'ControlSetStyl', 'ControlSetText', 'ControlShow', 'ControlShowDropDown', 'CoordMode', 'Cos', 'Critical', 'DateAdd', 'DateDiff', 'DetectHiddenText', 'DetectHiddenWindows', 'DirCopy', 'DirCreate', 'DirDelete', 'DirExist', 'DirMove', 'DirSelect', 'DllCall', 'Download', 'DriveEject', 'DriveGetCapacity', 'DriveGetFileSystem', 'DriveGetLabel', 'DriveGetList', 'DriveGetSerial', 'DriveGetSpaceFree', 'DriveGetStatus', 'DriveGetStatusCD', 'DriveGetType', 'DriveLock', 'DriveRetract', 'DriveSetLabel', 'DriveUnlock', 'Edit', 'EditGetCurrentCol', 'EditGetCurrentLine', 'EditGetLine', 'EditGetLineCount', 'EditGetSelectedText', 'EditPaste', 'Else', 'Enumerator', 'EnvGet', 'EnvSet', 'Error', 'Exit', 'ExitApp', 'Exp', 'File', 'FileAppend', 'FileCopy', 'FileCreateShortcut', 'FileDelete', 'FileEncoding', 'FileExist', 'FileGetAttrib', 'FileGetShortcut', 'FileGetSize', 'FileGetTime', 'FileGetVersion', 'FileInstall', 'FileMove', 'FileOpen', 'FileRead', 'FileRecycle', 'FileRecycleEmpty', 'FileSelect', 'FileSetAttrib', 'FileSetTime', 'Finally', 'Float', 'Floor', 'For', 'Format', 'FormatTime', 'Func', 'GetKeyName', 'GetKeySC', 'GetKeyState', 'GetKeyVK', 'GetMethod', 'Goto', 'GroupActivate', 'GroupAdd', 'GroupClose', 'GroupDeactivate', 'Gui', 'Gui()', 'GuiCtrlFromHwnd', 'GuiFromHwnd', 'HasBase', 'HasMethod', 'HasProp', 'HotIf', 'Hotkey', 'Hotstring', 'If', 'IL_Ad', 'IL_Creat', 'IL_Destroy', 'ImageSearch', 'IndexError', 'IniDelete', 'IniRead', 'IniWrite', 'InputBox', 'InputHook', 'InstallKeybdHook', 'InstallMouseHook', 'InStr', 'Integer', 'IsLabel', 'IsObject', 'IsSet', 'KeyError', 'KeyHistory', 'KeyWait', 'ListHotkeys', 'ListLines', 'ListVars', 'ListViewGetContent', 'Ln', 'LoadPicture', 'Log', 'Loop', 'Map', 'Max', 'MemberError', 'MemoryError', 'Menu', 'Menu()', 'MenuBar', 'MenuBar()', 'MenuFromHandle', 'MenuSelect', 'MethodError', 'Min', 'Mod', 'MonitorGet', 'MonitorGetCount', 'MonitorGetName', 'MonitorGetPrimary', 'MonitorGetWorkArea', 'MouseClick', 'MouseClickDrag', 'MouseGetPos', 'MouseMove', 'MsgBox', 'Number', 'NumGet', 'NumPut', 'ObjAddRef', 'ObjBindMethod', 'Object', 'ObjGetBase', 'ObjGetCapacity', 'ObjHasOwnPro', 'ObjOwnProp', 'ObjOwnPropCount', 'ObjSetBase', 'ObjSetCapacity', 'OnClipboardChange', 'OnError', 'OnExit', 'OnMessage', 'Ord', 'OSError', 'OutputDebug', 'Pause', 'Persistent', 'PixelGetColor', 'PixelSearch', 'PostMessage', 'Primitive', 'ProcessClose', 'ProcessExist', 'ProcessSetPriority', 'ProcessWait', 'ProcessWaitClose', 'PropertyError', 'Random', 'RegDelete', 'RegDeleteKey', 'RegExMatch', 'RegExMatchInfo', 'RegExReplace', 'RegRead', 'RegWrite', 'Reload', 'Return', 'Round', 'Run', 'RunAs', 'RunWait', 'Send', 'SendLevel', 'SendMessage', 'SendMode', 'SetCapsLockState', 'SetControlDelay', 'SetDefaultMouseSpeed', 'SetKeyDelay', 'SetMouseDelay', 'SetNumLockState', 'SetRegView', 'SetScrollLockState', 'SetStoreCapsLockMode', 'SetTimer', 'SetTitleMatchMode', 'SetWinDelay', 'SetWorkingDir', 'Shutdown', 'Sin', 'Sleep', 'Sort', 'SoundBeep', 'SoundGetInterface', 'SoundGetMute', 'SoundGetName', 'SoundGetVolume', 'SoundPlay', 'SoundSetMute', 'SoundSetVolume', 'SplitPath', 'Sqrt', 'StatusBarGetText', 'StatusBarWait', 'StrCompare', 'StrGet', 'String', 'StrLen', 'StrLower', 'StrPut', 'StrReplace', 'StrSplit', 'StrUpper', 'SubStr', 'Suspend', 'Switch', 'SysGet', 'SysGetIPAddresses', 'Tan', 'TargetError', 'These', 'Thread', 'Throw', 'TimeoutError', 'ToolTip', 'TraySetIcon', 'TrayTip', 'Trim', 'Try', 'Type', 'TypeError', 'Until', 'ValueError', 'VarRef', 'VarSetStrCapacity', 'VerCompare', 'While-loop', 'WinActivate', 'WinActivateBottom', 'WinActive', 'WinClose', 'WinExist', 'WinGetClass', 'WinGetClientPos', 'WinGetControls', 'WinGetControlsHwnd', 'WinGetCount', 'WinGetExStyle', 'WinGetID', 'WinGetIDLast', 'WinGetList', 'WinGetMinMax', 'WinGetPID', 'WinGetPos', 'WinGetProcessName', 'WinGetProcessPath', 'WinGetStyl', 'WinGetText', 'WinGetTitle', 'WinGetTransColor', 'WinGetTransparent', 'WinHide', 'WinKill', 'WinMaximize', 'WinMinimize', 'WinMinimizeAll', 'WinMove', 'WinMoveBottom', 'WinMoveTop', 'WinRedraw', 'WinRestore', 'WinSetAlwaysOnTop', 'WinSetEnabled', 'WinSetExStyle', 'WinSetRegion', 'WinSetStyl', 'WinSetTitle', 'WinSetTransColor', 'WinSetTransparent', 'WinShow', 'WinWait', 'WinWaitActive', 'WinWaitClose', 'ZeroDivisionError' ]
+              : [ 'ErrorLevel' ];
+            return globalVariableNames.some((name) => equalsIgnoreCase(name, variable.name));
+          });
+        }
+        if (matcher.static) {
+          testers.push(() => variable.property.facet === 'Static');
+        }
+        if (matcher.type) {
+          testers.push(() => variable.type === matcher.type);
+        }
+        if (matcher.className) {
+          testers.push(() => variable.className === matcher.className);
+        }
+
+        const result = testers.every((tester) => tester());
+        if (matcher.method === 'exclude') {
+          return !result;
+        }
+        return result;
+      });
+    }
+    return variables;
+  }
+}
 export class Variable implements DebugProtocol.Variable {
   public readonly hasChildren: boolean;
   public readonly isLoadedChildren: boolean;
@@ -151,6 +237,9 @@ export class Variable implements DebugProtocol.Variable {
   public get fullName(): string {
     return this.property.fullName;
   }
+  public get className(): string | undefined {
+    return this.property instanceof dbgp.ObjectProperty ? this.property.className : undefined;
+  }
   public get maxIndex(): number | undefined {
     return this.property instanceof dbgp.ObjectProperty ? this.property.maxIndex : undefined;
   }
@@ -164,7 +253,7 @@ export class Variable implements DebugProtocol.Variable {
     this.session = session;
     this.property = property;
     this.name = property.name;
-    this.value = this.hasChildren ? formatProperty(property, this.session.ahkVersion) : (property as dbgp.PrimitiveProperty).value;
+    this.value = formatProperty(property, this.session.ahkVersion);
     this.variablesReference = this.hasChildren ? handles.create(this) : 0;
     this.type = property.type;
 
@@ -245,7 +334,12 @@ export class VariableManager {
         {
           label: 'Global',
           source: 'Global',
-          matchers: [ { builtin: false } ],
+          matchers: [
+            {
+              method: 'exclude',
+              builtin: true,
+            },
+          ],
         },
         {
           label: 'Built-in Global',
@@ -259,50 +353,51 @@ export class VariableManager {
     for (const category of categories) {
       if (typeof category !== 'string') {
         normalized.push(category);
-        continue;
       }
+
       switch (category) {
         case 'Global': {
           normalized.push({
             label: 'Global',
             source: 'Global',
           });
-          break;
+          continue;
         }
         case 'Local': {
           normalized.push({
             label: 'Local',
             source: 'Local',
           });
-          break;
+          continue;
         }
         case 'Static': {
           normalized.push({
             label: 'Static',
             source: 'Static',
           });
-          break;
+          continue;
         }
-        default: break;
+        default: continue;
       }
     }
+
     return normalized;
   }
-  public async createScopes(frameId: number): Promise<Scope[]> {
-    return this.createDefaultScopes(frameId);
-    //     if (!this.categories) {
-    //     }
-    //
-    //     return this.categories.map((category) => {
-    //       const variableReference = this.variablesReferenceCounter++;
-    //       const scope = new Scope(this.session, category);
-    //       this.scopeByVariablesReference.set(variableReference, scope);
-    //       return scope;
-    //     });
+  public async createScopes(frameId: number): Promise<DebugProtocol.Scope[]> {
+    const defaultScopes = await this.createDefaultScopes(frameId);
+    if (!this.categories) {
+      return defaultScopes;
+    }
+
+    const scopes: DebugAdapter.Scope[] = [];
+    for (const categoryData of this.categories) {
+      scopes.push(new Category(defaultScopes, categoryData));
+    }
+    return scopes;
   }
-  public getScope(variableReference: number): Scope | undefined {
+  public getScope(variableReference: number): Scope | Category | undefined {
     const scope = handles.get(variableReference);
-    if (scope instanceof Scope) {
+    if (scope instanceof Scope || scope instanceof Category) {
       return scope;
     }
     return undefined;
