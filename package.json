@@ -244,6 +244,35 @@
                 "description": "If you don't know about UIA, ignore it. This setting must be `true` if you want to use the UIA version of AutoHotkey. There are some limitations, please check the README.",
                 "default": false
               },
+              "useOutputDebug": {
+                "type": [ "boolean", "object" ],
+                "description": "Whether to show OutputDebug in the debug console. Or more detailed settings about its behavior.",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "stdout",
+                      "stderr",
+                      "console"
+                    ],
+                    "default": "stderr"
+                  },
+                  "prefix": {
+                    "type": "string",
+                    "description": "String to be appended to the prefix of the message."
+                  },
+                  "suffix": {
+                    "type": "string",
+                    "description": "String to be appended to the suffix of the message."
+                  },
+                  "removeTrailingLinebreak": {
+                    "type": "boolean",
+                    "description": "Remove the trailing line-break(\"`r`n\" or \"`n\") character.",
+                    "default": false
+                  }
+                },
+                "default": true
+              },
               "skipFunctions": {
                 "type": "array",
                 "items": {
@@ -503,6 +532,35 @@
                 "type": "boolean",
                 "description": "Open the error source when debugging is terminated due to an load-time error. This takes precedence over `openFileOnExit`.",
                 "default": false
+              },
+              "useOutputDebug": {
+                "type": [ "boolean", "object" ],
+                "description": "Whether to show OutputDebug in the debug console. Or more detailed settings about its behavior.",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "stdout",
+                      "stderr",
+                      "console"
+                    ],
+                    "default": "stderr"
+                  },
+                  "prefix": {
+                    "type": "string",
+                    "description": "String to be appended to the prefix of the message."
+                  },
+                  "suffix": {
+                    "type": "string",
+                    "description": "String to be appended to the suffix of the message."
+                  },
+                  "removeTrailingLinebreak": {
+                    "type": "boolean",
+                    "description": "Remove the trailing line-break(\"`r`n\" or \"`n\") character.",
+                    "default": false
+                  }
+                },
+                "default": true
               },
               "skipFunctions": {
                 "type": "array",

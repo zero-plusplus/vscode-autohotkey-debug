@@ -523,7 +523,7 @@ export class Session extends EventEmitter {
             .from(xml.stream.content, 'base64')
             .toString('utf8')
             .replace('\0', '');
-          this.emit(type, data);
+          this.emit(type === 'stderr' ? 'outputdebug' : type, data);
         }
       }
     });

@@ -63,6 +63,12 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   };
   useAutoJumpToError: boolean;
   useUIAVersion: boolean;
+  useOutputDebug: false | {
+    category: 'stdout' | 'stderr' | 'console';
+    prefix: string;
+    suffix: string;
+    removeTrailingLinebreak: boolean;
+  };
   openFileOnExit: string;
   trace: boolean;
   skipFunctions?: string[];
@@ -208,6 +214,9 @@ export class AhkDebugSession extends LoggingDebugSession {
         .on('stderr', (message: string) => {
           this.errorMessage = this.fixPathOfRuntimeError(message);
           this.sendOutputEvent(this.errorMessage, 'stderr');
+        })
+        .on('outputdebug', (message: string) => {
+          this.sendOutputDebug(message);
         });
       this.sendAnnounce(`${this.ahkProcess.command}`);
 
@@ -1172,6 +1181,15 @@ export class AhkDebugSession extends LoggingDebugSession {
   private sendOutputEvent(message: string, category: 'stdout' | 'stderr' | 'console' = 'stdout'): void {
     this.sendEvent(new OutputEvent(message, category));
   }
+  private sendOutputDebug(message: string): void {
+    if (!this.config.useOutputDebug) {
+      return;
+    }
+    const { category, prefix, suffix, removeTrailingLinebreak } = this.config.useOutputDebug;
+
+    const fixedMessage = prefix + (removeTrailingLinebreak ? message.replace(/(\r\n|\n)*$/u, '') : message) + suffix;
+    this.sendOutputEvent(fixedMessage, category);
+  }
   private sendTerminateEvent(): void {
     this.traceLogger.log('sendTerminateEvent');
     if (this.isTerminateRequested) {
@@ -1452,6 +1470,9 @@ export class AhkDebugSession extends LoggingDebugSession {
               })
               .on('stderr', (data) => {
                 this.ahkProcess!.event.emit('stderr', String(data));
+              })
+              .on('outputdebug', (data) => {
+                this.ahkProcess!.event.emit('outputdebug', String(data));
               });
 
             this.breakpointManager = new BreakpointManager(this.session);

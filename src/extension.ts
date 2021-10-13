@@ -72,6 +72,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       usePerfTips: false,
       useDebugDirective: false,
       useAutoJumpToError: false,
+      useOutputDebug: true,
       useUIAVersion: false,
       suppressAnnounce: false,
       trace: false,
@@ -385,6 +386,27 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         throw Error('`useAutoJumpToError` must be a boolean.');
       }
     })();
+
+    // init useOutputDebug
+    ((): void => {
+      if (!(isBoolean(config.useOutputDebug) || isPlainObject(config.useOutputDebug))) {
+        throw Error('`useOutputDebug` must be a boolean or object.');
+      }
+      const defaultUseOutputDebug = {
+        category: 'stderr',
+        prefix: '',
+        suffix: '',
+        removeTrailingLinebreak: false,
+      };
+      if (isPlainObject(config.useOutputDebug)) {
+        defaults(config.useOutputDebug, defaultUseOutputDebug);
+        return;
+      }
+      if (config.useOutputDebug) {
+        config.useOutputDebug = defaultUseOutputDebug;
+      }
+    })();
+
 
     // init skipFunctions
     ((): void => {
