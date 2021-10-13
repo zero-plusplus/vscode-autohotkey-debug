@@ -15,7 +15,7 @@ export interface BreakpointAdvancedData {
   unverifiedColumn?: number;
   action?: () => Promise<void>;
 }
-export type BreakpointKind = 'breakpoint' | 'logpoint' | 'conditional breakpoint' | 'conditional logpoint' | 'actionpoint';
+export type BreakpointKind = 'breakpoint' | 'logpoint' | 'conditional breakpoint' | 'conditional logpoint';
 export class Breakpoint implements BreakpointAdvancedData {
   public id: number;
   public fileUri: string;
@@ -33,9 +33,6 @@ export class Breakpoint implements BreakpointAdvancedData {
     return URI.parse(this.fileUri).fsPath;
   }
   public get kind(): BreakpointKind {
-    if (this.action) {
-      return 'actionpoint';
-    }
     const logMode = Boolean(this.logMessage || this.logGroup);
     if (this.condition || this.hitCondition) {
       if (logMode) {

@@ -1159,10 +1159,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     for await (const breakpoint of lineBreakpoints) {
-      if (!await this.evalCondition(breakpoint)) {
+      if (breakpoint.kind.includes('conditional') && !await this.evalCondition(breakpoint)) {
         continue;
       }
-      if (breakpoint.kind === 'actionpoint' && breakpoint.action) {
+      if (breakpoint.action) {
         await breakpoint.action();
         if (breakpoint.logMessage) {
           await this.printLogMessage(breakpoint, 'stdout');
