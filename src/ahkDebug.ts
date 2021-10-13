@@ -65,7 +65,6 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   useUIAVersion: boolean;
   openFileOnExit: string;
   trace: boolean;
-  cancelReason?: string;
   skipFunctions?: string[];
   skipFiles?: string[];
   variableCategories?: 'Recommend' | Array<{
@@ -73,6 +72,8 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     source: ScopeSelector;
     matchers: MatcherData[];
   }>;
+  suppressAnnounce: boolean;
+  cancelReason?: string;
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
@@ -157,17 +158,17 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (!args.restart) {
       if (isNumber(this.exitCode)) {
-        this.sendOutputEvent(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr');
-        this.sendOutputEvent('Debugging stopped.', 'console');
+        this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr');
+        this.sendAnnounce('Debugging stopped.');
       }
       else if (args.terminateDebuggee === true && !this.config.cancelReason) {
-        this.sendOutputEvent(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.', 'console');
+        this.sendAnnounce(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.');
       }
       else if (args.terminateDebuggee === false && !this.config.cancelReason) {
-        this.sendOutputEvent('Debugging disconnected. AutoHotkey script is continued.', 'console');
+        this.sendAnnounce('Debugging disconnected. AutoHotkey script is continued.');
       }
       else if (this.config.request === 'attach' && this.ahkProcess) {
-        this.sendOutputEvent('Attaching stopped.', 'console');
+        this.sendAnnounce('Attaching stopped.');
       }
     }
 
@@ -208,7 +209,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.errorMessage = this.fixPathOfRuntimeError(message);
           this.sendOutputEvent(this.errorMessage, 'stderr');
         });
-      this.sendOutputEvent(`${this.ahkProcess.command}`, 'console');
+      this.sendAnnounce(`${this.ahkProcess.command}`);
 
       await this.createServer(args);
     }
@@ -227,7 +228,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.config = args;
 
     if (this.config.cancelReason) {
-      this.sendOutputEvent(`${this.config.cancelReason}\n`, 'console');
+      this.sendAnnounce(`${this.config.cancelReason}\n`);
       this.sendTerminateEvent();
       this.sendResponse(response);
       return;
@@ -235,13 +236,13 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const ahkProcess = new AutoHotkeyLauncher(this.config).attach();
     if (!ahkProcess) {
-      this.sendOutputEvent(`Failed to attach "${this.config.program}".\n`, 'stderr');
+      this.sendAnnounce(`Failed to attach "${this.config.program}".\n`, 'stderr');
       this.sendTerminateEvent();
       this.sendResponse(response);
       return;
     }
 
-    this.sendOutputEvent(`Attached to "${this.config.program}".\n`, 'console');
+    this.sendAnnounce(`Attached to "${this.config.program}".\n`);
     this.ahkProcess = ahkProcess;
     this.ahkProcess.event
       .on('close', (exitCode?: number) => {
@@ -251,7 +252,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         if (isNumber(exitCode)) {
           const category = exitCode === 0 ? 'console' : 'stderr';
-          this.sendOutputEvent(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category);
+          this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category);
         }
         this.sendTerminateEvent();
       })
@@ -1162,6 +1163,12 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
   }
+  private sendAnnounce(message: string, category: 'stdout' | 'stderr' | 'console' = 'console'): void {
+    if (category !== 'stderr' && this.config.suppressAnnounce) {
+      return;
+    }
+    this.sendEvent(new OutputEvent(message, category));
+  }
   private sendOutputEvent(message: string, category: 'stdout' | 'stderr' | 'console' = 'stdout'): void {
     this.sendEvent(new OutputEvent(message, category));
   }
@@ -1432,7 +1439,7 @@ export class AhkDebugSession extends LoggingDebugSession {
               })
               .on('error', (error?: Error) => {
                 if (error) {
-                  this.sendOutputEvent(`Session closed for the following reasons: ${error.message}\n`);
+                  this.sendOutputEvent(`Session closed for the following reasons: ${error.message}\n`, 'stderr');
                 }
 
                 this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));

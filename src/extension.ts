@@ -73,6 +73,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       useDebugDirective: false,
       useAutoJumpToError: false,
       useUIAVersion: false,
+      suppressAnnounce: false,
       trace: false,
       cancelReason: undefined,
     });
@@ -405,6 +406,13 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       }
       const skipFiles = config.skipFiles.map((filePath) => normalizeToUnix(String(filePath)));
       config.skipFiles = await glob(skipFiles, { onlyFiles: true, unique: true });
+    })();
+
+    // init suppressAnnounce
+    ((): void => {
+      if (!isBoolean(config.suppressAnnounce)) {
+        throw Error('`suppressAnnounce` must be a boolean.');
+      }
     })();
 
     // init trace

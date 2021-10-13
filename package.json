@@ -378,6 +378,10 @@
                   }
                 }
               },
+              "suppressAnnounce": {
+                "type": "boolean",
+                "description": "If true is specified, the debug adapter messages will not be displayed. However, error messages will not be suppressed."
+              },
               "trace": {
                 "type": "boolean",
                 "description": "No changes are required. This is a settings for developers to use to find bugs. Enable / disable display trace informaiton for debugger adapter.",
@@ -628,6 +632,10 @@
                     }
                   }
                 }
+              },
+              "suppressAnnounce": {
+                "type": "boolean",
+                "description": "If true is specified, the debug adapter messages will not be displayed. However, error messages will not be suppressed."
               },
               "trace": {
                 "type": "boolean",
