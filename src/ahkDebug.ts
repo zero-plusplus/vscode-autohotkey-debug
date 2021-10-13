@@ -950,7 +950,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.currentMetaVariables.set('elapsedTime_ms', '-1');
       this.currentMetaVariables.set('elapsedTime_s', '-1');
       await this.processActionpoint(lineBreakpoints);
-      await this.processLogpoint(lineBreakpoints);
       await this.sendStoppedEvent('pause');
       return;
     }
@@ -962,7 +961,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     // Paused on breakpoint
-    await this.processLogpoint(lineBreakpoints);
     await this.processActionpoint(lineBreakpoints);
     const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
     if (matchedBreakpoint) {
@@ -1027,7 +1025,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
     else {
-      await this.processLogpoint(lineBreakpoints);
       await this.processActionpoint(lineBreakpoints);
     }
 
@@ -1130,7 +1127,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const result = await this.session!.sendContinuationCommand('step_out');
     await this.checkContinuationStatus(result);
   }
-  private async processLogpoint(lineBreakpoints: LineBreakpoints | null): Promise<void> {
+  private async processActionpoint(lineBreakpoints: LineBreakpoints | null): Promise<void> {
     if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
       throw Error(`This message shouldn't appear.`);
     }
@@ -1148,21 +1145,12 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
         await this.printLogMessage(breakpoint, 'stdout');
       }
-    }
-  }
-  private async processActionpoint(lineBreakpoints: LineBreakpoints | null): Promise<void> {
-    if (!lineBreakpoints) {
-      return;
-    }
-    if (!lineBreakpoints.hasAdvancedBreakpoint()) {
-      return;
-    }
 
-    for await (const breakpoint of lineBreakpoints) {
-      if (breakpoint.kind.includes('conditional') && !await this.evalCondition(breakpoint)) {
-        continue;
-      }
       if (breakpoint.action) {
+        if (breakpoint.kind.includes('conditional') && !await this.evalCondition(breakpoint)) {
+          continue;
+        }
+
         await breakpoint.action();
         if (breakpoint.logMessage) {
           await this.printLogMessage(breakpoint, 'stdout');
