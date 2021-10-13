@@ -866,6 +866,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     for await (const breakpoint of lineBreakpoints) {
+      if (breakpoint.action) {
+        continue;
+      }
       if (breakpoint.kind === 'breakpoint') {
         return breakpoint;
       }
