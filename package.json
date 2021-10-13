@@ -245,7 +245,10 @@
                 "default": false
               },
               "useOutputDebug": {
-                "type": [ "boolean", "object" ],
+                "type": [
+                  "boolean",
+                  "object"
+                ],
                 "description": "Whether to show OutputDebug in the debug console. Or more detailed settings about its behavior.",
                 "properties": {
                   "category": {
@@ -534,7 +537,10 @@
                 "default": false
               },
               "useOutputDebug": {
-                "type": [ "boolean", "object" ],
+                "type": [
+                  "boolean",
+                  "object"
+                ],
                 "description": "Whether to show OutputDebug in the debug console. Or more detailed settings about its behavior.",
                 "properties": {
                   "category": {
