@@ -23,7 +23,7 @@
   },
   "publisher": "zero-plusplus",
   "engines": {
-    "vscode": "^1.45.0"
+    "vscode": "^1.49.0"
   },
   "icon": "image/icon.png",
   "keywords": [
@@ -53,6 +53,57 @@
         "language": "ah2"
       }
     ],
+    "commands": [
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsText",
+        "title": "Copy as Text"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
+        "title": "Copy as Decimal"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
+        "title": "Copy as Binary"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
+        "title": "Copy as Hex"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
+        "title": "Copy as Scientific Notation"
+      }
+    ],
+    "menus": {
+      "debug/variables/context": [
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsText",
+          "when": "debugConfigurationType == 'autohotkey'",
+          "group": "5_cutcopypaste"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
+          "when": "debugConfigurationType == 'autohotkey'",
+          "group": "5_cutcopypaste"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
+          "when": "debugConfigurationType == 'autohotkey'",
+          "group": "5_cutcopypaste"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
+          "when": "debugConfigurationType == 'autohotkey'",
+          "group": "5_cutcopypaste"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
+          "when": "debugConfigurationType == 'autohotkey'",
+          "group": "5_cutcopypaste"
+        }
+      ]
+    },
     "debuggers": [
       {
         "type": "autohotkey",
@@ -775,7 +826,7 @@
     "@types/parsimmon": "^1.10.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
-    "@types/vscode": "^1.45.0",
+    "@types/vscode": "^1.49.0",
     "@types/webpack": "^4.41.25",
     "@types/webpack-merge": "^4.1.5",
     "@zero-plusplus/eslint-my-rules": "^1.0.28",

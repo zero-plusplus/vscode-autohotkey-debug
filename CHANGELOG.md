@@ -16,6 +16,7 @@ Also want to check the development status, check the [commit history](https://gi
 ## [Released]
 ## [1.10.0] - 2021-xx-xx
 ### Added
+* [#75](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/75) Add some context menus to copy the value of a variable in data inspection
 * [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
 * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `suppressAnnounce` attribute in launch.json
 * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useOutputDebug` attribute in launch.json

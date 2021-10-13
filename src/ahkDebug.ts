@@ -79,7 +79,9 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     matchers: MatcherData[];
   }>;
   suppressAnnounce: boolean;
+  // The following is not a configuration, but is set to pass data to the debug adapter.
   cancelReason?: string;
+  extensionContext: vscode.ExtensionContext;
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';

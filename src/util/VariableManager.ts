@@ -20,6 +20,17 @@ export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
     .replace(/[\x07]/gu, '`a')
     .replace(/\f/gu, '`f');
 };
+export const unescapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
+  return str
+    .replace(ahkVersion?.mejor === 2 ? /`"/gu : /""/gu, '"')
+    .replace(/`r`n/gu, '\r\n')
+    .replace(/`n/gu, '\n')
+    .replace(/`r/gu, '\r')
+    .replace(/`b/gu, '\b')
+    .replace(/`t/gu, '\t')
+    .replace(/`v/gu, '\v')
+    .replace(/`f/gu, '\f');
+};
 export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion): string => {
   const formatPrimitiveProperty = (property: dbgp.PrimitiveProperty): string => {
     if (property.type === 'string') {
