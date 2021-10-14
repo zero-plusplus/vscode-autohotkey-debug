@@ -18,6 +18,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `suppressAnnounce` attribute in launch.json
     * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useOutputDebug` attribute in launch.json
     * Added: [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Support ClearConsole directive
+    * Added: [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Support `Add to Watch` and `Copy as Expression` in the context menu of data inspection
     * Fixed: [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects
     * Fixed: In launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense in attach mode
     * Fixed: In launch.json, snippets in attach mode is not displayed

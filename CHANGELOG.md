@@ -21,6 +21,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `suppressAnnounce` attribute in launch.json
 * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useOutputDebug` attribute in launch.json
 * [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Support ClearConsole directive
+* [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Support `Add to Watch` and `Copy as Expression` in the context menu of data inspection
 
 ### Fixed
 * [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects

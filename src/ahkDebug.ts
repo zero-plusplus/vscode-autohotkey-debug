@@ -542,6 +542,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           type: variable.type,
           indexedVariables: variable.indexedVariables,
           namedVariables: variable.namedVariables,
+          evaluateName: variable.fullName,
         })),
       };
     }
