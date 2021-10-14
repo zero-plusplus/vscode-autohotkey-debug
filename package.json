@@ -79,27 +79,27 @@
       "debug/variables/context": [
         {
           "command": "vscode-autohotkey-debug.variables-view.copyAsText",
-          "when": "debugConfigurationType == 'autohotkey'",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'primitive'",
           "group": "5_cutcopypaste"
         },
         {
           "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
-          "when": "debugConfigurationType == 'autohotkey'",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'primitive'",
           "group": "5_cutcopypaste"
         },
         {
           "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
-          "when": "debugConfigurationType == 'autohotkey'",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'primitive'",
           "group": "5_cutcopypaste"
         },
         {
           "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
-          "when": "debugConfigurationType == 'autohotkey'",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'primitive'",
           "group": "5_cutcopypaste"
         },
         {
           "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
-          "when": "debugConfigurationType == 'autohotkey'",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'primitive'",
           "group": "5_cutcopypaste"
         }
       ]

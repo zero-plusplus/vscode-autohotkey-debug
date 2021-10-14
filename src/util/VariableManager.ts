@@ -236,6 +236,7 @@ export class Variable implements DebugProtocol.Variable {
   public readonly name: string;
   public readonly value: string;
   public readonly variablesReference: number;
+  public readonly __vscodeVariableMenuContext: 'primitive' | 'object';
   public indexedVariables?: number;
   public namedVariables?: number;
   public readonly type?: string;
@@ -267,6 +268,7 @@ export class Variable implements DebugProtocol.Variable {
     this.value = formatProperty(property, this.session.ahkVersion);
     this.variablesReference = this.hasChildren ? handles.create(this) : 0;
     this.type = property.type;
+    this.__vscodeVariableMenuContext = property.type !== 'undefined' && this.variablesReference === 0 ? 'primitive' : 'object';
 
     if (property instanceof dbgp.ObjectProperty) {
       if (property.isArray && 100 < property.maxIndex!) {
