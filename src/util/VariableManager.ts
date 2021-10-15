@@ -102,7 +102,7 @@ export type MatcherData = {
 };
 export type CategoryData = {
   label: string;
-  source: ScopeSelector;
+  source: ScopeSelector | ScopeName[];
   matchers?: MatcherData[];
 };
 export type Categories = 'Recommend' | Array<ScopeSelector | CategoryData>;
@@ -342,7 +342,7 @@ export class VariableManager {
       return [
         {
           label: 'Local',
-          source: 'Local',
+          source: [ 'Local', 'Static' ],
         },
         {
           label: 'Global',
