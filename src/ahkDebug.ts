@@ -535,7 +535,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const variables = objectVariable ? await objectVariable.createChildren(args) : await this.variableManager?.createVariables(args);
     if (variables) {
       response.body = {
-        variables: variables.map((variable) => ({
+        variables: variables.sort((a, b) => a.name.localeCompare(b.name)).map((variable) => ({
           name: variable.name,
           variablesReference: variable.variablesReference,
           value: variable.value,
