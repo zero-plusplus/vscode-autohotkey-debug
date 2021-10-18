@@ -107,6 +107,7 @@ export type CategoryData = {
 };
 export type Categories = 'Recommend' | Array<ScopeSelector | CategoryData>;
 
+export type StackFrames = StackFrame[] & { isIdle?: boolean };
 export class StackFrame implements DebugProtocol.StackFrame {
   public readonly dbgpStackFrame: dbgp.StackFrame;
   public readonly id: number;
@@ -126,13 +127,14 @@ export class StackFrame implements DebugProtocol.StackFrame {
     this.session = session;
   }
 }
-export type StackFrames = StackFrame[] & { isIdle?: boolean };
+
 export class Scope implements DebugAdapter.Scope {
   public readonly session: dbgp.Session;
   public readonly context: dbgp.Context;
   public readonly name: string;
   public readonly variablesReference: number;
   public readonly expensive: boolean;
+  public children?: Variable[];
   constructor(session: dbgp.Session, context: dbgp.Context, expensive = false) {
     this.session = session;
     this.context = context;
@@ -140,7 +142,15 @@ export class Scope implements DebugAdapter.Scope {
     this.variablesReference = handles.create(this);
     this.expensive = expensive;
   }
-  public async createVariables(args: DebugProtocol.VariablesArguments): Promise<Variable[]> {
+  public async loadVariables(maxDepth?: number): Promise<Variable[]> {
+    this.children = await this.createVariables(maxDepth);
+    return this.children;
+  }
+  public async createVariables(maxDepth?: number): Promise<Variable[]> {
+    if (!maxDepth && this.children) {
+      return this.children;
+    }
+
     const { properties } = await this.session.sendContextGetCommand(this.context);
     return properties.map((property) => {
       return new Variable(this.session, property);
@@ -152,6 +162,7 @@ export class Category implements Scope {
   public readonly data: CategoryData;
   public readonly variablesReference: number;
   public readonly expensive: boolean;
+  public children?: Variable[];
   public get context(): dbgp.Context {
     return this.scopes[0].context;
   }
@@ -167,7 +178,18 @@ export class Category implements Scope {
     this.scopes = scopes;
     this.data = categoryData;
   }
-  public async createVariables(args: DebugProtocol.VariablesArguments): Promise<Variable[]> {
+  public create(value: Variable | Scope | Category): number {
+    return handles.create(value);
+  }
+  public async loadVariables(maxDepth?: number): Promise<Variable[]> {
+    this.children = await this.createVariables(maxDepth);
+    return this.children;
+  }
+  public async createVariables(maxDepth?: number): Promise<Variable[]> {
+    if (!maxDepth && this.children) {
+      return this.children;
+    }
+
     const sourceScopes = this.scopes.filter((scope) => {
       if (this.data.source === '*') {
         return true;
@@ -178,7 +200,7 @@ export class Category implements Scope {
 
     const sourceVariables: Variable[] = [];
     for await (const scope of sourceScopes) {
-      sourceVariables.push(...await scope.createVariables(args));
+      sourceVariables.push(...await scope.createVariables(maxDepth));
     }
 
     const matchers = this.data.matchers;
@@ -225,7 +247,13 @@ export class Category implements Scope {
         return result;
       });
     }
-    return variables;
+
+    return variables.sort((a, b) => {
+      if (a.property.isIndexKey && b.property.isIndexKey) {
+        return a.property.index! - b.property.index!;
+      }
+      return a.name.localeCompare(b.name);
+    });
   }
 }
 export class Variable implements DebugProtocol.Variable {
@@ -396,13 +424,16 @@ export class VariableManager {
 
     return normalized;
   }
-  public async createScopes(frameId: number): Promise<DebugProtocol.Scope[]> {
+  public setValue(value: Variable | Scope | Category): number {
+    return handles.create(value);
+  }
+  public async createScopes(frameId: number): Promise<Scope[]> {
     const defaultScopes = await this.createDefaultScopes(frameId);
     if (!this.categories) {
       return defaultScopes;
     }
 
-    const scopes: DebugAdapter.Scope[] = [];
+    const scopes: Scope[] = [];
     for (const categoryData of this.categories) {
       scopes.push(new Category(defaultScopes, categoryData));
     }
@@ -422,13 +453,13 @@ export class VariableManager {
     }
     return undefined;
   }
-  public async createVariables(args: DebugProtocol.VariablesArguments): Promise<Variable[] | undefined> {
+  public async createVariables(args: DebugProtocol.VariablesArguments, maxDepth?: number): Promise<Variable[] | undefined> {
     const variable = this.getObjectVariable(args.variablesReference);
     if (variable) {
       return variable.createChildren(args);
     }
     const scope = this.getScope(args.variablesReference);
-    return scope?.createVariables(args);
+    return scope?.createVariables(maxDepth);
   }
   public async createStackFrames(): Promise<StackFrames> {
     const { stackFrames: dbgpStackFrames } = await this.session.sendStackGetCommand();
@@ -452,10 +483,7 @@ export class VariableManager {
     return new Variable(this.session, property);
   }
   private async createDefaultScopes(frameId: number): Promise<Scope[]> {
-    const stackFrame = this.getStackFrame(frameId);
-    if (!stackFrame) {
-      throw Error('');
-    }
+    const stackFrame = this.getStackFrame(frameId) ?? (await this.createStackFrames())[0];
     const { contexts } = await this.session.sendContextNamesCommand(stackFrame.dbgpStackFrame);
     const scopes: Scope[] = [];
     for await (const context of contexts) {

@@ -3,7 +3,7 @@ import * as createPcre from 'pcre-to-regexp';
 import regexParser = require('regex-parser');
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
-import { CaseInsensitiveMap } from '../util/CaseInsensitiveMap';
+import { MetaVariables } from '../ahkDebug';
 
 type Operator = (a, b) => boolean;
 const not = (predicate): Operator => (a, b): boolean => !predicate(a, b);
@@ -93,7 +93,7 @@ export class ConditionalEvaluator {
     this.session = session;
     this.parser = createParser(this.session.ahkVersion);
   }
-  public async eval(expressions: string, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
+  public async eval(expressions: string, metaVariables: MetaVariables): Promise<boolean> {
     const parsed = this.parser.Expressions.parse(expressions);
     if (!parsed.status) {
       return false;
@@ -114,7 +114,7 @@ export class ConditionalEvaluator {
 
     return this.evalExpression(exprs.value, metaVariables);
   }
-  public async evalExpression(expression: { type: string; value: any}, metaVariables: CaseInsensitiveMap<string, string>): Promise<boolean> {
+  public async evalExpression(expression: { type: string; value: any}, metaVariables: MetaVariables): Promise<boolean> {
     let primitiveValue;
     if (expression.type === 'BinaryExpression') {
       const [ a, operatorType, b ] = expression.value;
@@ -317,14 +317,15 @@ export class ConditionalEvaluator {
     }
     return this.session.evaluate(propertyName);
   }
-  private async evalValue(parsed, metaVariables: CaseInsensitiveMap<string, string>): Promise<string | dbgp.Property | undefined> {
+  private async evalValue(parsed, metaVariables: MetaVariables): Promise<string | dbgp.Property | undefined> {
     if (!('type' in parsed || 'value' in parsed)) {
       return undefined;
     }
 
     if (parsed.type === 'MetaVariable') {
-      if (metaVariables.has(parsed.value)) {
-        return metaVariables.get(parsed.value)!;
+      const metaVariable = metaVariables.get(parsed.value);
+      if (typeof metaVariable === 'string') {
+        return metaVariable;
       }
       return undefined;
     }

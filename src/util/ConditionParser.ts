@@ -195,7 +195,7 @@ export const createParser = function(version: AhkVersion): P.Language {
     MetaVariable(rules) {
       return P.seq(
         P.string('{'),
-        P.regex(/[\w_]+/u),
+        rules.PropertyName,
         P.string('}'),
       ).map((result) => {
         return {

@@ -4,7 +4,6 @@ import { stat } from 'fs';
 
 import * as vscode from 'vscode';
 import {
-  Handles,
   InitializedEvent,
   LoggingDebugSession,
   OutputEvent,
@@ -18,6 +17,7 @@ import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import * as AsyncLock from 'async-lock';
 import { range } from 'lodash';
+import * as dateFormat from 'date-format';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {
   Breakpoint,
@@ -38,7 +38,8 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
-import { MatcherData, ScopeSelector, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { Category, MatcherData, Scope, ScopeSelector, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
   request: 'launch' | 'attach';
@@ -86,7 +87,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
 type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause';
-
+export type MetaVariables = CaseInsensitiveMap<string, string | Scope | Category>;
 export const serializePromise = async(promises: Array<Promise<void>>): Promise<void> => {
   await promises.reduce(async(prev, current): Promise<void> => {
     return prev.then(async() => current);
@@ -106,12 +107,12 @@ export class AhkDebugSession extends LoggingDebugSession {
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
   private variableManager?: VariableManager;
-  private readonly logObjectsHandles = new Handles<Variable>();
+  private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | undefined) & { label: string}>();
   private breakpointManager?: BreakpointManager;
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames?: StackFrames;
   private currentStackFrames?: StackFrames;
-  private currentMetaVariables: CaseInsensitiveMap<string, string> | null = null;
+  private currentMetaVariables: MetaVariables | null = null;
   private stackFramesWhenStepOut?: StackFrames;
   private stackFramesWhenStepOver?: StackFrames;
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
@@ -494,6 +495,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
       return;
     }
+
     const scopes = await this.variableManager!.createScopes(args.frameId);
     response.body = {
       scopes: scopes.map((scope) => ({
@@ -513,20 +515,36 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const loggedVariable = this.logObjectsHandles.get(args.variablesReference) as Variable | undefined;
-    if (loggedVariable) {
-      response.body = {
-        variables: [
-          {
-            name: loggedVariable.name,
-            variablesReference: loggedVariable.variablesReference,
-            value: loggedVariable.value,
-            type: loggedVariable.type,
-            indexedVariables: loggedVariable.indexedVariables,
-            namedVariables: loggedVariable.namedVariables,
-          },
-        ],
-      };
+    const logged = this.logObjectsMap.get(args.variablesReference);
+    if (logged) {
+      if (logged instanceof Scope || logged instanceof Category) {
+        const scope = logged;
+        response.body = {
+          variables: [
+            {
+              name: scope.name,
+              variablesReference: scope.variablesReference,
+              value: scope.label,
+              type: '',
+            },
+          ],
+        };
+      }
+      else if (logged instanceof Variable) {
+        const variable = logged;
+        response.body = {
+          variables: [
+            {
+              name: variable.name,
+              variablesReference: variable.variablesReference,
+              value: `${variable.label}: ${variable.value}`,
+              type: variable.type,
+              indexedVariables: variable.indexedVariables,
+              namedVariables: variable.namedVariables,
+            },
+          ],
+        };
+      }
       this.sendResponse(response);
       return;
     }
@@ -535,7 +553,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const variables = objectVariable ? await objectVariable.createChildren(args) : await this.variableManager?.createVariables(args);
     if (variables) {
       response.body = {
-        variables: variables.sort((a, b) => a.name.localeCompare(b.name)).map((variable) => ({
+        variables: variables.map((variable) => ({
           name: variable.name,
           variablesReference: variable.variablesReference,
           value: variable.value,
@@ -656,17 +674,28 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
         if (metaVariableParsed.status) {
-          const metaVariableName = metaVariableParsed.value.value;
-          if (this.currentMetaVariables?.has(metaVariableName)) {
+          const metaVariableName = metaVariableParsed.value.value.value;
+          const metaVariable = this.currentMetaVariables?.get(metaVariableName);
+          if (!metaVariable) {
+            throw Error('not available');
+          }
+          if (typeof metaVariable === 'string') {
             response.body = {
-              result: this.currentMetaVariables.get(metaVariableName)!,
+              result: metaVariable,
               type: 'metavariable',
               variablesReference: 0,
             };
-            this.sendResponse(response);
-            return;
           }
-          throw Error('not available');
+          else {
+            response.body = {
+              result: metaVariable.name,
+              type: 'metavariable',
+              variablesReference: metaVariable.variablesReference,
+            };
+          }
+          this.sendResponse(response);
+
+          return;
         }
 
         const propertyNameParsed = this.ahkParser.PropertyName.parse(propertyName);
@@ -907,12 +936,12 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     // Prepare
     const prevMetaVariables = this.currentMetaVariables;
-    this.currentMetaVariables = new CaseInsensitiveMap<string, string>();
+    this.currentMetaVariables = new CaseInsensitiveMap();
     this.currentMetaVariables.set('hitCount', '-1');
     if (prevMetaVariables) {
-      const elapsedTime_ns = parseFloat(prevMetaVariables.get('elapsedTime_ns')!) + response.elapsedTime.ns;
-      const elapsedTime_ms = parseFloat(prevMetaVariables.get('elapsedTime_ms')!) + response.elapsedTime.ms;
-      const elapsedTime_s = parseFloat(prevMetaVariables.get('elapsedTime_s')!) + response.elapsedTime.s;
+      const elapsedTime_ns = parseFloat(String(prevMetaVariables.get('elapsedTime_ns'))!) + response.elapsedTime.ns;
+      const elapsedTime_ms = parseFloat(String(prevMetaVariables.get('elapsedTime_ms')!)) + response.elapsedTime.ms;
+      const elapsedTime_s = parseFloat(String(prevMetaVariables.get('elapsedTime_s')!)) + response.elapsedTime.s;
       this.currentMetaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
       this.currentMetaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
       this.currentMetaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
@@ -922,6 +951,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.currentMetaVariables.set('elapsedTime_ms', toFixed(response.elapsedTime.ms, 3));
       this.currentMetaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
     }
+
     this.prevStackFrames = this.currentStackFrames;
     const stackFrames = await this.variableManager!.createStackFrames();
     if (stackFrames.isIdle) {
@@ -929,8 +959,12 @@ export class AhkDebugSession extends LoggingDebugSession {
       await this.sendStoppedEvent('pause');
       return;
     }
-
     const { source, line, name } = stackFrames[0];
+
+    const scopes = await this.variableManager!.createScopes(-1);
+    scopes.forEach((scope, i) => {
+      this.currentMetaVariables!.set(`variableCategories[${i + 1}]`, scope);
+    });
 
     this.currentStackFrames = stackFrames;
     const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(source.path, line);
@@ -1219,7 +1253,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     try {
       const { condition, hitCondition, hitCount } = breakpoint;
-      const metaVariable = new CaseInsensitiveMap<string, string>(this.currentMetaVariables.entries());
+      const metaVariable: MetaVariables = new CaseInsensitiveMap(this.currentMetaVariables.entries());
       metaVariable.set('hitCount', String(hitCount));
 
       let conditionResult = false, hitConditionResult = false;
@@ -1274,13 +1308,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const { logMessage, logGroup, hitCount } = breakpoint;
-    const metaVariables = new CaseInsensitiveMap<string, string>(this.currentMetaVariables.entries());
+    const metaVariables: MetaVariables = new CaseInsensitiveMap(this.currentMetaVariables.entries());
     metaVariables.set('hitCount', String(hitCount));
 
-    for (const messageOrProperty of await this.formatLog(logMessage, metaVariables)) {
+    for (const messageOrGroup of await this.formatLog(logMessage, metaVariables)) {
       let event: DebugProtocol.OutputEvent;
-      if (typeof messageOrProperty === 'string') {
-        const message = messageOrProperty;
+      if (typeof messageOrGroup === 'string') {
+        const message = messageOrGroup;
 
         event = new OutputEvent(message, logCategory) as DebugProtocol.OutputEvent;
         if (logGroup) {
@@ -1288,10 +1322,13 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else {
-        const property = messageOrProperty;
+        const group = messageOrGroup as typeof messageOrGroup & { label: string };
+        const variablesReference = this.variableManager!.setValue(group);
+        group.label = `[${String(dateFormat('yyyy-MM-dd hh:mm:ss.SSS', new Date()))} ${group.context.stackFrame.name}] ${group.name}`;
 
-        event = new OutputEvent(formatProperty(property, this.session!.ahkVersion), logCategory) as DebugProtocol.OutputEvent;
-        event.body.variablesReference = this.logObjectsHandles.create(new Variable(this.session!, property));
+        this.logObjectsMap.set(variablesReference, group);
+        event = new OutputEvent('', logCategory);
+        event.body.variablesReference = variablesReference;
       }
 
       if (this.currentStackFrames && 0 < this.currentStackFrames.length) {
@@ -1302,7 +1339,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(event);
     }
   }
-  private async formatLog(format: string, metaVariables?: CaseInsensitiveMap<string, string>): Promise<Array<string | dbgp.ObjectProperty>> {
+  private async formatLog(format: string, metaVariables?: MetaVariables): Promise<Array<string | Variable | Scope | Category>> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
@@ -1312,7 +1349,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return [ unescapeLogMessage(format) ];
     }
 
-    const results: Array<string | dbgp.ObjectProperty> = [];
+    const results: Array<string | Variable | Scope | Category> = [];
     let message = '', currentIndex = 0;
     for await (const match of format.matchAll(variableRegex)) {
       if (typeof match.index === 'undefined') {
@@ -1329,8 +1366,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       const { variableName } = match.groups;
       if (-1 < variableName.search(variableRegex)) {
         const metaVariableName = variableName.match(new RegExp(variableRegex.source, 'u'))?.groups?.variableName ?? '';
-        if (metaVariables?.has(metaVariableName)) {
-          message += metaVariables.get(metaVariableName)!;
+        const metaVariable = metaVariables?.get(metaVariableName);
+        if (metaVariable) {
+          if (typeof metaVariable === 'string') {
+            message += metaVariable;
+          }
+          else {
+            const scope = metaVariable;
+            await scope.loadVariables(99);
+            results.push(scope);
+          }
         }
         else {
           message += match[0];
@@ -1346,7 +1391,7 @@ export class AhkDebugSession extends LoggingDebugSession {
               message = '';
             }
 
-            results.push(property);
+            results.push(new Variable(this.session!, property));
           }
           else if (property instanceof dbgp.PrimitiveProperty) {
             message += escapeAhk(property.value, this.session!.ahkVersion);
@@ -1376,7 +1421,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     return results;
   }
-  private async displayPerfTips(metaVarialbes: CaseInsensitiveMap<string, string>): Promise<void> {
+  private async displayPerfTips(metaVarialbes: MetaVariables): Promise<void> {
     if (!this.config.usePerfTips) {
       return;
     }
