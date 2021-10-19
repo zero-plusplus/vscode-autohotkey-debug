@@ -1311,7 +1311,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const metaVariables: MetaVariables = new CaseInsensitiveMap(this.currentMetaVariables.entries());
     metaVariables.set('hitCount', String(hitCount));
 
-    for (const messageOrGroup of await this.formatLog(logMessage, metaVariables)) {
+    for (const messageOrGroup of await this.evaluateLog(logMessage, metaVariables)) {
       let event: DebugProtocol.OutputEvent;
       if (typeof messageOrGroup === 'string') {
         const message = messageOrGroup;
@@ -1339,7 +1339,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(event);
     }
   }
-  private async formatLog(format: string, metaVariables?: MetaVariables): Promise<Array<string | Variable | Scope | Category>> {
+  private async evaluateLog(format: string, metaVariables?: MetaVariables): Promise<Array<string | Variable | Scope | Category>> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
@@ -1431,7 +1431,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const { format } = this.config.usePerfTips;
     let message = '';
-    for (const messageOrProperty of await this.formatLog(format, metaVarialbes)) {
+    for (const messageOrProperty of await this.evaluateLog(format, metaVarialbes)) {
       if (typeof messageOrProperty === 'string') {
         message += messageOrProperty;
       }
