@@ -19,6 +19,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useOutputDebug` attribute in launch.json
     * Added: [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Support ClearConsole directive
     * Added: [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Support `Add to Watch` and `Copy as Expression` in the context menu of data inspection
+    * Added: [#150](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/150) Add `{now}`, `{callStackName}` in meta variables
     * Added: [#151](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/151) Suport meta varible `{variablesCategories}`
     * Added: [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable in data inspection
     * Fixed: [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects

@@ -935,6 +935,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     // Prepare
     const prevMetaVariables = this.currentMetaVariables;
     this.currentMetaVariables = new CaseInsensitiveMap();
+    this.currentMetaVariables.set('now', String(dateFormat('yyyy-MM-dd hh:mm:ss.SSS', new Date())));
     this.currentMetaVariables.set('hitCount', '-1');
     if (prevMetaVariables) {
       const elapsedTime_ns = parseFloat(String(prevMetaVariables.get('elapsedTime_ns'))!) + response.elapsedTime.ns;
@@ -958,6 +959,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
     const { source, line, name } = stackFrames[0];
+    this.currentMetaVariables.set('callStackName', name);
 
     const scopes = await this.variableManager!.createScopes(-1);
     scopes.forEach((scope, i) => {
@@ -1325,7 +1327,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       else {
         const group = messageOrGroup as typeof messageOrGroup & { label: string };
         const variablesReference = this.variableManager!.setValue(group);
-        group.label = `[${String(dateFormat('yyyy-MM-dd hh:mm:ss.SSS', new Date()))} ${group.context.stackFrame.name}] ${group.name}`;
+        group.label = `[${String(metaVariables.get('now')!)} ${group.context.stackFrame.name}] ${group.name}`;
 
         this.logObjectsMap.set(variablesReference, group);
         event = new OutputEvent('', logCategory);
