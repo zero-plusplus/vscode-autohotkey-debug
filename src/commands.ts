@@ -13,8 +13,11 @@ const removeQuote = (string: string): string => {
 const convertToText = (param: VariableContextMenuParam): string => {
   return unescapeAhk(removeQuote(param.variable.value));
 };
-const convertToNumber = (param: VariableContextMenuParam, radix: number): string => {
-  return Math.ceil(Number(removeQuote(param.variable.value))).toString(radix);
+const convertToBinary = (param: VariableContextMenuParam): string => {
+  return Math.ceil(Number(removeQuote(param.variable.value))).toString(10);
+};
+const convertToDecimal = (param: VariableContextMenuParam): string => {
+  return Number(removeQuote(param.variable.value)).toString(10);
 };
 const convertToHex = (param: VariableContextMenuParam): string => {
   const number = Math.ceil(Number(removeQuote(param.variable.value)));
@@ -47,10 +50,10 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables-view.ViewAsEachBaseNumbers', async(param: VariableContextMenuParam): Promise<void> => {
     const text = [
       `[Binary]`,
-      convertToNumber(param, 2),
+      convertToBinary(param),
       '',
       `[Decimal]`,
-      convertToNumber(param, 10),
+      convertToDecimal(param),
       '',
       `[Hex]`,
       convertToHex(param),
@@ -67,11 +70,11 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
     await vscode.env.clipboard.writeText(text);
   }));
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsDecimal', async(param: VariableContextMenuParam): Promise<void> => {
-    const decimal = convertToNumber(param, 10);
+    const decimal = convertToDecimal(param);
     await vscode.env.clipboard.writeText(decimal);
   }));
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsBinary', async(param: VariableContextMenuParam): Promise<void> => {
-    const binary = convertToNumber(param, 2);
+    const binary = convertToBinary(param);
     await vscode.env.clipboard.writeText(binary);
   }));
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsHex', async(param: VariableContextMenuParam): Promise<void> => {
