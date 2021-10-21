@@ -17,6 +17,9 @@
             "internalConsoleOptions": "openOnSessionStart",
             "useAutoJumpToError": true,
             "trace": false,
+            "useOutputDebug": {
+                "useTrailingLinebreak": true
+            },
             "variableCategories": "Recommend"
         },
         {

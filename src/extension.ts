@@ -398,9 +398,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       }
       const defaultUseOutputDebug = {
         category: 'stderr',
-        prefix: '',
-        suffix: '',
-        removeTrailingLinebreak: false,
+        useTrailingLinebreak: false,
       };
       if (isPlainObject(config.useOutputDebug)) {
         defaults(config.useOutputDebug, defaultUseOutputDebug);

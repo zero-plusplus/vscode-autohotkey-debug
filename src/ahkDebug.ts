@@ -66,9 +66,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   useUIAVersion: boolean;
   useOutputDebug: false | {
     category: 'stdout' | 'stderr' | 'console';
-    prefix: string;
-    suffix: string;
-    removeTrailingLinebreak: boolean;
+    useTrailingLinebreak: boolean;
   };
   openFileOnExit: string;
   trace: boolean;
@@ -1215,9 +1213,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (!this.config.useOutputDebug) {
       return;
     }
-    const { category, prefix, suffix, removeTrailingLinebreak } = this.config.useOutputDebug;
+    const { category, useTrailingLinebreak } = this.config.useOutputDebug;
 
-    const fixedMessage = prefix + (removeTrailingLinebreak ? message.replace(/(\r\n|\n)*$/u, '') : message) + suffix;
+    let fixedMessage = message;
+    if (useTrailingLinebreak && !(/(\r\n|\n)$/u).test(fixedMessage)) {
+      fixedMessage += '\n';
+    }
     this.sendOutputEvent(fixedMessage, category);
   }
   private sendTerminateEvent(): void {

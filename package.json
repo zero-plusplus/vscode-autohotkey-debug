@@ -311,17 +311,9 @@
                     ],
                     "default": "stderr"
                   },
-                  "prefix": {
-                    "type": "string",
-                    "description": "String to be appended to the prefix of the message."
-                  },
-                  "suffix": {
-                    "type": "string",
-                    "description": "String to be appended to the suffix of the message."
-                  },
-                  "removeTrailingLinebreak": {
+                  "useTrailingLinebreak": {
                     "type": "boolean",
-                    "description": "Remove the trailing line-break(\"`r`n\" or \"`n\") character.",
+                    "description": "Add a trailing linebreak. If the trailing line is a linebreak, do nothing.",
                     "default": false
                   }
                 },
