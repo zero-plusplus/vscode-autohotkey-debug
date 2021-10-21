@@ -20,7 +20,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Support ClearConsole directive
     * Added: [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Support `Add to Watch` and `Copy as Expression` in the context menu of data inspection
     * Added: [#151](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/151) Suport meta varible `{variablesCategories}`
-
+    * Added: [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable in data inspection
     * Fixed: [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects
     * Fixed: In launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense in attach mode
     * Fixed: In launch.json, snippets in attach mode is not displayed

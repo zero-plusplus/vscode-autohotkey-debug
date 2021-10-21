@@ -12,9 +12,7 @@ import {
   ExtensionContext,
   ProviderResult,
   WorkspaceFolder,
-  commands,
   debug,
-  env,
   languages,
   window,
   workspace,
@@ -30,7 +28,7 @@ import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import normalizeToUnix = require('normalize-path');
 import * as glob from 'fast-glob';
-import { unescapeAhk } from './util/VariableManager';
+import { registerCommands } from './commands';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -458,35 +456,7 @@ class InlineDebugAdapterFactory implements DebugAdapterDescriptorFactory {
 export const activate = (context: ExtensionContext): void => {
   const provider = new AhkConfigurationProvider();
 
-  context.subscriptions.push(commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsText', async(param): Promise<void> => {
-    const value = param.variable.value as string;
-    const text = unescapeAhk(value.replace(/(^"|"$)/gu, ''));
-    await env.clipboard.writeText(text);
-  }));
-  context.subscriptions.push(commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsDecimal', async(param): Promise<void> => {
-    const value = param.variable.value as string;
-    const text = value.replace(/(^"|"$)/gu, '');
-    const decimal = Number(text).toString(10);
-    await env.clipboard.writeText(decimal);
-  }));
-  context.subscriptions.push(commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsBinary', async(param): Promise<void> => {
-    const value = param.variable.value as string;
-    const text = value.replace(/(^"|"$)/gu, '');
-    const binary = Number(text).toString(2);
-    await env.clipboard.writeText(binary);
-  }));
-  context.subscriptions.push(commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsHex', async(param): Promise<void> => {
-    const value = param.variable.value as string;
-    const text = value.replace(/(^"|"$)/gu, '');
-    const hex = Number(text).toString(16);
-    await env.clipboard.writeText(hex.startsWith('-') ? `-0x${hex.substr(1)}` : `0x${hex}`);
-  }));
-  context.subscriptions.push(commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsScientificNotation', async(param): Promise<void> => {
-    const value = param.variable.value as string;
-    const text = value.replace(/(^"|"$)/gu, '');
-    const scientificNotation = Number(text).toExponential();
-    await env.clipboard.writeText(scientificNotation);
-  }));
+  registerCommands(context);
 
   context.subscriptions.push(debug.registerDebugConfigurationProvider('ahk', provider));
   context.subscriptions.push(debug.registerDebugConfigurationProvider('autohotkey', provider));
