@@ -4,7 +4,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
 import * as dbgp from '../dbgpSession';
 import { rtrim } from 'underscore.string';
-import { AhkVersion } from './util';
+import { AhkVersion, isNumberLike } from './util';
 import { equalsIgnoreCase } from './stringUtils';
 
 export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
@@ -264,7 +264,7 @@ export class Variable implements DebugProtocol.Variable {
   public readonly name: string;
   public readonly value: string;
   public readonly variablesReference: number;
-  public readonly __vscodeVariableMenuContext: 'primitive' | 'object';
+  public readonly __vscodeVariableMenuContext: 'string' | 'number' | 'object';
   public indexedVariables?: number;
   public namedVariables?: number;
   public readonly type?: string;
@@ -296,7 +296,12 @@ export class Variable implements DebugProtocol.Variable {
     this.value = formatProperty(property, this.session.ahkVersion);
     this.variablesReference = this.hasChildren ? handles.create(this) : 0;
     this.type = property.type;
-    this.__vscodeVariableMenuContext = property.type !== 'undefined' && this.variablesReference === 0 ? 'primitive' : 'object';
+    if (property instanceof dbgp.PrimitiveProperty) {
+      this.__vscodeVariableMenuContext = isNumberLike(property.value) ? 'number' : 'string';
+    }
+    else {
+      this.__vscodeVariableMenuContext = 'object';
+    }
 
     if (property instanceof dbgp.ObjectProperty) {
       if (property.isArray && 100 < property.maxIndex!) {
