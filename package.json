@@ -59,12 +59,12 @@
         "title": "Copy as Text"
       },
       {
-        "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
-        "title": "Copy as Decimal"
-      },
-      {
         "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
         "title": "Copy as Binary"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
+        "title": "Copy as Decimal"
       },
       {
         "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
@@ -76,6 +76,28 @@
       }
     ],
     "menus": {
+      "commandPalette": [
+          {
+              "command": "vscode-autohotkey-debug.variables-view.copyAsText",
+              "when": "false"
+          },
+          {
+              "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
+              "when": "false"
+          },
+          {
+              "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
+              "when": "false"
+          },
+          {
+              "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
+              "when": "false"
+          },
+          {
+              "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
+              "when": "false"
+          }
+      ],
       "debug/variables/context": [
         {
           "command": "vscode-autohotkey-debug.variables-view.copyAsText",
