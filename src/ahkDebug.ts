@@ -17,7 +17,6 @@ import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import * as AsyncLock from 'async-lock';
 import { range } from 'lodash';
-import * as dateFormat from 'date-format';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {
   Breakpoint,
@@ -1245,7 +1244,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private async createMetaVariables(response: dbgp.ContinuationResponse): Promise<MetaVariables> {
     const metaVariables: MetaVariables = new CaseInsensitiveMap();
-    metaVariables.set('now', String(dateFormat('yyyy-MM-dd hh:mm:ss.SSS', new Date())));
+    metaVariables.set('now', String((await this.evaluateLog('{A_Year}-{A_Mon}-{A_MDay} {A_Hour}:{A_Min}:{A_Sec}.{A_MSec}'))[0]));
     metaVariables.set('hitCount', '-1');
 
     if (this.currentMetaVariables) {
