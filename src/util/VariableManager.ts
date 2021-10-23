@@ -425,7 +425,10 @@ export class VariableManager {
         {
           label: 'Built-in Global',
           source: 'Global',
-          matchers: [ { builtin: true } ],
+          matchers: [
+            { builtin: true },
+            { method: 'exclude', pattern: '^\\d+$' }, 
+          ],
         },
       ];
     }
