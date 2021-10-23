@@ -265,8 +265,8 @@ export class Categories extends Array<Scope | Category> implements DebugProtocol
   constructor(...params: Array<Scope | Category>) {
     super(...params);
 
-    this.name = 'Root';
-    this.value = 'Root';
+    this.name = 'VARIABLES';
+    this.value = 'VARIABLES';
     this.variablesReference = handles.create(this);
     this.expensive = false;
   }
