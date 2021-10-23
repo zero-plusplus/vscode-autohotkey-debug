@@ -1546,7 +1546,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.ahkProcess!.event.emit('stderr', String(data));
               })
               .on('outputdebug', (data) => {
-                this.ahkProcess!.event.emit('outputdebug', String(data));
+                const message = String(data);
+                const isRuntimeError = (/Error:\s\s[^\s].*Line#.*--->.*Try to continue anyway\?$/us).test(message);
+                this.ahkProcess!.event.emit(isRuntimeError ? 'stderr' : 'outputdebug', message);
               });
 
             this.breakpointManager = new BreakpointManager(this.session);
