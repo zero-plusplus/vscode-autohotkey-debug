@@ -79,7 +79,7 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
   }));
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsHex', async(param: VariableContextMenuParam): Promise<void> => {
     const hex = convertToHex(param);
-    await vscode.env.clipboard.writeText(hex.startsWith('-') ? `-0x${hex.substr(1)}` : `0x${hex}`);
+    await vscode.env.clipboard.writeText(hex);
   }));
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsScientificNotation', async(param: VariableContextMenuParam): Promise<void> => {
     const scientificNotation = convertToScientificNotation(param);
