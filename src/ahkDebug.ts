@@ -38,7 +38,7 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
-import { Category, MatcherData, Scope, ScopeSelector, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { Categories, Category, MatcherData, Scope, ScopeSelector, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
@@ -85,7 +85,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
 type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause';
-export type MetaVariables = CaseInsensitiveMap<string, string | Scope | Category>;
+export type MetaVariables = CaseInsensitiveMap<string, string | Scope | Category | Categories>;
 export const serializePromise = async(promises: Array<Promise<void>>): Promise<void> => {
   await promises.reduce(async(prev, current): Promise<void> => {
     return prev.then(async() => current);
@@ -105,7 +105,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
   private variableManager?: VariableManager;
-  private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | undefined) & { label: string}>();
+  private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | undefined) & { label: string}>();
   private breakpointManager?: BreakpointManager;
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames?: StackFrames;
@@ -494,9 +494,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const scopes = await this.variableManager!.createScopes(args.frameId);
+    const categories = await this.variableManager!.createCategories(args.frameId);
     response.body = {
-      scopes: scopes.map((scope) => ({
+      scopes: categories.map((scope) => ({
         name: scope.name,
         expensive: scope.expensive,
         variablesReference: scope.variablesReference,
@@ -515,7 +515,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const logged = this.logObjectsMap.get(args.variablesReference);
     if (logged) {
-      if (logged instanceof Scope || logged instanceof Category) {
+      if (logged instanceof Scope || logged instanceof Category || logged instanceof Categories) {
         const scope = logged;
         response.body = {
           variables: [
@@ -547,8 +547,23 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const objectVariable = this.variableManager!.getObjectVariable(args.variablesReference);
-    const variables = objectVariable ? await objectVariable.createChildren(args) : await this.variableManager?.createVariables(args);
+    const categories = this.variableManager!.getCategories(args.variablesReference);
+    if (categories) {
+      // await categories.loadChildren(99);
+      response.body = {
+        variables: categories.map((category) => ({
+          name: category.name,
+          variablesReference: category.variablesReference,
+          value: category.name,
+        })),
+      };
+      this.sendResponse(response);
+      return;
+    }
+
+    const variables = await this.variableManager!.getObjectVariable(args.variablesReference)?.createMembers(args)
+      ?? await this.variableManager!.getCategory(args.variablesReference)?.createChildren()
+      ?? await this.variableManager?.createVariables(args);
     if (variables) {
       response.body = {
         variables: variables.map((variable) => ({
@@ -617,7 +632,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       context = objectVariable.context;
     }
     else {
-      context = this.variableManager!.getScope(args.variablesReference)!.context;
+      context = this.variableManager!.getCategory(args.variablesReference)!.context;
     }
 
     try {
@@ -961,9 +976,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     const { source, line, name } = stackFrames[0];
     this.currentMetaVariables.set('callStackName', name);
 
-    const scopes = await this.variableManager!.createScopes(-1);
-    scopes.forEach((scope, i) => {
-      this.currentMetaVariables!.set(`variableCategories[${i + 1}]`, scope);
+    const categories = await this.variableManager!.createCategories(-1);
+    this.currentMetaVariables.set('variableCategories', categories);
+    categories.forEach((category, i) => {
+      this.currentMetaVariables!.set(`variableCategories[${i + 1}]`, category);
     });
 
     this.currentStackFrames = stackFrames;
@@ -1314,7 +1330,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const metaVariables: MetaVariables = new CaseInsensitiveMap(this.currentMetaVariables.entries());
     metaVariables.set('hitCount', String(hitCount));
 
-    for (const messageOrGroup of await this.evaluateLog(logMessage, metaVariables)) {
+    for await (const messageOrGroup of await this.evaluateLog(logMessage, metaVariables)) {
       let event: DebugProtocol.OutputEvent;
       if (typeof messageOrGroup === 'string') {
         const message = messageOrGroup;
@@ -1326,9 +1342,12 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       else {
         const group = messageOrGroup as typeof messageOrGroup & { label: string };
+        if (!(group instanceof Variable)) {
+          await group.loadChildren(99);
+        }
         const variablesReference = this.variableManager!.setValue(group);
-        group.label = `[${String(metaVariables.get('now')!)} ${group.context.stackFrame.name}] ${group.name}`;
-
+        // group.label = `[${String(metaVariables.get('now')!)} ${group.context.stackFrame.name}] ${group.name}`;
+        group.label = group.name;
         this.logObjectsMap.set(variablesReference, group);
         event = new OutputEvent('', logCategory);
         event.body.variablesReference = variablesReference;
@@ -1342,7 +1361,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(event);
     }
   }
-  private async evaluateLog(format: string, metaVariables?: MetaVariables): Promise<Array<string | Variable | Scope | Category>> {
+  private async evaluateLog(format: string, metaVariables?: MetaVariables): Promise<Array<string | Variable | Scope | Category | Categories>> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
@@ -1352,7 +1371,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return [ unescapeLogMessage(format) ];
     }
 
-    const results: Array<string | Variable | Scope | Category> = [];
+    const results: Array<string | Variable | Scope | Category | Categories> = [];
     let message = '', currentIndex = 0;
     for await (const match of format.matchAll(variableRegex)) {
       if (typeof match.index === 'undefined') {
@@ -1374,9 +1393,12 @@ export class AhkDebugSession extends LoggingDebugSession {
           if (typeof metaVariable === 'string') {
             message += metaVariable;
           }
-          else {
+          else if (metaVariable instanceof Categories) {
+            const categories = metaVariable;
+            results.push(categories);
+          }
+          else if (metaVariable instanceof Category || metaVariable instanceof Scope) {
             const scope = metaVariable;
-            await scope.loadVariables(99);
             results.push(scope);
           }
         }
