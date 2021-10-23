@@ -697,7 +697,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
           if (typeof metaVariable === 'string') {
             response.body = {
-              result: metaVariable,
+              result: isNumberLike(metaVariable) ? metaVariable : `"${metaVariable}"`,
               type: 'metavariable',
               variablesReference: 0,
             };
