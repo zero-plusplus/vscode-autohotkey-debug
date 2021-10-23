@@ -34,7 +34,7 @@ import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
-import { timeoutPromise } from './util/util';
+import { isNumberLike, timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
 import { Categories, Category, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
@@ -81,7 +81,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
 type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause';
-export type MetaVariables = CaseInsensitiveMap<string, string | Scope | Category | Categories>;
+export type MetaVariables = CaseInsensitiveMap<string, string | Promise<Scope | Category | Categories | undefined>>;
 export const serializePromise = async(promises: Array<Promise<void>>): Promise<void> => {
   await promises.reduce(async(prev, current): Promise<void> => {
     return prev.then(async() => current);
@@ -699,10 +699,14 @@ export class AhkDebugSession extends LoggingDebugSession {
             };
           }
           else {
+            const _metaVariable = await metaVariable;
+            if (!_metaVariable) {
+              throw Error('not available');
+            }
             response.body = {
-              result: metaVariable.name,
+              result: _metaVariable.name,
               type: 'metavariable',
-              variablesReference: metaVariable.variablesReference,
+              variablesReference: _metaVariable.variablesReference,
             };
           }
           this.sendResponse(response);
@@ -1262,11 +1266,16 @@ export class AhkDebugSession extends LoggingDebugSession {
     metaVariables.set('callStackName', callStackName);
     this.metaVaribalesByFrameId.set(frameId, metaVariables);
 
-    const categories = await this.variableManager!.createCategories(-1);
+    const categories = this.variableManager!.createCategories(-1);
     metaVariables.set('variableCategories', categories);
-    categories.forEach((category, i) => {
-      metaVariables.set(`variableCategories[${i + 1}]`, category);
-    });
+    const categoriesLength = this.config.variableCategories?.length ?? 3;
+    for (const i of range(categoriesLength)) {
+      metaVariables.set(`variableCategories[${i + 1}]`, new Promise((resolve) => {
+        categories.then((categories) => {
+          resolve(categories[i]);
+        });
+      }));
+    }
     return metaVariables;
   }
   private async evalCondition(breakpoint: Breakpoint): Promise<boolean> {
@@ -1365,7 +1374,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(event);
     }
   }
-  private async evaluateLog(format: string, metaVariables?: MetaVariables): Promise<Array<string | Variable | Scope | Category | Categories>> {
+  private async evaluateLog(format: string, metaVariables = this.currentMetaVariables): Promise<Array<string | Variable | Scope | Category | Categories>> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
@@ -1397,13 +1406,17 @@ export class AhkDebugSession extends LoggingDebugSession {
           if (typeof metaVariable === 'string') {
             message += metaVariable;
           }
-          else if (metaVariable instanceof Categories) {
-            const categories = metaVariable;
-            results.push(categories);
-          }
-          else if (metaVariable instanceof Category || metaVariable instanceof Scope) {
-            const scope = metaVariable;
-            results.push(scope);
+          else if (metaVariable instanceof Promise) {
+            const _metaVariable = await metaVariable;
+
+            if (_metaVariable instanceof Categories) {
+              const categories = _metaVariable;
+              results.push(categories);
+            }
+            else if (_metaVariable instanceof Category || _metaVariable instanceof Scope) {
+              const scope = _metaVariable;
+              results.push(scope);
+            }
           }
         }
         else {
