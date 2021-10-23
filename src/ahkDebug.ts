@@ -104,13 +104,14 @@ export class AhkDebugSession extends LoggingDebugSession {
   private ahkProcess?: AutoHotkeyProcess;
   private ahkParser!: Parser;
   private config!: LaunchRequestArguments;
+  private readonly metaVaribalesByFrameId = new Map<number, MetaVariables>();
   private variableManager?: VariableManager;
   private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | undefined) & { label: string}>();
   private breakpointManager?: BreakpointManager;
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames?: StackFrames;
   private currentStackFrames?: StackFrames;
-  private currentMetaVariables: MetaVariables | null = null;
+  private currentMetaVariables?: MetaVariables;
   private stackFramesWhenStepOut?: StackFrames;
   private stackFramesWhenStepOver?: StackFrames;
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
@@ -353,7 +354,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariables = null;
+    this.currentMetaVariables = undefined;
     this.pauseRequested = false;
     this.isPaused = false;
 
@@ -368,7 +369,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariables = null;
+    this.currentMetaVariables = undefined;
     this.pauseRequested = false;
     this.isPaused = false;
 
@@ -383,7 +384,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariables = null;
+    this.currentMetaVariables = undefined;
     this.pauseRequested = false;
     this.isPaused = false;
 
@@ -398,7 +399,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariables = null;
+    this.currentMetaVariables = undefined;
     this.pauseRequested = false;
     this.isPaused = false;
 
@@ -435,7 +436,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariables = null;
+    this.currentMetaVariables = undefined;
     const result = await this.session!.sendContinuationCommand('break');
     this.checkContinuationStatus(result);
   }
@@ -495,6 +496,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const categories = await this.variableManager!.createCategories(args.frameId);
+    this.currentMetaVariables = this.metaVaribalesByFrameId.get(args.frameId);
     response.body = {
       scopes: categories.map((scope) => ({
         name: scope.name,
@@ -688,7 +690,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
         if (metaVariableParsed.status) {
           const metaVariableName = metaVariableParsed.value.value.value;
-          const metaVariable = this.currentMetaVariables?.get(metaVariableName);
+          const metaVariables = this.metaVaribalesByFrameId.get(args.frameId);
+          const metaVariable = metaVariables?.get(metaVariableName);
           if (!metaVariable) {
             throw Error('not available');
           }
@@ -948,41 +951,16 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.clearPerfTipsDecorations();
 
     // Prepare
-    const prevMetaVariables = this.currentMetaVariables;
-    this.currentMetaVariables = new CaseInsensitiveMap();
-    this.currentMetaVariables.set('now', String(dateFormat('yyyy-MM-dd hh:mm:ss.SSS', new Date())));
-    this.currentMetaVariables.set('hitCount', '-1');
-    if (prevMetaVariables) {
-      const elapsedTime_ns = parseFloat(String(prevMetaVariables.get('elapsedTime_ns'))!) + response.elapsedTime.ns;
-      const elapsedTime_ms = parseFloat(String(prevMetaVariables.get('elapsedTime_ms')!)) + response.elapsedTime.ms;
-      const elapsedTime_s = parseFloat(String(prevMetaVariables.get('elapsedTime_s')!)) + response.elapsedTime.s;
-      this.currentMetaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
-      this.currentMetaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
-      this.currentMetaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
-    }
-    else {
-      this.currentMetaVariables.set('elapsedTime_ns', toFixed(response.elapsedTime.ns, 3));
-      this.currentMetaVariables.set('elapsedTime_ms', toFixed(response.elapsedTime.ms, 3));
-      this.currentMetaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
-    }
-
     this.prevStackFrames = this.currentStackFrames;
-    const stackFrames = await this.variableManager!.createStackFrames();
-    if (stackFrames.isIdle) {
+    this.currentStackFrames = await this.variableManager!.createStackFrames();
+    if (this.currentStackFrames.isIdle) {
       this.currentStackFrames = undefined;
       await this.sendStoppedEvent('pause');
       return;
     }
-    const { source, line, name } = stackFrames[0];
-    this.currentMetaVariables.set('callStackName', name);
+    this.currentMetaVariables = await this.createMetaVariables(response);
+    const { source, line, name } = this.currentStackFrames[0];
 
-    const categories = await this.variableManager!.createCategories(-1);
-    this.currentMetaVariables.set('variableCategories', categories);
-    categories.forEach((category, i) => {
-      this.currentMetaVariables!.set(`variableCategories[${i + 1}]`, category);
-    });
-
-    this.currentStackFrames = stackFrames;
     const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(source.path, line);
     let stopReason: StopReason = 'step';
     if (lineBreakpoints) {
@@ -1264,6 +1242,36 @@ export class AhkDebugSession extends LoggingDebugSession {
       await this.displayPerfTips(this.currentMetaVariables);
     }
     this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
+  }
+  private async createMetaVariables(response: dbgp.ContinuationResponse): Promise<MetaVariables> {
+    const metaVariables: MetaVariables = new CaseInsensitiveMap();
+    metaVariables.set('now', String(dateFormat('yyyy-MM-dd hh:mm:ss.SSS', new Date())));
+    metaVariables.set('hitCount', '-1');
+
+    if (this.currentMetaVariables) {
+      const elapsedTime_ns = parseFloat(String(this.currentMetaVariables.get('elapsedTime_ns'))!) + response.elapsedTime.ns;
+      const elapsedTime_ms = parseFloat(String(this.currentMetaVariables.get('elapsedTime_ms')!)) + response.elapsedTime.ms;
+      const elapsedTime_s = parseFloat(String(this.currentMetaVariables.get('elapsedTime_s')!)) + response.elapsedTime.s;
+      metaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
+      metaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
+      metaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
+    }
+    else {
+      metaVariables.set('elapsedTime_ns', toFixed(response.elapsedTime.ns, 3));
+      metaVariables.set('elapsedTime_ms', toFixed(response.elapsedTime.ms, 3));
+      metaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
+    }
+
+    const { id: frameId, name: callStackName } = this.currentStackFrames![0];
+    metaVariables.set('callStackName', callStackName);
+    this.metaVaribalesByFrameId.set(frameId, metaVariables);
+
+    const categories = await this.variableManager!.createCategories(-1);
+    metaVariables.set('variableCategories', categories);
+    categories.forEach((category, i) => {
+      metaVariables.set(`variableCategories[${i + 1}]`, category);
+    });
+    return metaVariables;
   }
   private async evalCondition(breakpoint: Breakpoint): Promise<boolean> {
     if (!this.currentMetaVariables) {
