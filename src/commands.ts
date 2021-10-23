@@ -14,7 +14,7 @@ const convertToText = (param: VariableContextMenuParam): string => {
   return unescapeAhk(removeQuote(param.variable.value));
 };
 const convertToBinary = (param: VariableContextMenuParam): string => {
-  return Math.ceil(Number(removeQuote(param.variable.value))).toString(10);
+  return Math.ceil(Number(removeQuote(param.variable.value))).toString(2);
 };
 const convertToDecimal = (param: VariableContextMenuParam): string => {
   return Number(removeQuote(param.variable.value)).toString(10);
