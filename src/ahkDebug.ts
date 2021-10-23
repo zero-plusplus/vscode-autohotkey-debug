@@ -37,7 +37,8 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
-import { Categories, Category, MatcherData, Scope, ScopeSelector, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { Categories, Category, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { CategoryData } from './extension';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
@@ -71,11 +72,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   trace: boolean;
   skipFunctions?: string[];
   skipFiles?: string[];
-  variableCategories?: 'Recommend' | Array<{
-    label: string;
-    source: ScopeSelector;
-    matchers: MatcherData[];
-  }>;
+  variableCategories?: CategoryData[];
   suppressAnnounce: boolean;
   // The following is not a configuration, but is set to pass data to the debug adapter.
   cancelReason?: string;

@@ -42,6 +42,90 @@ const ahkPathResolve = (filePath: string, cwd?: string): string => {
 };
 const normalizePath = (filePath: string): string => (filePath ? path.normalize(filePath) : filePath); // If pass in an empty string, path.normalize returns '.'
 
+export type ScopeName = 'Local' | 'Static' | 'Global';
+export type ScopeSelector = '*' | ScopeName;
+export type MatcherData = {
+  method?: 'include' | 'exclude';
+  ignorecase?: boolean;
+  pattern?: string;
+  static?: boolean;
+  builtin?: boolean;
+  type?: string;
+  className?: string;
+};
+export type CategoryData = {
+  label: string;
+  source: ScopeSelector | ScopeName[];
+  matchers?: MatcherData[];
+};
+export type CategoriesData = 'Recommend' | Array<ScopeSelector | CategoryData>;
+
+const normalizeCategories = (categories?: 'Recommend' | Array<ScopeSelector | CategoryData>): CategoryData[] | undefined => {
+  if (!categories) {
+    return undefined;
+  }
+  if (categories === 'Recommend') {
+    return [
+      {
+        label: 'Local',
+        source: [ 'Local', 'Static' ],
+      },
+      {
+        label: 'Global',
+        source: 'Global',
+        matchers: [
+          {
+            method: 'exclude',
+            builtin: true,
+          },
+        ],
+      },
+      {
+        label: 'Built-in Global',
+        source: 'Global',
+        matchers: [
+          { builtin: true },
+          { method: 'exclude', pattern: '^\\d+$' },
+        ],
+      },
+    ];
+  }
+
+  const normalized: CategoryData[] = [];
+  for (const category of categories) {
+    if (typeof category !== 'string') {
+      normalized.push(category);
+    }
+
+    switch (category) {
+      case 'Global': {
+        normalized.push({
+          label: 'Global',
+          source: 'Global',
+        });
+        continue;
+      }
+      case 'Local': {
+        normalized.push({
+          label: 'Local',
+          source: 'Local',
+        });
+        continue;
+      }
+      case 'Static': {
+        normalized.push({
+          label: 'Static',
+          source: 'Static',
+        });
+        continue;
+      }
+      default: continue;
+    }
+  }
+
+  return normalized;
+};
+
 class AhkConfigurationProvider implements DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
     if (config.extends && folder) {
@@ -435,6 +519,18 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       if (!isBoolean(config.suppressAnnounce)) {
         throw Error('`suppressAnnounce` must be a boolean.');
       }
+    })();
+
+    // init variableCategories
+    ((): void => {
+      if (!config.variableCategories) {
+        return;
+      }
+      if (config.variableCategories === 'Recommend' || isArray(config.variableCategories)) {
+        config.variableCategories = normalizeCategories(config.variableCategories as 'Recommend' | Array<ScopeSelector | CategoryData>);
+        return;
+      }
+      throw Error('`variableCategories` must be a "Recommend" or array.');
     })();
 
     // init trace
