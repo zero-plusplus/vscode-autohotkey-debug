@@ -1456,7 +1456,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (1 < results.length) {
       const last = results[results.length - 1];
       const prevLast = results[results.length - 2];
-      if (-1 < String(last).search(/^(\r\n|\r|\n)$/u) && prevLast instanceof dbgp.ObjectProperty) {
+      if (-1 < String(last).search(/^(\r\n|\r|\n)$/u) && typeof prevLast !== 'string') {
         results.pop();
       }
     }
