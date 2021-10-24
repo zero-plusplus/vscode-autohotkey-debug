@@ -6,6 +6,7 @@ import * as dbgp from '../dbgpSession';
 import { rtrim } from 'underscore.string';
 import { AhkVersion, isNumberLike } from './util';
 import { equalsIgnoreCase } from './stringUtils';
+import { CategoryData } from '../extension';
 
 export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
   return str
@@ -89,23 +90,6 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
 };
 
 const handles = new DebugAdapter.Handles<StackFrame | Scope | Category | Categories | Variable>();
-export type ScopeName = 'Local' | 'Static' | 'Global';
-export type ScopeSelector = '*' | ScopeName;
-export type MatcherData = {
-  method?: 'include' | 'exclude';
-  ignorecase?: boolean;
-  pattern?: string;
-  static?: boolean;
-  builtin?: boolean;
-  type?: string;
-  className?: string;
-};
-export type CategoryData = {
-  label: string;
-  source: ScopeSelector | ScopeName[];
-  matchers?: MatcherData[];
-};
-export type CategoriesData = 'Recommend' | Array<ScopeSelector | CategoryData>;
 
 export type StackFrames = StackFrame[] & { isIdle?: boolean };
 export class StackFrame implements DebugProtocol.StackFrame {
@@ -265,8 +249,8 @@ export class Categories extends Array<Scope | Category> implements DebugProtocol
   constructor(...params: Array<Scope | Category>) {
     super(...params);
 
-    this.name = 'Root';
-    this.value = 'Root';
+    this.name = 'VARIABLES';
+    this.value = 'VARIABLES';
     this.variablesReference = handles.create(this);
     this.expensive = false;
   }
@@ -398,71 +382,9 @@ export class VariableManager {
   // private readonly scopeByVariablesReference = new Map<number, Scope>();
   // private readonly objectByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   // private readonly stackFramesByFrameId = new Map<number, dbgp.StackFrame>();
-  constructor(session: dbgp.Session, categories?: 'Recommend' | Array<ScopeSelector | CategoryData>) {
+  constructor(session: dbgp.Session, categories?: CategoryData[]) {
     this.session = session;
-    this.categories = VariableManager.normalizeCategories(categories);
-  }
-  public static normalizeCategories(categories?: 'Recommend' | Array<ScopeSelector | CategoryData>): CategoryData[] | undefined {
-    if (!categories) {
-      return undefined;
-    }
-    if (categories === 'Recommend') {
-      return [
-        {
-          label: 'Local',
-          source: [ 'Local', 'Static' ],
-        },
-        {
-          label: 'Global',
-          source: 'Global',
-          matchers: [
-            {
-              method: 'exclude',
-              builtin: true,
-            },
-          ],
-        },
-        {
-          label: 'Built-in Global',
-          source: 'Global',
-          matchers: [ { builtin: true } ],
-        },
-      ];
-    }
-
-    const normalized: CategoryData[] = [];
-    for (const category of categories) {
-      if (typeof category !== 'string') {
-        normalized.push(category);
-      }
-
-      switch (category) {
-        case 'Global': {
-          normalized.push({
-            label: 'Global',
-            source: 'Global',
-          });
-          continue;
-        }
-        case 'Local': {
-          normalized.push({
-            label: 'Local',
-            source: 'Local',
-          });
-          continue;
-        }
-        case 'Static': {
-          normalized.push({
-            label: 'Static',
-            source: 'Static',
-          });
-          continue;
-        }
-        default: continue;
-      }
-    }
-
-    return normalized;
+    this.categories = categories;
   }
   public setValue(value: Variable | Scope | Category | Categories): number {
     return handles.create(value);

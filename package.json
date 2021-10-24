@@ -89,38 +89,38 @@
     ],
     "menus": {
       "commandPalette": [
-          {
-              "command": "vscode-autohotkey-debug.variables-view.viewValue",
-              "when": "false"
-          },
-          {
-              "command": "vscode-autohotkey-debug.variables-view.viewAsText",
-              "when": "false"
-          },
-          {
-              "command": "vscode-autohotkey-debug.variables-view.ViewAsEachBaseNumbers",
-              "when": "false"
-          },
-          {
-              "command": "vscode-autohotkey-debug.variables-view.copyAsText",
-              "when": "false"
-          },
-          {
-              "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
-              "when": "false"
-          },
-          {
-              "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
-              "when": "false"
-          },
-          {
-              "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
-              "when": "false"
-          },
-          {
-              "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
-              "when": "false"
-          }
+        {
+          "command": "vscode-autohotkey-debug.variables-view.viewValue",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.viewAsText",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.ViewAsEachBaseNumbers",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsText",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
+          "when": "false"
+        }
       ],
       "debug/variables/context": [
         {
@@ -847,7 +847,6 @@
     "@zero-plusplus/ahk-include-path-resolver": "^1.0.11",
     "async-lock": "^1.2.8",
     "convert-hrtime": "^3.0.0",
-    "date-format": "^3.0.0",
     "fast-glob": "^3.2.7",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",

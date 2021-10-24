@@ -17,7 +17,6 @@ import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import * as AsyncLock from 'async-lock';
 import { range } from 'lodash';
-import * as dateFormat from 'date-format';
 import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {
   Breakpoint,
@@ -35,10 +34,11 @@ import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
-import { timeoutPromise } from './util/util';
+import { isNumberLike, timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
-import { Categories, Category, MatcherData, Scope, ScopeSelector, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { Categories, Category, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { CategoryData } from './extension';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
@@ -72,11 +72,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   trace: boolean;
   skipFunctions?: string[];
   skipFiles?: string[];
-  variableCategories?: 'Recommend' | Array<{
-    label: string;
-    source: ScopeSelector;
-    matchers: MatcherData[];
-  }>;
+  variableCategories?: CategoryData[];
   suppressAnnounce: boolean;
   // The following is not a configuration, but is set to pass data to the debug adapter.
   cancelReason?: string;
@@ -85,7 +81,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
 type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause';
-export type MetaVariables = CaseInsensitiveMap<string, string | Scope | Category | Categories>;
+export type MetaVariables = CaseInsensitiveMap<string, string | Promise<Scope | Category | Categories | undefined>>;
 export const serializePromise = async(promises: Array<Promise<void>>): Promise<void> => {
   await promises.reduce(async(prev, current): Promise<void> => {
     return prev.then(async() => current);
@@ -697,16 +693,20 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
           if (typeof metaVariable === 'string') {
             response.body = {
-              result: metaVariable,
+              result: isNumberLike(metaVariable) ? metaVariable : `"${metaVariable}"`,
               type: 'metavariable',
               variablesReference: 0,
             };
           }
           else {
+            const _metaVariable = await metaVariable;
+            if (!_metaVariable) {
+              throw Error('not available');
+            }
             response.body = {
-              result: metaVariable.name,
+              result: _metaVariable.name,
               type: 'metavariable',
-              variablesReference: metaVariable.variablesReference,
+              variablesReference: _metaVariable.variablesReference,
             };
           }
           this.sendResponse(response);
@@ -1245,7 +1245,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private async createMetaVariables(response: dbgp.ContinuationResponse): Promise<MetaVariables> {
     const metaVariables: MetaVariables = new CaseInsensitiveMap();
-    metaVariables.set('now', String(dateFormat('yyyy-MM-dd hh:mm:ss.SSS', new Date())));
+    metaVariables.set('now', String((await this.evaluateLog('{A_Year}-{A_Mon}-{A_MDay} {A_Hour}:{A_Min}:{A_Sec}.{A_MSec}'))[0]));
     metaVariables.set('hitCount', '-1');
 
     if (this.currentMetaVariables) {
@@ -1266,11 +1266,16 @@ export class AhkDebugSession extends LoggingDebugSession {
     metaVariables.set('callStackName', callStackName);
     this.metaVaribalesByFrameId.set(frameId, metaVariables);
 
-    const categories = await this.variableManager!.createCategories(-1);
+    const categories = this.variableManager!.createCategories(-1);
     metaVariables.set('variableCategories', categories);
-    categories.forEach((category, i) => {
-      metaVariables.set(`variableCategories[${i + 1}]`, category);
-    });
+    const categoriesLength = this.config.variableCategories?.length ?? 3;
+    for (const i of range(categoriesLength)) {
+      metaVariables.set(`variableCategories[${i + 1}]`, new Promise((resolve) => {
+        categories.then((categories) => {
+          resolve(categories[i]);
+        });
+      }));
+    }
     return metaVariables;
   }
   private async evalCondition(breakpoint: Breakpoint): Promise<boolean> {
@@ -1369,7 +1374,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendEvent(event);
     }
   }
-  private async evaluateLog(format: string, metaVariables?: MetaVariables): Promise<Array<string | Variable | Scope | Category | Categories>> {
+  private async evaluateLog(format: string, metaVariables = this.currentMetaVariables): Promise<Array<string | Variable | Scope | Category | Categories>> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
@@ -1401,13 +1406,17 @@ export class AhkDebugSession extends LoggingDebugSession {
           if (typeof metaVariable === 'string') {
             message += metaVariable;
           }
-          else if (metaVariable instanceof Categories) {
-            const categories = metaVariable;
-            results.push(categories);
-          }
-          else if (metaVariable instanceof Category || metaVariable instanceof Scope) {
-            const scope = metaVariable;
-            results.push(scope);
+          else if (metaVariable instanceof Promise) {
+            const _metaVariable = await metaVariable;
+
+            if (_metaVariable instanceof Categories) {
+              const categories = _metaVariable;
+              results.push(categories);
+            }
+            else if (_metaVariable instanceof Category || _metaVariable instanceof Scope) {
+              const scope = _metaVariable;
+              results.push(scope);
+            }
           }
         }
         else {
@@ -1447,7 +1456,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (1 < results.length) {
       const last = results[results.length - 1];
       const prevLast = results[results.length - 2];
-      if (-1 < String(last).search(/^(\r\n|\r|\n)$/u) && prevLast instanceof dbgp.ObjectProperty) {
+      if (-1 < String(last).search(/^(\r\n|\r|\n)$/u) && typeof prevLast !== 'string') {
         results.pop();
       }
     }
@@ -1546,7 +1555,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.ahkProcess!.event.emit('stderr', String(data));
               })
               .on('outputdebug', (data) => {
-                this.ahkProcess!.event.emit('outputdebug', String(data));
+                const message = String(data);
+                const isRuntimeError = (/Error:\s\s[^\s].*Line#.*--->.*Try to continue anyway\?$/us).test(message);
+                this.ahkProcess!.event.emit(isRuntimeError ? 'stderr' : 'outputdebug', message);
               });
 
             this.breakpointManager = new BreakpointManager(this.session);
