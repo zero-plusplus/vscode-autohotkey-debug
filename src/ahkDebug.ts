@@ -21,7 +21,6 @@ import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
 import {
   Breakpoint,
   BreakpointAdvancedData,
-  BreakpointLogGroup,
   BreakpointManager,
   LineBreakpoints,
 } from './util/BreakpointManager';
@@ -37,7 +36,7 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { isNumberLike, timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
-import { Categories, Category, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { Categories, Category, Scope, StackFrames, Variable, VariableGroup, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 import { CategoryData } from './extension';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
@@ -102,7 +101,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private config!: LaunchRequestArguments;
   private readonly metaVaribalesByFrameId = new Map<number, MetaVariables>();
   private variableManager?: VariableManager;
-  private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | undefined) & { label: string}>();
+  private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | VariableGroup | undefined)>();
   private breakpointManager?: BreakpointManager;
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames?: StackFrames;
@@ -520,7 +519,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             {
               name: scope.name,
               variablesReference: scope.variablesReference,
-              value: scope.label,
+              value: scope.name,
               type: '',
             },
           ],
@@ -533,10 +532,22 @@ export class AhkDebugSession extends LoggingDebugSession {
             {
               name: variable.name,
               variablesReference: variable.variablesReference,
-              value: `${variable.label}: ${variable.value}`,
+              value: `${variable.name}: ${variable.value}`,
               type: variable.type,
               indexedVariables: variable.indexedVariables,
               namedVariables: variable.namedVariables,
+            },
+          ],
+        };
+      }
+      else if (logged instanceof VariableGroup) {
+        const variables = logged;
+        response.body = {
+          variables: [
+            {
+              name: variables.name || variables[0].name,
+              value: variables.name || ('value' in variables[0] ? variables[0].value : variables[0].name),
+              variablesReference: variables.length === 1 ? variables[0].variablesReference : variables.variablesReference,
             },
           ],
         };
@@ -545,9 +556,26 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
+    const variableGroup = this.variableManager!.getVariableGroup(args.variablesReference);
+    if (variableGroup) {
+      response.body = {
+        variables: variableGroup.map((variable) => {
+          return {
+            name: variable.name,
+            value: 'value' in variable ? variable.value : '',
+            type: 'type' in variable ? variable.type : undefined,
+            variablesReference: variable.variablesReference,
+            indexedVariables: 'indexedVariables' in variable ? variable.indexedVariables : undefined,
+            namedVariables: 'namedVariables' in variable ? variable.namedVariables : undefined,
+          };
+        }),
+      };
+      this.sendResponse(response);
+      return;
+    }
+
     const categories = this.variableManager!.getCategories(args.variablesReference);
     if (categories) {
-      // await categories.loadChildren(99);
       response.body = {
         variables: categories.map((category) => ({
           name: category.name,
@@ -1339,42 +1367,36 @@ export class AhkDebugSession extends LoggingDebugSession {
       throw Error(`This message shouldn't appear.`);
     }
 
-    const { logMessage, logGroup, hitCount } = breakpoint;
+    const { logMessage, logGroup = undefined, hitCount } = breakpoint;
     const metaVariables: MetaVariables = new CaseInsensitiveMap(this.currentMetaVariables.entries());
     metaVariables.set('hitCount', String(hitCount));
 
-    for await (const messageOrGroup of await this.evaluateLog(logMessage, metaVariables)) {
-      let event: DebugProtocol.OutputEvent;
-      if (typeof messageOrGroup === 'string') {
-        const message = messageOrGroup;
-
-        event = new OutputEvent(message, logCategory) as DebugProtocol.OutputEvent;
-        if (logGroup) {
-          event.body.group = logGroup as BreakpointLogGroup;
-        }
-      }
-      else {
-        const group = messageOrGroup as typeof messageOrGroup & { label: string };
-        if (!(group instanceof Variable)) {
-          await group.loadChildren(99);
-        }
-        const variablesReference = this.variableManager!.setValue(group);
-        // group.label = `[${String(metaVariables.get('now')!)} ${group.context.stackFrame.name}] ${group.name}`;
-        group.label = group.name;
-        this.logObjectsMap.set(variablesReference, group);
-        event = new OutputEvent('', logCategory);
-        event.body.variablesReference = variablesReference;
-      }
-
-      if (this.currentStackFrames && 0 < this.currentStackFrames.length) {
-        const { source, line } = this.currentStackFrames[0];
-        event.body.source = source;
-        event.body.line = line;
-      }
+    const evalucatedMessages = await this.evaluateLog(logMessage, metaVariables, 99);
+    const stringMessages = evalucatedMessages.filter((message) => typeof message === 'string' || typeof message === 'number') as string[];
+    const objectMessages = evalucatedMessages.filter((message) => typeof message === 'object') as Array<Scope | Category | Categories | Variable>;
+    if (objectMessages.length === 0) {
+      const event = new OutputEvent(stringMessages.join(''), logCategory);
       this.sendEvent(event);
+      return;
     }
+
+    const label = evalucatedMessages.reduce((prev: string, current): string => {
+      if (typeof current === 'string' || typeof current === 'number') {
+        return prev + current;
+      }
+      return prev;
+    }, '');
+
+    const variableGroup = this.variableManager!.createVariableGroup(label, objectMessages);
+    const variablesReference = this.variableManager!.createVariableReference(variableGroup);
+    this.logObjectsMap.set(variablesReference, variableGroup);
+
+    const event: DebugProtocol.OutputEvent = new OutputEvent(label, logCategory);
+    event.body.group = logGroup;
+    event.body.variablesReference = variablesReference;
+    this.sendEvent(event);
   }
-  private async evaluateLog(format: string, metaVariables = this.currentMetaVariables): Promise<Array<string | Variable | Scope | Category | Categories>> {
+  private async evaluateLog(format: string, metaVariables = this.currentMetaVariables, maxDepth?: number): Promise<Array<string | Variable | Scope | Category | Categories>> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
@@ -1409,13 +1431,9 @@ export class AhkDebugSession extends LoggingDebugSession {
           else if (metaVariable instanceof Promise) {
             const _metaVariable = await metaVariable;
 
-            if (_metaVariable instanceof Categories) {
-              const categories = _metaVariable;
-              results.push(categories);
-            }
-            else if (_metaVariable instanceof Category || _metaVariable instanceof Scope) {
-              const scope = _metaVariable;
-              results.push(scope);
+            if (_metaVariable && 'loadChildren' in _metaVariable) {
+              await _metaVariable.loadChildren(maxDepth);
+              results.push(_metaVariable);
             }
           }
         }
@@ -1424,7 +1442,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else {
-        const property = await this.session!.evaluate(variableName, undefined, 99);
+        const property = await this.session!.evaluate(variableName, undefined, maxDepth);
 
         if (property) {
           if (property instanceof dbgp.ObjectProperty) {

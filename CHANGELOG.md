@@ -26,6 +26,9 @@ Also want to check the development status, check the [commit history](https://gi
 * [#151](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/151) Suport meta varible `{variablesCategories}`
 * [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable in data inspection
 
+### Changed
+* [#157](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/157) When an object is output at a log point, etc., instead of being split, it is output as one. Also, if the output is used together with a string, it will be treated as a label
+
 ### Fixed
 * [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects
 * [#149](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/149) Watch expression will only show the contents of the latest call stack

@@ -89,7 +89,7 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
   return value;
 };
 
-const handles = new DebugAdapter.Handles<StackFrame | Scope | Category | Categories | Variable>();
+const handles = new DebugAdapter.Handles();
 
 export type StackFrames = StackFrame[] & { isIdle?: boolean };
 export class StackFrame implements DebugProtocol.StackFrame {
@@ -275,6 +275,16 @@ export class Categories extends Array<Scope | Category> implements DebugProtocol
     return variables;
   }
 }
+export class VariableGroup extends Array<Scope | Category | Categories | Variable> implements DebugProtocol.Variable {
+  public name = '';
+  public value = '';
+  public readonly variablesReference: number;
+  constructor(...variables: Array<Scope | Category | Categories | Variable>) {
+    super();
+    this.variablesReference = handles.create(this);
+    this.push(...variables);
+  }
+}
 export class Variable implements DebugProtocol.Variable {
   public readonly hasChildren: boolean;
   public readonly isLoadedChildren: boolean;
@@ -386,7 +396,7 @@ export class VariableManager {
     this.session = session;
     this.categories = categories;
   }
-  public setValue(value: Variable | Scope | Category | Categories): number {
+  public createVariableReference(value: any): number {
     return handles.create(value);
   }
   public async createCategories(frameId: number): Promise<Categories> {
@@ -401,6 +411,12 @@ export class VariableManager {
     }
     return categories;
   }
+  public createVariableGroup(label: string, variables: Array<Scope | Category | Categories | Variable>): VariableGroup {
+    const variableGroup = new VariableGroup(...variables);
+    variableGroup.name = label;
+    variableGroup.value = label;
+    return variableGroup;
+  }
   public getCategory(variableReference: number): Scope | Category | undefined {
     const category = handles.get(variableReference);
     if (category instanceof Scope || category instanceof Category) {
@@ -412,6 +428,13 @@ export class VariableManager {
     const categories = handles.get(variableReference);
     if (categories instanceof Categories) {
       return categories;
+    }
+    return undefined;
+  }
+  public getVariableGroup(variableReference: number): VariableGroup | undefined {
+    const variableGroup = handles.get(variableReference);
+    if (variableGroup instanceof VariableGroup) {
+      return variableGroup;
     }
     return undefined;
   }
