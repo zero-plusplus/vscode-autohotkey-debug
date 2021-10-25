@@ -14,6 +14,7 @@ module.exports = {
       rules: {
         ...preset.ts.default.rules,
         'no-undefined': 'off',
+        '@typescript-eslint/explicit-module-boundary-types': 'off',
       },
     },
   ],
