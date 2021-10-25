@@ -1401,7 +1401,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return string.replace(/\\([{}])/gu, '$1');
     };
 
-    const variableRegex = /(?<!\\)\{(?<variableName>(?:\{?)?(?:\\\{|\\\}|[^{}\n])+?(?:\})?)(?<!\\)\}/gu;
+    const variableRegex = /(?<!\\)(\{)(?<metaVariableName>\{[^\r\n}]+\})\}|(?<!\\)\{(?<variableName>[^\r\n}]+)\}/gu;
     if (format.search(variableRegex) === -1) {
       return [ unescapeLogMessage(format) ];
     }
@@ -1420,9 +1420,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         message += format.slice(currentIndex, match.index);
       }
 
-      const { variableName } = match.groups;
-      if (-1 < variableName.search(variableRegex)) {
-        const metaVariableName = variableName.match(new RegExp(variableRegex.source, 'u'))?.groups?.variableName ?? '';
+      const { variableName, metaVariableName } = match.groups;
+      if (metaVariableName) {
         const metaVariable = metaVariables?.get(metaVariableName);
         if (metaVariable) {
           if (typeof metaVariable === 'string') {
