@@ -1401,7 +1401,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return string.replace(/\\([{}])/gu, '$1');
     };
 
-    const variableRegex = /(?<!\\)(\{)(?<metaVariableName>\{[^\r\n}]+\})\}|(?<!\\)\{(?<variableName>[^\r\n}]+)\}/gu;
+    const variableRegex = /(?<!\\)\{\{(?<metaVariableName>[^\r\n}]+)\}\}|(?<!\\)\{(?<variableName>[^\r\n}]+)\}/gu;
     if (format.search(variableRegex) === -1) {
       return [ unescapeLogMessage(format) ];
     }
@@ -1489,12 +1489,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const { format } = this.config.usePerfTips;
-    let message = '';
-    for (const messageOrProperty of await this.evaluateLog(format, metaVarialbes)) {
-      if (typeof messageOrProperty === 'string') {
-        message += messageOrProperty;
+    const message = (await this.evaluateLog(format, metaVarialbes)).reduce((prev: string, current) => {
+      if (typeof current === 'string') {
+        return prev + current;
       }
-    }
+      return prev;
+    }, '');
 
     const decorationType = vscode.window.createTextEditorDecorationType({
       after: {
