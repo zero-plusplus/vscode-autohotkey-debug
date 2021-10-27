@@ -625,12 +625,12 @@ export class AhkDebugSession extends LoggingDebugSession {
           typeName = 'integer';
           data = String(parseInt(number.value, 16));
         }
-        else if (this.session!.ahkVersion.mejor === 2 && number.type === 'Scientific') {
+        else if (2 <= this.session!.ahkVersion.mejor && number.type === 'Scientific') {
           typeName = 'float';
           data = `${String(parseFloat(number.value))}.0`;
         }
         else {
-          if (this.session!.ahkVersion.mejor === 2) {
+          if (2 <= this.session!.ahkVersion.mejor) {
             typeName = 'float';
           }
           data = String(number.value);
@@ -821,7 +821,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const resolver = new AhkIncludeResolver({
       rootPath: this.config.program,
       runtimePath: this.config.runtime,
-      version: this.session!.ahkVersion.mejor as 1 | 2,
+      version: Math.ceil(this.session!.ahkVersion.mejor) as 1 | 2,
     });
     this.loadedSources.push(this.config.program);
     this.loadedSources.push(...resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]));

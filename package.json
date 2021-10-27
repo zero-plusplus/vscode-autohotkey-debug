@@ -845,6 +845,7 @@
   },
   "dependencies": {
     "@zero-plusplus/ahk-include-path-resolver": "^1.0.11",
+    "@zero-plusplus/autohotkey-utilities": "github:zero-plusplus/node-autohotkey-utilities#develop",
     "async-lock": "^1.2.8",
     "convert-hrtime": "^3.0.0",
     "fast-glob": "^3.2.7",

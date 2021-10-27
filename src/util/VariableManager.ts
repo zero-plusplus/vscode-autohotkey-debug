@@ -4,7 +4,8 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
 import * as dbgp from '../dbgpSession';
 import { rtrim } from 'underscore.string';
-import { AhkVersion, isNumberLike } from './util';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { isNumberLike } from './util';
 import { equalsIgnoreCase } from './stringUtils';
 import { CategoryData } from '../extension';
 

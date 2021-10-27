@@ -88,7 +88,7 @@ export class AutoHotkeyLauncher {
       return false;
     }
 
-    const ahkCode = version.mejor === 1 ? `
+    const ahkCode = version.mejor <= 1.1 ? `
       DetectHiddenWindows On
       SetTitleMatchMode RegEx
       if (WinExist("i)${escapePcreRegExEscape(program)} ahk_class AutoHotkey")) {

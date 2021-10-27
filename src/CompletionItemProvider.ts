@@ -48,7 +48,6 @@ const createDetail = (property: dbgp.Property): string => {
 };
 export const completionItemProvider = {
   useIntelliSenseInDebugging: true,
-  ahkVersion: 1,
   session: null,
   async provideCompletionItems(document, position, token, context) {
     if (!this.useIntelliSenseInDebugging) {
@@ -69,8 +68,8 @@ export const completionItemProvider = {
     const findWord = (offset = 0): string => {
       const targetText = document.lineAt(position).text.slice(0, fixPosition(offset).character);
       const chars = targetText.split('').reverse();
-      const openBracketIndex = lastIndexOf(targetText, this.session!.ahkVersion.mejor === 2 ? /(?<=\[\s*)("|')/u : /(?<=\[\s*)(")/u);
-      const closeBracketIndex = lastIndexOf(targetText, this.session!.ahkVersion.mejor === 2 ? /("|')\s*(?=\])/u : /"\s*(?=\])/u);
+      const openBracketIndex = lastIndexOf(targetText, 2 <= this.session!.ahkVersion.mejor ? /(?<=\[\s*)("|')/u : /(?<=\[\s*)(")/u);
+      const closeBracketIndex = lastIndexOf(targetText, 2 <= this.session!.ahkVersion.mejor ? /("|')\s*(?=\])/u : /"\s*(?=\])/u);
 
       const result: string[] = [];
       let quote = '', bracketCount = 0;
@@ -83,7 +82,7 @@ export const completionItemProvider = {
         const nextChar = chars[i + 1] as string | undefined;
 
         if (quote) {
-          if (this.session!.ahkVersion.mejor === 2) {
+          if (2 < this.session!.ahkVersion.mejor) {
             if (char === '"' && nextChar === '`') {
               result.push(char);
               result.push('"');
@@ -119,7 +118,7 @@ export const completionItemProvider = {
 
         switch (char) {
           case `'`: {
-            if (this.session!.ahkVersion.mejor === 2) {
+            if (2 <= this.session!.ahkVersion.mejor) {
               quote = char;
               result.push('"');
               continue;
@@ -142,7 +141,7 @@ export const completionItemProvider = {
             continue;
           }
           default: {
-            const isIdentifierChar = (this.session!.ahkVersion.mejor === 2 ? /[\w_]/u : /[\w_$@#]/u).test(char);
+            const isIdentifierChar = (2 <= this.session!.ahkVersion.mejor ? /[\w_]/u : /[\w_$@#]/u).test(char);
             if (isIdentifierChar) {
               result.push(char);
               continue;

@@ -1,5 +1,5 @@
 import * as P from 'parsimmon';
-import { AhkVersion } from './util';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 
 export type Parser = P.Language;
 export const createParser = function(version: AhkVersion): P.Language {
@@ -11,21 +11,21 @@ export const createParser = function(version: AhkVersion): P.Language {
       return P.whitespace;
     },
     StringLiteral(rules) {
-      return version.mejor === 1
+      return version.mejor <= 1.1
         ? rules.StringDoubleLiteral
         : P.alt(rules.StringDoubleLiteral, rules.StringSingleLiteral);
     },
     StringDoubleLiteral(rules) {
       return P.seq(
         P.string('"'),
-        version.mejor === 1
+        version.mejor <= 1.1
           ? P.regex(/(?:``|""|[^"\n])*/ui)
           : P.regex(/(?:``|`"|[^"\n])*/ui),
         P.string('"'),
       ).map((result) => {
         const convertedEscape = result[1]
-          .replace(version.mejor === 1 ? /""/gu : /`"/gu, '"')
-          .replace(version.mejor === 1 ? /`(,|%|`|;|:)/gu : /`(`|;|:|\{)/gu, '$1')
+          .replace(version.mejor <= 1.1 ? /""/gu : /`"/gu, '"')
+          .replace(version.mejor <= 1.1 ? /`(,|%|`|;|:)/gu : /`(`|;|:|\{)/gu, '$1')
           .replace(/`n/gu, '\n')
           .replace(/`r/gu, '\r')
           .replace(/`b/gu, '\b')
@@ -113,7 +113,7 @@ export const createParser = function(version: AhkVersion): P.Language {
     },
     ScientificLiteral(rules) {
       return P.seq(
-        version.mejor === 1
+        version.mejor <= 1.1
           ? rules.FloatLiteral
           : P.alt(rules.FloatLiteral, rules.IntegerLiteral),
         P.regex(/e[+]?\d+/ui),
@@ -121,7 +121,7 @@ export const createParser = function(version: AhkVersion): P.Language {
         const rawValue = `${String(result[0].value)}${result[1]}`;
         return {
           type: 'Scientific',
-          value: version.mejor === 1 ? rawValue : Number(rawValue).toFixed(1),
+          value: version.mejor <= 1.1 ? rawValue : Number(rawValue).toFixed(1),
         };
       });
     },
@@ -152,7 +152,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       });
     },
     Identifer(rules) {
-      return version.mejor === 1
+      return version.mejor <= 1.1
         ? P.regex(/[\w#@$]+/ui)
         : P.regex(/[\w]+/ui);
     },

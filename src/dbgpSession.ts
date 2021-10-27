@@ -5,8 +5,9 @@ import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import * as convertHrTime from 'convert-hrtime';
 import { range, uniq, uniqBy } from 'lodash';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { AhkVersion, isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
+import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -564,7 +565,7 @@ export class Session extends EventEmitter {
 
     // An error occurs if `base` is included when retrieving dynamic properties. This bug? can be avoided by converting to `<base>` format.
     let fixedName = name;
-    if (this.ahkVersion.mejor === 2 && (/\.base/ui).test(name)) {
+    if (2 <= this.ahkVersion.mejor && (/\.base/ui).test(name)) {
       const fixedPathArray = splitVariablePath(this.ahkVersion, name).map(((pathPart) => {
         if (pathPart.startsWith('[')) {
           return pathPart;
@@ -683,14 +684,14 @@ export class Session extends EventEmitter {
     const resolveVariablePath = async(variablePath: string): Promise<string> => {
       const resolvedVariablePathArray: string[] = [];
       for await (const pathPart of splitVariablePath(this.ahkVersion, variablePath)) {
-        const isBracketNotationWithVariable = (): boolean => (this.ahkVersion.mejor === 2 ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
+        const isBracketNotationWithVariable = (): boolean => (2 <= this.ahkVersion.mejor ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
 
         let resolvedPathPart = pathPart;
         if (isBracketNotationWithVariable()) {
           const _variablePath = pathPart.slice(1, -1);
           const property = await this.evaluate(_variablePath);
           if (property instanceof PrimitiveProperty) {
-            const escapedValue = property.value.replace(/"/gu, this.ahkVersion.mejor === 2 ? '`"' : '""');
+            const escapedValue = property.value.replace(/"/gu, 2 <= this.ahkVersion.mejor ? '`"' : '""');
             resolvedPathPart = isNumberLike(escapedValue) ? `[${escapedValue}]` : `["${escapedValue}"]`;
           }
           else if (property instanceof ObjectProperty) {
@@ -837,11 +838,11 @@ export class Session extends EventEmitter {
     const lastPath = propertyPathArray[propertyPathArray.length - 1];
     const isBracketNotation = lastPath.startsWith('[');
     if (isBracketNotation) {
-      const openQuoteRegExp = this.ahkVersion.mejor === 2 ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
+      const openQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
       if (openQuoteRegExp.test(lastPath)) {
         return this.fetchAllVariables();
       }
-      const closeQuoteRegExp = this.ahkVersion.mejor === 2 ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
+      const closeQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
       if (closeQuoteRegExp.test(lastPath)) {
         return this.fetchAllVariables();
       }
