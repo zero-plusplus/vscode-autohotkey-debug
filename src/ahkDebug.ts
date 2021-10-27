@@ -869,7 +869,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
 
         const line = line_0base + 1;
-        const nextLine = line + 1;
         if (useBreakpointDirective && directiveType === 'breakpoint') {
           if (0 < params.length) {
             return;
@@ -881,7 +880,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             logMessage,
             hidden: true,
           } as BreakpointAdvancedData;
-          await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
+          await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
         }
         else if (useOutputDirective && directiveType === 'output') {
           let logGroup: string | undefined;
@@ -904,7 +903,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             logGroup,
             hidden: true,
           } as BreakpointAdvancedData;
-          await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
+          await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
         }
         else if (useClearConsoleDirective && directiveType === 'clearconsole') {
           const advancedData = {
@@ -919,7 +918,7 @@ export class AhkDebugSession extends LoggingDebugSession {
               await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
             },
           } as BreakpointAdvancedData;
-          await this.breakpointManager!.registerBreakpoint(fileUri, nextLine, advancedData);
+          await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
         }
       }));
     }));
