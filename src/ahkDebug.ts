@@ -17,7 +17,7 @@ import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import * as AsyncLock from 'async-lock';
 import { range } from 'lodash';
-import AhkIncludeResolver from '@zero-plusplus/ahk-include-path-resolver';
+import { ImplicitFunctionPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
 import {
   Breakpoint,
   BreakpointAdvancedData,
@@ -625,12 +625,12 @@ export class AhkDebugSession extends LoggingDebugSession {
           typeName = 'integer';
           data = String(parseInt(number.value, 16));
         }
-        else if (this.session!.ahkVersion.mejor === 2 && number.type === 'Scientific') {
+        else if (2 <= this.session!.ahkVersion.mejor && number.type === 'Scientific') {
           typeName = 'float';
           data = `${String(parseFloat(number.value))}.0`;
         }
         else {
-          if (this.session!.ahkVersion.mejor === 2) {
+          if (2 <= this.session!.ahkVersion.mejor) {
             typeName = 'float';
           }
           data = String(number.value);
@@ -818,13 +818,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (0 < this.loadedSources.length) {
       return this.loadedSources;
     }
-    const resolver = new AhkIncludeResolver({
-      rootPath: this.config.program,
-      runtimePath: this.config.runtime,
-      version: this.session!.ahkVersion.mejor as 1 | 2,
-    });
-    this.loadedSources.push(this.config.program);
-    this.loadedSources.push(...resolver.extractAllIncludePath([ 'local', 'user', 'standard' ]));
+    const extractor = new IncludePathExtractor(this.session!.ahkVersion);
+    this.loadedSources.push(this.config.program, ...extractor.extract(this.config.program));
+    const implicitFunctionPathExtractor = new ImplicitFunctionPathExtractor(this.session!.ahkVersion);
+    this.loadedSources.push(...implicitFunctionPathExtractor.extract(this.config.program));
     return this.loadedSources;
   }
   private async registerDebugDirective(): Promise<void> {

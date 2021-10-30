@@ -1,5 +1,6 @@
 import * as assert from 'assert';
-import { AhkVersion, splitVariablePath } from '../src/util/util';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { splitVariablePath } from '../src/util/util';
 
 suite('splitVariablePath', () => {
   test('v1', () => {

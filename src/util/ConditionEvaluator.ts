@@ -127,7 +127,7 @@ export class ConditionalEvaluator {
         const getValue = async(parsed): Promise<string | number | null> => {
           const value = await this.evalValue(parsed, metaVariables);
 
-          if (this.session.ahkVersion.mejor === 1 && !value) {
+          if (this.session.ahkVersion.mejor <= 1.1 && !value) {
             return '';
           }
 

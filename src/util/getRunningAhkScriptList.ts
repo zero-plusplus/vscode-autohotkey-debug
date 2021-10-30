@@ -6,7 +6,7 @@ export const getRunningAhkScriptList = (ahkRuntime: string, options?: SpawnSyncO
   if (!version) {
     return [];
   }
-  const ahkCode = version.mejor === 1
+  const ahkCode = version.mejor <= 1.1
     ? `
       DetectHiddenWindows On
       WinGet idList, List, ahk_class AutoHotkey
