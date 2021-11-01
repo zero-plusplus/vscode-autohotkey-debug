@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 
-
+export const isPrimitive = (value: any): value is string | number | boolean => {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+};
 export const isNumberLike = (value: any): boolean => {
   if (typeof value === 'string') {
     return value.trim() !== '' && !isNaN((value as any) - 0);

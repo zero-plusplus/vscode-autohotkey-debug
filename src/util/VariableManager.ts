@@ -5,9 +5,11 @@ import { URI } from 'vscode-uri';
 import * as dbgp from '../dbgpSession';
 import { rtrim } from 'underscore.string';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isNumberLike } from './util';
+import { isNumberLike, isPrimitive } from './util';
 import { equalsIgnoreCase } from './stringUtils';
 import { CategoryData } from '../extension';
+import { isObject } from 'ts-predicates';
+import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 
 export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
   return str
@@ -387,6 +389,72 @@ export class Variable implements DebugProtocol.Variable {
     return variables;
   }
 }
+export type MetaVariableValue = string | number | Scope | Category | Categories | Record<string, string | number | MetaVariable>;
+export type LazyMetaVariableValue = Promise<MetaVariableValue>;
+export class MetaVariable implements DebugProtocol.Variable {
+  public readonly name: string;
+  public readonly type = 'metavariable';
+  public readonly variablesReference: number;
+  public readonly indexedVariables?: number;
+  public readonly namedVariables?: number;
+  public rawValue: MetaVariableValue | LazyMetaVariableValue;
+  public loadedPromiseValue?: MetaVariableValue;
+  private children?: Array<Variable | MetaVariable | DebugProtocol.Variable>;
+  public get value(): string {
+    return this.name;
+  }
+  public get hasChildren(): boolean {
+    return isObject(this.loadedPromiseValue ?? this.rawValue);
+  }
+  constructor(name: string, value: MetaVariableValue | LazyMetaVariableValue) {
+    this.name = name;
+    this.rawValue = value;
+    this.variablesReference = isObject(value) ? handles.create(this) : 0;
+  }
+  public async loadChildren(maxDepth?: number): Promise<Array<Variable | MetaVariable | DebugProtocol.Variable>> {
+    this.children = await this.createChildren(maxDepth);
+    return this.children;
+  }
+  public async createChildren(maxDepth?: number): Promise<Array<Variable | MetaVariable | DebugProtocol.Variable>> {
+    if (this.children) {
+      return this.children;
+    }
+    if (!this.loadedPromiseValue) {
+      this.loadedPromiseValue = this.rawValue instanceof Promise ? await this.rawValue : this.rawValue;
+    }
+
+    if (isPrimitive(this.loadedPromiseValue)) {
+      return [];
+    }
+
+    if (this.loadedPromiseValue instanceof Scope || this.loadedPromiseValue instanceof Category || this.loadedPromiseValue instanceof Categories) {
+      return this.loadedPromiseValue.createChildren(maxDepth);
+    }
+
+    return Object.entries(this.loadedPromiseValue).map(([ key, value ]) => {
+      if (value instanceof MetaVariable) {
+        return value;
+      }
+      return new MetaVariable(key, value);
+    });
+  }
+}
+export class MetaVariableValueMap extends CaseInsensitiveMap<string, MetaVariableValue | LazyMetaVariableValue> {
+  public createMetaVariable(name: string): MetaVariable | undefined {
+    const value = this.get(name);
+    if (!value) {
+      return undefined;
+    }
+    return new MetaVariable(name, value);
+  }
+  // public get(key: string): MetaVariableValue | LazyMetaVariableValue | undefined {
+  //   return super.get(key);
+  // }
+  // public set(key: string, value: MetaVariableValue | LazyMetaVariableValue): this {
+  //   return super.set(key, value);
+  // }
+}
+
 export class VariableManager {
   public readonly session: dbgp.Session;
   public readonly categories?: CategoryData[];
@@ -418,31 +486,38 @@ export class VariableManager {
     variableGroup.value = label;
     return variableGroup;
   }
-  public getCategory(variableReference: number): Scope | Category | undefined {
-    const category = handles.get(variableReference);
+  public getCategory(variablesReference: number): Scope | Category | undefined {
+    const category = handles.get(variablesReference);
     if (category instanceof Scope || category instanceof Category) {
       return category;
     }
     return undefined;
   }
-  public getCategories(variableReference: number): Categories | undefined {
-    const categories = handles.get(variableReference);
+  public getCategories(variablesReference: number): Categories | undefined {
+    const categories = handles.get(variablesReference);
     if (categories instanceof Categories) {
       return categories;
     }
     return undefined;
   }
-  public getVariableGroup(variableReference: number): VariableGroup | undefined {
-    const variableGroup = handles.get(variableReference);
+  public getVariableGroup(variablesReference: number): VariableGroup | undefined {
+    const variableGroup = handles.get(variablesReference);
     if (variableGroup instanceof VariableGroup) {
       return variableGroup;
     }
     return undefined;
   }
-  public getObjectVariable(variableReference: number): Variable | undefined {
-    const variable = handles.get(variableReference);
+  public getObjectVariable(variablesReference: number): Variable | undefined {
+    const variable = handles.get(variablesReference);
     if (variable instanceof Variable) {
       return variable;
+    }
+    return undefined;
+  }
+  public getMetaVariable(variablesReference: number): MetaVariable | undefined {
+    const metaVariable = handles.get(variablesReference);
+    if (metaVariable instanceof MetaVariable) {
+      return metaVariable;
     }
     return undefined;
   }
