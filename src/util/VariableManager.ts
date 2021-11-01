@@ -8,7 +8,6 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isNumberLike, isPrimitive } from './util';
 import { equalsIgnoreCase } from './stringUtils';
 import { CategoryData } from '../extension';
-import { isObject } from 'ts-predicates';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 
 export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
@@ -389,7 +388,7 @@ export class Variable implements DebugProtocol.Variable {
     return variables;
   }
 }
-export type MetaVariableValue = string | number | Scope | Category | Categories | Record<string, string | number | MetaVariable>;
+export type MetaVariableValue = string | number | Scope | Category | Categories | StackFrame | StackFrames | Record<string, any>;
 export type LazyMetaVariableValue = Promise<MetaVariableValue>;
 export class MetaVariable implements DebugProtocol.Variable {
   public readonly name: string;
@@ -401,15 +400,19 @@ export class MetaVariable implements DebugProtocol.Variable {
   public loadedPromiseValue?: MetaVariableValue;
   private children?: Array<Variable | MetaVariable | DebugProtocol.Variable>;
   public get value(): string {
-    return this.name;
+    const value = this.loadedPromiseValue ?? this.rawValue;
+    if (isPrimitive(value)) {
+      return typeof this.rawValue === 'string' ? `"${value}"` : String(value);
+    }
+    return JSON.stringify(value);
   }
   public get hasChildren(): boolean {
-    return isObject(this.loadedPromiseValue ?? this.rawValue);
+    return !isPrimitive(this.loadedPromiseValue ?? this.rawValue);
   }
   constructor(name: string, value: MetaVariableValue | LazyMetaVariableValue) {
     this.name = name;
     this.rawValue = value;
-    this.variablesReference = isObject(value) ? handles.create(this) : 0;
+    this.variablesReference = isPrimitive(value) ? 0 : handles.create(this);
   }
   public async loadChildren(maxDepth?: number): Promise<Array<Variable | MetaVariable | DebugProtocol.Variable>> {
     this.children = await this.createChildren(maxDepth);

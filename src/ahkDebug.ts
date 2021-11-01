@@ -591,7 +591,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         variables: (await metaVariable.createChildren()).map((child) => ({
           name: child.name,
           variablesReference: child.variablesReference,
-          value: child.name,
+          value: child.value,
         })),
       };
       this.sendResponse(response);
@@ -1308,6 +1308,26 @@ export class AhkDebugSession extends LoggingDebugSession {
         });
       }));
     }
+
+    const callstack = this.currentStackFrames?.map((stackFrame) => {
+      return {
+        name: stackFrame.name,
+        path: stackFrame.source.path,
+        line: stackFrame.line,
+      };
+    }) ?? [];
+    metaVariables.set('callstack', callstack);
+    callstack.forEach((callstackItem, i) => {
+      metaVariables.set(`callstack[${i + 1}]`, callstackItem);
+      Object.entries(callstackItem).forEach(([ key, value ]) => {
+        metaVariables.set(`callstack[${i + 1}].${key}`, value);
+      });
+    });
+    const callstackNames = callstack.map((callstackItem) => callstackItem.name);
+    metaVariables.set('callstackNames', callstackNames);
+    callstackNames.forEach((callstackName, i) => {
+      metaVariables.set(`callstackNames[${i + 1}]`, callstackName);
+    });
     return metaVariables;
   }
   private async evalCondition(breakpoint: Breakpoint): Promise<boolean> {
