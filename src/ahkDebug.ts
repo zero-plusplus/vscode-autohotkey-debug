@@ -1294,8 +1294,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       metaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
     }
 
-    const { id: frameId, name: callStackName } = this.currentStackFrames![0];
-    metaVariables.set('callStackName', callStackName);
+    const { id: frameId, name: thisCallstack } = this.currentStackFrames![0];
+    metaVariables.set('thisCallstack', thisCallstack);
     this.metaVaribalesByFrameId.set(frameId, metaVariables);
 
     const categories = this.variableManager!.createCategories(-1);
