@@ -468,7 +468,7 @@ export class SourceResponse extends Response {
   }
 }
 export class Session extends EventEmitter {
-  public readonly DEFAULT_DEPTH = 1;
+  public readonly DEFAULT_MAX_DEPTH = 1;
   public readonly id: number = 1;
   private _ahkVersion!: AhkVersion;
   public get ahkVersion(): AhkVersion {
@@ -498,7 +498,7 @@ export class Session extends EventEmitter {
       if (xml.init) {
         const initPacket = new InitPacket(xml.init);
         Promise.all([
-          this.sendFeatureSetCommand('max_depth', this.DEFAULT_DEPTH),
+          this.sendFeatureSetCommand('max_depth', this.DEFAULT_MAX_DEPTH),
           this.sendStdoutCommand('redirect'),
           this.sendStderrCommand('redirect'),
           this.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code'),
@@ -560,9 +560,7 @@ export class Session extends EventEmitter {
   public async sendStackDepthCommand(): Promise<StackDepthResponse> {
     return new StackDepthResponse(await this.sendCommand('stack_depth'));
   }
-  public async sendPropertyGetCommand(context: Context, name: string, maxDepth?: number): Promise<PropertyGetResponse> {
-    const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-
+  public async sendPropertyGetCommand(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<PropertyGetResponse> {
     // An error occurs if `base` is included when retrieving dynamic properties. This bug? can be avoided by converting to `<base>` format.
     let fixedName = name;
     if (2 <= this.ahkVersion.mejor && (/\.base/ui).test(name)) {
@@ -575,9 +573,16 @@ export class Session extends EventEmitter {
       fixedName = joinVariablePathArray(fixedPathArray);
     }
 
-    await this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
-    const dbgpResponse = await this.sendCommand('property_get', `-n ${fixedName} -c ${context.id} -d ${context.stackFrame.level}`);
-    await this.sendFeatureSetCommand('max_depth', maxDepth_backup);
+    const commandParams = `-n ${fixedName} -c ${context.id} -d ${context.stackFrame.level}`;
+    let dbgpResponse: XmlNode;
+    if (this.DEFAULT_MAX_DEPTH < maxDepth) {
+      await this.sendFeatureSetCommand('max_depth', maxDepth);
+      dbgpResponse = await this.sendCommand('property_get', commandParams);
+      await this.sendFeatureSetCommand('max_depth', this.DEFAULT_MAX_DEPTH);
+    }
+    else {
+      dbgpResponse = await this.sendCommand('property_get', commandParams);
+    }
 
     return new PropertyGetResponse(dbgpResponse, context);
   }
@@ -623,12 +628,17 @@ export class Session extends EventEmitter {
   public async sendContextNamesCommand(stackFrame: StackFrame): Promise<ContextNamesResponse> {
     return new ContextNamesResponse(await this.sendCommand('context_names'), stackFrame);
   }
-  public async sendContextGetCommand(context: Context, maxDepth?: number): Promise<ContextGetResponse> {
-    const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-
-    await this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
-    const dbgpResponse = await this.sendCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`);
-    await this.sendFeatureSetCommand('max_depth', maxDepth_backup);
+  public async sendContextGetCommand(context: Context, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<ContextGetResponse> {
+    const commandParams = `-c ${context.id} -d ${context.stackFrame.level}`;
+    let dbgpResponse: XmlNode;
+    if (this.DEFAULT_MAX_DEPTH < maxDepth) {
+      await this.sendFeatureSetCommand('max_depth', maxDepth);
+      dbgpResponse = await this.sendCommand('context_get', commandParams);
+      await this.sendFeatureSetCommand('max_depth', this.DEFAULT_MAX_DEPTH);
+    }
+    else {
+      dbgpResponse = await this.sendCommand('context_get', commandParams);
+    }
 
     return new ContextGetResponse(dbgpResponse, context);
   }
@@ -670,16 +680,15 @@ export class Session extends EventEmitter {
     }
     return uniq(variableNames);
   }
-  public async fetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | undefined> {
-    const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    const { properties } = await this.sendPropertyGetCommand(context, name, _maxDepth);
+  public async fetchProperty(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> {
+    const { properties } = await this.sendPropertyGetCommand(context, name, maxDepth);
     const property = properties[0];
     if (property.type !== 'undefined') {
       return property;
     }
     return undefined;
   }
-  public async evaluate(name: string, stackFrame?: StackFrame, maxDepth?: number): Promise<Property | undefined> {
+  public async evaluate(name: string, stackFrame?: StackFrame, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> {
     // #region util
     const resolveVariablePath = async(variablePath: string): Promise<string> => {
       const resolvedVariablePathArray: string[] = [];
@@ -713,7 +722,7 @@ export class Session extends EventEmitter {
       }
       return findInheritedProperty(context, baseProperty.fullName, key);
     };
-    const safeFetchProperty = async(context: Context, name: string, maxDepth?: number): Promise<Property | undefined> => {
+    const safeFetchProperty = async(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> => {
       const variablePathArray = splitVariablePath(this.ahkVersion, name);
       const bracketNotationIndex = variablePathArray.findIndex((part) => part.startsWith('['));
       if (bracketNotationIndex === -1) {
@@ -753,11 +762,10 @@ export class Session extends EventEmitter {
       _stackFrame = stackFrames[0];
     }
 
-    const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
     const resolvedName = await resolveVariablePath(name);
     const { contexts } = await this.sendContextNamesCommand(_stackFrame);
     for await (const context of contexts) {
-      const property = await safeFetchProperty(context, resolvedName, _maxDepth);
+      const property = await safeFetchProperty(context, resolvedName, maxDepth);
       if (property) {
         return property;
       }
@@ -781,7 +789,7 @@ export class Session extends EventEmitter {
     }
     return undefined;
   }
-  public async fetchAllVariables(maxDepth?: number): Promise<Property[]> {
+  public async fetchAllVariables(maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property[]> {
     const { stackFrames } = await this.sendStackGetCommand();
     if (stackFrames.length === 0) {
       return [];
