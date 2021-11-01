@@ -3,11 +3,13 @@ import * as createPcre from 'pcre-to-regexp';
 import regexParser = require('regex-parser');
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
-import { MetaVariables } from '../ahkDebug';
+import { MetaVariableValueMap } from './VariableManager';
+import { isPrimitive } from './util';
 
 type Operator = (a, b) => boolean;
 const not = (predicate): Operator => (a, b): boolean => !predicate(a, b);
-const equals: Operator = (a, b) => a === b;
+// eslint-disable-next-line eqeqeq
+const equals: Operator = (a, b) => a == b;
 const equalsIgnoreCase: Operator = (a, b) => {
   const containsObjectAddress = typeof a === 'number' || typeof b === 'number';
   if (containsObjectAddress) {
@@ -93,7 +95,7 @@ export class ConditionalEvaluator {
     this.session = session;
     this.parser = createParser(this.session.ahkVersion);
   }
-  public async eval(expressions: string, metaVariables: MetaVariables): Promise<boolean> {
+  public async eval(expressions: string, metaVariableMap: MetaVariableValueMap): Promise<boolean> {
     const parsed = this.parser.Expressions.parse(expressions);
     if (!parsed.status) {
       return false;
@@ -102,19 +104,19 @@ export class ConditionalEvaluator {
     const exprs = parsed.value.value;
     if (Array.isArray(exprs)) {
       const [ left, operatorName, right, rest ] = exprs;
-      const a = await this.evalExpression(left.value, metaVariables);
+      const a = await this.evalExpression(left.value, metaVariableMap);
       const operator = logicalOperators[operatorName];
-      const b = await this.evalExpression(right.value, metaVariables);
+      const b = await this.evalExpression(right.value, metaVariableMap);
       const result = operator(a, b);
       if (rest) {
-        return this.eval(`${String(result)}${String(rest)}`, metaVariables);
+        return this.eval(`${String(result)}${String(rest)}`, metaVariableMap);
       }
       return result;
     }
 
-    return this.evalExpression(exprs.value, metaVariables);
+    return this.evalExpression(exprs.value, metaVariableMap);
   }
-  public async evalExpression(expression: { type: string; value: any}, metaVariables: MetaVariables): Promise<boolean> {
+  public async evalExpression(expression: { type: string; value: any}, metaVariableMap: MetaVariableValueMap): Promise<boolean> {
     let primitiveValue;
     if (expression.type === 'BinaryExpression') {
       const [ a, operatorType, b ] = expression.value;
@@ -125,13 +127,13 @@ export class ConditionalEvaluator {
       if (operatorType.type === 'ComparisonOperator') {
         const operator = comparisonOperators[operatorType.value];
         const getValue = async(parsed): Promise<string | number | null> => {
-          const value = await this.evalValue(parsed, metaVariables);
+          const value = await this.evalValue(parsed, metaVariableMap);
 
           if (this.session.ahkVersion.mejor <= 1.1 && !value) {
             return '';
           }
 
-          if (typeof value === 'string') {
+          if (isPrimitive(value)) {
             return value;
           }
           else if (value instanceof dbgp.ObjectProperty) {
@@ -152,8 +154,8 @@ export class ConditionalEvaluator {
       }
       else if ([ 'IsOperator', 'InOperator' ].includes(operatorType.type)) {
         const negativeMode = -1 < operatorType.value.search(/not/ui);
-        const valueA = await this.evalValue(a, metaVariables);
-        const valueB = await this.evalValue(b, metaVariables);
+        const valueA = await this.evalValue(a, metaVariableMap);
+        const valueB = await this.evalValue(b, metaVariableMap);
 
         let result = false;
         if (operatorType.type === 'IsOperator') {
@@ -254,8 +256,8 @@ export class ConditionalEvaluator {
       }
     }
     else if (expression.type === 'MetaVariable') {
-      if (metaVariables.has(expression.value)) {
-        primitiveValue = metaVariables.get(expression.value)!;
+      if (metaVariableMap.has(expression.value.value)) {
+        primitiveValue = metaVariableMap.get(expression.value.value)!;
       }
     }
     else if (expression.type === 'PropertyName') {
@@ -317,14 +319,14 @@ export class ConditionalEvaluator {
     }
     return this.session.evaluate(propertyName);
   }
-  private async evalValue(parsed, metaVariables: MetaVariables): Promise<string | dbgp.Property | undefined> {
+  private async evalValue(parsed, metaVariableMap: MetaVariableValueMap): Promise<string | number | dbgp.Property | undefined> {
     if (!('type' in parsed || 'value' in parsed)) {
       return undefined;
     }
 
     if (parsed.type === 'MetaVariable') {
-      const metaVariable = metaVariables.get(parsed.value);
-      if (typeof metaVariable === 'string') {
+      const metaVariable = metaVariableMap.get(parsed.value.value);
+      if (isPrimitive(metaVariable)) {
         return metaVariable;
       }
       return undefined;
