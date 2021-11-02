@@ -388,7 +388,7 @@ export class Variable implements DebugProtocol.Variable {
     return variables;
   }
 }
-export type MetaVariableValue = string | number | Scope | Category | Categories | StackFrame | StackFrames | Record<string, any>;
+export type MetaVariableValue = string | number | Variable | Scope | Category | Categories | StackFrame | StackFrames | Record<string, any>;
 export type LazyMetaVariableValue = Promise<MetaVariableValue>;
 export class MetaVariable implements DebugProtocol.Variable {
   public readonly name: string;
@@ -407,7 +407,7 @@ export class MetaVariable implements DebugProtocol.Variable {
     if (value instanceof Scope || value instanceof Category || value instanceof Categories || value instanceof StackFrame) {
       return value.name;
     }
-    if (value instanceof MetaVariable) {
+    if (value instanceof Variable || value instanceof MetaVariable) {
       return value.value;
     }
     return JSON.stringify(value);
