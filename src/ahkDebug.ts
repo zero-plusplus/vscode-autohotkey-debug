@@ -1446,7 +1446,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else {
-        const property = await this.session!.evaluate(variableName, undefined, maxDepth);
+        const property = await this.session!.evaluate(variableName);
 
         if (property) {
           if (property instanceof dbgp.ObjectProperty) {

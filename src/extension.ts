@@ -7,13 +7,14 @@ import { defaults, isString, range } from 'lodash';
 import * as isPortTaken from 'is-port-taken';
 import * as jsonc from 'jsonc-parser';
 import { getAhkVersion } from './util/getAhkVersion';
-import { completionItemProvider } from './CompletionItemProvider';
+import { completionItemProvider, findWord } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
 import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 import normalizeToUnix = require('normalize-path');
 import * as glob from 'fast-glob';
 import { registerCommands } from './commands';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -543,4 +544,33 @@ export const activate = (context: vscode.ExtensionContext): void => {
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('autohotkey', provider));
   context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
   context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], completionItemProvider, '.'));
+
+  const findWordRange = (ahkVersion: AhkVersion, document: vscode.TextDocument, position: vscode.Position, offset = 0): vscode.Range | undefined => {
+    const range = document.getWordRangeAtPosition(position);
+    if (!range) {
+      return undefined;
+    }
+    const wordBeforeCursor = findWord(ahkVersion, document, position);
+    const fixedRange = new vscode.Range(new vscode.Position(position.line, position.character - wordBeforeCursor.length), range.end);
+    const debug = document.getText(fixedRange); debug;
+    return fixedRange;
+  };
+  context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk' ], {
+    provideEvaluatableExpression(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.EvaluatableExpression> {
+      const range = findWordRange(new AhkVersion('1.0'), document, position);
+      if (!range) {
+        return undefined;
+      }
+      return new vscode.EvaluatableExpression(range);
+    },
+  }));
+  context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk2', 'ah2' ], {
+    provideEvaluatableExpression(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.EvaluatableExpression> {
+      const range = findWordRange(new AhkVersion('2.0'), document, position);
+      if (!range) {
+        return undefined;
+      }
+      return new vscode.EvaluatableExpression(range);
+    },
+  }));
 };
