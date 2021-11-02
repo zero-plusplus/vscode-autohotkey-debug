@@ -137,7 +137,7 @@ export class Scope implements DebugAdapter.Scope {
       return this.children;
     }
 
-    const { properties } = await this.session.sendContextGetCommand(this.context);
+    const { properties } = await this.session.sendContextGetCommand(this.context, maxDepth);
     return properties.map((property) => {
       return new Variable(this.session, property);
     });
@@ -404,6 +404,12 @@ export class MetaVariable implements DebugProtocol.Variable {
     if (isPrimitive(value)) {
       return typeof this.rawValue === 'string' ? `"${value}"` : String(value);
     }
+    if (value instanceof Scope || value instanceof Category || value instanceof Categories || value instanceof StackFrame) {
+      return value.name;
+    }
+    if (value instanceof Variable || value instanceof MetaVariable) {
+      return value.value;
+    }
     return JSON.stringify(value);
   }
   public get hasChildren(): boolean {
@@ -429,11 +435,9 @@ export class MetaVariable implements DebugProtocol.Variable {
     if (isPrimitive(this.loadedPromiseValue)) {
       return [];
     }
-
-    if (this.loadedPromiseValue instanceof Scope || this.loadedPromiseValue instanceof Category || this.loadedPromiseValue instanceof Categories) {
+    if (this.loadedPromiseValue instanceof Scope || this.loadedPromiseValue instanceof Category || this.loadedPromiseValue instanceof Categories || this.loadedPromiseValue instanceof MetaVariable) {
       return this.loadedPromiseValue.createChildren(maxDepth);
     }
-
     return Object.entries(this.loadedPromiseValue).map(([ key, value ]) => {
       if (value instanceof MetaVariable) {
         return value;
@@ -483,12 +487,6 @@ export class VariableManager {
     }
     return categories;
   }
-  public createVariableGroup(label: string, variables: Array<Scope | Category | Categories | Variable>): VariableGroup {
-    const variableGroup = new VariableGroup(...variables);
-    variableGroup.name = label;
-    variableGroup.value = label;
-    return variableGroup;
-  }
   public getCategory(variablesReference: number): Scope | Category | undefined {
     const category = handles.get(variablesReference);
     if (category instanceof Scope || category instanceof Category) {
@@ -500,13 +498,6 @@ export class VariableManager {
     const categories = handles.get(variablesReference);
     if (categories instanceof Categories) {
       return categories;
-    }
-    return undefined;
-  }
-  public getVariableGroup(variablesReference: number): VariableGroup | undefined {
-    const variableGroup = handles.get(variablesReference);
-    if (variableGroup instanceof VariableGroup) {
-      return variableGroup;
     }
     return undefined;
   }

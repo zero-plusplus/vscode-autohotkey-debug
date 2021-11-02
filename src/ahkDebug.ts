@@ -35,7 +35,7 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { isPrimitive, timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
-import { Categories, Category, MetaVariableValueMap, Scope, StackFrames, Variable, VariableGroup, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { Categories, Category, MetaVariable, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 import { CategoryData } from './extension';
 
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
@@ -99,7 +99,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private config!: LaunchRequestArguments;
   private readonly metaVaribalesByFrameId = new Map<number, MetaVariableValueMap>();
   private variableManager?: VariableManager;
-  private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | VariableGroup | undefined)>();
+  private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | MetaVariable | undefined)>();
   private breakpointManager?: BreakpointManager;
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames?: StackFrames;
@@ -538,36 +538,18 @@ export class AhkDebugSession extends LoggingDebugSession {
           ],
         };
       }
-      else if (logged instanceof VariableGroup) {
-        const variables = logged;
+      else if (logged instanceof MetaVariable) {
+        const metaVarible = logged;
         response.body = {
           variables: [
             {
-              name: variables.name || variables[0].name,
-              value: variables.name || ('value' in variables[0] ? variables[0].value : variables[0].name),
-              variablesReference: variables.length === 1 ? variables[0].variablesReference : variables.variablesReference,
+              name: metaVarible.name,
+              value: metaVarible.name,
+              variablesReference: metaVarible.variablesReference,
             },
           ],
         };
       }
-      this.sendResponse(response);
-      return;
-    }
-
-    const variableGroup = this.variableManager!.getVariableGroup(args.variablesReference);
-    if (variableGroup) {
-      response.body = {
-        variables: variableGroup.map((variable) => {
-          return {
-            name: variable.name,
-            value: 'value' in variable ? variable.value : '',
-            type: 'type' in variable ? variable.type : undefined,
-            variablesReference: variable.variablesReference,
-            indexedVariables: 'indexedVariables' in variable ? variable.indexedVariables : undefined,
-            namedVariables: 'namedVariables' in variable ? variable.namedVariables : undefined,
-          };
-        }),
-      };
       this.sendResponse(response);
       return;
     }
@@ -586,7 +568,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const metaVariable = this.variableManager!.getMetaVariable(args.variablesReference);
-    if (metaVariable) {
+    if (metaVariable && !(metaVariable.rawValue instanceof Variable)) {
       response.body = {
         variables: (await metaVariable.createChildren()).map((child) => ({
           name: child.name,
@@ -598,7 +580,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const variables = await this.variableManager!.getObjectVariable(args.variablesReference)?.createMembers(args)
+    const variables = await (metaVariable?.rawValue as Variable | undefined)?.createMembers(args)
+      ?? await this.variableManager!.getObjectVariable(args.variablesReference)?.createMembers(args)
       ?? await this.variableManager!.getCategory(args.variablesReference)?.createChildren()
       ?? await this.variableManager?.createVariables(args);
     if (variables) {
@@ -1409,9 +1392,9 @@ export class AhkDebugSession extends LoggingDebugSession {
         return prev + current;
       }
       return prev;
-    }, '');
+    }, '') || objectMessages.reduce((prev, current) => (prev ? `${prev}, ${current.name}` : current.name), '');
 
-    const variableGroup = this.variableManager!.createVariableGroup(label, objectMessages);
+    const variableGroup = objectMessages.length === 1 ? new MetaVariable(label, objectMessages[0]) : new MetaVariable(label, objectMessages.map((obj) => new MetaVariable(obj.name, obj)));
     const variablesReference = this.variableManager!.createVariableReference(variableGroup);
     this.logObjectsMap.set(variablesReference, variableGroup);
 
