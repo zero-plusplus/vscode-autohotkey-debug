@@ -169,6 +169,9 @@ export const completionItemProvider = {
 
     const properties = await this.session.fetchSuggestList(word);
     const fixedProperties = properties.filter((property) => {
+      if (property.name === '<enum>') {
+        return false;
+      }
       if (isBracketNotation && property.name.startsWith('[') && !property.fullName.toLocaleLowerCase().startsWith(word.toLowerCase())) {
         return false;
       }
@@ -185,7 +188,7 @@ export const completionItemProvider = {
     return fixedProperties.map((property): vscode.CompletionItem => {
       const completionItem = new vscode.CompletionItem(property.name);
       completionItem.kind = createKind(property);
-      completionItem.insertText = property.name;
+      completionItem.insertText = property.name === '<base>' ? 'base' : property.name;
       completionItem.detail = createDetail(property);
 
       const depth = count(property.fullName, '.');

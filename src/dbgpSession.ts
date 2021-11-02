@@ -176,8 +176,8 @@ export abstract class Property {
 
     this.context = context;
     this.facet = facet as PropertyFacet;
-    this.fullName = fullname.replace(/<base>/gui, 'base');
-    this.name = name.replace('<base>', 'base');
+    this.fullName = fullname;
+    this.name = name;
     this.type = type as PropertyType;
     this.size = parseInt(size, 10);
   }
@@ -561,19 +561,7 @@ export class Session extends EventEmitter {
     return new StackDepthResponse(await this.sendCommand('stack_depth'));
   }
   public async sendPropertyGetCommand(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<PropertyGetResponse> {
-    // An error occurs if `base` is included when retrieving dynamic properties. This bug? can be avoided by converting to `<base>` format.
-    let fixedName = name;
-    if (2 <= this.ahkVersion.mejor && (/\.base/ui).test(name)) {
-      const fixedPathArray = splitVariablePath(this.ahkVersion, name).map(((pathPart) => {
-        if (pathPart.startsWith('[')) {
-          return pathPart;
-        }
-        return pathPart.replace(/base/ui, '<base>');
-      }));
-      fixedName = joinVariablePathArray(fixedPathArray);
-    }
-
-    const commandParams = `-n ${fixedName} -c ${context.id} -d ${context.stackFrame.level}`;
+    const commandParams = `-n ${name} -c ${context.id} -d ${context.stackFrame.level}`;
     let dbgpResponse: XmlNode;
     if (this.DEFAULT_MAX_DEPTH < maxDepth) {
       await this.sendFeatureSetCommand('max_depth', maxDepth);
@@ -584,7 +572,14 @@ export class Session extends EventEmitter {
       dbgpResponse = await this.sendCommand('property_get', commandParams);
     }
 
-    return new PropertyGetResponse(dbgpResponse, context);
+    const response = new PropertyGetResponse(dbgpResponse, context);
+    if (!(/\.<base>$/ui).test(name)) {
+      return response;
+    }
+    if (response.properties.length === 1 && response.properties[0].type === 'undefined') {
+      return this.sendPropertyGetCommand(context, name.replace(/\.<base>$/iu, '.base'));
+    }
+    return response;
   }
   public async sendContinuationCommand(commandName: ContinuationCommandName): Promise<ContinuationResponse> {
     const startTime = process.hrtime();
@@ -822,7 +817,13 @@ export class Session extends EventEmitter {
       const property = typeof variablePathOrProperty === 'string' ? await this.evaluate(variablePathOrProperty) : variablePathOrProperty;
       if (property instanceof ObjectProperty) {
         const children = (await getInheritedChildren(property));
-        return uniqBy(children, (property) => property.name.toLowerCase());
+        return uniqBy(children, (property) => {
+          const lowerCased = property.name.toLowerCase();
+          if (lowerCased === '<base>') {
+            return 'base';
+          }
+          return property.name.toLowerCase();
+        });
       }
       return null;
     };
