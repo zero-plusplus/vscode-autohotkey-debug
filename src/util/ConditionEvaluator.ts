@@ -120,7 +120,7 @@ export class ConditionalEvaluator {
     let primitiveValue;
     if (expression.type === 'BinaryExpression') {
       const [ a, operatorType, b ] = expression.value;
-      if ([ a.type, b.type ].includes('RegExp') && ![ '~=', '!~' ].includes(operatorType.value)) {
+      if ([ a.type, b.type ].includes('RegExp') && ![ '~=', '!~', 'in' ].includes(operatorType.value)) {
         return false;
       }
 
@@ -242,9 +242,15 @@ export class ConditionalEvaluator {
         else if (operatorType.type === 'InOperator' && valueB instanceof dbgp.ObjectProperty) {
           if (valueA instanceof dbgp.PrimitiveProperty || typeof valueA === 'string') {
             const keyName = valueA instanceof dbgp.PrimitiveProperty ? valueA.value : valueA;
-            const property = await this.session.evaluate(`${valueB.fullName}.${keyName}`);
-            if (property) {
-              result = true;
+            const isRegExp = keyName.startsWith('/');
+            if (isRegExp) {
+              result = valueB.children.some((child) => regexCompare(child.name, keyName));
+            }
+            else {
+              const property = await this.session.evaluate(`${valueB.fullName}.${keyName}`);
+              if (property) {
+                result = true;
+              }
             }
           }
         }
