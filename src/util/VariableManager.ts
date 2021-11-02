@@ -58,7 +58,7 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
 
   const children = objectProperty.children.slice(0, 100);
   for (const child of children) {
-    if (child.name === 'base') {
+    if (child.name === '<base>') {
       continue;
     }
 

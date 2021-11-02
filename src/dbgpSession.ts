@@ -4,10 +4,11 @@ import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import * as convertHrTime from 'convert-hrtime';
-import { range, uniq, uniqBy } from 'lodash';
+import { uniq, uniqBy } from 'lodash';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
+import { equalsIgnoreCase } from './util/stringUtils';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -176,8 +177,8 @@ export abstract class Property {
 
     this.context = context;
     this.facet = facet as PropertyFacet;
-    this.fullName = fullname.replace(/<base>/gui, 'base');
-    this.name = name.replace('<base>', 'base');
+    this.fullName = fullname;
+    this.name = name;
     this.type = type as PropertyType;
     this.size = parseInt(size, 10);
   }
@@ -561,19 +562,7 @@ export class Session extends EventEmitter {
     return new StackDepthResponse(await this.sendCommand('stack_depth'));
   }
   public async sendPropertyGetCommand(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<PropertyGetResponse> {
-    // An error occurs if `base` is included when retrieving dynamic properties. This bug? can be avoided by converting to `<base>` format.
-    let fixedName = name;
-    if (2 <= this.ahkVersion.mejor && (/\.base/ui).test(name)) {
-      const fixedPathArray = splitVariablePath(this.ahkVersion, name).map(((pathPart) => {
-        if (pathPart.startsWith('[')) {
-          return pathPart;
-        }
-        return pathPart.replace(/base/ui, '<base>');
-      }));
-      fixedName = joinVariablePathArray(fixedPathArray);
-    }
-
-    const commandParams = `-n ${fixedName} -c ${context.id} -d ${context.stackFrame.level}`;
+    const commandParams = `-n ${name} -c ${context.id} -d ${context.stackFrame.level}`;
     let dbgpResponse: XmlNode;
     if (this.DEFAULT_MAX_DEPTH < maxDepth) {
       await this.sendFeatureSetCommand('max_depth', maxDepth);
@@ -584,7 +573,14 @@ export class Session extends EventEmitter {
       dbgpResponse = await this.sendCommand('property_get', commandParams);
     }
 
-    return new PropertyGetResponse(dbgpResponse, context);
+    const response = new PropertyGetResponse(dbgpResponse, context);
+    if (!(/\.base$/ui).test(name)) {
+      return response;
+    }
+    if (response.properties.length === 1 && response.properties[0].type === 'undefined') {
+      return this.sendPropertyGetCommand(context, name.replace(/\.base$/iu, '.<base>'));
+    }
+    return response;
   }
   public async sendContinuationCommand(commandName: ContinuationCommandName): Promise<ContinuationResponse> {
     const startTime = process.hrtime();
@@ -688,16 +684,21 @@ export class Session extends EventEmitter {
     }
     return undefined;
   }
-  public async evaluate(name: string, stackFrame?: StackFrame, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> {
+  public async evaluate(name: string, stackFrame?: StackFrame): Promise<Property | undefined> {
     // #region util
     const resolveVariablePath = async(variablePath: string): Promise<string> => {
       const resolvedVariablePathArray: string[] = [];
-      for await (const pathPart of splitVariablePath(this.ahkVersion, variablePath)) {
-        const isBracketNotationWithVariable = (): boolean => (2 <= this.ahkVersion.mejor ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
-
+      const splitedVariablePathList = splitVariablePath(this.ahkVersion, variablePath);
+      for await (const pathPart of splitedVariablePathList) {
         let resolvedPathPart = pathPart;
-        if (isBracketNotationWithVariable()) {
+        const isBracketNotationWithVariable = (2 <= this.ahkVersion.mejor ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
+        if (isBracketNotationWithVariable) {
           const _variablePath = pathPart.slice(1, -1);
+          if (isNumberLike(_variablePath)) {
+            resolvedVariablePathArray.push(pathPart);
+            continue;
+          }
+
           const property = await this.evaluate(_variablePath);
           if (property instanceof PrimitiveProperty) {
             const escapedValue = property.value.replace(/"/gu, 2 <= this.ahkVersion.mejor ? '`"' : '""');
@@ -711,6 +712,47 @@ export class Session extends EventEmitter {
       }
       return joinVariablePathArray(resolvedVariablePathArray);
     };
+    const safeFetchProperty = async(context: Context, name: string): Promise<Property | undefined> => {
+      const variablePathArray = splitVariablePath(this.ahkVersion, name);
+      if (variablePathArray.length < 2) {
+        return this.fetchProperty(context, name);
+      }
+      const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
+      const propertyName = variablePathArray[variablePathArray.length - 1];
+      const property = await this.fetchProperty(context, parentVariablePath, 2);
+      if (property instanceof ObjectProperty) {
+        const child = property.children.find((child) => equalsIgnoreCase(child.name, propertyName));
+        if (child) {
+          return child;
+        }
+        return property.children.find((child) => child.name === '<base>' && equalsIgnoreCase(child.name, `<${propertyName}>`));
+      }
+      return undefined;
+
+      //       const bracketNotationIndex = variablePathArray.findIndex((part) => part.startsWith('['));
+      //       if (bracketNotationIndex === -1) {
+      //         return this.fetchProperty(context, name, maxDepth);
+      //       }
+      //
+      //       let variablePath = variablePathArray.shift()!;
+      //       for await (const i of range(variablePathArray.length)) {
+      //         const part = variablePathArray[i];
+      //         if (!part.startsWith('[')) {
+      //           variablePath += `.${part}`;
+      //           continue;
+      //         }
+      //
+      //         const property = await this.fetchProperty(context, variablePath, maxDepth);
+      //         if (!(property && property instanceof ObjectProperty)) {
+      //           return undefined;
+      //         }
+      //         const hasChild = Boolean(property.children.find((child) => child.name === part));
+      //         if (!hasChild) {
+      //           return undefined;
+      //         }
+      //       }
+      //       return this.fetchProperty(context, name, maxDepth);
+    };
     const findInheritedProperty = async(context: Context, parentName: string, key: string): Promise<Property | null> => {
       const baseProperty = await this.fetchProperty(context, `${parentName}.base`);
       if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
@@ -721,32 +763,6 @@ export class Session extends EventEmitter {
         return property;
       }
       return findInheritedProperty(context, baseProperty.fullName, key);
-    };
-    const safeFetchProperty = async(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> => {
-      const variablePathArray = splitVariablePath(this.ahkVersion, name);
-      const bracketNotationIndex = variablePathArray.findIndex((part) => part.startsWith('['));
-      if (bracketNotationIndex === -1) {
-        return this.fetchProperty(context, name, maxDepth);
-      }
-
-      let variablePath = variablePathArray.shift()!;
-      for await (const i of range(variablePathArray.length)) {
-        const part = variablePathArray[i];
-        if (!part.startsWith('[')) {
-          variablePath += `.${part}`;
-          continue;
-        }
-
-        const property = await this.fetchProperty(context, variablePath, maxDepth);
-        if (!(property && property instanceof ObjectProperty)) {
-          return undefined;
-        }
-        const hasChild = Boolean(property.children.find((child) => child.name === part));
-        if (!hasChild) {
-          return undefined;
-        }
-      }
-      return this.fetchProperty(context, name, maxDepth);
     };
     // #endregion util
 
@@ -762,10 +778,10 @@ export class Session extends EventEmitter {
       _stackFrame = stackFrames[0];
     }
 
-    const resolvedName = await resolveVariablePath(name);
+    const resolvedName = (await resolveVariablePath(name));
     const { contexts } = await this.sendContextNamesCommand(_stackFrame);
     for await (const context of contexts) {
-      const property = await safeFetchProperty(context, resolvedName, maxDepth);
+      const property = await safeFetchProperty(context, resolvedName);
       if (property) {
         return property;
       }
@@ -812,7 +828,7 @@ export class Session extends EventEmitter {
     // #region util
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
       const children = [ ...property.children ];
-      const base = await this.evaluate(`${property.fullName}.base`, undefined, 1);
+      const base = await this.evaluate(`${property.fullName}.<base>`);
       if (base instanceof ObjectProperty) {
         children.push(...await getInheritedChildren(base));
       }
@@ -822,7 +838,23 @@ export class Session extends EventEmitter {
       const property = typeof variablePathOrProperty === 'string' ? await this.evaluate(variablePathOrProperty) : variablePathOrProperty;
       if (property instanceof ObjectProperty) {
         const children = (await getInheritedChildren(property));
-        return uniqBy(children, (property) => property.name.toLowerCase());
+        const hasNotPrototypeBaseProperty = children.some((property) => {
+          if (property instanceof ObjectProperty) {
+            if (property.name === 'Base' && property.className === 'Prototype') {
+              return false;
+            }
+          }
+          return equalsIgnoreCase(property.name, 'base');
+        });
+
+        const filteredChildren = children.filter((property) => !(hasNotPrototypeBaseProperty && property.name === '<base>'));
+        return uniqBy(filteredChildren, (property) => {
+          const lowerCased = property.name.toLowerCase();
+          if (lowerCased === '<base>') {
+            return 'base';
+          }
+          return lowerCased;
+        });
       }
       return null;
     };

@@ -1,3 +1,4 @@
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { count } from 'underscore.string';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
@@ -46,6 +47,102 @@ const createDetail = (property: dbgp.Property): string => {
   const type = property instanceof dbgp.ObjectProperty ? property.className : property.type;
   return `${context}(${kindName}) ${property.fullName}: ${type}`;
 };
+
+export const fixPosition = (position: vscode.Position, offset: number): vscode.Position => {
+  return new vscode.Position(position.line, Math.max(position.character + offset, 0));
+};
+export const findWord = (ahkVersion: AhkVersion, document: vscode.TextDocument, position: vscode.Position, offset = 0): string => {
+  const targetText = document.lineAt(position).text.slice(0, fixPosition(position, offset).character);
+  const chars = targetText.split('').reverse();
+  const openBracketIndex = lastIndexOf(targetText, 2 <= ahkVersion.mejor ? /(?<=\[\s*)("|')/u : /(?<=\[\s*)(")/u);
+  const closeBracketIndex = lastIndexOf(targetText, 2 <= ahkVersion.mejor ? /("|')\s*(?=\])/u : /"\s*(?=\])/u);
+
+  const result: string[] = [];
+  let quote = '', bracketCount = 0;
+  if (-1 < openBracketIndex && closeBracketIndex < openBracketIndex) {
+    quote = targetText.charAt(openBracketIndex);
+    bracketCount = 1;
+  }
+  for (let i = 0; i < chars.length; i++) {
+    const char = chars[i];
+    const nextChar = chars[i + 1] as string | undefined;
+
+    if (quote) {
+      if (2 < ahkVersion.mejor) {
+        if (char === '"' && nextChar === '`') {
+          result.push(char);
+          result.push('"');
+          i++;
+          continue;
+        }
+
+        if (quote === `'` && char === '"') {
+          result.push('"');
+          result.push('"');
+          continue;
+        }
+        else if (quote === `'` && char === `'`) {
+          result.push('"');
+          quote = '';
+          continue;
+        }
+      }
+
+      if (quote === char) {
+        result.push(quote);
+        quote = '';
+        continue;
+      }
+      result.push(char);
+      continue;
+    }
+    else if (0 < bracketCount && char === '[') {
+      result.push(char);
+      bracketCount--;
+      continue;
+    }
+
+    switch (char) {
+      case `'`: {
+        if (2 <= ahkVersion.mejor) {
+          quote = char;
+          result.push('"');
+          continue;
+        }
+        result.push(char);
+        continue;
+      }
+      case '"': {
+        quote = char;
+        result.push(char);
+        continue;
+      }
+      case ']': {
+        result.push(char);
+        bracketCount++;
+        continue;
+      }
+      case '.': {
+        result.push(char);
+        continue;
+      }
+      default: {
+        const isIdentifierChar = (2 <= ahkVersion.mejor ? /[\w_]/u : /[\w_$@#]/u).test(char);
+        if (isIdentifierChar) {
+          result.push(char);
+          continue;
+        }
+
+        // Skip spaces
+        if (0 < bracketCount && (/\s/u).test(char)) {
+          continue;
+        }
+      }
+    }
+    break;
+  }
+  return result.reverse().join('');
+};
 export const completionItemProvider = {
   useIntelliSenseInDebugging: true,
   session: null,
@@ -62,113 +159,21 @@ export const completionItemProvider = {
     }
 
     // #region util
-    const fixPosition = (offset: number): vscode.Position => {
-      return new vscode.Position(position.line, Math.max(position.character + offset, 0));
-    };
-    const findWord = (offset = 0): string => {
-      const targetText = document.lineAt(position).text.slice(0, fixPosition(offset).character);
-      const chars = targetText.split('').reverse();
-      const openBracketIndex = lastIndexOf(targetText, 2 <= this.session!.ahkVersion.mejor ? /(?<=\[\s*)("|')/u : /(?<=\[\s*)(")/u);
-      const closeBracketIndex = lastIndexOf(targetText, 2 <= this.session!.ahkVersion.mejor ? /("|')\s*(?=\])/u : /"\s*(?=\])/u);
-
-      const result: string[] = [];
-      let quote = '', bracketCount = 0;
-      if (-1 < openBracketIndex && closeBracketIndex < openBracketIndex) {
-        quote = targetText.charAt(openBracketIndex);
-        bracketCount = 1;
-      }
-      for (let i = 0; i < chars.length; i++) {
-        const char = chars[i];
-        const nextChar = chars[i + 1] as string | undefined;
-
-        if (quote) {
-          if (2 < this.session!.ahkVersion.mejor) {
-            if (char === '"' && nextChar === '`') {
-              result.push(char);
-              result.push('"');
-              i++;
-              continue;
-            }
-
-            if (quote === `'` && char === '"') {
-              result.push('"');
-              result.push('"');
-              continue;
-            }
-            else if (quote === `'` && char === `'`) {
-              result.push('"');
-              quote = '';
-              continue;
-            }
-          }
-
-          if (quote === char) {
-            result.push(quote);
-            quote = '';
-            continue;
-          }
-          result.push(char);
-          continue;
-        }
-        else if (0 < bracketCount && char === '[') {
-          result.push(char);
-          bracketCount--;
-          continue;
-        }
-
-        switch (char) {
-          case `'`: {
-            if (2 <= this.session!.ahkVersion.mejor) {
-              quote = char;
-              result.push('"');
-              continue;
-            }
-            result.push(char);
-            continue;
-          }
-          case '"': {
-            quote = char;
-            result.push(char);
-            continue;
-          }
-          case ']': {
-            result.push(char);
-            bracketCount++;
-            continue;
-          }
-          case '.': {
-            result.push(char);
-            continue;
-          }
-          default: {
-            const isIdentifierChar = (2 <= this.session!.ahkVersion.mejor ? /[\w_]/u : /[\w_$@#]/u).test(char);
-            if (isIdentifierChar) {
-              result.push(char);
-              continue;
-            }
-
-            // Skip spaces
-            if (0 < bracketCount && (/\s/u).test(char)) {
-              continue;
-            }
-          }
-        }
-        break;
-      }
-      return result.reverse().join('');
-    };
     const getPrevText = (length: number): string => {
-      return document.getText(new vscode.Range(fixPosition(-length), position));
+      return document.getText(new vscode.Range(fixPosition(position, -length), position));
     };
     // #endregion util
 
-    const word = findWord();
+    const word = findWord(this.session.ahkVersion, document, position);
     const lastWordPathPart = splitVariablePath(this.session.ahkVersion, word).pop() ?? '';
     const isBracketNotation = lastWordPathPart.startsWith('[');
     const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
 
     const properties = await this.session.fetchSuggestList(word);
     const fixedProperties = properties.filter((property) => {
+      if (property.name === '<enum>') {
+        return false;
+      }
       if (isBracketNotation && property.name.startsWith('[') && !property.fullName.toLocaleLowerCase().startsWith(word.toLowerCase())) {
         return false;
       }
@@ -185,7 +190,7 @@ export const completionItemProvider = {
     return fixedProperties.map((property): vscode.CompletionItem => {
       const completionItem = new vscode.CompletionItem(property.name);
       completionItem.kind = createKind(property);
-      completionItem.insertText = property.name;
+      completionItem.insertText = property.name === '<base>' ? 'base' : property.name;
       completionItem.detail = createDetail(property);
 
       const depth = count(property.fullName, '.');
@@ -212,7 +217,7 @@ export const completionItemProvider = {
           // };
 
           // This is a strange implementation because I don't know the specs very well.
-          const replaceRange = new vscode.Range(fixPosition(-1), position);
+          const replaceRange = new vscode.Range(fixPosition(position, -1), position);
           const fixedPropertyName = fixQuote(property.name);
           const a = fixedPropertyName.slice(0, 1);
           const b = fixedPropertyName.slice(1);
@@ -223,7 +228,7 @@ export const completionItemProvider = {
           completionItem.insertText = fixLabel(property.name); // fixedLabel.slice(fixedLastWordPathPart.length);
 
           const fixedLastWordPathPart = fixLabel(lastWordPathPart);
-          completionItem.range = new vscode.Range(fixPosition(-fixedLastWordPathPart.length), position);
+          completionItem.range = new vscode.Range(fixPosition(position, -fixedLastWordPathPart.length), position);
         }
         else {
           completionItem.insertText = fixedLabel;
