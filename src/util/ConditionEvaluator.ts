@@ -149,7 +149,7 @@ export class ConditionalEvaluator {
           return operator(_a, _b);
         }
       }
-      else if ([ 'IsOperator', 'InOperator', 'ContainsOperator' ].includes(operatorType.type)) {
+      else if ([ 'IsOperator', 'InOperator', 'HasOperator', 'ContainsOperator' ].includes(operatorType.type)) {
         const negativeMode = -1 < operatorType.value.search(/not/ui);
         const valueA = await this.evalValue(a, metaVariableMap);
         const valueB = await this.evalValue(b, metaVariableMap);
@@ -243,6 +243,18 @@ export class ConditionalEvaluator {
             if (property) {
               result = true;
             }
+          }
+        }
+        else if (operatorType.type === 'HasOperator' && valueA instanceof dbgp.ObjectProperty) {
+          if (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string') {
+            const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
+            const isRegExp = searchValue.startsWith('/');
+            result = valueA.children.some((child) => {
+              if (child instanceof dbgp.PrimitiveProperty) {
+                return isRegExp ? regexCompare(child.name, searchValue) : equals(child.name, searchValue);
+              }
+              return false;
+            });
           }
         }
         else if (operatorType.type === 'ContainsOperator' && valueA instanceof dbgp.ObjectProperty) {
