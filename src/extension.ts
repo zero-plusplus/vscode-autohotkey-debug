@@ -1,22 +1,7 @@
 /* eslint-disable require-atomic-updates */
 import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
-import {
-  CancellationToken,
-  DebugAdapterDescriptor,
-  DebugAdapterDescriptorFactory,
-  DebugAdapterInlineImplementation,
-  DebugConfiguration,
-  DebugConfigurationProvider,
-  DebugSession,
-  ExtensionContext,
-  ProviderResult,
-  WorkspaceFolder,
-  debug,
-  languages,
-  window,
-  workspace,
-} from 'vscode';
+import * as vscode from 'vscode';
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
 import { defaults, isString, range } from 'lodash';
 import * as isPortTaken from 'is-port-taken';
@@ -126,8 +111,8 @@ const normalizeCategories = (categories?: 'Recommend' | Array<ScopeSelector | Ca
   return normalized;
 };
 
-class AhkConfigurationProvider implements DebugConfigurationProvider {
-  public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
+  public resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
     if (config.extends && folder) {
       const jsonPath = path.resolve(folder.uri.fsPath, '.vscode', 'launch.json');
       if (existsSync(jsonPath)) {
@@ -167,16 +152,16 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
 
     // Deprecated. I''ll get rid of it eventually
     if (config.type === 'ahk') {
-      window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
+      vscode.window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
       config.type = 'autohotkey';
     }
 
-    if (config.openFileOnExit === '${file}' && !window.activeTextEditor) {
+    if (config.openFileOnExit === '${file}' && !vscode.window.activeTextEditor) {
       config.openFileOnExit = undefined;
     }
     return config;
   }
-  public async resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): Promise<DebugConfiguration> {
+  public async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration> {
     // init request
     ((): void => {
       if (config.request === 'launch') {
@@ -192,7 +177,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     // init runtime
     await (async(): Promise<void> => {
       if (typeof config.runtime === 'undefined') {
-        const doc = await workspace.openTextDocument(config.program ?? window.activeTextEditor?.document.uri.fsPath);
+        const doc = await vscode.workspace.openTextDocument(config.program ?? vscode.window.activeTextEditor?.document.uri.fsPath);
         config.runtime = doc.languageId.toLowerCase() === 'ahk'
           ? config.runtime_v1
           : config.runtime_v2; // ahk2 or ah2
@@ -243,7 +228,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
             : [ '/ErrorStdOut' ];
         }
 
-        const doc = await workspace.openTextDocument(config.program);
+        const doc = await vscode.workspace.openTextDocument(config.program);
         config.runtimeArgs = doc.languageId.toLowerCase() === 'ahk'
           ? config.runtimeArgs_v1
           : config.runtimeArgs_v2; // ahk2 or ah2
@@ -317,7 +302,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         }
         if (!portRange.permitted) {
           const message = `Port number \`${port}\` is already in use. Would you like to start debugging using \`${port + 1}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
-          const result = await window.showInformationMessage(message, { modal: true }, 'Yes');
+          const result = await vscode.window.showInformationMessage(message, { modal: true }, 'Yes');
           if (!result) {
             break;
           }
@@ -336,7 +321,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
           return;
         }
         if (config.program === undefined) {
-          const scriptPath = await window.showQuickPick(scriptPathList);
+          const scriptPath = await vscode.window.showQuickPick(scriptPathList);
           if (scriptPath) {
             config.program = scriptPath;
             return;
@@ -543,20 +528,19 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     return config;
   }
 }
-class InlineDebugAdapterFactory implements DebugAdapterDescriptorFactory {
-  public createDebugAdapterDescriptor(_session: DebugSession): ProviderResult<DebugAdapterDescriptor> {
-    return new DebugAdapterInlineImplementation(new AhkDebugSession());
+class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
+  public createDebugAdapterDescriptor(_session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+    return new vscode.DebugAdapterInlineImplementation(new AhkDebugSession());
   }
 }
 
-export const activate = (context: ExtensionContext): void => {
+export const activate = (context: vscode.ExtensionContext): void => {
   const provider = new AhkConfigurationProvider();
 
   registerCommands(context);
 
-  context.subscriptions.push(debug.registerDebugConfigurationProvider('ahk', provider));
-  context.subscriptions.push(debug.registerDebugConfigurationProvider('autohotkey', provider));
-  context.subscriptions.push(debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
-
-  context.subscriptions.push(languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2', 'autohotkey' ], completionItemProvider, '.'));
+  context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('ahk', provider));
+  context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('autohotkey', provider));
+  context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
+  context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], completionItemProvider, '.'));
 };
