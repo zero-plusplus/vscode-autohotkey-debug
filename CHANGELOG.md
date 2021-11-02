@@ -25,6 +25,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#150](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/150) Add `{now}`, `{callstack}`, `{callstackNames}`, `thisCallstack` in meta variables
 * [#151](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/151) Suport meta varible `{variablesCategories}`
 * [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable in data inspection
+* [#161](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/161) Add `has` operator in conditional breakpoint
 * [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Add `contanis` operator in conditional breakpoint
 
 ### Changed

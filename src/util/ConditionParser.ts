@@ -300,6 +300,7 @@ export const createParser = function(version: AhkVersion): P.Language {
         rules.ComparisonOperator,
         rules.IsOperator,
         rules.InOperator,
+        rules.HasOperator,
         rules.ContainsOperator,
       );
     },
@@ -341,6 +342,14 @@ export const createParser = function(version: AhkVersion): P.Language {
       return P.regex(/\s+(not in|in)\s+/ui).map((result) => {
         return {
           type: 'InOperator',
+          value: result.toLowerCase().trim(),
+        };
+      });
+    },
+    HasOperator(rules) {
+      return P.regex(/\s+(not has|has)\s+/ui).map((result) => {
+        return {
+          type: 'HasOperator',
           value: result.toLowerCase().trim(),
         };
       });
