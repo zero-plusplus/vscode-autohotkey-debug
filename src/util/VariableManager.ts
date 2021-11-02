@@ -137,7 +137,7 @@ export class Scope implements DebugAdapter.Scope {
       return this.children;
     }
 
-    const { properties } = await this.session.sendContextGetCommand(this.context);
+    const { properties } = await this.session.sendContextGetCommand(this.context, maxDepth);
     return properties.map((property) => {
       return new Variable(this.session, property);
     });
