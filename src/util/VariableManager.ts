@@ -404,6 +404,9 @@ export class MetaVariable implements DebugProtocol.Variable {
     if (isPrimitive(value)) {
       return typeof this.rawValue === 'string' ? `"${value}"` : String(value);
     }
+    if (value instanceof Scope || value instanceof Category || value instanceof Categories || value instanceof StackFrame) {
+      return value.name;
+    }
     if (value instanceof MetaVariable) {
       return value.value;
     }
