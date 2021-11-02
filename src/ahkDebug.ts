@@ -568,7 +568,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const metaVariable = this.variableManager!.getMetaVariable(args.variablesReference);
-    if (metaVariable) {
+    if (metaVariable && !(metaVariable.rawValue instanceof Variable)) {
       response.body = {
         variables: (await metaVariable.createChildren()).map((child) => ({
           name: child.name,
@@ -580,7 +580,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const variables = await this.variableManager!.getObjectVariable(args.variablesReference)?.createMembers(args)
+    const variables = await (metaVariable?.rawValue as Variable | undefined)?.createMembers(args)
+      ?? await this.variableManager!.getObjectVariable(args.variablesReference)?.createMembers(args)
       ?? await this.variableManager!.getCategory(args.variablesReference)?.createChildren()
       ?? await this.variableManager?.createVariables(args);
     if (variables) {
@@ -1393,7 +1394,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return prev;
     }, '') || objectMessages.reduce((prev, current) => (prev ? `${prev}, ${current.name}` : current.name), '');
 
-    const variableGroup = objectMessages.length === 1 ? objectMessages[0] : new MetaVariable(label, objectMessages.map((obj) => new MetaVariable(obj.name, obj)));
+    const variableGroup = objectMessages.length === 1 ? new MetaVariable(label, objectMessages[0]) : new MetaVariable(label, objectMessages.map((obj) => new MetaVariable(obj.name, obj)));
     const variablesReference = this.variableManager!.createVariableReference(variableGroup);
     this.logObjectsMap.set(variablesReference, variableGroup);
 
