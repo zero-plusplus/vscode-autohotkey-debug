@@ -22,6 +22,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#150](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/150) Add `{now}`, `{callstack}`, `{callstackNames}`, `thisCallstack` in meta variables
     * Added: [#151](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/151) Suport meta varible `{variablesCategories}`
     * Added: [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable in data inspection
+    * Added: [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Add `contanis` operator in conditional breakpoint
     * Changed: [#157](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/157) When an object is output at a log point, etc., instead of being split, it is output as one. Also, if the output is used together with a string, it will be treated as a label
     * Fixed: [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects
     * Fixed: [#149](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/149) Watch expression will only show the contents of the latest call stack

@@ -120,9 +120,6 @@ export class ConditionalEvaluator {
     let primitiveValue;
     if (expression.type === 'BinaryExpression') {
       const [ a, operatorType, b ] = expression.value;
-      if ([ a.type, b.type ].includes('RegExp') && ![ '~=', '!~', 'in' ].includes(operatorType.value)) {
-        return false;
-      }
 
       if (operatorType.type === 'ComparisonOperator') {
         const operator = comparisonOperators[operatorType.value];
@@ -152,7 +149,7 @@ export class ConditionalEvaluator {
           return operator(_a, _b);
         }
       }
-      else if ([ 'IsOperator', 'InOperator' ].includes(operatorType.type)) {
+      else if ([ 'IsOperator', 'InOperator', 'ContainsOperator' ].includes(operatorType.type)) {
         const negativeMode = -1 < operatorType.value.search(/not/ui);
         const valueA = await this.evalValue(a, metaVariableMap);
         const valueB = await this.evalValue(b, metaVariableMap);
@@ -252,6 +249,18 @@ export class ConditionalEvaluator {
                 result = true;
               }
             }
+          }
+        }
+        else if (operatorType.type === 'ContainsOperator' && valueA instanceof dbgp.ObjectProperty) {
+          if (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string') {
+            const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
+            const isRegExp = searchValue.startsWith('/');
+            result = valueA.children.some((child) => {
+              if (child instanceof dbgp.PrimitiveProperty) {
+                return isRegExp ? regexCompare(child.value, searchValue) : equals(child.value, searchValue);
+              }
+              return false;
+            });
           }
         }
 
