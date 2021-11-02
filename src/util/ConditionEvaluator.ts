@@ -239,15 +239,9 @@ export class ConditionalEvaluator {
         else if (operatorType.type === 'InOperator' && valueB instanceof dbgp.ObjectProperty) {
           if (valueA instanceof dbgp.PrimitiveProperty || typeof valueA === 'string') {
             const keyName = valueA instanceof dbgp.PrimitiveProperty ? valueA.value : valueA;
-            const isRegExp = keyName.startsWith('/');
-            if (isRegExp) {
-              result = valueB.children.some((child) => regexCompare(child.name, keyName));
-            }
-            else {
-              const property = await this.session.evaluate(`${valueB.fullName}.${keyName}`);
-              if (property) {
-                result = true;
-              }
+            const property = await this.session.evaluate(`${valueB.fullName}.${keyName}`);
+            if (property) {
+              result = true;
             }
           }
         }
