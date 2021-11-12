@@ -679,10 +679,19 @@ export class Session extends EventEmitter {
   public async fetchProperty(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> {
     const { properties } = await this.sendPropertyGetCommand(context, name, maxDepth);
     const property = properties[0];
-    if (property.type !== 'undefined') {
+    if (property.type === 'undefined') {
+      return undefined;
+    }
+
+    // Worked around a bug where getting a variable in the AutoExec section would get the variable in the top stack frame.
+    if (property.context.stackFrame.name === 'Auto-execute thread') {
+      if ([ 'Local', 'Static' ].includes(property.context.name)) {
+        return undefined;
+      }
       return property;
     }
-    return undefined;
+
+    return property;
   }
   public async fetchAllProperties(maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property[]> {
     const { stackFrames } = await this.sendStackGetCommand();
