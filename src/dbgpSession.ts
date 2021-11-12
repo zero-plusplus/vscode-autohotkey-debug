@@ -721,30 +721,6 @@ export class Session extends EventEmitter {
         return property.children.find((child) => child.name === '<base>' && equalsIgnoreCase(child.name, `<${propertyName}>`));
       }
       return undefined;
-
-      //       const bracketNotationIndex = variablePathArray.findIndex((part) => part.startsWith('['));
-      //       if (bracketNotationIndex === -1) {
-      //         return this.fetchProperty(context, name, maxDepth);
-      //       }
-      //
-      //       let variablePath = variablePathArray.shift()!;
-      //       for await (const i of range(variablePathArray.length)) {
-      //         const part = variablePathArray[i];
-      //         if (!part.startsWith('[')) {
-      //           variablePath += `.${part}`;
-      //           continue;
-      //         }
-      //
-      //         const property = await this.fetchProperty(context, variablePath, maxDepth);
-      //         if (!(property && property instanceof ObjectProperty)) {
-      //           return undefined;
-      //         }
-      //         const hasChild = Boolean(property.children.find((child) => child.name === part));
-      //         if (!hasChild) {
-      //           return undefined;
-      //         }
-      //       }
-      //       return this.fetchProperty(context, name, maxDepth);
     };
     const findInheritedProperty = async(context: Context, parentName: string, key: string): Promise<Property | null> => {
       const baseProperty = await this.fetchProperty(context, `${parentName}.base`);
