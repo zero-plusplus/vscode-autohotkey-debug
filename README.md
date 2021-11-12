@@ -15,7 +15,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 * `1.10.0` - 2021-xx-xx
     * Added: [#75](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/75) Add some context menus to copy the value of a variable in data inspection
     * Added: [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
-    * Added: [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `suppressAnnounce` attribute in launch.json
+    * Added: [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useAnnounce` attribute in launch.json
     * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useOutputDebug` attribute in launch.json
     * Added: [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Support ClearConsole directive
     * Added: [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Support `Add to Watch` and `Copy as Expression` in the context menu of data inspection

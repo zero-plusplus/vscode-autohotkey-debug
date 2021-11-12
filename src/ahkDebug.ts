@@ -37,7 +37,9 @@ import { isNumber } from 'ts-predicates';
 import * as matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 import { CategoryData } from './extension';
+import { version as debuggerAdapterVersion } from '../package.json';
 
+export type AnnounceLevel = boolean | 'error' | 'detail';
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   program: string;
   request: 'launch' | 'attach';
@@ -66,12 +68,12 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     category: 'stdout' | 'stderr' | 'console';
     useTrailingLinebreak: boolean;
   };
+  useAnnounce: AnnounceLevel;
   openFileOnExit: string;
   trace: boolean;
   skipFunctions?: string[];
   skipFiles?: string[];
   variableCategories?: CategoryData[];
-  suppressAnnounce: boolean;
   // The following is not a configuration, but is set to pass data to the debug adapter.
   cancelReason?: string;
   extensionContext: vscode.ExtensionContext;
@@ -159,7 +161,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     if (!args.restart) {
       if (isNumber(this.exitCode)) {
-        this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr');
+        this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
         this.sendAnnounce('Debugging stopped.');
       }
       else if (args.terminateDebuggee === true && !this.config.cancelReason) {
@@ -214,7 +216,6 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.sendOutputDebug(message);
         });
       this.sendAnnounce(`${this.ahkProcess.command}`);
-
       await this.createServer(args);
     }
     catch (error: unknown) {
@@ -232,7 +233,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.config = args;
 
     if (this.config.cancelReason) {
-      this.sendAnnounce(`${this.config.cancelReason}\n`);
+      this.sendAnnounce(`${this.config.cancelReason}\n`, 'stderr');
       this.sendTerminateEvent();
       this.sendResponse(response);
       return;
@@ -255,8 +256,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
 
         if (isNumber(exitCode)) {
-          const category = exitCode === 0 ? 'console' : 'stderr';
-          this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}\n`, category);
+          this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}\n`, exitCode === 0 ? 'console' : 'stderr', exitCode === 0 ? 'detail' : 'error');
         }
         this.sendTerminateEvent();
       })
@@ -1211,8 +1211,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
   }
-  private sendAnnounce(message: string, category: 'stdout' | 'stderr' | 'console' = 'console'): void {
-    if (category !== 'stderr' && this.config.suppressAnnounce) {
+  private sendAnnounce(message: string, category: 'stdout' | 'stderr' | 'console' = 'console', level?: AnnounceLevel): void {
+    const announceLevelOrder = [ false, 'error', true, 'detail' ];
+    if (this.config.useAnnounce === false) {
+      return;
+    }
+
+    const announceLevel: AnnounceLevel = level ?? (category === 'stderr' ? 'error' : true);
+    const targetLevel = announceLevelOrder.indexOf(this.config.useAnnounce);
+    const outputLevel = announceLevelOrder.indexOf(announceLevel);
+    if (targetLevel < outputLevel) {
       return;
     }
     this.sendEvent(new OutputEvent(message, category));
@@ -1550,6 +1558,8 @@ export class AhkDebugSession extends LoggingDebugSession {
                 if (typeof this.session === 'undefined') {
                   return;
                 }
+                this.sendAnnounce(`Debugger Adapter Version: ${String(debuggerAdapterVersion)}\n`, 'console', 'detail');
+                this.sendAnnounce(`AutoHotkey Version: ${this.session.ahkVersion.full}\n`, 'console', 'detail');
 
                 completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
                 completionItemProvider.session = this.session;

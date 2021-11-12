@@ -23,6 +23,7 @@
 		"noUnusedParameters": false,
 		"preserveConstEnums": true,
 		"removeComments": false,
+		"resolveJsonModule": true,
 		"newLine": "crlf"
 	},
 	"include": [
