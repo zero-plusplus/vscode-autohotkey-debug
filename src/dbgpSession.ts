@@ -662,7 +662,7 @@ export class Session extends EventEmitter {
   public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
   }
-  public async fetchAllVariableNames(): Promise<string[]> {
+  public async fetchAllPropertyNames(): Promise<string[]> {
     const { stackFrames } = await this.sendStackGetCommand();
     if (stackFrames.length === 0) {
       return [];
@@ -683,6 +683,25 @@ export class Session extends EventEmitter {
       return property;
     }
     return undefined;
+  }
+  public async fetchAllProperties(maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property[]> {
+    const { stackFrames } = await this.sendStackGetCommand();
+    if (stackFrames.length === 0) {
+      return [];
+    }
+    const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
+
+    const propertyMap = new CaseInsensitiveMap<string, Property>();
+    for await (const context of contexts) {
+      const { properties } = await this.sendContextGetCommand(context, maxDepth);
+      properties.forEach((property) => {
+        if (propertyMap.has(property.fullName)) {
+          return;
+        }
+        propertyMap.set(property.fullName, property);
+      });
+    }
+    return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
   }
   public async evaluate(name: string, stackFrame?: StackFrame): Promise<Property | undefined> {
     // #region util
@@ -805,25 +824,6 @@ export class Session extends EventEmitter {
     }
     return undefined;
   }
-  public async fetchAllVariables(maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property[]> {
-    const { stackFrames } = await this.sendStackGetCommand();
-    if (stackFrames.length === 0) {
-      return [];
-    }
-    const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
-
-    const propertyMap = new CaseInsensitiveMap<string, Property>();
-    for await (const context of contexts) {
-      const { properties } = await this.sendContextGetCommand(context, maxDepth);
-      properties.forEach((property) => {
-        if (propertyMap.has(property.fullName)) {
-          return;
-        }
-        propertyMap.set(property.fullName, property);
-      });
-    }
-    return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
-  }
   public async fetchSuggestList(variablePath: string): Promise<Property[]> {
     // #region util
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
@@ -861,12 +861,12 @@ export class Session extends EventEmitter {
     // #endregion util
 
     if ((/(\[|\])\s*$/u).test(variablePath)) {
-      return this.fetchAllVariables();
+      return this.fetchAllProperties();
     }
 
     const propertyPathArray = splitVariablePath(this.ahkVersion, variablePath);
     if (propertyPathArray.length === 0 || propertyPathArray.length === 1) {
-      return this.fetchAllVariables();
+      return this.fetchAllProperties();
     }
 
     // e.g. `object..field`
@@ -880,11 +880,11 @@ export class Session extends EventEmitter {
     if (isBracketNotation) {
       const openQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
       if (openQuoteRegExp.test(lastPath)) {
-        return this.fetchAllVariables();
+        return this.fetchAllProperties();
       }
       const closeQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
       if (closeQuoteRegExp.test(lastPath)) {
-        return this.fetchAllVariables();
+        return this.fetchAllProperties();
       }
 
       const fixedVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
