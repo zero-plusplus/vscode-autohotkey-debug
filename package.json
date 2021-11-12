@@ -380,6 +380,20 @@
                 },
                 "default": true
               },
+              "useAnnounce": {
+                "type": [
+                  "boolean",
+                  "string"
+                ],
+                "enum": [
+                  false,
+                  true,
+                  "error",
+                  "detail"
+                ],
+                "description": "Enables/disables announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "default": true
+              },
               "skipFunctions": {
                 "type": "array",
                 "items": {
@@ -513,10 +527,6 @@
                     }
                   }
                 }
-              },
-              "suppressAnnounce": {
-                "type": "boolean",
-                "description": "If true is specified, the debug adapter messages will not be displayed. However, error messages will not be suppressed."
               },
               "trace": {
                 "type": "boolean",
@@ -672,6 +682,20 @@
                 },
                 "default": true
               },
+              "useAnnounce": {
+                "type": [
+                  "boolean",
+                  "string"
+                ],
+                "enum": [
+                  false,
+                  true,
+                  "error",
+                  "detail"
+                ],
+                "description": "Enables/disables announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "default": true
+              },
               "skipFunctions": {
                 "type": "array",
                 "items": {
@@ -805,10 +829,6 @@
                     }
                   }
                 }
-              },
-              "suppressAnnounce": {
-                "type": "boolean",
-                "description": "If true is specified, the debug adapter messages will not be displayed. However, error messages will not be suppressed."
               },
               "trace": {
                 "type": "boolean",

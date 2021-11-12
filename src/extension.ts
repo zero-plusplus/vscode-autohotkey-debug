@@ -145,7 +145,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       useAutoJumpToError: false,
       useOutputDebug: true,
       useUIAVersion: false,
-      suppressAnnounce: false,
+      useAnnounce: true,
       trace: false,
       // The following is not a configuration, but is set to pass data to the debug adapter.
       cancelReason: undefined,
@@ -500,10 +500,10 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       config.skipFiles = await glob(skipFiles, { onlyFiles: true, unique: true });
     })();
 
-    // init suppressAnnounce
+    // init useAnnounce
     ((): void => {
-      if (!isBoolean(config.suppressAnnounce)) {
-        throw Error('`suppressAnnounce` must be a boolean.');
+      if (!(isBoolean(config.useAnnounce) || [ 'error', 'detail' ].includes(config.useAnnounce))) {
+        throw Error('`useAnnounce` must be a boolean, "error" or "detail".');
       }
     })();
 
