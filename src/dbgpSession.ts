@@ -705,32 +705,6 @@ export class Session extends EventEmitter {
   }
   public async evaluate(name: string, stackFrame?: StackFrame): Promise<Property | undefined> {
     // #region util
-    const resolveVariablePath = async(variablePath: string): Promise<string> => {
-      const resolvedVariablePathArray: string[] = [];
-      const splitedVariablePathList = splitVariablePath(this.ahkVersion, variablePath);
-      for await (const pathPart of splitedVariablePathList) {
-        let resolvedPathPart = pathPart;
-        const isBracketNotationWithVariable = (2 <= this.ahkVersion.mejor ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
-        if (isBracketNotationWithVariable) {
-          const _variablePath = pathPart.slice(1, -1);
-          if (isNumberLike(_variablePath)) {
-            resolvedVariablePathArray.push(pathPart);
-            continue;
-          }
-
-          const property = await this.evaluate(_variablePath);
-          if (property instanceof PrimitiveProperty) {
-            const escapedValue = property.value.replace(/"/gu, 2 <= this.ahkVersion.mejor ? '`"' : '""');
-            resolvedPathPart = isNumberLike(escapedValue) ? `[${escapedValue}]` : `["${escapedValue}"]`;
-          }
-          else if (property instanceof ObjectProperty) {
-            resolvedPathPart = `[Object(${property.address})]`;
-          }
-        }
-        resolvedVariablePathArray.push(resolvedPathPart);
-      }
-      return joinVariablePathArray(resolvedVariablePathArray);
-    };
     const safeFetchProperty = async(context: Context, name: string): Promise<Property | undefined> => {
       const variablePathArray = splitVariablePath(this.ahkVersion, name);
       if (variablePathArray.length < 2) {
@@ -797,7 +771,7 @@ export class Session extends EventEmitter {
       _stackFrame = stackFrames[0];
     }
 
-    const resolvedName = (await resolveVariablePath(name));
+    const resolvedName = (await this.resolveVariablePath(name));
     const { contexts } = await this.sendContextNamesCommand(_stackFrame);
     for await (const context of contexts) {
       const property = await safeFetchProperty(context, resolvedName);
@@ -823,6 +797,32 @@ export class Session extends EventEmitter {
       }
     }
     return undefined;
+  }
+  public async resolveVariablePath(variablePath: string): Promise<string> {
+    const resolvedVariablePathArray: string[] = [];
+    const splitedVariablePathList = splitVariablePath(this.ahkVersion, variablePath);
+    for await (const pathPart of splitedVariablePathList) {
+      let resolvedPathPart = pathPart;
+      const isBracketNotationWithVariable = (2 <= this.ahkVersion.mejor ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
+      if (isBracketNotationWithVariable) {
+        const _variablePath = pathPart.slice(1, -1);
+        if (isNumberLike(_variablePath)) {
+          resolvedVariablePathArray.push(pathPart);
+          continue;
+        }
+
+        const property = await this.evaluate(_variablePath);
+        if (property instanceof PrimitiveProperty) {
+          const escapedValue = property.value.replace(/"/gu, 2 <= this.ahkVersion.mejor ? '`"' : '""');
+          resolvedPathPart = isNumberLike(escapedValue) ? `[${escapedValue}]` : `["${escapedValue}"]`;
+        }
+        else if (property instanceof ObjectProperty) {
+          resolvedPathPart = `[Object(${property.address})]`;
+        }
+      }
+      resolvedVariablePathArray.push(resolvedPathPart);
+    }
+    return joinVariablePathArray(resolvedVariablePathArray);
   }
   public async fetchSuggestList(variablePath: string): Promise<Property[]> {
     // #region util
