@@ -572,7 +572,15 @@ export class Session extends EventEmitter {
     else {
       dbgpResponse = await this.sendCommand('property_get', commandParams);
     }
-    return new PropertyGetResponse(dbgpResponse, context);
+    const response = new PropertyGetResponse(dbgpResponse, context);
+
+    // Workaround the bug of not being able to get the base object correctly
+    const shouldAvoidBug = name.endsWith('<base>') && 0 < response.properties.length && response.properties[0].type === 'undefined'
+    && ((this.ahkVersion.mejor <= 1.1 && this.ahkVersion.lessThanEquals('1.1.33.10')) || (this.ahkVersion.mejor === 2.0 && this.ahkVersion.lessThanEquals('2.0-a103')));
+    if (shouldAvoidBug) {
+      return this.sendPropertyGetCommand(context, name.replace(/<base>$/u, 'base'), maxDepth);
+    }
+    return response;
   }
   public async sendContinuationCommand(commandName: ContinuationCommandName): Promise<ContinuationResponse> {
     const startTime = process.hrtime();
