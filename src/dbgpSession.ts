@@ -572,15 +572,7 @@ export class Session extends EventEmitter {
     else {
       dbgpResponse = await this.sendCommand('property_get', commandParams);
     }
-
-    const response = new PropertyGetResponse(dbgpResponse, context);
-    if (!(/\.base$/ui).test(name)) {
-      return response;
-    }
-    if (response.properties.length === 1 && response.properties[0].type === 'undefined') {
-      return this.sendPropertyGetCommand(context, name.replace(/\.base$/iu, '.<base>'));
-    }
-    return response;
+    return new PropertyGetResponse(dbgpResponse, context);
   }
   public async sendContinuationCommand(commandName: ContinuationCommandName): Promise<ContinuationResponse> {
     const startTime = process.hrtime();
@@ -810,6 +802,8 @@ export class Session extends EventEmitter {
     return joinVariablePathArray(resolvedVariablePathArray);
   }
   public async fetchSuggestList(variablePath: string): Promise<Property[]> {
+    const fixedVariablePath = variablePath.replace(/<|>/gu, '');
+
     // #region util
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
       const children = [ ...property.children ];
@@ -845,17 +839,17 @@ export class Session extends EventEmitter {
     };
     // #endregion util
 
-    if ((/(\[|\])\s*$/u).test(variablePath)) {
+    if ((/(\[|\])\s*$/u).test(fixedVariablePath)) {
       return this.fetchAllProperties();
     }
 
-    const propertyPathArray = splitVariablePath(this.ahkVersion, variablePath);
+    const propertyPathArray = splitVariablePath(this.ahkVersion, fixedVariablePath);
     if (propertyPathArray.length === 0 || propertyPathArray.length === 1) {
       return this.fetchAllProperties();
     }
 
     // e.g. `object..field`
-    const isMultipleDot = (/\.{2,}$/u).test(variablePath);
+    const isMultipleDot = (/\.{2,}$/u).test(fixedVariablePath);
     if (isMultipleDot) {
       return [];
     }
