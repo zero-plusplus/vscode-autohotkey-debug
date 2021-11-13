@@ -744,7 +744,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const property = await this.session!.evaluate(propertyName, stackFrame.dbgpStackFrame);
         if (!property) {
-          if (args.context === 'hover' && (await this.session!.fetchAllVariableNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
+          if (args.context === 'hover' && (await this.session!.fetchAllPropertyNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
             response.body = {
               result: 'Not initialized',
               type: 'undefined',
