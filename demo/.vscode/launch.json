@@ -20,6 +20,7 @@
             "useOutputDebug": {
                 "useTrailingLinebreak": true
             },
+            "useAnnounce": "detail",
             "variableCategories": "Recommend"
         },
         {
@@ -95,7 +96,8 @@
                     "label": "All",
                     "source": "*",
                 },
-            ]
+            ],
+            "useAnnounce": "detail",
         },
         {
             "name": "AutoHotkey Debug (UIA)",
@@ -112,7 +114,8 @@
             "internalConsoleOptions": "openOnSessionStart",
             "useAutoJumpToError": true,
             "useUIAVersion": true,
-            "trace": false
+            "useAnnounce": "detail",
+            "trace": false,
         },
         {
             "name": "AutoHotkey_H Debug",
@@ -123,7 +126,8 @@
             "program": "${file}",
             "args": [],
             "stopOnEntry": false,
-            "maxChildren": 10000
+            "maxChildren": 10000,
+            "useAnnounce": "detail",
         },
         {
             "name": "AutoHotkey Attach",
@@ -135,6 +139,7 @@
             "useDebugDirective": true,
             "openFileOnExit": "${file}",
             "useAutoJumpToError": true,
+            "useAnnounce": "detail",
             "trace": false,
         },
         {
@@ -146,6 +151,7 @@
             "useDebugDirective": true,
             "openFileOnExit": "${file}",
             "useAutoJumpToError": true,
+            "useAnnounce": "detail",
             "stopOnEntry": true,
             "trace": false,
         },
