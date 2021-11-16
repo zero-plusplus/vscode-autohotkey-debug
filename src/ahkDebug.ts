@@ -113,6 +113,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly loadedSources: string[] = [];
   private errorMessage = '';
   private exitCode?: number | undefined;
+  // The warning message is processed earlier than the server initialization, so it needs to be delayed.
+  private readonly delayedWarningMessages: string[] = [];
   constructor() {
     super('autohotkey-debug.txt');
 
@@ -206,7 +208,11 @@ export class AhkDebugSession extends LoggingDebugSession {
         })
         .on('stdout', (message: string) => {
           const fixedData = this.fixPathOfRuntimeError(message);
-          this.sendOutputEvent(fixedData, 'stdout');
+          if (!this.session) {
+            this.delayedWarningMessages.push(fixedData);
+            return;
+          }
+          this.sendOutputEvent(fixedData);
         })
         .on('stderr', (message: string) => {
           this.errorMessage = this.fixPathOfRuntimeError(message);
@@ -1560,6 +1566,11 @@ export class AhkDebugSession extends LoggingDebugSession {
                 }
                 this.sendAnnounce(`Debugger Adapter Version: ${String(debuggerAdapterVersion)}\n`, 'console', 'detail');
                 this.sendAnnounce(`AutoHotkey Version: ${this.session.ahkVersion.full}\n`, 'console', 'detail');
+                if (0 < this.delayedWarningMessages.length) {
+                  this.delayedWarningMessages.forEach((message) => {
+                    this.sendAnnounce(message, 'stdout');
+                  });
+                }
 
                 completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
                 completionItemProvider.session = this.session;
