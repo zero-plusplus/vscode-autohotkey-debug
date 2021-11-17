@@ -979,7 +979,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       await this.sendStoppedEvent('pause');
       return;
     }
-    this.currentMetaVariableMap = await this.createMetaVariables(response);
+    this.currentMetaVariableMap = this.createMetaVariables(response);
     const { source, line, name } = this.currentStackFrames[0];
 
     const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(source.path, line);
@@ -1272,9 +1272,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
   }
-  private async createMetaVariables(response: dbgp.ContinuationResponse): Promise<MetaVariableValueMap> {
+  private createMetaVariables(response: dbgp.ContinuationResponse): MetaVariableValueMap {
     const metaVariables = new MetaVariableValueMap();
-    metaVariables.set('now', String((await this.evaluateLog('{A_Year}-{A_Mon}-{A_MDay} {A_Hour}:{A_Min}:{A_Sec}.{A_MSec}'))[0]));
+    const now = new Date();
+    metaVariables.set('now', `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${String(now.getMilliseconds()).padStart(3, '0')}`);
     metaVariables.set('hitCount', -1);
 
     if (this.currentMetaVariableMap) {
