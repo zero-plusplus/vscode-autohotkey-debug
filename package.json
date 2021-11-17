@@ -841,7 +841,7 @@
         "configurationSnippets": [
           {
             "label": "AutoHotkey Debug",
-            "description": "A new configuration for 'debugging' a user selected (ahk | ahk2 | ah2) file.",
+            "description": "A new configuration for debugging the current open file (ahk or ahk2, ah2).",
             "body": {
               "name": "AutoHotkey Debug",
               "type": "autohotkey",
@@ -851,12 +851,40 @@
             }
           },
           {
+            "label": "AutoHotkey Debug (Advanced Configuration)",
+            "description": "A new advanced configuration for debugging the current open file (ahk or ahk2, ah2).",
+            "body": {
+              "name": "AutoHotkey Debug (Advanced Configuration)",
+              "type": "autohotkey",
+              "request": "launch",
+              "program": "^\"\\${file}\"",
+              "args": [],
+              "port": "9002-9010",
+              "variableCategories": "Recommend",
+              "useDebugDirective": true,
+              "useAutoJumpToError": true
+            }
+          },
+          {
             "label": "AutoHotkey Attach",
-            "description": "A new configuration for 'attach' a user selected script.",
+            "description": "A new configuration for debugging by attach a user selected script.",
             "body": {
               "name": "AutoHotkey Attach",
               "type": "autohotkey",
               "request": "attach"
+            }
+          },
+          {
+            "label": "AutoHotkey Attach (Advanced Configuration)",
+            "description": "A new advanced configuration for debugging by attach a user selected script.",
+            "body": {
+              "name": "AutoHotkey Attach (Advanced Configuration)",
+              "type": "autohotkey",
+              "request": "attach",
+              "port": "9002-9010",
+              "variableCategories": "Recommend",
+              "useDebugDirective": true,
+              "useAutoJumpToError": true
             }
           }
         ]
