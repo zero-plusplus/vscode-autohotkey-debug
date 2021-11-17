@@ -291,16 +291,26 @@ export class Variable implements DebugProtocol.Variable {
   public readonly hasChildren: boolean;
   public readonly isLoadedChildren: boolean;
   public readonly session: dbgp.Session;
-  public readonly property: dbgp.Property;
   public readonly name: string;
   public readonly value: string;
   public readonly variablesReference: number;
   public readonly __vscodeVariableMenuContext: 'string' | 'number' | 'object';
-  public indexedVariables?: number;
-  public namedVariables?: number;
   public readonly type?: string;
+  public get indexedVariables(): number | undefined {
+    if (this.property instanceof dbgp.ObjectProperty && this.property.isArray && 100 < this.property.maxIndex!) {
+      return this.property.maxIndex;
+    }
+    return undefined;
+  }
+  public get namedVariables(): number | undefined {
+    return this.property instanceof dbgp.ObjectProperty ? 1 : undefined;
+  }
   public get isArray(): boolean {
     return this.property instanceof dbgp.ObjectProperty ? this.property.isArray : false;
+  }
+  public _property: dbgp.Property;
+  public get property(): dbgp.Property {
+    return this._property;
   }
   public get context(): dbgp.Context {
     return this.property.context;
@@ -322,7 +332,7 @@ export class Variable implements DebugProtocol.Variable {
     this.isLoadedChildren = property instanceof dbgp.ObjectProperty && 0 < property.children.length;
 
     this.session = session;
-    this.property = property;
+    this._property = property;
     this.name = property.name;
     this.value = formatProperty(property, this.session.ahkVersion);
     this.variablesReference = this.hasChildren ? handles.create(this) : 0;
@@ -333,11 +343,12 @@ export class Variable implements DebugProtocol.Variable {
     else {
       this.__vscodeVariableMenuContext = 'object';
     }
-
-    if (property instanceof dbgp.ObjectProperty) {
-      if (property.isArray && 100 < property.maxIndex!) {
-        this.indexedVariables = property.maxIndex;
-        this.namedVariables = 1;
+  }
+  public async loadChildren(): Promise<void> {
+    if (!this.isLoadedChildren) {
+      const reloadedProperty = await this.session.fetchProperty(this.context, this.fullName, 1);
+      if (reloadedProperty) {
+        this._property = reloadedProperty;
       }
     }
   }
@@ -346,19 +357,13 @@ export class Variable implements DebugProtocol.Variable {
       return undefined;
     }
 
-    let children = this.children;
-    if (!this.isLoadedChildren) {
-      const reloadedProperty = await this.session.fetchProperty(this.context, this.fullName, 1);
-      if (reloadedProperty instanceof dbgp.ObjectProperty) {
-        children = reloadedProperty.children;
-      }
-    }
-    if (!children) {
+    await this.loadChildren();
+    if (!this.children) {
       return undefined;
     }
 
     const variables: Variable[] = [];
-    for await (const property of children) {
+    for await (const property of this.children) {
       // Fix: [#133](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/133)
       if (property.fullName.includes('<enum>')) {
         continue;
@@ -383,6 +388,7 @@ export class Variable implements DebugProtocol.Variable {
       }
 
       const variable = new Variable(this.session, property);
+      await variable.loadChildren();
       variables.push(variable);
     }
     return variables;
