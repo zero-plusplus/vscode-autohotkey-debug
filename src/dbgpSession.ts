@@ -9,6 +9,7 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
+import { TraceLogger } from './util/TraceLogger';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -716,29 +717,40 @@ export class Session extends EventEmitter {
   }
   public async evaluate(name: string, stackFrame?: StackFrame): Promise<Property | undefined> {
     // #region util
+    // workaround the issue of getting dynamic properties directly, which causes errors, get the parent element and return its child elements
     const safeFetchProperty = async(context: Context, name: string): Promise<Property | undefined> => {
-      const variablePathArray = splitVariablePath(this.ahkVersion, name);
-      if (variablePathArray.length < 2) {
+      // Under 1.1, the dynamic property issue does not occur
+      if (this.ahkVersion.mejor <= 1.1) {
         return this.fetchProperty(context, name);
       }
+      const variablePathArray = splitVariablePath(this.ahkVersion, name);
+      if (variablePathArray.length === 1) {
+        return this.fetchProperty(context, name);
+      }
+
       const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
       const propertyName = variablePathArray[variablePathArray.length - 1];
-      const property = await this.fetchProperty(context, parentVariablePath, 2);
+      const property = await this.fetchProperty(context, parentVariablePath);
       if (property instanceof ObjectProperty) {
         const child = property.children.find((child) => equalsIgnoreCase(child.name, propertyName));
         if (child) {
+          // If the dynamic property is tried to be retrieved with `base` instead of `<base>`, an error will occur, so this can be avoided by converting it to `<base>`
+          const shouldFixBug = (/(?<!<)base(?!>)/u).test(child.fullName) && child instanceof PrimitiveProperty && child.value === '<error>';
+          if (shouldFixBug) {
+            return this.fetchProperty(context, child.fullName.replace(/(?<!<)base(?!>)/gu, '<base>'));
+          }
           return child;
         }
         return property.children.find((child) => child.name === '<base>' && equalsIgnoreCase(child.name, `<${propertyName}>`));
       }
       return undefined;
     };
-    const findInheritedProperty = async(context: Context, parentName: string, key: string): Promise<Property | null> => {
-      const baseProperty = await this.fetchProperty(context, `${parentName}.base`);
+    const findInheritedProperty = async(context: Context, parentName: string, key: string): Promise<Property | undefined> => {
+      const baseProperty = await this.fetchProperty(context, `${parentName}.<base>`);
       if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
-        return null;
+        return undefined;
       }
-      const property = await this.evaluate(`${baseProperty.fullName}.${key}`);
+      const property = await safeFetchProperty(context, `${baseProperty.fullName}.${key}`);
       if (property) {
         return property;
       }
@@ -771,13 +783,13 @@ export class Session extends EventEmitter {
         continue;
       }
       const shortName = variablePathArray.pop()!;
-      const parentName = joinVariablePathArray(variablePathArray);
 
       // Common to v1 and v2, do not search for inherited properties when using bracket notation
       if (shortName.startsWith('[')) {
         continue;
       }
 
+      const parentName = joinVariablePathArray(variablePathArray);
       const inheritedProperty = await findInheritedProperty(context, parentName, shortName);
       if (inheritedProperty) {
         return inheritedProperty;
