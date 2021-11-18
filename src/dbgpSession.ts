@@ -476,6 +476,7 @@ export class Session extends EventEmitter {
     return this._ahkVersion;
   }
   private readonly socket: Socket;
+  private readonly logger?: TraceLogger;
   private readonly pendingCommands = new Map<number, Command>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
@@ -485,9 +486,10 @@ export class Session extends EventEmitter {
   public get socketClosed(): boolean {
     return !this.socket.writable;
   }
-  constructor(socket: Socket) {
+  constructor(socket: Socket, logger?: TraceLogger) {
     super();
 
+    this.logger = logger;
     this.socket = socket
       .on('data', (packet: Buffer): void => {
         this.handlePacket(packet);
@@ -906,6 +908,8 @@ export class Session extends EventEmitter {
     return this.transactionCounter;
   }
   private async write(command: string): Promise<void> {
+    this.logger?.log(`<command>${command}`);
+
     return new Promise<void>((resolve, reject) => {
       if (!this.socket.writable) {
         reject(new Error('Socket not writable.'));

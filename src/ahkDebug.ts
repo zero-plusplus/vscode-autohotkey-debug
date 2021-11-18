@@ -1560,7 +1560,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         .listen(args.port, args.hostname)
         .on('connection', (socket) => {
           try {
-            this.session = new dbgp.Session(socket)
+            this.session = new dbgp.Session(socket, this.traceLogger)
               .on('init', (initPacket: dbgp.InitPacket) => {
                 if (typeof this.session === 'undefined') {
                   return;
