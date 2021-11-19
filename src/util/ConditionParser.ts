@@ -168,10 +168,14 @@ export const createParser = function(version: AhkVersion): P.Language {
         P.alt(rules.Primitive, rules.PropertyName),
         P.string(']'),
       ).map((result) => {
-        if ('type' in result[1] && result[1].type === 'PropertyName') {
-          return `${result[0]}${result[1].value as string}${result[2]}`;
+        if ('type' in result[1] && result[1].type === 'Primitive') {
+          const primitive = result[1].value;
+          if (primitive.type === 'String') {
+            return `["${String(result[1].value.value)}"]`;
+          }
+          return `[${String(result[1].value.value)}]`;
         }
-        return `${result[0]}${result[1].value.value.value as string}${result[2]}`;
+        return `[${String(result[1].value)}]`;
       });
     },
     BaseAccesor(rules) {

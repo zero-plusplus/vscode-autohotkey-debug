@@ -31,6 +31,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Fixed: [#149](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/149) Watch expression will only show the contents of the latest call stack
     * Fixed: [#164](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/164) Remove unnecessary debugger commands
     * Fixed: [#167](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/167) `0x0` is not treated as falsy in conditional breakpoint
+    * Fixed: [#168](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/168) When a string is specified as bracket notation in a conditional breakpoint, it is not evaluated correctly
     * Fixed: In launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense in attach mode
     * Fixed: In launch.json, snippets in attach mode is not displayed
     * Fixed: The breakpoint operation may fail
