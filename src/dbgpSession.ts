@@ -715,7 +715,7 @@ export class Session extends EventEmitter {
     }
     return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
   }
-  public async evaluate(name: string, stackFrame?: StackFrame): Promise<Property | undefined> {
+  public async evaluate(name: string, stackFrame?: StackFrame, maxDepth = 1): Promise<Property | undefined> {
     // #region util
     // workaround the issue of getting dynamic properties directly, which causes errors, get the parent element and return its child elements
     const safeFetchProperty = async(context: Context, name: string): Promise<Property | undefined> => {
@@ -730,7 +730,7 @@ export class Session extends EventEmitter {
 
       const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
       const propertyName = variablePathArray[variablePathArray.length - 1];
-      const property = await this.fetchProperty(context, parentVariablePath);
+      const property = await this.fetchProperty(context, parentVariablePath, maxDepth);
       if (property instanceof ObjectProperty) {
         const child = property.children.find((child) => equalsIgnoreCase(child.name, propertyName));
         if (child) {
@@ -829,35 +829,20 @@ export class Session extends EventEmitter {
     // #region util
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
       const children = [ ...property.children ];
-      const base = await this.evaluate(`${property.fullName}.<base>`);
+      const base = await this.evaluate(`${property.fullName}.<base>`, undefined, 2);
       if (base instanceof ObjectProperty) {
-        children.push(...await getInheritedChildren(base));
+        const nestedChildren = (await getInheritedChildren(base)).filter((property) => property.name !== '<base>');
+        children.push(...nestedChildren);
       }
-      return children;
+      // return children;
+      return uniqBy(children, (property) => property.name.replace(/^<|>$/gu, '').toLocaleLowerCase());
     };
-    const getChildren = async(variablePathOrProperty: string | Property): Promise<Property[] | null> => {
-      const property = typeof variablePathOrProperty === 'string' ? await this.evaluate(variablePathOrProperty) : variablePathOrProperty;
+    const getChildren = async(variablePath: string): Promise<Property[] | undefined> => {
+      const property = await this.evaluate(variablePath, undefined, 2);
       if (property instanceof ObjectProperty) {
-        const children = (await getInheritedChildren(property));
-        const hasNotPrototypeBaseProperty = children.some((property) => {
-          if (property instanceof ObjectProperty) {
-            if (property.name === 'Base' && property.className === 'Prototype') {
-              return false;
-            }
-          }
-          return equalsIgnoreCase(property.name, 'base');
-        });
-
-        const filteredChildren = children.filter((property) => !(hasNotPrototypeBaseProperty && property.name === '<base>'));
-        return uniqBy(filteredChildren, (property) => {
-          const lowerCased = property.name.toLowerCase();
-          if (lowerCased === '<base>') {
-            return 'base';
-          }
-          return lowerCased;
-        });
+        return getInheritedChildren(property);
       }
-      return null;
+      return undefined;
     };
     // #endregion util
 
@@ -876,15 +861,15 @@ export class Session extends EventEmitter {
       return [];
     }
 
-    const lastPath = propertyPathArray[propertyPathArray.length - 1];
-    const isBracketNotation = lastPath.startsWith('[');
+    const propertyName = propertyPathArray[propertyPathArray.length - 1];
+    const isBracketNotation = propertyName.startsWith('[');
     if (isBracketNotation) {
       const openQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
-      if (openQuoteRegExp.test(lastPath)) {
+      if (openQuoteRegExp.test(propertyName)) {
         return this.fetchAllProperties();
       }
       const closeQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
-      if (closeQuoteRegExp.test(lastPath)) {
+      if (closeQuoteRegExp.test(propertyName)) {
         return this.fetchAllProperties();
       }
 
@@ -897,11 +882,7 @@ export class Session extends EventEmitter {
     }
 
     const parentVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
-    const parentProperty = await this.evaluate(parentVariablePath);
-    if (!parentProperty) {
-      return [];
-    }
-    return await getChildren(parentProperty) ?? [];
+    return await getChildren(parentVariablePath) ?? [];
   }
   public async close(): Promise<void> {
     this.removeAllListeners();
