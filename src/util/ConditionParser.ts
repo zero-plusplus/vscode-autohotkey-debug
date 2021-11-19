@@ -129,7 +129,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       return P.regex(/true|false/ui).map((result) => {
         return {
           type: 'Boolean',
-          value: result === 'true' ? '1' : '0',
+          value: (/^true$/ui).test(result) ? '1' : '0',
         };
       });
     },
