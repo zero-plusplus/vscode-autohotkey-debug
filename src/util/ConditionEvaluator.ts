@@ -310,7 +310,7 @@ export class ConditionalEvaluator {
     }
 
     if (typeof primitiveValue === 'string') {
-      if (primitiveValue === '0') {
+      if (primitiveValue === '0' || primitiveValue === '0x0') {
         return false;
       }
       return primitiveValue !== '';
