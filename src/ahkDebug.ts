@@ -936,7 +936,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (breakpoint.kind === 'breakpoint') {
         return breakpoint;
       }
-      if (breakpoint.kind === 'conditional breakpoint' && await this.evalCondition(breakpoint)) {
+      if (breakpoint.kind === 'conditional breakpoint' && await this.evaluateCondition(breakpoint)) {
         return breakpoint;
       }
     }
@@ -1189,7 +1189,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     for await (const breakpoint of lineBreakpoints) {
-      if (breakpoint.kind.includes('conditional') && !await this.evalCondition(breakpoint)) {
+      if (breakpoint.kind.includes('conditional') && !await this.evaluateCondition(breakpoint)) {
         continue;
       }
 
@@ -1312,7 +1312,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     });
     return metaVariables;
   }
-  private async evalCondition(breakpoint: Breakpoint): Promise<boolean> {
+  private async evaluateCondition(breakpoint: Breakpoint): Promise<boolean> {
     if (!this.currentMetaVariableMap) {
       throw Error(`This message shouldn't appear.`);
     }
