@@ -4,7 +4,7 @@ import regexParser = require('regex-parser');
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
 import { MetaVariableValueMap } from './VariableManager';
-import { isPrimitive } from './util';
+import { isNumberLike, isPrimitive } from './util';
 
 type Operator = (a, b) => boolean;
 const not = (predicate): Operator => (a, b): boolean => !predicate(a, b);
@@ -310,8 +310,9 @@ export class ConditionalEvaluator {
     }
 
     if (typeof primitiveValue === 'string') {
-      if (primitiveValue === '0' || primitiveValue === '0x0') {
-        return false;
+      if (isNumberLike(primitiveValue)) {
+        const number = Number(primitiveValue);
+        return Boolean(number);
       }
       return primitiveValue !== '';
     }
