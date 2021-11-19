@@ -96,6 +96,9 @@ export class AhkDebugSession extends LoggingDebugSession {
   private pauseRequested = false;
   private isPaused = false;
   private isTerminateRequested = false;
+  private get isClosedSession(): boolean {
+    return this.session!.socketClosed || this.isTerminateRequested;
+  }
   private server?: net.Server;
   private ahkProcess?: AutoHotkeyProcess;
   private ahkParser!: Parser;
@@ -282,7 +285,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
     return asyncLock.acquire('setBreakPointsRequest', async() => {
       this.traceLogger.log('setBreakPointsRequest');
-      if (this.session!.socketClosed || this.isTerminateRequested) {
+      if (this.isClosedSession) {
         this.sendResponse(response);
         return;
       }
@@ -334,7 +337,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('configurationDoneRequest');
     this.sendResponse(response);
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       return;
     }
 
@@ -349,7 +352,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('continueRequest');
     this.sendResponse(response);
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       return;
     }
 
@@ -364,7 +367,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('nextRequest');
     this.sendResponse(response);
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       return;
     }
 
@@ -379,7 +382,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('stepInRequest');
     this.sendResponse(response);
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       return;
     }
 
@@ -394,7 +397,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('stepOutRequest');
     this.sendResponse(response);
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       return;
     }
 
@@ -409,7 +412,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('pauseRequest');
     this.sendResponse(response);
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       return;
     }
 
@@ -422,7 +425,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       // Force pause
       setTimeout(() => {
         if (!this.isPaused) {
-          if (this.session!.socketClosed || this.isTerminateRequested) {
+          if (this.isClosedSession) {
             return;
           }
 
@@ -441,7 +444,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     this.traceLogger.log('threadsRequest');
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       this.sendResponse(response);
       return;
     }
@@ -451,7 +454,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('stackTraceRequest');
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       this.sendResponse(response);
       return;
     }
@@ -473,7 +476,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('scopesRequest');
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       this.sendResponse(response);
       return;
     }
@@ -493,7 +496,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('variablesRequest');
 
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       this.sendResponse(response);
       return;
     }
@@ -684,7 +687,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
 
-      if (this.session!.socketClosed || this.isTerminateRequested) {
+      if (this.isClosedSession) {
         this.sendResponse(response);
         return;
       }
@@ -944,7 +947,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
     this.traceLogger.log('checkContinuationStatus');
-    if (this.session!.socketClosed || this.isTerminateRequested) {
+    if (this.isClosedSession) {
       return;
     }
     if (response.status !== 'break') {
