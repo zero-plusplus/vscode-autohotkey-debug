@@ -9,6 +9,7 @@ import { isNumberLike, isPrimitive } from './util';
 import { equalsIgnoreCase } from './stringUtils';
 import { CategoryData } from '../extension';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
+import { AhkDebugSession } from '../ahkDebug';
 
 export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
   return str
@@ -93,7 +94,7 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
 
 const handles = new DebugAdapter.Handles();
 
-export type StackFrames = StackFrame[] & { isIdle?: boolean };
+export type StackFrames = StackFrame[] & { isIdleMode?: boolean };
 export class StackFrame implements DebugProtocol.StackFrame {
   public readonly dbgpStackFrame: dbgp.StackFrame;
   public readonly id: number;
@@ -469,16 +470,18 @@ export class MetaVariableValueMap extends CaseInsensitiveMap<string, MetaVariabl
 }
 
 export class VariableManager {
+  public readonly debugAdapter: AhkDebugSession;
   public readonly session: dbgp.Session;
   public readonly categories?: CategoryData[];
   // private readonly scopeByVariablesReference = new Map<number, Scope>();
   // private readonly objectByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   // private readonly stackFramesByFrameId = new Map<number, dbgp.StackFrame>();
-  constructor(session: dbgp.Session, categories?: CategoryData[]) {
-    this.session = session;
+  constructor(debugAdapter: AhkDebugSession, categories?: CategoryData[]) {
+    this.debugAdapter = debugAdapter;
+    this.session = debugAdapter.session!;
     this.categories = categories;
   }
-  public createVariableReference(value: any): number {
+  public createVariableReference(value?: any): number {
     return handles.create(value);
   }
   public async createCategories(frameId: number): Promise<Categories> {
@@ -532,9 +535,24 @@ export class VariableManager {
   public async createStackFrames(): Promise<StackFrames> {
     const { stackFrames: dbgpStackFrames } = await this.session.sendStackGetCommand();
 
-    return dbgpStackFrames.map((dbgpStackFrame) => {
+    const stackFrames: StackFrames = dbgpStackFrames.map((dbgpStackFrame) => {
       return new StackFrame(this.session, dbgpStackFrame);
     });
+    stackFrames.isIdleMode = false;
+    if (dbgpStackFrames.length === 0) {
+      stackFrames.isIdleMode = true;
+      stackFrames.push(new StackFrame(
+        this.session,
+        {
+          name: 'Idling (Click me if you want to see the variables)',
+          fileUri: URI.file(this.debugAdapter.config.program).path,
+          level: 0,
+          line: 0,
+          type: 'file',
+        },
+      ));
+    }
+    return stackFrames;
   }
   public getStackFrame(frameId: number): StackFrame | undefined {
     const stackFrame = handles.get(frameId);

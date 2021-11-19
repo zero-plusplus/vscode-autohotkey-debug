@@ -89,16 +89,16 @@ export const serializePromise = async(promises: Array<Promise<void>>): Promise<v
 
 const asyncLock = new AsyncLock();
 export class AhkDebugSession extends LoggingDebugSession {
+  public session?: dbgp.Session;
+  public config!: LaunchRequestArguments;
   private readonly traceLogger: TraceLogger;
   private autoExecuting = false;
   private pauseRequested = false;
   private isPaused = false;
   private isTerminateRequested = false;
   private server?: net.Server;
-  private session?: dbgp.Session;
   private ahkProcess?: AutoHotkeyProcess;
   private ahkParser!: Parser;
-  private config!: LaunchRequestArguments;
   private readonly metaVaribalesByFrameId = new Map<number, MetaVariableValueMap>();
   private variableManager?: VariableManager;
   private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | MetaVariable | undefined)>();
@@ -465,26 +465,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     const allStackFrames = this.currentStackFrames;
     const stackFrames = allStackFrames.slice(startFrame, endFrame);
-    if (0 < stackFrames.length) {
-      response.body = {
-        totalFrames: allStackFrames.length,
-        stackFrames,
-      };
-    }
-    else {
-      response.body = {
-        totalFrames: 1,
-        stackFrames: [
-          {
-            id: -1,
-            column: -1,
-            line: -1,
-            name: 'Idling (Click me if you want to see the variables)',
-          },
-        ],
-      };
-    }
-
+    response.body = {
+      totalFrames: allStackFrames.length,
+      stackFrames,
+    };
     this.sendResponse(response);
   }
   protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request): Promise<void> {
@@ -974,7 +958,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     // Prepare
     this.prevStackFrames = this.currentStackFrames;
     this.currentStackFrames = await this.variableManager!.createStackFrames();
-    if (this.currentStackFrames.isIdle) {
+    if (this.currentStackFrames.isIdleMode) {
       this.currentStackFrames = undefined;
       await this.sendStoppedEvent('pause');
       return;
@@ -1057,7 +1041,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.checkContinuationStatus(result);
   }
   private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints: LineBreakpoints | null): Promise<void> {
-    if (!this.currentMetaVariableMap || this.currentStackFrames?.isIdle) {
+    if (!this.currentMetaVariableMap || this.currentStackFrames?.isIdleMode) {
       throw Error(`This message shouldn't appear.`);
     }
 
@@ -1605,7 +1589,7 @@ export class AhkDebugSession extends LoggingDebugSession {
               });
 
             this.breakpointManager = new BreakpointManager(this.session);
-            this.variableManager = new VariableManager(this.session, this.config.variableCategories);
+            this.variableManager = new VariableManager(this, this.config.variableCategories);
             this.sendEvent(new ThreadEvent('Session started.', this.session.id));
             resolve();
           }
