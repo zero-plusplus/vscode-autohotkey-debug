@@ -401,8 +401,18 @@ export class MetaVariable implements DebugProtocol.Variable {
   public readonly name: string;
   public readonly type = 'metavariable';
   public readonly variablesReference: number;
-  public readonly indexedVariables?: number;
-  public readonly namedVariables?: number;
+  public get indexedVariables(): number | undefined {
+    if (this.rawValue instanceof Variable) {
+      return this.rawValue.indexedVariables;
+    }
+    return undefined;
+  }
+  public get namedVariables(): number | undefined {
+    if (this.rawValue instanceof Variable) {
+      return this.rawValue.namedVariables;
+    }
+    return undefined;
+  }
   public rawValue: MetaVariableValue | LazyMetaVariableValue;
   public loadedPromiseValue?: MetaVariableValue;
   public children?: Array<Variable | MetaVariable | DebugProtocol.Variable>;

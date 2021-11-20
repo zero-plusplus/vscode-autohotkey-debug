@@ -539,6 +539,8 @@ export class AhkDebugSession extends LoggingDebugSession {
               name: metaVarible.name,
               value: metaVarible.name,
               variablesReference: metaVarible.variablesReference,
+              indexedVariables: metaVarible.indexedVariables,
+              namedVariables: metaVarible.namedVariables,
             },
           ],
         };
@@ -567,6 +569,8 @@ export class AhkDebugSession extends LoggingDebugSession {
           name: child.name,
           variablesReference: child.variablesReference,
           value: child.value,
+          indexedVariables: child.indexedVariables,
+          namedVariables: child.namedVariables,
         })),
       };
       this.sendResponse(response);
