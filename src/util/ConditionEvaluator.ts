@@ -3,7 +3,7 @@ import * as createPcre from 'pcre-to-regexp';
 import regexParser = require('regex-parser');
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
-import { MetaVariableValueMap } from './VariableManager';
+import { LazyMetaVariableValue, MetaVariableValue, MetaVariableValueMap } from './VariableManager';
 import { isFloatLike, isIntegerLike, isNumberLike, isPrimitive } from './util';
 
 type Operator = (a, b) => boolean;
@@ -244,33 +244,33 @@ export class ConditionalEvaluator {
             }
           }
         }
-        else if (operatorType.type === 'HasOperator' && valueA instanceof dbgp.ObjectProperty) {
-          if (valueB instanceof dbgp.Property || isPrimitive(valueB)) {
-            if (valueB instanceof dbgp.ObjectProperty) {
-              result = valueA.children.some((child) => {
-                const match = child.name.match(/^\[Object\((?<address>\d+)\)\]$/u);
-                return match?.groups?.address === String(valueB.address);
-              });
-            }
-            else {
-              const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
-              const isRegExp = String(searchValue).startsWith('/');
-              result = valueA.children.some((child) => {
-                if (child.name === '<enum>') {
-                  return false;
-                }
-                const fixedName = child.name.replace(/^\["|^<|"\]$|>$/gu, '');
-                return isRegExp ? regexCompare(fixedName, searchValue) : equals(fixedName, searchValue);
-              });
-            }
+        else if (operatorType.type === 'HasOperator' && (valueA instanceof dbgp.ObjectProperty || valueA instanceof Object)) {
+          const keys = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => child.name) : Object.keys(valueA);
+          if (valueB instanceof dbgp.ObjectProperty) {
+            result = keys.some((key) => {
+              const match = key.match(/^\[Object\((?<address>\d+)\)\]$/u);
+              return match?.groups?.address === String(valueB.address);
+            });
+          }
+          else {
+            const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
+            const isRegExp = String(searchValue).startsWith('/');
+            result = keys.some((key) => {
+              if (key === '<enum>') {
+                return false;
+              }
+              const fixedName = key.replace(/^\["|^<|"\]$|>$/gu, '');
+              return isRegExp ? regexCompare(fixedName, searchValue) : equals(fixedName, searchValue);
+            });
           }
         }
-        else if (operatorType.type === 'ContainsOperator' && valueA instanceof dbgp.ObjectProperty) {
+        else if (operatorType.type === 'ContainsOperator') {
+          const children = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => (child instanceof dbgp.PrimitiveProperty ? { type: 'primitive', value: child.value } : { type: 'object', value: (child as dbgp.ObjectProperty).address })) : Object.entries(valueA ?? {}).map(([ key, value ]) => (isPrimitive(value) ? { type: 'primitive', value } : { type: 'object' }));
           if (valueB instanceof dbgp.Property || isPrimitive(valueB)) {
             if (valueB instanceof dbgp.ObjectProperty) {
-              result = valueA.children.some((child) => {
-                if (child instanceof dbgp.ObjectProperty) {
-                  return child.address === valueB.address;
+              result = children.some((child) => {
+                if (child.type === 'object') {
+                  return child.value === valueB.address;
                 }
                 return false;
               });
@@ -278,14 +278,11 @@ export class ConditionalEvaluator {
             else {
               const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
               const isRegExp = String(searchValue).startsWith('/');
-              result = valueA.children.some((child) => {
-                if (child instanceof dbgp.PrimitiveProperty) {
-                  return isRegExp ? regexCompare(child.value, searchValue) : equals(child.value, searchValue);
+              result = children.some((child) => {
+                if (child.type === 'object') {
+                  return false;
                 }
-                if (child instanceof dbgp.ObjectProperty) {
-                  child.address;
-                }
-                return false;
+                return isRegExp ? regexCompare(child.value, searchValue) : equals(child.value, searchValue);
               });
             }
           }
@@ -362,17 +359,14 @@ export class ConditionalEvaluator {
     }
     return this.session.evaluate(propertyName);
   }
-  private async evalValue(parsed, metaVariableMap: MetaVariableValueMap): Promise<string | number | dbgp.Property | undefined> {
+  private async evalValue(parsed, metaVariableMap: MetaVariableValueMap): Promise<string | number | dbgp.Property | MetaVariableValue | LazyMetaVariableValue | undefined> {
     if (!('type' in parsed || 'value' in parsed)) {
       return undefined;
     }
 
     if (parsed.type === 'MetaVariable') {
       const metaVariable = metaVariableMap.get(parsed.value.value);
-      if (isPrimitive(metaVariable)) {
-        return metaVariable;
-      }
-      return undefined;
+      return metaVariable;
     }
     else if (parsed.type === 'PropertyName') {
       return this.evalProperty(parsed);

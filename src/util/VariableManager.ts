@@ -405,7 +405,7 @@ export class MetaVariable implements DebugProtocol.Variable {
   public readonly namedVariables?: number;
   public rawValue: MetaVariableValue | LazyMetaVariableValue;
   public loadedPromiseValue?: MetaVariableValue;
-  private children?: Array<Variable | MetaVariable | DebugProtocol.Variable>;
+  public children?: Array<Variable | MetaVariable | DebugProtocol.Variable>;
   public get value(): string {
     const value = this.loadedPromiseValue ?? this.rawValue;
     if (isPrimitive(value)) {
