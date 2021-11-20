@@ -157,7 +157,7 @@ export class ConditionalEvaluator {
         let result = false;
         if (operatorType.type === 'IsOperator') {
           if (valueA instanceof dbgp.ObjectProperty && valueB instanceof dbgp.ObjectProperty) {
-            let baseName = `${valueA.fullName}.base`;
+            let baseName = `${valueA.fullName}.<base>`;
             let baseClassNameProperty = await this.session.evaluate(`${baseName}.__class`);
             while (baseClassNameProperty) {
               // eslint-disable-next-line no-await-in-loop
@@ -169,7 +169,7 @@ export class ConditionalEvaluator {
                 }
               }
 
-              baseName += '.base';
+              baseName += '.<base>';
             }
           }
           else if (valueA instanceof dbgp.Property && (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string')) {
