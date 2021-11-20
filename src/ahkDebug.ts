@@ -933,7 +933,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     for await (const breakpoint of lineBreakpoints) {
-      if (breakpoint.action) {
+      if (breakpoint.action || breakpoint.logMessage) {
         continue;
       }
       if (breakpoint.kind === 'breakpoint') {
@@ -1192,14 +1192,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     for await (const breakpoint of lineBreakpoints) {
-      if (breakpoint.kind.includes('conditional') && !await this.evaluateCondition(breakpoint)) {
-        continue;
-      }
-
-      if (breakpoint.action) {
+      if (breakpoint.action && await this.evaluateCondition(breakpoint)) {
         await breakpoint.action();
       }
-      if (breakpoint.logMessage) {
+      if (breakpoint.logMessage && await this.evaluateCondition(breakpoint)) {
         await this.printLogMessage(breakpoint, 'stdout');
       }
     }
