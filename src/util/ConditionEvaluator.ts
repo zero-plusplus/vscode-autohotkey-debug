@@ -4,7 +4,7 @@ import regexParser = require('regex-parser');
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
 import { MetaVariableValueMap } from './VariableManager';
-import { isNumberLike, isPrimitive } from './util';
+import { isFloatLike, isIntegerLike, isNumberLike, isPrimitive } from './util';
 
 type Operator = (a, b) => boolean;
 const not = (predicate): Operator => (a, b): boolean => !predicate(a, b);
@@ -172,62 +172,61 @@ export class ConditionalEvaluator {
               baseName += '.<base>';
             }
           }
-          else if (valueA instanceof dbgp.Property && (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string')) {
-            const typeName = String(valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB)
+          else if ((valueA instanceof dbgp.Property || isPrimitive(valueA)) && (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string')) {
+            const valueAType = valueA instanceof dbgp.Property ? valueA.type : String(a.value?.value?.type ?? a.value.type).toLowerCase();
+            const valueBType = String(valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB)
               .toLowerCase()
               .replace(/(?<=\b)int(?=\b)/ui, 'integer');
 
-            if (valueA.type === typeName) {
+            if (valueAType === valueBType) {
               result = true;
             }
-            else if (typeName === 'primitive') {
-              if ([ 'string', 'integer', 'float' ].includes(valueA.type)) {
+            else if (valueBType === 'primitive') {
+              if ([ 'string', 'integer', 'float' ].includes(valueAType)) {
                 result = true;
               }
             }
-            else if (typeName === 'number') {
-              if ([ 'integer', 'float' ].includes(valueA.type)) {
+            else if (valueBType === 'number') {
+              if ([ 'integer', 'float' ].includes(valueAType)) {
                 result = true;
               }
             }
-            else if (valueA instanceof dbgp.ObjectProperty && typeName.startsWith('object:')) {
-              const className = typeName.match(/^object:(.*)$/ui)![1];
+            else if (valueA instanceof dbgp.ObjectProperty && valueBType.startsWith('object:')) {
+              const className = valueBType.match(/^object:(.*)$/ui)![1];
               if (className.toLowerCase() === valueA.className.toLowerCase()) {
                 result = true;
               }
             }
-            else if (valueA instanceof dbgp.PrimitiveProperty) {
-              const isIntegerLike = !Number.isNaN(parseInt(valueA.value, 10));
-              const isFloatLike = isIntegerLike && valueA.value.includes('.');
-              const isNumberLike = isIntegerLike || isFloatLike;
-              if (typeName === 'integer:like' && isIntegerLike) {
+            else if (valueA instanceof dbgp.PrimitiveProperty || isPrimitive(valueA)) {
+              const _valueA = String(valueA instanceof dbgp.PrimitiveProperty ? valueA.value : valueA);
+              if (valueBType === 'integer:like' && isIntegerLike(_valueA)) {
                 result = true;
               }
-              else if (typeName === 'float:like' && isFloatLike) {
+              else if (valueBType === 'float:like' && isFloatLike(_valueA)) {
                 result = true;
               }
-              else if (typeName === 'number:like' && isNumberLike) {
+              else if (valueBType === 'number:like' && isNumberLike(_valueA)) {
                 result = true;
               }
-              else if (typeName === 'string:alpha' && -1 < valueA.value.search(/^[a-zA-Z]+$/u)) {
+              else if (valueBType === 'string:alpha' && -1 < _valueA.search(/^[a-zA-Z]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:alnum' && -1 < valueA.value.search(/^[a-zA-Z0-9]+$/u)) {
+              else if (valueBType === 'string:alnum' && -1 < _valueA.search(/^[a-zA-Z0-9]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:upper' && -1 < valueA.value.search(/^[A-Z]+$/u)) {
+              else if (valueBType === 'string:upper' && -1 < _valueA.search(/^[A-Z]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:lower' && -1 < valueA.value.search(/^[a-z]+$/u)) {
+              else if (valueBType === 'string:lower' && -1 < _valueA.search(/^[a-z]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:space' && -1 < valueA.value.search(/^\s+$/u)) {
+              else if (valueBType === 'string:space' && -1 < _valueA.search(/^\s+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:hex' && -1 < valueA.value.search(/^0x[0-9a-fA-F]+$/u)) {
+              else if (valueBType === 'string:hex' && -1 < _valueA.search(/^0x[0-9a-fA-F]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:time' && !Number.isNaN(Date.parse(valueA.value))) {
+              else if (valueBType === 'string:time' && !Number.isNaN(Date.parse(_valueA))) {
                 result = true;
               }
             }
@@ -374,8 +373,8 @@ export class ConditionalEvaluator {
         const value = String(number.value);
         return String(value.length);
       }
-      if (number.type === 'Hex') {
-        return String(parseInt(number.value, 16));
+      if (typeof number.value === 'number') {
+        return number.value as number;
       }
       return String(number.value);
     }

@@ -6,12 +6,27 @@ export const isPrimitive = (value: any): value is string | number | boolean => {
 };
 export const isNumberLike = (value: any): boolean => {
   if (typeof value === 'string') {
-    return value.trim() !== '' && !isNaN((value as any) - 0);
+    if (value === '' || (/\s+/u).test(value)) {
+      return false;
+    }
+    return Boolean(!isNaN(Number(value.trim())) || parseFloat(value.trim()));
   }
   if (typeof value === 'number') {
     return true;
   }
   return false;
+};
+export const isFloatLike = (value): boolean => {
+  if (!isNumberLike(value)) {
+    return false;
+  }
+  return String(value).includes('.');
+};
+export const isIntegerLike = (value: any): boolean => {
+  if (isFloatLike(value)) {
+    return false;
+  }
+  return !isNaN(Number(value)) && Number.isInteger(parseFloat(value));
 };
 export const timeoutPromise = async<T>(promise: Promise<T>, timeout: number): Promise<T | void> => {
   return Promise.race([

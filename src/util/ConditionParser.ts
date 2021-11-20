@@ -84,7 +84,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       ).map((result) => {
         return {
           type: 'Integer',
-          value: result.join(''),
+          value: parseInt(result.join(''), 10),
         };
       });
     },
@@ -94,9 +94,10 @@ export const createParser = function(version: AhkVersion): P.Language {
         rules.IntegerLiteral,
         P.regex(/\.[0-9]+/ui),
       ).map((result) => {
+        const floatString = `${String(result[0])}${String(result[1].value)}${result[2]}`;
         return {
           type: 'Float',
-          value: `${String(result[0])}${String(result[1].value)}${result[2]}`,
+          value: 2 <= version.mejor ? parseFloat(floatString) : floatString,
         };
       });
     },
@@ -107,7 +108,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       ).map((result) => {
         return {
           type: 'Hex',
-          value: result.join(''),
+          value: parseInt(result.join(''), 10),
         };
       });
     },
