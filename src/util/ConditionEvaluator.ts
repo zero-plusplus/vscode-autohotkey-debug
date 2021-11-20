@@ -245,15 +245,24 @@ export class ConditionalEvaluator {
           }
         }
         else if (operatorType.type === 'HasOperator' && valueA instanceof dbgp.ObjectProperty) {
-          if (valueB instanceof dbgp.PrimitiveProperty || isPrimitive(valueB)) {
-            const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
-            const isRegExp = String(searchValue).startsWith('/');
-            result = valueA.children.some((child) => {
-              if (child instanceof dbgp.PrimitiveProperty) {
-                return isRegExp ? regexCompare(child.name, searchValue) : equals(child.name, searchValue);
-              }
-              return false;
-            });
+          if (valueB instanceof dbgp.Property || isPrimitive(valueB)) {
+            if (valueB instanceof dbgp.ObjectProperty) {
+              result = valueA.children.some((child) => {
+                const match = child.name.match(/^\[Object\((?<address>\d+)\)\]$/u);
+                return match?.groups?.address === String(valueB.address);
+              });
+            }
+            else {
+              const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
+              const isRegExp = String(searchValue).startsWith('/');
+              result = valueA.children.some((child) => {
+                if (child.name === '<enum>') {
+                  return false;
+                }
+                const fixedName = child.name.replace(/^\["|^<|"\]$|>$/gu, '');
+                return isRegExp ? regexCompare(fixedName, searchValue) : equals(fixedName, searchValue);
+              });
+            }
           }
         }
         else if (operatorType.type === 'ContainsOperator' && valueA instanceof dbgp.ObjectProperty) {
