@@ -245,9 +245,9 @@ export class ConditionalEvaluator {
           }
         }
         else if (operatorType.type === 'HasOperator' && valueA instanceof dbgp.ObjectProperty) {
-          if (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string') {
+          if (valueB instanceof dbgp.PrimitiveProperty || isPrimitive(valueB)) {
             const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
-            const isRegExp = searchValue.startsWith('/');
+            const isRegExp = String(searchValue).startsWith('/');
             result = valueA.children.some((child) => {
               if (child instanceof dbgp.PrimitiveProperty) {
                 return isRegExp ? regexCompare(child.name, searchValue) : equals(child.name, searchValue);
@@ -257,9 +257,9 @@ export class ConditionalEvaluator {
           }
         }
         else if (operatorType.type === 'ContainsOperator' && valueA instanceof dbgp.ObjectProperty) {
-          if (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string') {
+          if (valueB instanceof dbgp.PrimitiveProperty || isPrimitive(valueB)) {
             const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
-            const isRegExp = searchValue.startsWith('/');
+            const isRegExp = String(searchValue).startsWith('/');
             result = valueA.children.some((child) => {
               if (child instanceof dbgp.PrimitiveProperty) {
                 return isRegExp ? regexCompare(child.value, searchValue) : equals(child.value, searchValue);
