@@ -1316,6 +1316,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       throw Error(`This message shouldn't appear.`);
     }
 
+    if (!breakpoint.condition) {
+      return true;
+    }
+
     try {
       const { condition, hitCondition, hitCount } = breakpoint;
       const metaVariable = new MetaVariableValueMap(this.currentMetaVariableMap.entries());
