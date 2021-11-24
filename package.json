@@ -419,7 +419,7 @@
                 ],
                 "description": "Customize a group of variables for data inspection.",
                 "examples": [
-                  "Recommend",
+                  "recommend",
                   []
                 ],
                 "items": {
@@ -721,7 +721,7 @@
                 ],
                 "description": "Customize a group of variables for data inspection.",
                 "examples": [
-                  "Recommend",
+                  "recommend",
                   []
                 ],
                 "items": {
@@ -860,7 +860,7 @@
               "program": "^\"\\${file}\"",
               "args": [],
               "port": "9002-9010",
-              "variableCategories": "Recommend",
+              "variableCategories": "recommend",
               "useDebugDirective": true,
               "useAutoJumpToError": true
             }
@@ -882,7 +882,7 @@
               "type": "autohotkey",
               "request": "attach",
               "port": "9002-9010",
-              "variableCategories": "Recommend",
+              "variableCategories": "recommend",
               "useDebugDirective": true,
               "useAutoJumpToError": true
             }

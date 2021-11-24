@@ -21,7 +21,7 @@
                 "useTrailingLinebreak": true
             },
             "useAnnounce": "detail",
-            "variableCategories": "Recommend"
+            "variableCategories": "recommend"
         },
         {
             "name": "VariableCategories Test",

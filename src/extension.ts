@@ -44,13 +44,13 @@ export type CategoryData = {
   source: ScopeSelector | ScopeName[];
   matchers?: MatcherData[];
 };
-export type CategoriesData = 'Recommend' | Array<ScopeSelector | CategoryData>;
+export type CategoriesData = 'recommend' | Array<ScopeSelector | CategoryData>;
 
-const normalizeCategories = (categories?: 'Recommend' | Array<ScopeSelector | CategoryData>): CategoryData[] | undefined => {
+const normalizeCategories = (categories?: CategoriesData): CategoryData[] | undefined => {
   if (!categories) {
     return undefined;
   }
-  if (categories === 'Recommend') {
+  if (categories === 'recommend') {
     return [
       {
         label: 'Local',
@@ -513,7 +513,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
         return;
       }
       if (config.variableCategories === 'Recommend' || isArray(config.variableCategories)) {
-        config.variableCategories = normalizeCategories(config.variableCategories as 'Recommend' | Array<ScopeSelector | CategoryData>);
+        config.variableCategories = normalizeCategories(config.variableCategories as CategoriesData);
         return;
       }
       throw Error('`variableCategories` must be a "Recommend" or array.');
