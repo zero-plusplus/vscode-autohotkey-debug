@@ -460,6 +460,17 @@
                         ]
                       }
                     },
+                    "hidden": {
+                      "type": [
+                        "boolean",
+                        "string"
+                      ],
+                      "description": "Show/hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
+                      "examples": [
+                        "auto"
+                      ],
+                      "default": false
+                    },
                     "matchers": {
                       "type": "array",
                       "description": "An object representing a match condition. If multiple conditions are specified, all of them will be matched or not.",
@@ -761,6 +772,17 @@
                           "Global"
                         ]
                       }
+                    },
+                    "hidden": {
+                      "type": [
+                        "boolean",
+                        "string"
+                      ],
+                      "description": "Show/hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
+                      "examples": [
+                        "auto"
+                      ],
+                      "default": false
                     },
                     "matchers": {
                       "type": "array",

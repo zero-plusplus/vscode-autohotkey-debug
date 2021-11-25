@@ -501,8 +501,18 @@ export class VariableManager {
     }
 
     const categories = new Categories();
-    for (const categoryData of this.categories) {
-      categories.push(new Category(defaultScopes, categoryData));
+    for await (const categoryData of this.categories) {
+      if (categoryData.hidden === true) {
+        continue;
+      }
+      const category = new Category(defaultScopes, categoryData);
+      if (categoryData.hidden === 'auto') {
+        await category.loadChildren();
+        if (category.children?.length === 0) {
+          continue;
+        }
+      }
+      categories.push(category);
     }
     return categories;
   }

@@ -42,6 +42,7 @@ export type MatcherData = {
 export type CategoryData = {
   label: string;
   source: ScopeSelector | ScopeName[];
+  hidden?: boolean | 'auto';
   matchers?: MatcherData[];
 };
 export type CategoriesData = 'recommend' | Array<ScopeSelector | CategoryData>;
