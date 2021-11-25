@@ -224,7 +224,7 @@ export class Category implements Scope {
           testers.push(() => variable.type === matcher.type);
         }
         if (matcher.className) {
-          testers.push(() => variable.className === matcher.className);
+          testers.push(() => Boolean(variable.className && equalsIgnoreCase(variable.className, matcher.className!)));
         }
 
         const result = testers.every((tester) => tester());
