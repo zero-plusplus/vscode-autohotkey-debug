@@ -512,11 +512,11 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (!config.variableCategories) {
         return;
       }
-      if (config.variableCategories === 'Recommend' || isArray(config.variableCategories)) {
+      if (config.variableCategories === 'recommend' || isArray(config.variableCategories)) {
         config.variableCategories = normalizeCategories(config.variableCategories as CategoriesData);
         return;
       }
-      throw Error('`variableCategories` must be a "Recommend" or array.');
+      throw Error('`variableCategories` must be a "recommend" or array.');
     })();
 
     // init trace
