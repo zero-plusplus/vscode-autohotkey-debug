@@ -10,6 +10,7 @@ import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
+import { unescapeAhk } from './util/VariableManager';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -565,7 +566,7 @@ export class Session extends EventEmitter {
     return new StackDepthResponse(await this.sendCommand('stack_depth'));
   }
   public async sendPropertyGetCommand(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<PropertyGetResponse> {
-    const commandParams = `-n ${name} -c ${context.id} -d ${context.stackFrame.level}`;
+    const commandParams = `-n ${unescapeAhk(name, this.ahkVersion)} -c ${context.id} -d ${context.stackFrame.level}`;
     let dbgpResponse: XmlNode;
     if (this.DEFAULT_MAX_DEPTH < maxDepth) {
       await this.sendFeatureSetCommand('max_depth', maxDepth);
@@ -939,7 +940,9 @@ export class Session extends EventEmitter {
       }
 
       // Received response
-      const xml_str = data.toString();
+      // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171
+      // If it contains a newline, it should be escaped in an AutoHotkey-like manner.
+      const xml_str = data.toString().replace(/\r\n/gu, '`r`n').replace(/\n/gu, '`n');
       const response = parser.parse(xml_str, {
         attributeNamePrefix: '',
         attrNodeName: 'attributes',
