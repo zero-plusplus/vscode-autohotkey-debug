@@ -1,6 +1,15 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { statSync } from 'fs';
 
+export const isDirectory = (dirPath): boolean => {
+  try {
+    return statSync(dirPath).isDirectory();
+  }
+  catch {
+  }
+  return false;
+};
 export const isPrimitive = (value: any): value is string | number | boolean => {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 };
