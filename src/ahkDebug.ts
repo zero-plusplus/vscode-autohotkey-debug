@@ -44,6 +44,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   program: string;
   request: 'launch' | 'attach';
   runtime: string;
+  cwd: string;
   runtimeArgs: string[];
   args: string[];
   env: NodeJS.ProcessEnv;

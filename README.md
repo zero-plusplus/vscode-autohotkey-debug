@@ -24,6 +24,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable in data inspection
     * Added: [#161](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/161) Add `has` operator in conditional breakpoint
     * Added: [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Add `contanis` operator in conditional breakpoint
+    * Added: [#173](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/173) Support `cwd` attribute in launch.json
     * Changed: [#157](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/157) When an object is output at a log point, etc., instead of being split, it is output as one. Also, if the output is used together with a string, it will be treated as a label
     * Changed: [#163](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/163) Restored true base objects to `<base>` notation
     * Changed: [#165](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/165) The hover information is now displayed even if there is bracket notation or simple variables

@@ -27,6 +27,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable in data inspection
 * [#161](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/161) Add `has` operator in conditional breakpoint
 * [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Add `contanis` operator in conditional breakpoint
+* [#173](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/173) Support `cwd` attribute in launch.json
 
 ### Changed
 * [#157](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/157) When an object is output at a log point, etc., instead of being split, it is output as one. Also, if the output is used together with a string, it will be treated as a label

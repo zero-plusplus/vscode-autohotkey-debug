@@ -224,6 +224,10 @@
                   "/ErrorStdOut"
                 ]
               },
+              "cwd": {
+                "type": "string",
+                "description": "The absolute path of the current working directory."
+              },
               "hostname": {
                 "type": "string",
                 "description": "No changes are required.",

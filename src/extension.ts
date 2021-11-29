@@ -15,6 +15,7 @@ import normalizeToUnix = require('normalize-path');
 import * as glob from 'fast-glob';
 import { registerCommands } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { isDirectory } from './util/util';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -345,6 +346,17 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (config.program) {
         config.program = path.resolve(config.program);
       }
+    })();
+
+    // init cwd
+    ((): void => {
+      if (!config.cwd) {
+        config.cwd = path.dirname(config.program);
+      }
+      if (!isDirectory(config.cwd)) {
+        throw Error(`\`cwd\` must be a absolute path of directory.\nSpecified: "${path.resolve(String(config.cwd))}"`);
+      }
+      config.cwd = path.resolve(config.cwd);
     })();
 
     // init args
