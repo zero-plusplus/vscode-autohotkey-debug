@@ -469,7 +469,7 @@
                         "boolean",
                         "string"
                       ],
-                      "description": "Show/hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
+                      "description": "Show / hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
                       "examples": [
                         "auto"
                       ],
@@ -477,7 +477,7 @@
                     },
                     "noduplicate": {
                       "type": "boolean",
-                      "description": "",
+                      "description": "Disallow / allow duplication with variables of different categories that have the same source. This attribute can only be set for one of the categories that have the same source.",
                       "default": false
                     },
                     "matchers": {
@@ -787,7 +787,7 @@
                         "boolean",
                         "string"
                       ],
-                      "description": "Show/hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
+                      "description": "Show / hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
                       "examples": [
                         "auto"
                       ],
@@ -795,7 +795,7 @@
                     },
                     "noduplicate": {
                       "type": "boolean",
-                      "description": "",
+                      "description": "Disallow / allow duplication with variables of different categories that have the same source. This attribute can only be set for one of the categories that have the same source.",
                       "default": false
                     },
                     "matchers": {
