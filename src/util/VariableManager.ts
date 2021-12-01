@@ -5,7 +5,7 @@ import { URI } from 'vscode-uri';
 import * as dbgp from '../dbgpSession';
 import { rtrim } from 'underscore.string';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isNumberLike, isPrimitive } from './util';
+import { isNumberLike, isPrimitive, toArray } from './util';
 import { equalsIgnoreCase } from './stringUtils';
 import { CategoryData, MatcherData } from '../extension';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
@@ -186,7 +186,7 @@ export class Category implements Scope {
       if (this.categoryData.source === '*') {
         return true;
       }
-      const sourceNames = typeof this.categoryData.source === 'string' ? [ this.categoryData.source ] : this.categoryData.source;
+      const sourceNames = toArray<string>(this.categoryData.source);
       return sourceNames.some((sourceName) => equalsIgnoreCase(scope.name, sourceName));
     });
 
@@ -209,7 +209,9 @@ export class Category implements Scope {
           if (!categoryData.matchers) {
             return false;
           }
-          return this.categoryData.source === categoryData.source;
+          const sourceA = toArray<string>(this.categoryData.source).sort((a, b) => a.localeCompare(b)).join();
+          const sourceB = toArray<string>(this.categoryData.source).sort((a, b) => a.localeCompare(b)).join();
+          return sourceA === sourceB;
         });
         const isDuplicated = categoriesDataBySameSource.some((categoryData) => this.createCategoryMatcher(categoryData.matchers)(variable));
         if (isDuplicated) {

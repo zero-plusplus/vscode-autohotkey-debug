@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
-import { defaults, isString, range } from 'lodash';
+import { defaults, groupBy, isString, range } from 'lodash';
 import * as isPortTaken from 'is-port-taken';
 import * as jsonc from 'jsonc-parser';
 import { getAhkVersion } from './util/getAhkVersion';
@@ -15,7 +15,7 @@ import normalizeToUnix = require('normalize-path');
 import * as glob from 'fast-glob';
 import { registerCommands } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isDirectory } from './util/util';
+import { isDirectory, toArray } from './util/util';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -112,21 +112,16 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
     }
   }
 
-  const checkNoduplicate = (categoriesData: CategoriesData): void => {
-    const usedNoduplicate: { [key in ScopeName]: boolean } = { Local: false, Static: false, Global: false };
-    for (const categoryData of categoriesData) {
-      if (typeof categoryData === 'string') {
+  const checkNoduplicate = (categoriesData: CategoryData[]): void => {
+    const groupedCategoriesData = Object.entries(groupBy(categoriesData, (categoryData) => JSON.stringify(toArray<string>(categoryData.source).sort((a, b) => a.localeCompare(b)))));
+    groupedCategoriesData;
+    for (const [ source, categoriesDataBySource ] of groupedCategoriesData) {
+      const categoriesWithNoduplicate = categoriesDataBySource.filter((categoryData) => categoryData.noduplicate);
+      if (categoriesWithNoduplicate.length === 0 || categoriesWithNoduplicate.length === 1) {
         continue;
       }
 
-      if (categoryData.noduplicate) {
-        if (typeof categoryData.source === 'string') {
-          if (usedNoduplicate[categoryData.source] === true) {
-            throw Error(`\`noduplicate\` is not being used correctly in variableCategories. \`noduplicate\` is limited to one category out of the categories that have the same \`source\`.`);
-          }
-          usedNoduplicate[categoryData.source] = true;
-        }
-      }
+      throw Error(`There are multiple \`noduplicate\` attributes set for the category with \`${source}\` as the source. This attribute can only be set to one of the categories that have the same source.`);
     }
   };
   checkNoduplicate(normalized);
