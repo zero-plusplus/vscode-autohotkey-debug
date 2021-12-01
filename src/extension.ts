@@ -44,6 +44,7 @@ export type CategoryData = {
   label: string;
   source: ScopeSelector | ScopeName[];
   hidden?: boolean | 'auto';
+  noduplicate?: boolean;
   matchers?: MatcherData[];
 };
 export type CategoriesData = 'recommend' | Array<ScopeSelector | CategoryData>;
@@ -111,6 +112,24 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
     }
   }
 
+  const checkNoduplicate = (categoriesData: CategoriesData): void => {
+    const usedNoduplicate: { [key in ScopeName]: boolean } = { Local: false, Static: false, Global: false };
+    for (const categoryData of categoriesData) {
+      if (typeof categoryData === 'string') {
+        continue;
+      }
+
+      if (categoryData.noduplicate) {
+        if (typeof categoryData.source === 'string') {
+          if (usedNoduplicate[categoryData.source] === true) {
+            throw Error(`\`noduplicate\` is not being used correctly in variableCategories. \`noduplicate\` is limited to one category out of the categories that have the same \`source\`.`);
+          }
+          usedNoduplicate[categoryData.source] = true;
+        }
+      }
+    }
+  };
+  checkNoduplicate(normalized);
   return normalized;
 };
 

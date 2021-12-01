@@ -7,7 +7,7 @@ import { rtrim } from 'underscore.string';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isNumberLike, isPrimitive } from './util';
 import { equalsIgnoreCase } from './stringUtils';
-import { CategoryData } from '../extension';
+import { CategoryData, MatcherData } from '../extension';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 import { AhkDebugSession } from '../ahkDebug';
 
@@ -144,9 +144,12 @@ export class Scope implements DebugAdapter.Scope {
     });
   }
 }
+export type CategoryMatcher = (variable: Variable) => boolean;
 export class Category implements Scope {
   public readonly scopes: Scope[];
-  public readonly data: CategoryData;
+  public readonly categoryData: CategoryData;
+  public readonly allCategoriesData: CategoryData[];
+  public readonly categoryMatcher: CategoryMatcher;
   public readonly variablesReference: number;
   public readonly expensive: boolean;
   public children?: Variable[];
@@ -157,13 +160,15 @@ export class Category implements Scope {
     return this.scopes[0].session;
   }
   public get name(): string {
-    return this.data.label;
+    return this.categoryData.label;
   }
-  constructor(scopes: Scope[], categoryData: CategoryData, expensive = false) {
+  constructor(scopes: Scope[], categoryData: CategoryData, allCategoriesData: CategoryData[], expensive = false) {
     this.variablesReference = handles.create(this);
     this.expensive = expensive;
     this.scopes = scopes;
-    this.data = categoryData;
+    this.categoryData = categoryData;
+    this.categoryMatcher = this.createCategoryMatcher(categoryData.matchers);
+    this.allCategoriesData = allCategoriesData;
   }
   public create(value: Variable | Scope | Category): number {
     return handles.create(value);
@@ -178,10 +183,10 @@ export class Category implements Scope {
     }
 
     const sourceScopes = this.scopes.filter((scope) => {
-      if (this.data.source === '*') {
+      if (this.categoryData.source === '*') {
         return true;
       }
-      const sourceNames = typeof this.data.source === 'string' ? [ this.data.source ] : this.data.source;
+      const sourceNames = typeof this.categoryData.source === 'string' ? [ this.categoryData.source ] : this.categoryData.source;
       return sourceNames.some((sourceName) => equalsIgnoreCase(scope.name, sourceName));
     });
 
@@ -190,21 +195,49 @@ export class Category implements Scope {
       sourceVariables.push(...await scope.createChildren(maxDepth));
     }
 
-    const matchers = this.data.matchers;
-    if (!matchers) {
+    const matchers = this.categoryData.matchers;
+    if (!matchers && !this.categoryData.noduplicate) {
       return sourceVariables;
     }
 
-    let variables: Variable[] = sourceVariables.slice();
-    for (const matcher of matchers) {
-      variables = variables.filter((variable) => {
-        const testers: Array<(() => boolean)> = [];
+    const variables: Variable[] = sourceVariables.filter((variable) => {
+      if (this.categoryData.noduplicate) {
+        const categoriesDataBySameSource = this.allCategoriesData.filter((categoryData) => {
+          if (this.categoryData.label === categoryData.label) {
+            return false;
+          }
+          if (!categoryData.matchers) {
+            return false;
+          }
+          return this.categoryData.source === categoryData.source;
+        });
+        const isDuplicated = categoriesDataBySameSource.some((categoryData) => this.createCategoryMatcher(categoryData.matchers)(variable));
+        if (isDuplicated) {
+          return false;
+        }
+      }
+      return this.categoryMatcher(variable);
+    });
+    return variables.sort((a, b) => {
+      if (a.property.isIndexKey && b.property.isIndexKey) {
+        return a.property.index! - b.property.index!;
+      }
+      return a.name.localeCompare(b.name);
+    });
+  }
+  private createCategoryMatcher(matchersData?: MatcherData[]): CategoryMatcher {
+    if (!matchersData || matchersData.length === 0) {
+      return (variable: Variable): boolean => true;
+    }
+    return (variable: Variable): boolean => {
+      return matchersData.every((matcher) => {
+        const matchers: Array<(() => boolean)> = [];
         if (matcher.pattern) {
           const regex = new RegExp(matcher.pattern, matcher.ignorecase ? 'iu' : 'u');
-          testers.push(() => regex.test(variable.name));
+          matchers.push(() => regex.test(variable.name));
         }
         if (matcher.builtin) {
-          testers.push(() => {
+          matchers.push(() => {
             if (variable.property.facet === 'Builtin') {
               return true;
             }
@@ -218,29 +251,22 @@ export class Category implements Scope {
           });
         }
         if (matcher.static) {
-          testers.push(() => variable.property.facet === 'Static');
+          matchers.push(() => variable.property.facet === 'Static');
         }
         if (matcher.type) {
-          testers.push(() => variable.type === matcher.type);
+          matchers.push(() => variable.type === matcher.type);
         }
         if (matcher.className) {
-          testers.push(() => Boolean(variable.className && equalsIgnoreCase(variable.className, matcher.className!)));
+          matchers.push(() => Boolean(variable.className && equalsIgnoreCase(variable.className, matcher.className!)));
         }
 
-        const result = testers.every((tester) => tester());
+        const result = matchers.every((tester) => tester());
         if (matcher.method === 'exclude') {
           return !result;
         }
         return result;
       });
-    }
-
-    return variables.sort((a, b) => {
-      if (a.property.isIndexKey && b.property.isIndexKey) {
-        return a.property.index! - b.property.index!;
-      }
-      return a.name.localeCompare(b.name);
-    });
+    };
   }
 }
 export class Categories extends Array<Scope | Category> implements DebugProtocol.Variable {
@@ -482,30 +508,30 @@ export class MetaVariableValueMap extends CaseInsensitiveMap<string, MetaVariabl
 export class VariableManager {
   public readonly debugAdapter: AhkDebugSession;
   public readonly session: dbgp.Session;
-  public readonly categories?: CategoryData[];
+  public readonly categoriesData?: CategoryData[];
   // private readonly scopeByVariablesReference = new Map<number, Scope>();
   // private readonly objectByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   // private readonly stackFramesByFrameId = new Map<number, dbgp.StackFrame>();
   constructor(debugAdapter: AhkDebugSession, categories?: CategoryData[]) {
     this.debugAdapter = debugAdapter;
     this.session = debugAdapter.session!;
-    this.categories = categories;
+    this.categoriesData = categories;
   }
   public createVariableReference(value?: any): number {
     return handles.create(value);
   }
   public async createCategories(frameId: number): Promise<Categories> {
     const defaultScopes = await this.createDefaultScopes(frameId);
-    if (!this.categories) {
+    if (!this.categoriesData) {
       return defaultScopes;
     }
 
     const categories = new Categories();
-    for await (const categoryData of this.categories) {
+    for await (const categoryData of this.categoriesData) {
       if (categoryData.hidden === true) {
         continue;
       }
-      const category = new Category(defaultScopes, categoryData);
+      const category = new Category(defaultScopes, categoryData, this.categoriesData);
       if (categoryData.hidden === 'auto') {
         await category.loadChildren();
         if (category.children?.length === 0) {

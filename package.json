@@ -475,6 +475,11 @@
                       ],
                       "default": false
                     },
+                    "noduplicate": {
+                      "type": "boolean",
+                      "description": "",
+                      "default": false
+                    },
                     "matchers": {
                       "type": "array",
                       "description": "An object representing a match condition. If multiple conditions are specified, all of them will be matched or not.",
@@ -786,6 +791,11 @@
                       "examples": [
                         "auto"
                       ],
+                      "default": false
+                    },
+                    "noduplicate": {
+                      "type": "boolean",
+                      "description": "",
                       "default": false
                     },
                     "matchers": {
