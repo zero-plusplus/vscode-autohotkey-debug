@@ -115,12 +115,13 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
   const checkNoduplicate = (categoriesData: CategoryData[]): void => {
     const groupedCategoriesData = Object.entries(groupBy(categoriesData, (categoryData) => JSON.stringify(toArray<string>(categoryData.source).sort((a, b) => a.localeCompare(b)))));
     groupedCategoriesData;
-    for (const [ source, categoriesDataBySource ] of groupedCategoriesData) {
+    for (const [ , categoriesDataBySource ] of groupedCategoriesData) {
       const categoriesWithNoduplicate = categoriesDataBySource.filter((categoryData) => categoryData.noduplicate);
       if (categoriesWithNoduplicate.length === 0 || categoriesWithNoduplicate.length === 1) {
         continue;
       }
 
+      const source = JSON.stringify(categoriesWithNoduplicate[0].source);
       throw Error(`There are multiple \`noduplicate\` attributes set for the category with \`${source}\` as the source. This attribute can only be set to one of the categories that have the same source.`);
     }
   };
