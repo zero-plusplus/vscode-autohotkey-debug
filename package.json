@@ -447,12 +447,11 @@
                         "string",
                         "array"
                       ],
-                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to include all of them, specify \"*\"",
+                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to use multiple sources, specify them as an array.",
                       "examples": [
                         "Local",
                         "Static",
                         "Global",
-                        "*",
                         []
                       ],
                       "items": {
@@ -765,12 +764,11 @@
                         "string",
                         "array"
                       ],
-                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to include all of them, specify \"*\"",
+                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to use multiple sources, specify them as an array.",
                       "examples": [
                         "Local",
                         "Static",
                         "Global",
-                        "*",
                         []
                       ],
                       "items": {

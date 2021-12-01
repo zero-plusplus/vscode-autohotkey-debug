@@ -183,9 +183,6 @@ export class Category implements Scope {
     }
 
     const sourceScopes = this.scopes.filter((scope) => {
-      if (this.categoryData.source === '*') {
-        return true;
-      }
       const sourceNames = toArray<string>(this.categoryData.source);
       return sourceNames.some((sourceName) => equalsIgnoreCase(scope.name, sourceName));
     });

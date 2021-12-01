@@ -111,7 +111,7 @@
                 },
                 {
                     "label": "All",
-                    "source": "*",
+                    "source": [ "Local", "Static", "Global" ],
                 },
             ],
             "useAnnounce": "detail",
