@@ -210,7 +210,7 @@ export class Category implements Scope {
             return false;
           }
           const sourceA = toArray<string>(this.categoryData.source).sort((a, b) => a.localeCompare(b)).join();
-          const sourceB = toArray<string>(this.categoryData.source).sort((a, b) => a.localeCompare(b)).join();
+          const sourceB = toArray<string>(categoryData.source).sort((a, b) => a.localeCompare(b)).join();
           return sourceA === sourceB;
         });
         const isDuplicated = categoriesDataBySameSource.some((categoryData) => this.createCategoryMatcher(categoryData.matchers)(variable));
