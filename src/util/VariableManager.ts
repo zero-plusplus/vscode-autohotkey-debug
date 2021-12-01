@@ -232,11 +232,11 @@ export class Category implements Scope {
     return (variable: Variable): boolean => {
       return matchersData.every((matcher) => {
         const matchers: Array<(() => boolean)> = [];
-        if (matcher.pattern) {
+        if (typeof matcher.pattern === 'string') {
           const regex = new RegExp(matcher.pattern, matcher.ignorecase ? 'iu' : 'u');
           matchers.push(() => regex.test(variable.name));
         }
-        if (matcher.builtin) {
+        if (typeof matcher.builtin === 'boolean') {
           matchers.push(() => {
             if (variable.property.facet === 'Builtin') {
               return true;
@@ -244,19 +244,25 @@ export class Category implements Scope {
             if ((/(^A_)|^\d$/ui).test(variable.name)) {
               return true;
             }
+
             const globalVariableNames = this.session.ahkVersion.mejor === 2
               ? [ 'Abs', 'ACos', 'Any', 'Array', 'ASin', 'ATan', 'BlockInput', 'BoundFunc', 'Break', 'Buffer', 'CallbackCreate', 'CallbackFree', 'CaretGetPos', 'Catch', 'Ceil', 'Chr', 'Class', 'Click', 'ClipboardAll', 'ClipWait', 'Closure', 'ComCall', 'ComObjActive', 'ComObjArray', 'ComObjConnect', 'ComObject', 'ComObjFlags', 'ComObjFromPtr', 'ComObjGet', 'ComObjQuery', 'ComObjType', 'ComObjValue', 'ComValue', 'ComValueRef', 'Continue', 'ControlAddItem', 'ControlChooseIndex', 'ControlChooseString', 'ControlClick', 'ControlDeleteItem', 'ControlFindItem', 'ControlFocus', 'ControlGetChecked', 'ControlGetChoice', 'ControlGetClassNN', 'ControlGetEnabled', 'ControlGetExStyle', 'ControlGetFocus', 'ControlGetHwnd', 'ControlGetIndex', 'ControlGetItems', 'ControlGetPos', 'ControlGetStyl', 'ControlGetText', 'ControlGetVisible', 'ControlHide', 'ControlHideDropDown', 'ControlMove', 'ControlSen', 'ControlSendText', 'ControlSetChecked', 'ControlSetEnabled', 'ControlSetExStyle', 'ControlSetStyl', 'ControlSetText', 'ControlShow', 'ControlShowDropDown', 'CoordMode', 'Cos', 'Critical', 'DateAdd', 'DateDiff', 'DetectHiddenText', 'DetectHiddenWindows', 'DirCopy', 'DirCreate', 'DirDelete', 'DirExist', 'DirMove', 'DirSelect', 'DllCall', 'Download', 'DriveEject', 'DriveGetCapacity', 'DriveGetFileSystem', 'DriveGetLabel', 'DriveGetList', 'DriveGetSerial', 'DriveGetSpaceFree', 'DriveGetStatus', 'DriveGetStatusCD', 'DriveGetType', 'DriveLock', 'DriveRetract', 'DriveSetLabel', 'DriveUnlock', 'Edit', 'EditGetCurrentCol', 'EditGetCurrentLine', 'EditGetLine', 'EditGetLineCount', 'EditGetSelectedText', 'EditPaste', 'Else', 'Enumerator', 'EnvGet', 'EnvSet', 'Error', 'Exit', 'ExitApp', 'Exp', 'File', 'FileAppend', 'FileCopy', 'FileCreateShortcut', 'FileDelete', 'FileEncoding', 'FileExist', 'FileGetAttrib', 'FileGetShortcut', 'FileGetSize', 'FileGetTime', 'FileGetVersion', 'FileInstall', 'FileMove', 'FileOpen', 'FileRead', 'FileRecycle', 'FileRecycleEmpty', 'FileSelect', 'FileSetAttrib', 'FileSetTime', 'Finally', 'Float', 'Floor', 'For', 'Format', 'FormatTime', 'Func', 'GetKeyName', 'GetKeySC', 'GetKeyState', 'GetKeyVK', 'GetMethod', 'Goto', 'GroupActivate', 'GroupAdd', 'GroupClose', 'GroupDeactivate', 'Gui', 'Gui()', 'GuiCtrlFromHwnd', 'GuiFromHwnd', 'HasBase', 'HasMethod', 'HasProp', 'HotIf', 'Hotkey', 'Hotstring', 'If', 'IL_Ad', 'IL_Creat', 'IL_Destroy', 'ImageSearch', 'IndexError', 'IniDelete', 'IniRead', 'IniWrite', 'InputBox', 'InputHook', 'InstallKeybdHook', 'InstallMouseHook', 'InStr', 'Integer', 'IsLabel', 'IsObject', 'IsSet', 'KeyError', 'KeyHistory', 'KeyWait', 'ListHotkeys', 'ListLines', 'ListVars', 'ListViewGetContent', 'Ln', 'LoadPicture', 'Log', 'Loop', 'Map', 'Max', 'MemberError', 'MemoryError', 'Menu', 'Menu()', 'MenuBar', 'MenuBar()', 'MenuFromHandle', 'MenuSelect', 'MethodError', 'Min', 'Mod', 'MonitorGet', 'MonitorGetCount', 'MonitorGetName', 'MonitorGetPrimary', 'MonitorGetWorkArea', 'MouseClick', 'MouseClickDrag', 'MouseGetPos', 'MouseMove', 'MsgBox', 'Number', 'NumGet', 'NumPut', 'ObjAddRef', 'ObjAddress', 'ObjBindMethod', 'Object', 'ObjGetBase', 'ObjGetCapacity', 'ObjHasOwnPro', 'ObjOwnProp', 'ObjOwnPropCount', 'ObjPtr', 'ObjRelease', 'ObjSetBase', 'ObjSetCapacity', 'OnClipboardChange', 'OnError', 'OnExit', 'OnMessage', 'Ord', 'OSError', 'OutputDebug', 'Pause', 'Persistent', 'PixelGetColor', 'PixelSearch', 'PostMessage', 'Primitive', 'ProcessClose', 'ProcessExist', 'ProcessSetPriority', 'ProcessWait', 'ProcessWaitClose', 'PropertyError', 'Random', 'RegDelete', 'RegDeleteKey', 'RegExMatch', 'RegExMatchInfo', 'RegExReplace', 'RegRead', 'RegWrite', 'Reload', 'Return', 'Round', 'Run', 'RunAs', 'RunWait', 'Send', 'SendLevel', 'SendMessage', 'SendMode', 'SetCapsLockState', 'SetControlDelay', 'SetDefaultMouseSpeed', 'SetKeyDelay', 'SetMouseDelay', 'SetNumLockState', 'SetRegView', 'SetScrollLockState', 'SetStoreCapsLockMode', 'SetTimer', 'SetTitleMatchMode', 'SetWinDelay', 'SetWorkingDir', 'Shutdown', 'Sin', 'Sleep', 'Sort', 'SoundBeep', 'SoundGetInterface', 'SoundGetMute', 'SoundGetName', 'SoundGetVolume', 'SoundPlay', 'SoundSetMute', 'SoundSetVolume', 'SplitPath', 'Sqrt', 'StatusBarGetText', 'StatusBarWait', 'StrCompare', 'StrGet', 'String', 'StrLen', 'StrLower', 'StrPut', 'StrReplace', 'StrSplit', 'StrUpper', 'SubStr', 'Suspend', 'Switch', 'SysGet', 'SysGetIPAddresses', 'Tan', 'TargetError', 'These', 'Thread', 'Throw', 'TimeoutError', 'ToolTip', 'TraySetIcon', 'TrayTip', 'Trim', 'Try', 'Type', 'TypeError', 'Until', 'ValueError', 'VarRef', 'VarSetStrCapacity', 'VerCompare', 'While-loop', 'WinActivate', 'WinActivateBottom', 'WinActive', 'WinClose', 'WinExist', 'WinGetClass', 'WinGetClientPos', 'WinGetControls', 'WinGetControlsHwnd', 'WinGetCount', 'WinGetExStyle', 'WinGetID', 'WinGetIDLast', 'WinGetList', 'WinGetMinMax', 'WinGetPID', 'WinGetPos', 'WinGetProcessName', 'WinGetProcessPath', 'WinGetStyl', 'WinGetText', 'WinGetTitle', 'WinGetTransColor', 'WinGetTransparent', 'WinHide', 'WinKill', 'WinMaximize', 'WinMinimize', 'WinMinimizeAll', 'WinMove', 'WinMoveBottom', 'WinMoveTop', 'WinRedraw', 'WinRestore', 'WinSetAlwaysOnTop', 'WinSetEnabled', 'WinSetExStyle', 'WinSetRegion', 'WinSetStyl', 'WinSetTitle', 'WinSetTransColor', 'WinSetTransparent', 'WinShow', 'WinWait', 'WinWaitActive', 'WinWaitClose', 'ZeroDivisionError' ]
               : [ 'ErrorLevel' ];
-            return globalVariableNames.some((name) => equalsIgnoreCase(name, variable.name));
+            const isBuiltin = globalVariableNames.some((name) => equalsIgnoreCase(name, variable.name));
+
+            return matcher.builtin ? isBuiltin : !isBuiltin;
           });
         }
-        if (matcher.static) {
-          matchers.push(() => variable.property.facet === 'Static');
+        if (typeof matcher.static === 'boolean') {
+          matchers.push(() => {
+            const isStatic = variable.property.facet === 'Static';
+            return matcher.static ? isStatic : !isStatic;
+          });
         }
-        if (matcher.type) {
+        if (typeof matcher.type === 'string') {
           matchers.push(() => variable.type === matcher.type);
         }
-        if (matcher.className) {
+        if (typeof matcher.className === 'string') {
           matchers.push(() => Boolean(variable.className && equalsIgnoreCase(variable.className, matcher.className!)));
         }
 
