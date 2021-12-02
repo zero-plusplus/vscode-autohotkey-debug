@@ -13,13 +13,14 @@
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug/issues"
   },
   "scripts": {
-    "build": "npx gulp build",
-    "watch": "npx gulp watch",
-    "clean": "npx gulp clean",
+    "build": "gulp build",
+    "watch": "gulp watch",
+    "clean": "gulp clean",
     "test": "npm run lint && mocha -r ts-node/register ./test/**/*.test.ts",
-    "lint": "npx gulp lint",
-    "package": "npx gulp packaging",
-    "vscode:prepublish": "npx gulp bundleWithoutClean"
+    "test:sandbox": "gulp testBySandBox",
+    "lint": "gulp lint",
+    "package": "gulp packaging",
+    "vscode:prepublish": "gulp bundleWithoutClean"
   },
   "publisher": "zero-plusplus",
   "engines": {
@@ -951,6 +952,7 @@
   "devDependencies": {
     "@types/async-lock": "^1.1.2",
     "@types/convert-hrtime": "^3.0.2",
+    "@types/fs-extra": "^9.0.13",
     "@types/gulp": "^4.0.7",
     "@types/he": "^1.1.1",
     "@types/lodash": "^4.14.165",
@@ -969,6 +971,7 @@
     "esbuild-loader": "^2.4.0",
     "esbuild-register": "^2.6.0",
     "fork-ts-checker-webpack-plugin": "^6.0.3",
+    "fs-extra": "^10.0.0",
     "gulp": "^4.0.2",
     "gulp-run-command": "^0.0.10",
     "husky": "^4.3.0",
