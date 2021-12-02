@@ -1,17 +1,45 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { statSync } from 'fs';
+import { isArray } from 'ts-predicates';
 
+export const isDirectory = (dirPath): boolean => {
+  try {
+    return statSync(dirPath).isDirectory();
+  }
+  catch {
+  }
+  return false;
+};
 export const isPrimitive = (value: any): value is string | number | boolean => {
   return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
 };
 export const isNumberLike = (value: any): boolean => {
   if (typeof value === 'string') {
-    return value.trim() !== '' && !isNaN((value as any) - 0);
+    if (value === '' || (/\s+/u).test(value)) {
+      return false;
+    }
+    return Boolean(!isNaN(Number(value.trim())) || parseFloat(value.trim()));
   }
   if (typeof value === 'number') {
     return true;
   }
   return false;
+};
+export const isFloatLike = (value): boolean => {
+  if (!isNumberLike(value)) {
+    return false;
+  }
+  return String(value).includes('.');
+};
+export const isIntegerLike = (value: any): boolean => {
+  if (isFloatLike(value)) {
+    return false;
+  }
+  return !isNaN(Number(value)) && Number.isInteger(parseFloat(value));
+};
+export const toArray = <T>(value: any): T[] => {
+  return (isArray(value) ? value : [ value ]) as T[];
 };
 export const timeoutPromise = async<T>(promise: Promise<T>, timeout: number): Promise<T | void> => {
   return Promise.race([

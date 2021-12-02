@@ -21,7 +21,7 @@
                 "useTrailingLinebreak": true
             },
             "useAnnounce": "detail",
-            "variableCategories": "Recommend"
+            "variableCategories": "recommend"
         },
         {
             "name": "VariableCategories Test",
@@ -44,16 +44,33 @@
                 {
                     "label": "Global",
                     "source": "Global",
+                    "noduplicate": true,
                     "matchers": [
                         {
                             "method": "exclude",
-                            "builtin": true,
-                        }
+                            "pattern": "\\d"
+                        },
+                    ]
+                },
+                {
+                    "label": "Global Func",
+                    "source": "Global",
+                    "hidden": "auto",
+                    "matchers": [
+                        {
+                            "method": "exclude",
+                            "pattern": "\\d"
+                        },
+                        {
+                            "className": "Func",
+                            "builtin": false,
+                        },
                     ],
                 },
                 {
                     "label": "Built-in Func",
                     "source": "Global",
+                    "hidden": "auto",
                     "matchers": [
                         {
                             "method": "exclude",
@@ -94,7 +111,7 @@
                 },
                 {
                     "label": "All",
-                    "source": "*",
+                    "source": [ "Local", "Static", "Global" ],
                 },
             ],
             "useAnnounce": "detail",

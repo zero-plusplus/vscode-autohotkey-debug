@@ -84,7 +84,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       ).map((result) => {
         return {
           type: 'Integer',
-          value: result.join(''),
+          value: parseInt(result.join(''), 10),
         };
       });
     },
@@ -94,9 +94,10 @@ export const createParser = function(version: AhkVersion): P.Language {
         rules.IntegerLiteral,
         P.regex(/\.[0-9]+/ui),
       ).map((result) => {
+        const floatString = `${String(result[0])}${String(result[1].value)}${result[2]}`;
         return {
           type: 'Float',
-          value: `${String(result[0])}${String(result[1].value)}${result[2]}`,
+          value: 2 <= version.mejor ? parseFloat(floatString) : floatString,
         };
       });
     },
@@ -107,7 +108,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       ).map((result) => {
         return {
           type: 'Hex',
-          value: result.join(''),
+          value: parseInt(result.join(''), 10),
         };
       });
     },
@@ -129,7 +130,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       return P.regex(/true|false/ui).map((result) => {
         return {
           type: 'Boolean',
-          value: result === 'true' ? '1' : '0',
+          value: (/^true$/ui).test(result) ? '1' : '0',
         };
       });
     },
@@ -168,10 +169,14 @@ export const createParser = function(version: AhkVersion): P.Language {
         P.alt(rules.Primitive, rules.PropertyName),
         P.string(']'),
       ).map((result) => {
-        if ('type' in result[1] && result[1].type === 'PropertyName') {
-          return `${result[0]}${result[1].value as string}${result[2]}`;
+        if ('type' in result[1] && result[1].type === 'Primitive') {
+          const primitive = result[1].value;
+          if (primitive.type === 'String') {
+            return `["${String(result[1].value.value)}"]`;
+          }
+          return `[${String(result[1].value.value)}]`;
         }
-        return `${result[0]}${result[1].value.value.value as string}${result[2]}`;
+        return `[${String(result[1].value)}]`;
       });
     },
     BaseAccesor(rules) {

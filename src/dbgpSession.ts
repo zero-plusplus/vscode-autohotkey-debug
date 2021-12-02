@@ -9,6 +9,8 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
+import { TraceLogger } from './util/TraceLogger';
+import { unescapeAhk } from './util/VariableManager';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -227,7 +229,7 @@ export class ObjectProperty extends Property {
       const indexes: number[] = [];
       properties.forEach((propertyNode) => {
         const child = Property.from(propertyNode, context);
-        if (child.name === '<enume>') {
+        if (child.name === '<enum>') {
           return;
         }
         if (child.index) {
@@ -476,6 +478,7 @@ export class Session extends EventEmitter {
     return this._ahkVersion;
   }
   private readonly socket: Socket;
+  private readonly logger?: TraceLogger;
   private readonly pendingCommands = new Map<number, Command>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
@@ -485,9 +488,10 @@ export class Session extends EventEmitter {
   public get socketClosed(): boolean {
     return !this.socket.writable;
   }
-  constructor(socket: Socket) {
+  constructor(socket: Socket, logger?: TraceLogger) {
     super();
 
+    this.logger = logger;
     this.socket = socket
       .on('data', (packet: Buffer): void => {
         this.handlePacket(packet);
@@ -562,7 +566,7 @@ export class Session extends EventEmitter {
     return new StackDepthResponse(await this.sendCommand('stack_depth'));
   }
   public async sendPropertyGetCommand(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<PropertyGetResponse> {
-    const commandParams = `-n ${name} -c ${context.id} -d ${context.stackFrame.level}`;
+    const commandParams = `-n ${unescapeAhk(name, this.ahkVersion)} -c ${context.id} -d ${context.stackFrame.level}`;
     let dbgpResponse: XmlNode;
     if (this.DEFAULT_MAX_DEPTH < maxDepth) {
       await this.sendFeatureSetCommand('max_depth', maxDepth);
@@ -712,38 +716,46 @@ export class Session extends EventEmitter {
     }
     return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
   }
-  public async evaluate(name: string, stackFrame?: StackFrame): Promise<Property | undefined> {
-    // #region util
-    const safeFetchProperty = async(context: Context, name: string): Promise<Property | undefined> => {
-      const variablePathArray = splitVariablePath(this.ahkVersion, name);
-      if (variablePathArray.length < 2) {
-        return this.fetchProperty(context, name);
-      }
-      const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
-      const propertyName = variablePathArray[variablePathArray.length - 1];
-      const property = await this.fetchProperty(context, parentVariablePath, 2);
-      if (property instanceof ObjectProperty) {
-        const child = property.children.find((child) => equalsIgnoreCase(child.name, propertyName));
-        if (child) {
-          return child;
-        }
-        return property.children.find((child) => child.name === '<base>' && equalsIgnoreCase(child.name, `<${propertyName}>`));
-      }
-      return undefined;
-    };
-    const findInheritedProperty = async(context: Context, parentName: string, key: string): Promise<Property | null> => {
-      const baseProperty = await this.fetchProperty(context, `${parentName}.base`);
-      if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
-        return null;
-      }
-      const property = await this.evaluate(`${baseProperty.fullName}.${key}`);
-      if (property) {
-        return property;
-      }
-      return findInheritedProperty(context, baseProperty.fullName, key);
-    };
-    // #endregion util
+  // workaround the issue of getting dynamic properties directly, which causes errors, get the parent element and return its child elements
+  public async safeFetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | undefined> {
+    // Under 1.1, the dynamic property issue does not occur
+    if (this.ahkVersion.mejor <= 1.1) {
+      return this.fetchProperty(context, name);
+    }
+    const variablePathArray = splitVariablePath(this.ahkVersion, name);
+    if (variablePathArray.length === 1) {
+      return this.fetchProperty(context, name);
+    }
 
+    const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
+    const propertyName = variablePathArray[variablePathArray.length - 1];
+    const property = await this.fetchProperty(context, parentVariablePath, maxDepth);
+    if (property instanceof ObjectProperty) {
+      const child = property.children.find((child) => equalsIgnoreCase(child.name, propertyName));
+      if (child) {
+        // If the dynamic property is tried to be retrieved with `base` instead of `<base>`, an error will occur, so this can be avoided by converting it to `<base>`
+        const shouldFixBug = (/(?<!<)base(?!>)/u).test(child.fullName) && child instanceof PrimitiveProperty && child.value === '<error>';
+        if (shouldFixBug) {
+          return this.fetchProperty(context, child.fullName.replace(/(?<!<)base(?!>)/gu, '<base>'));
+        }
+        return child;
+      }
+      return property.children.find((child) => child.name === '<base>' && equalsIgnoreCase(child.name, `<${propertyName}>`));
+    }
+    return undefined;
+  }
+  public async fetchInheritedProperty(context: Context, parentName: string, key: string): Promise<Property | undefined> {
+    const baseProperty = await this.fetchProperty(context, `${parentName}.<base>`);
+    if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
+      return undefined;
+    }
+    const property = await this.safeFetchProperty(context, `${baseProperty.fullName}.${key}`);
+    if (property) {
+      return property;
+    }
+    return this.fetchInheritedProperty(context, baseProperty.fullName, key);
+  }
+  public async evaluate(name: string, stackFrame?: StackFrame, maxDepth = 1): Promise<Property | undefined> {
     let _stackFrame: StackFrame;
     if (stackFrame) {
       _stackFrame = stackFrame;
@@ -759,7 +771,7 @@ export class Session extends EventEmitter {
     const resolvedName = (await this.resolveVariablePath(name));
     const { contexts } = await this.sendContextNamesCommand(_stackFrame);
     for await (const context of contexts) {
-      const property = await safeFetchProperty(context, resolvedName);
+      const property = await this.safeFetchProperty(context, resolvedName);
       if (property) {
         return property;
       }
@@ -769,14 +781,14 @@ export class Session extends EventEmitter {
         continue;
       }
       const shortName = variablePathArray.pop()!;
-      const parentName = joinVariablePathArray(variablePathArray);
 
       // Common to v1 and v2, do not search for inherited properties when using bracket notation
       if (shortName.startsWith('[')) {
         continue;
       }
 
-      const inheritedProperty = await findInheritedProperty(context, parentName, shortName);
+      const parentName = joinVariablePathArray(variablePathArray);
+      const inheritedProperty = await this.fetchInheritedProperty(context, parentName, shortName);
       if (inheritedProperty) {
         return inheritedProperty;
       }
@@ -815,35 +827,20 @@ export class Session extends EventEmitter {
     // #region util
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
       const children = [ ...property.children ];
-      const base = await this.evaluate(`${property.fullName}.<base>`);
+      const base = await this.evaluate(`${property.fullName}.<base>`, undefined, 2);
       if (base instanceof ObjectProperty) {
-        children.push(...await getInheritedChildren(base));
+        const nestedChildren = (await getInheritedChildren(base)).filter((property) => property.name !== '<base>');
+        children.push(...nestedChildren);
       }
-      return children;
+      // return children;
+      return uniqBy(children, (property) => property.name.replace(/^<|>$/gu, '').toLocaleLowerCase());
     };
-    const getChildren = async(variablePathOrProperty: string | Property): Promise<Property[] | null> => {
-      const property = typeof variablePathOrProperty === 'string' ? await this.evaluate(variablePathOrProperty) : variablePathOrProperty;
+    const getChildren = async(variablePath: string): Promise<Property[] | undefined> => {
+      const property = await this.evaluate(variablePath, undefined, 2);
       if (property instanceof ObjectProperty) {
-        const children = (await getInheritedChildren(property));
-        const hasNotPrototypeBaseProperty = children.some((property) => {
-          if (property instanceof ObjectProperty) {
-            if (property.name === 'Base' && property.className === 'Prototype') {
-              return false;
-            }
-          }
-          return equalsIgnoreCase(property.name, 'base');
-        });
-
-        const filteredChildren = children.filter((property) => !(hasNotPrototypeBaseProperty && property.name === '<base>'));
-        return uniqBy(filteredChildren, (property) => {
-          const lowerCased = property.name.toLowerCase();
-          if (lowerCased === '<base>') {
-            return 'base';
-          }
-          return lowerCased;
-        });
+        return getInheritedChildren(property);
       }
-      return null;
+      return undefined;
     };
     // #endregion util
 
@@ -862,15 +859,15 @@ export class Session extends EventEmitter {
       return [];
     }
 
-    const lastPath = propertyPathArray[propertyPathArray.length - 1];
-    const isBracketNotation = lastPath.startsWith('[');
+    const propertyName = propertyPathArray[propertyPathArray.length - 1];
+    const isBracketNotation = propertyName.startsWith('[');
     if (isBracketNotation) {
       const openQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
-      if (openQuoteRegExp.test(lastPath)) {
+      if (openQuoteRegExp.test(propertyName)) {
         return this.fetchAllProperties();
       }
       const closeQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
-      if (closeQuoteRegExp.test(lastPath)) {
+      if (closeQuoteRegExp.test(propertyName)) {
         return this.fetchAllProperties();
       }
 
@@ -883,11 +880,7 @@ export class Session extends EventEmitter {
     }
 
     const parentVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
-    const parentProperty = await this.evaluate(parentVariablePath);
-    if (!parentProperty) {
-      return [];
-    }
-    return await getChildren(parentProperty) ?? [];
+    return await getChildren(parentVariablePath) ?? [];
   }
   public async close(): Promise<void> {
     this.removeAllListeners();
@@ -906,6 +899,8 @@ export class Session extends EventEmitter {
     return this.transactionCounter;
   }
   private async write(command: string): Promise<void> {
+    this.logger?.log(`<command>${command}`);
+
     return new Promise<void>((resolve, reject) => {
       if (!this.socket.writable) {
         reject(new Error('Socket not writable.'));
@@ -945,7 +940,9 @@ export class Session extends EventEmitter {
       }
 
       // Received response
-      const xml_str = data.toString();
+      // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171
+      // If it contains a newline, it should be escaped in an AutoHotkey-like manner.
+      const xml_str = data.toString().replace(/\r\n/gu, '`r`n').replace(/\n/gu, '`n');
       const response = parser.parse(xml_str, {
         attributeNamePrefix: '',
         attrNodeName: 'attributes',

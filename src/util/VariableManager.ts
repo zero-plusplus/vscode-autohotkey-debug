@@ -5,10 +5,11 @@ import { URI } from 'vscode-uri';
 import * as dbgp from '../dbgpSession';
 import { rtrim } from 'underscore.string';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isNumberLike, isPrimitive } from './util';
+import { isNumberLike, isPrimitive, toArray } from './util';
 import { equalsIgnoreCase } from './stringUtils';
-import { CategoryData } from '../extension';
+import { CategoryData, MatcherData } from '../extension';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
+import { AhkDebugSession } from '../ahkDebug';
 
 export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
   return str
@@ -93,7 +94,7 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
 
 const handles = new DebugAdapter.Handles();
 
-export type StackFrames = StackFrame[] & { isIdle?: boolean };
+export type StackFrames = StackFrame[] & { isIdleMode?: boolean };
 export class StackFrame implements DebugProtocol.StackFrame {
   public readonly dbgpStackFrame: dbgp.StackFrame;
   public readonly id: number;
@@ -143,9 +144,12 @@ export class Scope implements DebugAdapter.Scope {
     });
   }
 }
+export type CategoryMatcher = (variable: Variable) => boolean;
 export class Category implements Scope {
   public readonly scopes: Scope[];
-  public readonly data: CategoryData;
+  public readonly categoryData: CategoryData;
+  public readonly allCategoriesData: CategoryData[];
+  public readonly categoryMatcher: CategoryMatcher;
   public readonly variablesReference: number;
   public readonly expensive: boolean;
   public children?: Variable[];
@@ -156,13 +160,15 @@ export class Category implements Scope {
     return this.scopes[0].session;
   }
   public get name(): string {
-    return this.data.label;
+    return this.categoryData.label;
   }
-  constructor(scopes: Scope[], categoryData: CategoryData, expensive = false) {
+  constructor(scopes: Scope[], categoryData: CategoryData, allCategoriesData: CategoryData[], expensive = false) {
     this.variablesReference = handles.create(this);
     this.expensive = expensive;
     this.scopes = scopes;
-    this.data = categoryData;
+    this.categoryData = categoryData;
+    this.categoryMatcher = this.createCategoryMatcher(categoryData.matchers);
+    this.allCategoriesData = allCategoriesData;
   }
   public create(value: Variable | Scope | Category): number {
     return handles.create(value);
@@ -177,10 +183,7 @@ export class Category implements Scope {
     }
 
     const sourceScopes = this.scopes.filter((scope) => {
-      if (this.data.source === '*') {
-        return true;
-      }
-      const sourceNames = typeof this.data.source === 'string' ? [ this.data.source ] : this.data.source;
+      const sourceNames = toArray<string>(this.categoryData.source);
       return sourceNames.some((sourceName) => equalsIgnoreCase(scope.name, sourceName));
     });
 
@@ -189,57 +192,86 @@ export class Category implements Scope {
       sourceVariables.push(...await scope.createChildren(maxDepth));
     }
 
-    const matchers = this.data.matchers;
-    if (!matchers) {
+    const matchers = this.categoryData.matchers;
+    if (!matchers && !this.categoryData.noduplicate) {
       return sourceVariables;
     }
 
-    let variables: Variable[] = sourceVariables.slice();
-    for (const matcher of matchers) {
-      variables = variables.filter((variable) => {
-        const testers: Array<(() => boolean)> = [];
-        if (matcher.pattern) {
-          const regex = new RegExp(matcher.pattern, matcher.ignorecase ? 'iu' : 'u');
-          testers.push(() => regex.test(variable.name));
+    const variables: Variable[] = sourceVariables.filter((variable) => {
+      if (this.categoryData.noduplicate) {
+        const categoriesDataBySameSource = this.allCategoriesData.filter((categoryData) => {
+          if (this.categoryData.label === categoryData.label) {
+            return false;
+          }
+          if (!categoryData.matchers) {
+            return false;
+          }
+          const sourceA = toArray<string>(this.categoryData.source).sort((a, b) => a.localeCompare(b)).join();
+          const sourceB = toArray<string>(categoryData.source).sort((a, b) => a.localeCompare(b)).join();
+          return sourceA === sourceB;
+        });
+        const isDuplicated = categoriesDataBySameSource.some((categoryData) => this.createCategoryMatcher(categoryData.matchers)(variable));
+        if (isDuplicated) {
+          return false;
         }
-        if (matcher.builtin) {
-          testers.push(() => {
-            if (variable.property.facet === 'Builtin') {
-              return true;
-            }
-            if ((/(^A_)|^\d$/ui).test(variable.name)) {
-              return true;
-            }
-            const globalVariableNames = this.session.ahkVersion.mejor === 2
-              ? [ 'Abs', 'ACos', 'Any', 'Array', 'ASin', 'ATan', 'BlockInput', 'BoundFunc', 'Break', 'Buffer', 'CallbackCreate', 'CallbackFree', 'CaretGetPos', 'Catch', 'Ceil', 'Chr', 'Class', 'Click', 'ClipboardAll', 'ClipWait', 'Closure', 'ComCall', 'ComObjActive', 'ComObjArray', 'ComObjConnect', 'ComObject', 'ComObjFlags', 'ComObjFromPtr', 'ComObjGet', 'ComObjQuery', 'ComObjType', 'ComObjValue', 'ComValue', 'ComValueRef', 'Continue', 'ControlAddItem', 'ControlChooseIndex', 'ControlChooseString', 'ControlClick', 'ControlDeleteItem', 'ControlFindItem', 'ControlFocus', 'ControlGetChecked', 'ControlGetChoice', 'ControlGetClassNN', 'ControlGetEnabled', 'ControlGetExStyle', 'ControlGetFocus', 'ControlGetHwnd', 'ControlGetIndex', 'ControlGetItems', 'ControlGetPos', 'ControlGetStyl', 'ControlGetText', 'ControlGetVisible', 'ControlHide', 'ControlHideDropDown', 'ControlMove', 'ControlSen', 'ControlSendText', 'ControlSetChecked', 'ControlSetEnabled', 'ControlSetExStyle', 'ControlSetStyl', 'ControlSetText', 'ControlShow', 'ControlShowDropDown', 'CoordMode', 'Cos', 'Critical', 'DateAdd', 'DateDiff', 'DetectHiddenText', 'DetectHiddenWindows', 'DirCopy', 'DirCreate', 'DirDelete', 'DirExist', 'DirMove', 'DirSelect', 'DllCall', 'Download', 'DriveEject', 'DriveGetCapacity', 'DriveGetFileSystem', 'DriveGetLabel', 'DriveGetList', 'DriveGetSerial', 'DriveGetSpaceFree', 'DriveGetStatus', 'DriveGetStatusCD', 'DriveGetType', 'DriveLock', 'DriveRetract', 'DriveSetLabel', 'DriveUnlock', 'Edit', 'EditGetCurrentCol', 'EditGetCurrentLine', 'EditGetLine', 'EditGetLineCount', 'EditGetSelectedText', 'EditPaste', 'Else', 'Enumerator', 'EnvGet', 'EnvSet', 'Error', 'Exit', 'ExitApp', 'Exp', 'File', 'FileAppend', 'FileCopy', 'FileCreateShortcut', 'FileDelete', 'FileEncoding', 'FileExist', 'FileGetAttrib', 'FileGetShortcut', 'FileGetSize', 'FileGetTime', 'FileGetVersion', 'FileInstall', 'FileMove', 'FileOpen', 'FileRead', 'FileRecycle', 'FileRecycleEmpty', 'FileSelect', 'FileSetAttrib', 'FileSetTime', 'Finally', 'Float', 'Floor', 'For', 'Format', 'FormatTime', 'Func', 'GetKeyName', 'GetKeySC', 'GetKeyState', 'GetKeyVK', 'GetMethod', 'Goto', 'GroupActivate', 'GroupAdd', 'GroupClose', 'GroupDeactivate', 'Gui', 'Gui()', 'GuiCtrlFromHwnd', 'GuiFromHwnd', 'HasBase', 'HasMethod', 'HasProp', 'HotIf', 'Hotkey', 'Hotstring', 'If', 'IL_Ad', 'IL_Creat', 'IL_Destroy', 'ImageSearch', 'IndexError', 'IniDelete', 'IniRead', 'IniWrite', 'InputBox', 'InputHook', 'InstallKeybdHook', 'InstallMouseHook', 'InStr', 'Integer', 'IsLabel', 'IsObject', 'IsSet', 'KeyError', 'KeyHistory', 'KeyWait', 'ListHotkeys', 'ListLines', 'ListVars', 'ListViewGetContent', 'Ln', 'LoadPicture', 'Log', 'Loop', 'Map', 'Max', 'MemberError', 'MemoryError', 'Menu', 'Menu()', 'MenuBar', 'MenuBar()', 'MenuFromHandle', 'MenuSelect', 'MethodError', 'Min', 'Mod', 'MonitorGet', 'MonitorGetCount', 'MonitorGetName', 'MonitorGetPrimary', 'MonitorGetWorkArea', 'MouseClick', 'MouseClickDrag', 'MouseGetPos', 'MouseMove', 'MsgBox', 'Number', 'NumGet', 'NumPut', 'ObjAddRef', 'ObjAddress', 'ObjBindMethod', 'Object', 'ObjGetBase', 'ObjGetCapacity', 'ObjHasOwnPro', 'ObjOwnProp', 'ObjOwnPropCount', 'ObjPtr', 'ObjRelease', 'ObjSetBase', 'ObjSetCapacity', 'OnClipboardChange', 'OnError', 'OnExit', 'OnMessage', 'Ord', 'OSError', 'OutputDebug', 'Pause', 'Persistent', 'PixelGetColor', 'PixelSearch', 'PostMessage', 'Primitive', 'ProcessClose', 'ProcessExist', 'ProcessSetPriority', 'ProcessWait', 'ProcessWaitClose', 'PropertyError', 'Random', 'RegDelete', 'RegDeleteKey', 'RegExMatch', 'RegExMatchInfo', 'RegExReplace', 'RegRead', 'RegWrite', 'Reload', 'Return', 'Round', 'Run', 'RunAs', 'RunWait', 'Send', 'SendLevel', 'SendMessage', 'SendMode', 'SetCapsLockState', 'SetControlDelay', 'SetDefaultMouseSpeed', 'SetKeyDelay', 'SetMouseDelay', 'SetNumLockState', 'SetRegView', 'SetScrollLockState', 'SetStoreCapsLockMode', 'SetTimer', 'SetTitleMatchMode', 'SetWinDelay', 'SetWorkingDir', 'Shutdown', 'Sin', 'Sleep', 'Sort', 'SoundBeep', 'SoundGetInterface', 'SoundGetMute', 'SoundGetName', 'SoundGetVolume', 'SoundPlay', 'SoundSetMute', 'SoundSetVolume', 'SplitPath', 'Sqrt', 'StatusBarGetText', 'StatusBarWait', 'StrCompare', 'StrGet', 'String', 'StrLen', 'StrLower', 'StrPut', 'StrReplace', 'StrSplit', 'StrUpper', 'SubStr', 'Suspend', 'Switch', 'SysGet', 'SysGetIPAddresses', 'Tan', 'TargetError', 'These', 'Thread', 'Throw', 'TimeoutError', 'ToolTip', 'TraySetIcon', 'TrayTip', 'Trim', 'Try', 'Type', 'TypeError', 'Until', 'ValueError', 'VarRef', 'VarSetStrCapacity', 'VerCompare', 'While-loop', 'WinActivate', 'WinActivateBottom', 'WinActive', 'WinClose', 'WinExist', 'WinGetClass', 'WinGetClientPos', 'WinGetControls', 'WinGetControlsHwnd', 'WinGetCount', 'WinGetExStyle', 'WinGetID', 'WinGetIDLast', 'WinGetList', 'WinGetMinMax', 'WinGetPID', 'WinGetPos', 'WinGetProcessName', 'WinGetProcessPath', 'WinGetStyl', 'WinGetText', 'WinGetTitle', 'WinGetTransColor', 'WinGetTransparent', 'WinHide', 'WinKill', 'WinMaximize', 'WinMinimize', 'WinMinimizeAll', 'WinMove', 'WinMoveBottom', 'WinMoveTop', 'WinRedraw', 'WinRestore', 'WinSetAlwaysOnTop', 'WinSetEnabled', 'WinSetExStyle', 'WinSetRegion', 'WinSetStyl', 'WinSetTitle', 'WinSetTransColor', 'WinSetTransparent', 'WinShow', 'WinWait', 'WinWaitActive', 'WinWaitClose', 'ZeroDivisionError' ]
-              : [ 'ErrorLevel' ];
-            return globalVariableNames.some((name) => equalsIgnoreCase(name, variable.name));
-          });
-        }
-        if (matcher.static) {
-          testers.push(() => variable.property.facet === 'Static');
-        }
-        if (matcher.type) {
-          testers.push(() => variable.type === matcher.type);
-        }
-        if (matcher.className) {
-          testers.push(() => variable.className === matcher.className);
-        }
-
-        const result = testers.every((tester) => tester());
-        if (matcher.method === 'exclude') {
-          return !result;
-        }
-        return result;
-      });
-    }
-
+      }
+      return this.categoryMatcher(variable);
+    });
     return variables.sort((a, b) => {
       if (a.property.isIndexKey && b.property.isIndexKey) {
         return a.property.index! - b.property.index!;
       }
       return a.name.localeCompare(b.name);
     });
+  }
+  private createCategoryMatcher(matchersData?: MatcherData[]): CategoryMatcher {
+    if (!matchersData || matchersData.length === 0) {
+      return (variable: Variable): boolean => true;
+    }
+    return (variable: Variable): boolean => {
+      return matchersData.every((matcher) => {
+        const matchers: Array<(() => boolean)> = [];
+        if (typeof matcher.pattern === 'string') {
+          const regex = new RegExp(matcher.pattern, matcher.ignorecase ? 'iu' : 'u');
+          matchers.push(() => regex.test(variable.name));
+        }
+        if (typeof matcher.builtin === 'boolean') {
+          matchers.push(() => {
+            if (variable.property.facet === 'Builtin') {
+              return true;
+            }
+            if ((/(^A_)|^\d$/ui).test(variable.name)) {
+              return true;
+            }
+
+            const globalVariableNames = this.session.ahkVersion.mejor === 2
+              ? [ 'Abs', 'ACos', 'Any', 'Array', 'ASin', 'ATan', 'BlockInput', 'BoundFunc', 'Break', 'Buffer', 'CallbackCreate', 'CallbackFree', 'CaretGetPos', 'Catch', 'Ceil', 'Chr', 'Class', 'Click', 'ClipboardAll', 'ClipWait', 'Closure', 'ComCall', 'ComObjActive', 'ComObjArray', 'ComObjConnect', 'ComObject', 'ComObjFlags', 'ComObjFromPtr', 'ComObjGet', 'ComObjQuery', 'ComObjType', 'ComObjValue', 'ComValue', 'ComValueRef', 'Continue', 'ControlAddItem', 'ControlChooseIndex', 'ControlChooseString', 'ControlClick', 'ControlDeleteItem', 'ControlFindItem', 'ControlFocus', 'ControlGetChecked', 'ControlGetChoice', 'ControlGetClassNN', 'ControlGetEnabled', 'ControlGetExStyle', 'ControlGetFocus', 'ControlGetHwnd', 'ControlGetIndex', 'ControlGetItems', 'ControlGetPos', 'ControlGetStyl', 'ControlGetText', 'ControlGetVisible', 'ControlHide', 'ControlHideDropDown', 'ControlMove', 'ControlSen', 'ControlSendText', 'ControlSetChecked', 'ControlSetEnabled', 'ControlSetExStyle', 'ControlSetStyl', 'ControlSetText', 'ControlShow', 'ControlShowDropDown', 'CoordMode', 'Cos', 'Critical', 'DateAdd', 'DateDiff', 'DetectHiddenText', 'DetectHiddenWindows', 'DirCopy', 'DirCreate', 'DirDelete', 'DirExist', 'DirMove', 'DirSelect', 'DllCall', 'Download', 'DriveEject', 'DriveGetCapacity', 'DriveGetFileSystem', 'DriveGetLabel', 'DriveGetList', 'DriveGetSerial', 'DriveGetSpaceFree', 'DriveGetStatus', 'DriveGetStatusCD', 'DriveGetType', 'DriveLock', 'DriveRetract', 'DriveSetLabel', 'DriveUnlock', 'Edit', 'EditGetCurrentCol', 'EditGetCurrentLine', 'EditGetLine', 'EditGetLineCount', 'EditGetSelectedText', 'EditPaste', 'Else', 'Enumerator', 'EnvGet', 'EnvSet', 'Error', 'Exit', 'ExitApp', 'Exp', 'File', 'FileAppend', 'FileCopy', 'FileCreateShortcut', 'FileDelete', 'FileEncoding', 'FileExist', 'FileGetAttrib', 'FileGetShortcut', 'FileGetSize', 'FileGetTime', 'FileGetVersion', 'FileInstall', 'FileMove', 'FileOpen', 'FileRead', 'FileRecycle', 'FileRecycleEmpty', 'FileSelect', 'FileSetAttrib', 'FileSetTime', 'Finally', 'Float', 'Floor', 'For', 'Format', 'FormatTime', 'Func', 'GetKeyName', 'GetKeySC', 'GetKeyState', 'GetKeyVK', 'GetMethod', 'Goto', 'GroupActivate', 'GroupAdd', 'GroupClose', 'GroupDeactivate', 'Gui', 'Gui()', 'GuiCtrlFromHwnd', 'GuiFromHwnd', 'HasBase', 'HasMethod', 'HasProp', 'HotIf', 'Hotkey', 'Hotstring', 'If', 'IL_Ad', 'IL_Creat', 'IL_Destroy', 'ImageSearch', 'IndexError', 'IniDelete', 'IniRead', 'IniWrite', 'InputBox', 'InputHook', 'InstallKeybdHook', 'InstallMouseHook', 'InStr', 'Integer', 'IsLabel', 'IsObject', 'IsSet', 'KeyError', 'KeyHistory', 'KeyWait', 'ListHotkeys', 'ListLines', 'ListVars', 'ListViewGetContent', 'Ln', 'LoadPicture', 'Log', 'Loop', 'Map', 'Max', 'MemberError', 'MemoryError', 'Menu', 'Menu()', 'MenuBar', 'MenuBar()', 'MenuFromHandle', 'MenuSelect', 'MethodError', 'Min', 'Mod', 'MonitorGet', 'MonitorGetCount', 'MonitorGetName', 'MonitorGetPrimary', 'MonitorGetWorkArea', 'MouseClick', 'MouseClickDrag', 'MouseGetPos', 'MouseMove', 'MsgBox', 'Number', 'NumGet', 'NumPut', 'ObjAddRef', 'ObjAddress', 'ObjBindMethod', 'Object', 'ObjGetBase', 'ObjGetCapacity', 'ObjHasOwnPro', 'ObjOwnProp', 'ObjOwnPropCount', 'ObjPtr', 'ObjRelease', 'ObjSetBase', 'ObjSetCapacity', 'OnClipboardChange', 'OnError', 'OnExit', 'OnMessage', 'Ord', 'OSError', 'OutputDebug', 'Pause', 'Persistent', 'PixelGetColor', 'PixelSearch', 'PostMessage', 'Primitive', 'ProcessClose', 'ProcessExist', 'ProcessSetPriority', 'ProcessWait', 'ProcessWaitClose', 'PropertyError', 'Random', 'RegDelete', 'RegDeleteKey', 'RegExMatch', 'RegExMatchInfo', 'RegExReplace', 'RegRead', 'RegWrite', 'Reload', 'Return', 'Round', 'Run', 'RunAs', 'RunWait', 'Send', 'SendLevel', 'SendMessage', 'SendMode', 'SetCapsLockState', 'SetControlDelay', 'SetDefaultMouseSpeed', 'SetKeyDelay', 'SetMouseDelay', 'SetNumLockState', 'SetRegView', 'SetScrollLockState', 'SetStoreCapsLockMode', 'SetTimer', 'SetTitleMatchMode', 'SetWinDelay', 'SetWorkingDir', 'Shutdown', 'Sin', 'Sleep', 'Sort', 'SoundBeep', 'SoundGetInterface', 'SoundGetMute', 'SoundGetName', 'SoundGetVolume', 'SoundPlay', 'SoundSetMute', 'SoundSetVolume', 'SplitPath', 'Sqrt', 'StatusBarGetText', 'StatusBarWait', 'StrCompare', 'StrGet', 'String', 'StrLen', 'StrLower', 'StrPut', 'StrReplace', 'StrSplit', 'StrUpper', 'SubStr', 'Suspend', 'Switch', 'SysGet', 'SysGetIPAddresses', 'Tan', 'TargetError', 'These', 'Thread', 'Throw', 'TimeoutError', 'ToolTip', 'TraySetIcon', 'TrayTip', 'Trim', 'Try', 'Type', 'TypeError', 'Until', 'ValueError', 'VarRef', 'VarSetStrCapacity', 'VerCompare', 'While-loop', 'WinActivate', 'WinActivateBottom', 'WinActive', 'WinClose', 'WinExist', 'WinGetClass', 'WinGetClientPos', 'WinGetControls', 'WinGetControlsHwnd', 'WinGetCount', 'WinGetExStyle', 'WinGetID', 'WinGetIDLast', 'WinGetList', 'WinGetMinMax', 'WinGetPID', 'WinGetPos', 'WinGetProcessName', 'WinGetProcessPath', 'WinGetStyl', 'WinGetText', 'WinGetTitle', 'WinGetTransColor', 'WinGetTransparent', 'WinHide', 'WinKill', 'WinMaximize', 'WinMinimize', 'WinMinimizeAll', 'WinMove', 'WinMoveBottom', 'WinMoveTop', 'WinRedraw', 'WinRestore', 'WinSetAlwaysOnTop', 'WinSetEnabled', 'WinSetExStyle', 'WinSetRegion', 'WinSetStyl', 'WinSetTitle', 'WinSetTransColor', 'WinSetTransparent', 'WinShow', 'WinWait', 'WinWaitActive', 'WinWaitClose', 'ZeroDivisionError' ]
+              : [ 'ErrorLevel' ];
+            const isBuiltin = globalVariableNames.some((name) => equalsIgnoreCase(name, variable.name));
+
+            return matcher.builtin ? isBuiltin : !isBuiltin;
+          });
+        }
+        if (typeof matcher.static === 'boolean') {
+          matchers.push(() => {
+            const isStatic = variable.property.facet === 'Static';
+            return matcher.static ? isStatic : !isStatic;
+          });
+        }
+        if (typeof matcher.type === 'string') {
+          matchers.push(() => variable.type === matcher.type);
+        }
+        if (typeof matcher.className === 'string') {
+          matchers.push(() => Boolean(variable.className && equalsIgnoreCase(variable.className, matcher.className!)));
+        }
+
+        const result = matchers.every((tester) => tester());
+        if (matcher.method === 'exclude') {
+          return !result;
+        }
+        return result;
+      });
+    };
   }
 }
 export class Categories extends Array<Scope | Category> implements DebugProtocol.Variable {
@@ -291,16 +323,26 @@ export class Variable implements DebugProtocol.Variable {
   public readonly hasChildren: boolean;
   public readonly isLoadedChildren: boolean;
   public readonly session: dbgp.Session;
-  public readonly property: dbgp.Property;
   public readonly name: string;
   public readonly value: string;
   public readonly variablesReference: number;
   public readonly __vscodeVariableMenuContext: 'string' | 'number' | 'object';
-  public indexedVariables?: number;
-  public namedVariables?: number;
   public readonly type?: string;
+  public get indexedVariables(): number | undefined {
+    if (this.property instanceof dbgp.ObjectProperty && this.property.isArray && 100 < this.property.maxIndex!) {
+      return this.property.maxIndex;
+    }
+    return undefined;
+  }
+  public get namedVariables(): number | undefined {
+    return this.property instanceof dbgp.ObjectProperty ? 1 : undefined;
+  }
   public get isArray(): boolean {
     return this.property instanceof dbgp.ObjectProperty ? this.property.isArray : false;
+  }
+  public _property: dbgp.Property;
+  public get property(): dbgp.Property {
+    return this._property;
   }
   public get context(): dbgp.Context {
     return this.property.context;
@@ -322,7 +364,7 @@ export class Variable implements DebugProtocol.Variable {
     this.isLoadedChildren = property instanceof dbgp.ObjectProperty && 0 < property.children.length;
 
     this.session = session;
-    this.property = property;
+    this._property = property;
     this.name = property.name;
     this.value = formatProperty(property, this.session.ahkVersion);
     this.variablesReference = this.hasChildren ? handles.create(this) : 0;
@@ -333,11 +375,12 @@ export class Variable implements DebugProtocol.Variable {
     else {
       this.__vscodeVariableMenuContext = 'object';
     }
-
-    if (property instanceof dbgp.ObjectProperty) {
-      if (property.isArray && 100 < property.maxIndex!) {
-        this.indexedVariables = property.maxIndex;
-        this.namedVariables = 1;
+  }
+  public async loadChildren(): Promise<void> {
+    if (!this.isLoadedChildren) {
+      const reloadedProperty = await this.session.fetchProperty(this.context, this.fullName, 1);
+      if (reloadedProperty) {
+        this._property = reloadedProperty;
       }
     }
   }
@@ -346,19 +389,13 @@ export class Variable implements DebugProtocol.Variable {
       return undefined;
     }
 
-    let children = this.children;
-    if (!this.isLoadedChildren) {
-      const reloadedProperty = await this.session.fetchProperty(this.context, this.fullName, 1);
-      if (reloadedProperty instanceof dbgp.ObjectProperty) {
-        children = reloadedProperty.children;
-      }
-    }
-    if (!children) {
+    await this.loadChildren();
+    if (!this.children) {
       return undefined;
     }
 
     const variables: Variable[] = [];
-    for await (const property of children) {
+    for await (const property of this.children) {
       // Fix: [#133](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/133)
       if (property.fullName.includes('<enum>')) {
         continue;
@@ -383,6 +420,7 @@ export class Variable implements DebugProtocol.Variable {
       }
 
       const variable = new Variable(this.session, property);
+      await variable.loadChildren();
       variables.push(variable);
     }
     return variables;
@@ -394,11 +432,21 @@ export class MetaVariable implements DebugProtocol.Variable {
   public readonly name: string;
   public readonly type = 'metavariable';
   public readonly variablesReference: number;
-  public readonly indexedVariables?: number;
-  public readonly namedVariables?: number;
+  public get indexedVariables(): number | undefined {
+    if (this.rawValue instanceof Variable) {
+      return this.rawValue.indexedVariables;
+    }
+    return undefined;
+  }
+  public get namedVariables(): number | undefined {
+    if (this.rawValue instanceof Variable) {
+      return this.rawValue.namedVariables;
+    }
+    return undefined;
+  }
   public rawValue: MetaVariableValue | LazyMetaVariableValue;
   public loadedPromiseValue?: MetaVariableValue;
-  private children?: Array<Variable | MetaVariable | DebugProtocol.Variable>;
+  public children?: Array<Variable | MetaVariable | DebugProtocol.Variable>;
   public get value(): string {
     const value = this.loadedPromiseValue ?? this.rawValue;
     if (isPrimitive(value)) {
@@ -463,27 +511,39 @@ export class MetaVariableValueMap extends CaseInsensitiveMap<string, MetaVariabl
 }
 
 export class VariableManager {
+  public readonly debugAdapter: AhkDebugSession;
   public readonly session: dbgp.Session;
-  public readonly categories?: CategoryData[];
+  public readonly categoriesData?: CategoryData[];
   // private readonly scopeByVariablesReference = new Map<number, Scope>();
   // private readonly objectByVariablesReference = new Map<number, dbgp.ObjectProperty>();
   // private readonly stackFramesByFrameId = new Map<number, dbgp.StackFrame>();
-  constructor(session: dbgp.Session, categories?: CategoryData[]) {
-    this.session = session;
-    this.categories = categories;
+  constructor(debugAdapter: AhkDebugSession, categories?: CategoryData[]) {
+    this.debugAdapter = debugAdapter;
+    this.session = debugAdapter.session!;
+    this.categoriesData = categories;
   }
-  public createVariableReference(value: any): number {
+  public createVariableReference(value?: any): number {
     return handles.create(value);
   }
   public async createCategories(frameId: number): Promise<Categories> {
     const defaultScopes = await this.createDefaultScopes(frameId);
-    if (!this.categories) {
+    if (!this.categoriesData) {
       return defaultScopes;
     }
 
     const categories = new Categories();
-    for (const categoryData of this.categories) {
-      categories.push(new Category(defaultScopes, categoryData));
+    for await (const categoryData of this.categoriesData) {
+      if (categoryData.hidden === true) {
+        continue;
+      }
+      const category = new Category(defaultScopes, categoryData, this.categoriesData);
+      if (categoryData.hidden === 'auto') {
+        await category.loadChildren();
+        if (category.children?.length === 0) {
+          continue;
+        }
+      }
+      categories.push(category);
     }
     return categories;
   }
@@ -526,9 +586,24 @@ export class VariableManager {
   public async createStackFrames(): Promise<StackFrames> {
     const { stackFrames: dbgpStackFrames } = await this.session.sendStackGetCommand();
 
-    return dbgpStackFrames.map((dbgpStackFrame) => {
+    const stackFrames: StackFrames = dbgpStackFrames.map((dbgpStackFrame) => {
       return new StackFrame(this.session, dbgpStackFrame);
     });
+    stackFrames.isIdleMode = false;
+    if (dbgpStackFrames.length === 0) {
+      stackFrames.isIdleMode = true;
+      stackFrames.push(new StackFrame(
+        this.session,
+        {
+          name: 'Idling (Click me if you want to see the variables)',
+          fileUri: URI.file(this.debugAdapter.config.program).path,
+          level: 0,
+          line: 0,
+          type: 'file',
+        },
+      ));
+    }
+    return stackFrames;
   }
   public getStackFrame(frameId: number): StackFrame | undefined {
     const stackFrame = handles.get(frameId);

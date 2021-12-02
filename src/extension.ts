@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
-import { defaults, isString, range } from 'lodash';
+import { defaults, groupBy, isString, range } from 'lodash';
 import * as isPortTaken from 'is-port-taken';
 import * as jsonc from 'jsonc-parser';
 import { getAhkVersion } from './util/getAhkVersion';
@@ -15,6 +15,7 @@ import normalizeToUnix = require('normalize-path');
 import * as glob from 'fast-glob';
 import { registerCommands } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { isDirectory, toArray } from './util/util';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -42,15 +43,17 @@ export type MatcherData = {
 export type CategoryData = {
   label: string;
   source: ScopeSelector | ScopeName[];
+  hidden?: boolean | 'auto';
+  noduplicate?: boolean;
   matchers?: MatcherData[];
 };
-export type CategoriesData = 'Recommend' | Array<ScopeSelector | CategoryData>;
+export type CategoriesData = 'recommend' | Array<ScopeSelector | CategoryData>;
 
-const normalizeCategories = (categories?: 'Recommend' | Array<ScopeSelector | CategoryData>): CategoryData[] | undefined => {
+const normalizeCategories = (categories?: CategoriesData): CategoryData[] | undefined => {
   if (!categories) {
     return undefined;
   }
-  if (categories === 'Recommend') {
+  if (categories === 'recommend') {
     return [
       {
         label: 'Local',
@@ -109,6 +112,20 @@ const normalizeCategories = (categories?: 'Recommend' | Array<ScopeSelector | Ca
     }
   }
 
+  const checkNoduplicate = (categoriesData: CategoryData[]): void => {
+    const groupedCategoriesData = Object.entries(groupBy(categoriesData, (categoryData) => JSON.stringify(toArray<string>(categoryData.source).sort((a, b) => a.localeCompare(b)))));
+    groupedCategoriesData;
+    for (const [ , categoriesDataBySource ] of groupedCategoriesData) {
+      const categoriesWithNoduplicate = categoriesDataBySource.filter((categoryData) => categoryData.noduplicate);
+      if (categoriesWithNoduplicate.length === 0 || categoriesWithNoduplicate.length === 1) {
+        continue;
+      }
+
+      const source = JSON.stringify(categoriesWithNoduplicate[0].source);
+      throw Error(`There are multiple \`noduplicate\` attributes set for the category with \`${source}\` as the source. This attribute can only be set to one of the categories that have the same source.`);
+    }
+  };
+  checkNoduplicate(normalized);
   return normalized;
 };
 
@@ -346,6 +363,17 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       }
     })();
 
+    // init cwd
+    ((): void => {
+      if (!config.cwd) {
+        config.cwd = path.dirname(config.program);
+      }
+      if (!isDirectory(config.cwd)) {
+        throw Error(`\`cwd\` must be a absolute path of directory.\nSpecified: "${path.resolve(String(config.cwd))}"`);
+      }
+      config.cwd = path.resolve(config.cwd);
+    })();
+
     // init args
     ((): void => {
       if (!isArray(config.args)) {
@@ -512,11 +540,11 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (!config.variableCategories) {
         return;
       }
-      if (config.variableCategories === 'Recommend' || isArray(config.variableCategories)) {
-        config.variableCategories = normalizeCategories(config.variableCategories as 'Recommend' | Array<ScopeSelector | CategoryData>);
+      if (config.variableCategories === 'recommend' || isArray(config.variableCategories)) {
+        config.variableCategories = normalizeCategories(config.variableCategories as CategoriesData);
         return;
       }
-      throw Error('`variableCategories` must be a "Recommend" or array.');
+      throw Error('`variableCategories` must be a "recommend" or array.');
     })();
 
     // init trace

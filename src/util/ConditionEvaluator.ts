@@ -3,8 +3,8 @@ import * as createPcre from 'pcre-to-regexp';
 import regexParser = require('regex-parser');
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
-import { MetaVariableValueMap } from './VariableManager';
-import { isPrimitive } from './util';
+import { LazyMetaVariableValue, MetaVariableValue, MetaVariableValueMap } from './VariableManager';
+import { isFloatLike, isIntegerLike, isNumberLike, isPrimitive } from './util';
 
 type Operator = (a, b) => boolean;
 const not = (predicate): Operator => (a, b): boolean => !predicate(a, b);
@@ -157,7 +157,7 @@ export class ConditionalEvaluator {
         let result = false;
         if (operatorType.type === 'IsOperator') {
           if (valueA instanceof dbgp.ObjectProperty && valueB instanceof dbgp.ObjectProperty) {
-            let baseName = `${valueA.fullName}.base`;
+            let baseName = `${valueA.fullName}.<base>`;
             let baseClassNameProperty = await this.session.evaluate(`${baseName}.__class`);
             while (baseClassNameProperty) {
               // eslint-disable-next-line no-await-in-loop
@@ -169,65 +169,64 @@ export class ConditionalEvaluator {
                 }
               }
 
-              baseName += '.base';
+              baseName += '.<base>';
             }
           }
-          else if (valueA instanceof dbgp.Property && (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string')) {
-            const typeName = String(valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB)
+          else if ((valueA instanceof dbgp.Property || isPrimitive(valueA)) && (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string')) {
+            const valueAType = valueA instanceof dbgp.Property ? valueA.type : String(a.value?.value?.type ?? a.value.type).toLowerCase();
+            const valueBType = String(valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB)
               .toLowerCase()
               .replace(/(?<=\b)int(?=\b)/ui, 'integer');
 
-            if (valueA.type === typeName) {
+            if (valueAType === valueBType) {
               result = true;
             }
-            else if (typeName === 'primitive') {
-              if ([ 'string', 'integer', 'float' ].includes(valueA.type)) {
+            else if (valueBType === 'primitive') {
+              if ([ 'string', 'integer', 'float' ].includes(valueAType)) {
                 result = true;
               }
             }
-            else if (typeName === 'number') {
-              if ([ 'integer', 'float' ].includes(valueA.type)) {
+            else if (valueBType === 'number') {
+              if ([ 'integer', 'float' ].includes(valueAType)) {
                 result = true;
               }
             }
-            else if (valueA instanceof dbgp.ObjectProperty && typeName.startsWith('object:')) {
-              const className = typeName.match(/^object:(.*)$/ui)![1];
+            else if (valueA instanceof dbgp.ObjectProperty && valueBType.startsWith('object:')) {
+              const className = valueBType.match(/^object:(.*)$/ui)![1];
               if (className.toLowerCase() === valueA.className.toLowerCase()) {
                 result = true;
               }
             }
-            else if (valueA instanceof dbgp.PrimitiveProperty) {
-              const isIntegerLike = !Number.isNaN(parseInt(valueA.value, 10));
-              const isFloatLike = isIntegerLike && valueA.value.includes('.');
-              const isNumberLike = isIntegerLike || isFloatLike;
-              if (typeName === 'integer:like' && isIntegerLike) {
+            else if (valueA instanceof dbgp.PrimitiveProperty || isPrimitive(valueA)) {
+              const _valueA = String(valueA instanceof dbgp.PrimitiveProperty ? valueA.value : valueA);
+              if (valueBType === 'integer:like' && isIntegerLike(_valueA)) {
                 result = true;
               }
-              else if (typeName === 'float:like' && isFloatLike) {
+              else if (valueBType === 'float:like' && isFloatLike(_valueA)) {
                 result = true;
               }
-              else if (typeName === 'number:like' && isNumberLike) {
+              else if (valueBType === 'number:like' && isNumberLike(_valueA)) {
                 result = true;
               }
-              else if (typeName === 'string:alpha' && -1 < valueA.value.search(/^[a-zA-Z]+$/u)) {
+              else if (valueBType === 'string:alpha' && -1 < _valueA.search(/^[a-zA-Z]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:alnum' && -1 < valueA.value.search(/^[a-zA-Z0-9]+$/u)) {
+              else if (valueBType === 'string:alnum' && -1 < _valueA.search(/^[a-zA-Z0-9]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:upper' && -1 < valueA.value.search(/^[A-Z]+$/u)) {
+              else if (valueBType === 'string:upper' && -1 < _valueA.search(/^[A-Z]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:lower' && -1 < valueA.value.search(/^[a-z]+$/u)) {
+              else if (valueBType === 'string:lower' && -1 < _valueA.search(/^[a-z]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:space' && -1 < valueA.value.search(/^\s+$/u)) {
+              else if (valueBType === 'string:space' && -1 < _valueA.search(/^\s+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:hex' && -1 < valueA.value.search(/^0x[0-9a-fA-F]+$/u)) {
+              else if (valueBType === 'string:hex' && -1 < _valueA.search(/^0x[0-9a-fA-F]+$/u)) {
                 result = true;
               }
-              else if (typeName === 'string:time' && !Number.isNaN(Date.parse(valueA.value))) {
+              else if (valueBType === 'string:time' && !Number.isNaN(Date.parse(_valueA))) {
                 result = true;
               }
             }
@@ -245,28 +244,47 @@ export class ConditionalEvaluator {
             }
           }
         }
-        else if (operatorType.type === 'HasOperator' && valueA instanceof dbgp.ObjectProperty) {
-          if (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string') {
+        else if (operatorType.type === 'HasOperator' && (valueA instanceof dbgp.ObjectProperty || valueA instanceof Object)) {
+          const keys = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => child.name) : Object.keys(valueA);
+          if (valueB instanceof dbgp.ObjectProperty) {
+            result = keys.some((key) => {
+              const match = key.match(/^\[Object\((?<address>\d+)\)\]$/u);
+              return match?.groups?.address === String(valueB.address);
+            });
+          }
+          else {
             const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
-            const isRegExp = searchValue.startsWith('/');
-            result = valueA.children.some((child) => {
-              if (child instanceof dbgp.PrimitiveProperty) {
-                return isRegExp ? regexCompare(child.name, searchValue) : equals(child.name, searchValue);
+            const isRegExp = String(searchValue).startsWith('/');
+            result = keys.some((key) => {
+              if (key === '<enum>') {
+                return false;
               }
-              return false;
+              const fixedName = key.replace(/^\["|^<|"\]$|>$/gu, '');
+              return isRegExp ? regexCompare(fixedName, searchValue) : equals(fixedName, searchValue);
             });
           }
         }
-        else if (operatorType.type === 'ContainsOperator' && valueA instanceof dbgp.ObjectProperty) {
-          if (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string') {
-            const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
-            const isRegExp = searchValue.startsWith('/');
-            result = valueA.children.some((child) => {
-              if (child instanceof dbgp.PrimitiveProperty) {
+        else if (operatorType.type === 'ContainsOperator') {
+          const children = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => (child instanceof dbgp.PrimitiveProperty ? { type: 'primitive', value: child.value } : { type: 'object', value: (child as dbgp.ObjectProperty).address })) : Object.entries(valueA ?? {}).map(([ key, value ]) => (isPrimitive(value) ? { type: 'primitive', value } : { type: 'object' }));
+          if (valueB instanceof dbgp.Property || isPrimitive(valueB)) {
+            if (valueB instanceof dbgp.ObjectProperty) {
+              result = children.some((child) => {
+                if (child.type === 'object') {
+                  return child.value === valueB.address;
+                }
+                return false;
+              });
+            }
+            else {
+              const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
+              const isRegExp = String(searchValue).startsWith('/');
+              result = children.some((child) => {
+                if (child.type === 'object') {
+                  return false;
+                }
                 return isRegExp ? regexCompare(child.value, searchValue) : equals(child.value, searchValue);
-              }
-              return false;
-            });
+              });
+            }
           }
         }
 
@@ -310,8 +328,9 @@ export class ConditionalEvaluator {
     }
 
     if (typeof primitiveValue === 'string') {
-      if (primitiveValue === '0') {
-        return false;
+      if (isNumberLike(primitiveValue)) {
+        const number = Number(primitiveValue);
+        return Boolean(number);
       }
       return primitiveValue !== '';
     }
@@ -340,17 +359,14 @@ export class ConditionalEvaluator {
     }
     return this.session.evaluate(propertyName);
   }
-  private async evalValue(parsed, metaVariableMap: MetaVariableValueMap): Promise<string | number | dbgp.Property | undefined> {
+  private async evalValue(parsed, metaVariableMap: MetaVariableValueMap): Promise<string | number | dbgp.Property | MetaVariableValue | LazyMetaVariableValue | undefined> {
     if (!('type' in parsed || 'value' in parsed)) {
       return undefined;
     }
 
     if (parsed.type === 'MetaVariable') {
       const metaVariable = metaVariableMap.get(parsed.value.value);
-      if (isPrimitive(metaVariable)) {
-        return metaVariable;
-      }
-      return undefined;
+      return metaVariable;
     }
     else if (parsed.type === 'PropertyName') {
       return this.evalProperty(parsed);
@@ -373,8 +389,8 @@ export class ConditionalEvaluator {
         const value = String(number.value);
         return String(value.length);
       }
-      if (number.type === 'Hex') {
-        return String(parseInt(number.value, 16));
+      if (typeof number.value === 'number') {
+        return number.value as number;
       }
       return String(number.value);
     }

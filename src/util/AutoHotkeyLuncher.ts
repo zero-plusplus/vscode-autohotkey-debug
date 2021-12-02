@@ -23,7 +23,7 @@ export class AutoHotkeyLauncher {
     return this.launchByNode();
   }
   public launchByNode(): AutoHotkeyProcess {
-    const { noDebug, runtime, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
+    const { noDebug, runtime, cwd, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
 
     const launchArgs = [
       ...(noDebug ? [] : [ `/Debug=${hostname}:${port}` ]),
@@ -32,7 +32,7 @@ export class AutoHotkeyLauncher {
       ...args,
     ];
     const event = new EventEmitter();
-    const ahkProcess = spawn(runtime, launchArgs, { cwd: path.dirname(program), env });
+    const ahkProcess = spawn(runtime, launchArgs, { cwd, env });
     ahkProcess.on('close', (exitCode?: number) => {
       event.emit('close', exitCode);
     });

@@ -224,6 +224,10 @@
                   "/ErrorStdOut"
                 ]
               },
+              "cwd": {
+                "type": "string",
+                "description": "The absolute path of the current working directory."
+              },
               "hostname": {
                 "type": "string",
                 "description": "No changes are required.",
@@ -419,7 +423,7 @@
                 ],
                 "description": "Customize a group of variables for data inspection.",
                 "examples": [
-                  "Recommend",
+                  "recommend",
                   []
                 ],
                 "items": {
@@ -443,12 +447,11 @@
                         "string",
                         "array"
                       ],
-                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to include all of them, specify \"*\"",
+                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to use multiple sources, specify them as an array.",
                       "examples": [
                         "Local",
                         "Static",
                         "Global",
-                        "*",
                         []
                       ],
                       "items": {
@@ -459,6 +462,22 @@
                           "Global"
                         ]
                       }
+                    },
+                    "hidden": {
+                      "type": [
+                        "boolean",
+                        "string"
+                      ],
+                      "description": "Show / hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
+                      "examples": [
+                        "auto"
+                      ],
+                      "default": false
+                    },
+                    "noduplicate": {
+                      "type": "boolean",
+                      "description": "Disallow / allow duplication with variables of different categories that have the same source. This attribute can only be set for one of the categories that have the same source.",
+                      "default": false
                     },
                     "matchers": {
                       "type": "array",
@@ -721,7 +740,7 @@
                 ],
                 "description": "Customize a group of variables for data inspection.",
                 "examples": [
-                  "Recommend",
+                  "recommend",
                   []
                 ],
                 "items": {
@@ -745,12 +764,11 @@
                         "string",
                         "array"
                       ],
-                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to include all of them, specify \"*\"",
+                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to use multiple sources, specify them as an array.",
                       "examples": [
                         "Local",
                         "Static",
                         "Global",
-                        "*",
                         []
                       ],
                       "items": {
@@ -761,6 +779,22 @@
                           "Global"
                         ]
                       }
+                    },
+                    "hidden": {
+                      "type": [
+                        "boolean",
+                        "string"
+                      ],
+                      "description": "Show / hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
+                      "examples": [
+                        "auto"
+                      ],
+                      "default": false
+                    },
+                    "noduplicate": {
+                      "type": "boolean",
+                      "description": "Disallow / allow duplication with variables of different categories that have the same source. This attribute can only be set for one of the categories that have the same source.",
+                      "default": false
                     },
                     "matchers": {
                       "type": "array",
@@ -841,7 +875,7 @@
         "configurationSnippets": [
           {
             "label": "AutoHotkey Debug",
-            "description": "A new configuration for 'debugging' a user selected (ahk | ahk2 | ah2) file.",
+            "description": "A new configuration for debugging the current open file (ahk or ahk2, ah2).",
             "body": {
               "name": "AutoHotkey Debug",
               "type": "autohotkey",
@@ -851,12 +885,40 @@
             }
           },
           {
+            "label": "AutoHotkey Debug (Advanced Configuration)",
+            "description": "A new advanced configuration for debugging the current open file (ahk or ahk2, ah2).",
+            "body": {
+              "name": "AutoHotkey Debug (Advanced Configuration)",
+              "type": "autohotkey",
+              "request": "launch",
+              "program": "^\"\\${file}\"",
+              "args": [],
+              "port": "9002-9010",
+              "variableCategories": "recommend",
+              "useDebugDirective": true,
+              "useAutoJumpToError": true
+            }
+          },
+          {
             "label": "AutoHotkey Attach",
-            "description": "A new configuration for 'attach' a user selected script.",
+            "description": "A new configuration for debugging by attach a user selected script.",
             "body": {
               "name": "AutoHotkey Attach",
               "type": "autohotkey",
               "request": "attach"
+            }
+          },
+          {
+            "label": "AutoHotkey Attach (Advanced Configuration)",
+            "description": "A new advanced configuration for debugging by attach a user selected script.",
+            "body": {
+              "name": "AutoHotkey Attach (Advanced Configuration)",
+              "type": "autohotkey",
+              "request": "attach",
+              "port": "9002-9010",
+              "variableCategories": "recommend",
+              "useDebugDirective": true,
+              "useAutoJumpToError": true
             }
           }
         ]
