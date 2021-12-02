@@ -41,6 +41,7 @@ import { version as debuggerAdapterVersion } from '../package.json';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
+  name: string;
   program: string;
   request: 'launch' | 'attach';
   runtime: string;
@@ -1558,6 +1559,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                   return;
                 }
                 this.sendAnnounce(`Debugger Adapter Version: ${String(debuggerAdapterVersion)}\n`, 'console', 'detail');
+                this.sendAnnounce(`Debug Configuration (${this.config.request}): ${this.config.name}\n`, 'console', 'detail');
                 this.sendAnnounce(`AutoHotkey Version: ${this.session.ahkVersion.full}\n`, 'console', 'detail');
                 if (0 < this.delayedWarningMessages.length) {
                   this.delayedWarningMessages.forEach((message) => {
