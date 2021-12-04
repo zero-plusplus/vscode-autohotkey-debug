@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
-import * as convertHrTime from 'convert-hrtime';
+import convertHrTime from 'convert-hrtime';
 import { uniq, uniqBy } from 'lodash';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';

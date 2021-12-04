@@ -15,7 +15,7 @@ import {
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
-import * as AsyncLock from 'async-lock';
+import AsyncLock from 'async-lock';
 import { range } from 'lodash';
 import { ImplicitFunctionPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
 import {
@@ -34,7 +34,7 @@ import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
 import { isPrimitive, timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
-import * as matcher from 'matcher';
+import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 import { CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';

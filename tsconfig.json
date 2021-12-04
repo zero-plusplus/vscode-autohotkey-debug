@@ -1,8 +1,8 @@
 {
 	"compilerOptions": {
-		"target": "es6",
+		"target": "ESNext",
 		"module": "commonjs",
-      "lib": [
+    "lib": [
 			"ESNext",
 			"DOM"
 		],
@@ -22,6 +22,7 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": false,
 		"preserveConstEnums": true,
+		"esModuleInterop": true,
 		"removeComments": false,
 		"resolveJsonModule": true,
 		"newLine": "crlf"
@@ -29,7 +30,6 @@
 	"include": [
 		"src/**/*",
 		"test/**/*",
-		"gulpfile.ts",
-		"webpack.*.ts"
+		"gulpfile.ts"
 	]
 }
