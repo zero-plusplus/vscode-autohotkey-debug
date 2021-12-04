@@ -1,6 +1,5 @@
-import * as createPcre from 'pcre-to-regexp';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import regexParser = require('regex-parser');
+import createPcre from 'pcre-to-regexp';
+import regexParser from 'regex-parser';
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
 import { LazyMetaVariableValue, MetaVariableValue, MetaVariableValueMap } from './VariableManager';

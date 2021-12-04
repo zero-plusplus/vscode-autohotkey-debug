@@ -16,5 +16,4 @@ test/
 .mocharc.js
 gulpfile.ts
 tsconfig.json
-webpack.*.ts
 yarn-error.log

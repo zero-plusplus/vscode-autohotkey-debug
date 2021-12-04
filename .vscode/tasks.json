@@ -51,23 +51,6 @@
       "isBackground": true,
       "command": "npm run watch",
       "problemMatcher": [
-          {
-          "owner": "gulp",
-          "base": "$tsc-watch",
-          "pattern": {
-              "regexp": "^\\s*([^:]+):(\\d+):(\\d+) - (error) (.+)$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4,
-              "message": 5,
-          },
-          "background": {
-            "activeOnStart": true,
-            "beginsPattern": "^\\s*\\[\\d{1,2}:\\d{1,2}:\\d{1,2}\\] (Starting compilation in watch mode\\.\\.\\.|File change detected. Starting incremental compilation\\.\\.\\.)$",
-            "endsPattern": "^\\s*\\[\\d{1,2}:\\d{1,2}:\\d{1,2}\\] Found \\d+ errors\\. Watching for file changes\\."
-          }
-        },
         {
           "owner": "gulp",
           "pattern": {
@@ -80,9 +63,8 @@
           },
           "background": {
             "activeOnStart": true,
-            "beginsPattern": "^\\s*\\[\\d{1,2}:\\d{1,2}:\\d{1,2}\\] Starting 'watchDemo'\\.\\.\\.$",
-            "endsPattern": "^\\s*\\[\\d{1,2}:\\d{1,2}:\\d{1,2}\\] Found \\d+ errors\\. Watching for file changes\\."
-            // "endsPattern": "^\\s*\\[\\d{1,2}:\\d{1,2}:\\d{1,2}\\] Finished 'buildSyntaxDemo' after \\d+ ms$"
+            "beginsPattern": "^\\s*\\[\\d{1,2}:\\d{1,2}:\\d{1,2}\\] Starting 'watch.*$",
+            "endsPattern": "(^\\s*\\[\\d{1,2}:\\d{1,2}:\\d{1,2}\\] Finished 'watch' after .+$)|(^\\[esbuild\\] build completed$)"
           }
         }
       ]

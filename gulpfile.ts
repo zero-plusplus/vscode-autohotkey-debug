@@ -1,14 +1,13 @@
 import * as gulp from 'gulp';
+import glob from 'fast-glob';
 import run from 'gulp-run-command';
-import * as del from 'del';
-import * as webpack from 'webpack';
+import del from 'del';
+import * as esbuild from 'esbuild';
 import { ESLint } from 'eslint';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { TSConfigJSON } from 'types-tsconfig';
+import tsconfig from './tsconfig.json';
 import eslintrc from './.eslintrc';
-import webpackProduction from './webpack.production';
-import webpackDevelopment from './webpack.development';
 import { isDirectory } from './src/util/util';
 import { spawn } from 'child_process';
 
@@ -20,51 +19,44 @@ const tscheck = async(): Promise<void> => {
   await run('tsc --noEmit')();
 };
 const eslint = async(): Promise<void> => {
-  const tsconfig = JSON.parse(await fs.readFile('./tsconfig.json', 'utf-8')) as TSConfigJSON;
-
-  const eslint = new ESLint({ ...eslintrc, fix: true, cache: true });
-  const results = await eslint.lintFiles(tsconfig.include!).catch((err) => {
+  const eslint = new ESLint({ baseConfig: eslintrc, fix: true, cache: true });
+  const results = await eslint.lintFiles(tsconfig.include).catch((err) => {
     throw err;
   });
   await ESLint.outputFixes(results);
 };
 // #region build
+const esbuildCommonOptions: esbuild.BuildOptions = {
+  platform: 'node',
+  format: 'cjs',
+};
+const esbuildOptions: esbuild.BuildOptions = {
+  ...esbuildCommonOptions,
+  entryPoints: [ './src/extension.ts' ],
+  outfile: './build/extension.js',
+  bundle: true,
+  minify: true,
+  treeShaking: true,
+  external: [
+    'ts-predicates',
+    'typeof-util',
+    'vscode-uri',
+    'vscode',
+  ],
+};
+const esbuildDebugOptions: esbuild.BuildOptions = {
+  ...esbuildCommonOptions,
+  entryPoints: glob.sync('./src/**/*.ts'),
+  outdir: 'build',
+  sourcemap: true,
+};
 const buildMain = async(): Promise<void> => {
-  await run('tsc')();
+  await esbuild.build(esbuildOptions);
+};
+const buildMainDebug = async(): Promise<void> => {
+  await esbuild.build(esbuildDebugOptions);
 };
 // #endregion build
-
-// #region bundle
-const bundling = async(webpackConfig: webpack.Configuration): Promise<void> => {
-  return new Promise<void>((resolve, reject) => {
-    const compiler = webpack({ ...webpackConfig });
-    compiler.run((err, result) => {
-      if (err) {
-        console.log(err);
-        reject(err);
-        return;
-      }
-      if (result) {
-        if (result.hasErrors()) {
-          reject(result.compilation.errors);
-          return;
-        }
-        if (result.hasWarnings()) {
-          reject(result.compilation.warnings);
-        }
-        console.log(result.toString());
-      }
-      resolve();
-    });
-  });
-};
-const bundleMain = async(): Promise<void> => {
-  return bundling(webpackProduction);
-};
-const bundleMainDebug = async(): Promise<void> => {
-  return bundling(webpackDevelopment);
-};
-// #endregion bundle
 
 const lint = gulp.parallel(tscheck, eslint);
 const runSandBoxTest = async(): Promise<void> => {
@@ -121,17 +113,24 @@ const runSandBoxTest = async(): Promise<void> => {
 
 const buildWithoutClean = gulp.parallel(lint, buildMain);
 const build = gulp.series(clean, buildWithoutClean);
-const bundleWithoutClean = gulp.parallel(bundleMain);
-const bundle = gulp.series(clean, bundleWithoutClean);
-const bundleDebugWithoutClean = gulp.parallel(bundleMainDebug);
-const bundleDebug = gulp.series(clean, bundleDebugWithoutClean);
 const vscePackage = async(): Promise<void> => {
   await run('vsce package')();
 };
 const watchMain = async(): Promise<void> => {
-  return run('tsc -w')();
+  await esbuild.build({
+    ...esbuildDebugOptions,
+    incremental: true,
+    watch: {
+      onRebuild: (err, result) => {
+        if (err) {
+          console.log(`[esbuild] error: ${err.message}`);
+        }
+        console.log(`[esbuild] build completed`);
+      },
+    },
+  });
 };
-const watch = gulp.series(build, watchMain);
+const watch = gulp.series(clean, watchMain);
 const packaging = gulp.series(clean, gulp.parallel(lint, vscePackage));
 const testBySandBox = gulp.series(packaging, runSandBoxTest);
 
@@ -139,13 +138,11 @@ export {
   build,
   buildWithoutClean,
   buildMain,
-  bundle,
-  bundleWithoutClean,
-  bundleDebug,
-  bundleDebugWithoutClean,
+  buildMainDebug,
   runSandBoxTest,
   testBySandBox,
   watch,
+  watchMain,
   packaging,
   clean,
   lint,
