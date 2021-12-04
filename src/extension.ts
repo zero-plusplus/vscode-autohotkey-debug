@@ -61,12 +61,8 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
       {
         label: 'Global',
         source: 'Global',
-        matchers: [
-          {
-            method: 'exclude',
-            builtin: true,
-          },
-        ],
+        noduplicate: true,
+        matchers: [ { method: 'exclude', pattern: '^\\d+$' } ],
       },
       {
         label: 'Built-in Global',
