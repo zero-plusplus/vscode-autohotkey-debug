@@ -244,7 +244,7 @@ export class ConditionalEvaluator {
           }
         }
         else if (operatorType.type === 'HasOperator' && (valueA instanceof dbgp.ObjectProperty || valueA instanceof Object)) {
-          const keys = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => child.name) : Object.keys(valueA);
+          const keys = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => (child.isIndexKey ? String(child.index) : child.name)) : Object.keys(valueA);
           if (valueB instanceof dbgp.ObjectProperty) {
             result = keys.some((key) => {
               const match = key.match(/^\[Object\((?<address>\d+)\)\]$/u);
