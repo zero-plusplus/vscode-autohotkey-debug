@@ -330,6 +330,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (config.request === 'attach') {
         const scriptPathList = getRunningAhkScriptList(config.runtime);
         if (scriptPathList.length === 0) {
+          config.program = '';
           config.cancelReason = `Canceled the attachment because no running AutoHotkey script was found.`;
           return;
         }
@@ -339,6 +340,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
             config.program = scriptPath;
             return;
           }
+          config.program = '';
           config.cancelReason = `Cancel the attach.`;
           return;
         }
