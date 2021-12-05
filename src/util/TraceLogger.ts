@@ -9,7 +9,9 @@ export class TraceLogger {
   }
   public log(message: string): void {
     if (this.enable) {
-      logger.log(`${now()} Trace ${message}`);
+      const _message = `${now()} Trace ${message}`;
+      logger.log(_message);
+      console.log(_message);
     }
   }
 }
