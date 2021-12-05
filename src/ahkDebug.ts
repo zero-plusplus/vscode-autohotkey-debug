@@ -32,7 +32,7 @@ import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
-import { isPrimitive, timeoutPromise } from './util/util';
+import { isPrimitive, now, timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
@@ -1263,8 +1263,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private createMetaVariables(response: dbgp.ContinuationResponse): MetaVariableValueMap {
     const metaVariables = new MetaVariableValueMap();
-    const now = new Date();
-    metaVariables.set('now', `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${String(now.getMilliseconds()).padStart(3, '0')}`);
+    metaVariables.set('now', now());
     metaVariables.set('hitCount', -1);
 
     if (this.currentMetaVariableMap) {
