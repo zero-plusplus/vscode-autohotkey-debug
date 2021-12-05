@@ -935,6 +935,7 @@
     "he": "^1.2.0",
     "is-port-taken": "^0.0.3",
     "jsonc-simple-parser": "^2.2.0",
+    "lazy-promise": "^4.0.0",
     "lodash": "^4.17.20",
     "matcher": "^4.0.0",
     "normalize-path": "^3.0.0",

@@ -17,6 +17,7 @@ import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import AsyncLock from 'async-lock';
 import { range } from 'lodash';
+import LazyPromise from 'lazy-promise';
 import { ImplicitFunctionPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
 import {
   Breakpoint,
@@ -1284,11 +1285,15 @@ export class AhkDebugSession extends LoggingDebugSession {
     metaVariables.set('thisCallstack', thisCallstack);
     this.metaVaribalesByFrameId.set(frameId, metaVariables);
 
-    const categories = this.variableManager!.createCategories(-1);
+    const categories = new LazyPromise<Categories>((resolve) => {
+      this.variableManager!.createCategories(-1).then((result) => {
+        resolve(result);
+      });
+    });
     metaVariables.set('variableCategories', categories);
     const categoriesLength = this.config.variableCategories?.length ?? 3;
     for (const i of range(categoriesLength)) {
-      metaVariables.set(`variableCategories[${i + 1}]`, new Promise((resolve) => {
+      metaVariables.set(`variableCategories[${i + 1}]`, new LazyPromise((resolve) => {
         categories.then((categories) => {
           resolve(categories[i]);
         });
