@@ -1,7 +1,7 @@
 **Translated by [DeepL Tranlator](https://www.deepl.com/translator)**
 
 # Overview
-This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/) that provides many advanced features in addition to the basic [debugging features](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Features).
+This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/) that provides many [advanced features](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Features) in addition to the basic debugging features.
 
 # News
 ### Important Notices
@@ -9,14 +9,14 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 
 * The required version of VSCode has been raised from [1.45.0](https://code.visualstudio.com/updates/v1_45) to [1.49.0](https://code.visualstudio.com/updates/v1_49).
 
-* Since `1.10.0` is a relatively large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)
+* Since `1.10.0` is a large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)
 
 ### Update
 * `1.10.0` - 2021-xx-xx
     * Added: [#75](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/75) Add some context menus to copy the value of a variable in data inspection
     * Added: [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
     * Added: [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useAnnounce` attribute in launch.json
-    * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useOutputDebug` attribute in launch.json
+    * Added: [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useOutputDebug` attribute in launch.json
     * Added: [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Support ClearConsole directive
     * Added: [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Support `Add to Watch` and `Copy as Expression` in the context menu of data inspection
     * Added: [#150](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/150) Add `{now}`, `{callstack}`, `{callstackNames}`, `thisCallstack` in meta variables
@@ -76,7 +76,7 @@ By default, the runtime is configured for each file extension as shown below, so
 If you want to place the runtime in a specified folder, you need to set the [runtime](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Launch-Mode) attribute in launch.json.
 
 # Usage
-1. Open a file with the extension `.ahk`, `.ahk2` or `.ah2`.
+1. Open a file with the extension `ahk`, `ahk2` or `ah2`.
 2. (optional) Set [Breakpoint](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Breakpoint) where you want them
 3. Press `F5`
 
