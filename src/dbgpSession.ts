@@ -771,7 +771,7 @@ export class Session extends EventEmitter {
     const resolvedName = (await this.resolveVariablePath(name));
     const { contexts } = await this.sendContextNamesCommand(_stackFrame);
     for await (const context of contexts) {
-      const property = await this.safeFetchProperty(context, resolvedName);
+      const property = await this.safeFetchProperty(context, resolvedName, maxDepth);
       if (property) {
         return property;
       }
