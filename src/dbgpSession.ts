@@ -848,15 +848,15 @@ export class Session extends EventEmitter {
       return this.fetchAllProperties();
     }
 
-    const propertyPathArray = splitVariablePath(this.ahkVersion, fixedVariablePath);
-    if (propertyPathArray.length === 0 || propertyPathArray.length === 1) {
-      return this.fetchAllProperties();
-    }
-
     // e.g. `object..field`
     const isMultipleDot = (/\.{2,}$/u).test(fixedVariablePath);
     if (isMultipleDot) {
       return [];
+    }
+
+    const propertyPathArray = splitVariablePath(this.ahkVersion, fixedVariablePath);
+    if (propertyPathArray.length === 0 || propertyPathArray.length === 1) {
+      return this.fetchAllProperties();
     }
 
     const propertyName = propertyPathArray[propertyPathArray.length - 1];
