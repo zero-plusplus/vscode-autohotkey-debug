@@ -57,12 +57,12 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
     ? `${objectProperty.className}(${maxIndex!}) [`
     : `${objectProperty.className} {`;
 
-  const children = objectProperty.children.slice(0, 100);
-  for (const child of children) {
-    if (child.name === '<base>') {
-      continue;
-    }
+  const children = objectProperty.children.slice(0, 100).filter((property) => property.name !== '<base>');
+  if (children.length === 0) {
+    return objectProperty.className;
+  }
 
+  for (const child of children) {
     const displayValue = child instanceof dbgp.PrimitiveProperty
       ? formatPrimitiveProperty(child)
       : (child as dbgp.ObjectProperty).className;
