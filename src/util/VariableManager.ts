@@ -324,7 +324,9 @@ export class Variable implements DebugProtocol.Variable {
   public readonly isLoadedChildren: boolean;
   public readonly session: dbgp.Session;
   public readonly name: string;
-  public readonly value: string;
+  public get value(): string {
+    return formatProperty(this.property, this.session.ahkVersion);
+  }
   public readonly variablesReference: number;
   public readonly __vscodeVariableMenuContext: 'string' | 'number' | 'object';
   public readonly type?: string;
@@ -366,7 +368,6 @@ export class Variable implements DebugProtocol.Variable {
     this.session = session;
     this._property = property;
     this.name = property.name;
-    this.value = formatProperty(property, this.session.ahkVersion);
     this.variablesReference = this.hasChildren ? handles.create(this) : 0;
     this.type = property.type;
     if (property instanceof dbgp.PrimitiveProperty) {

@@ -717,14 +717,14 @@ export class Session extends EventEmitter {
     return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
   }
   // workaround the issue of getting dynamic properties directly, which causes errors, get the parent element and return its child elements
-  public async safeFetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | undefined> {
+  public async safeFetchProperty(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> {
     // Under 1.1, the dynamic property issue does not occur
     if (this.ahkVersion.mejor <= 1.1) {
-      return this.fetchProperty(context, name);
+      return this.fetchProperty(context, name, maxDepth);
     }
     const variablePathArray = splitVariablePath(this.ahkVersion, name);
     if (variablePathArray.length === 1) {
-      return this.fetchProperty(context, name);
+      return this.fetchProperty(context, name, maxDepth);
     }
 
     const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
@@ -736,7 +736,7 @@ export class Session extends EventEmitter {
         // If the dynamic property is tried to be retrieved with `base` instead of `<base>`, an error will occur, so this can be avoided by converting it to `<base>`
         const shouldFixBug = (/(?<!<)base(?!>)/u).test(child.fullName) && child instanceof PrimitiveProperty && child.value === '<error>';
         if (shouldFixBug) {
-          return this.fetchProperty(context, child.fullName.replace(/(?<!<)base(?!>)/gu, '<base>'));
+          return this.fetchProperty(context, child.fullName.replace(/(?<!<)base(?!>)/gu, '<base>'), maxDepth);
         }
         return child;
       }
