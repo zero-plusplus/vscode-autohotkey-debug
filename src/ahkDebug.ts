@@ -36,7 +36,7 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { isPrimitive, now, timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
 import matcher from 'matcher';
-import { Categories, Category, MetaVariable, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 import { CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 
@@ -1401,7 +1401,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const label = evalucatedMessages.reduce((prev: string, current): string => {
       if (typeof current === 'string' || typeof current === 'number') {
-        return prev + current;
+        return `${prev}${current}`;
       }
       return prev;
     }, '') || objectMessages.reduce((prev, current) => (prev ? `${prev}, ${current.name}` : current.name), '');
@@ -1415,7 +1415,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     event.body.variablesReference = variablesReference;
     this.sendEvent(event);
   }
-  private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap, maxDepth?: number): Promise<Array<string | Variable | Scope | Category | Categories>> {
+  private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap, maxDepth?: number): Promise<MetaVariableValue[]> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
@@ -1425,7 +1425,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return [ unescapeLogMessage(format) ];
     }
 
-    const results: Array<string | Variable | Scope | Category | Categories> = [];
+    const results: MetaVariableValue[] = [];
     let message = '', currentIndex = 0;
     for await (const match of format.matchAll(variableRegex)) {
       if (typeof match.index === 'undefined') {
@@ -1446,9 +1446,8 @@ export class AhkDebugSession extends LoggingDebugSession {
           message += metaVariable!.rawValue;
         }
         else if (metaVariable) {
-          const _metaVariable = metaVariable instanceof Promise ? await metaVariable : metaVariable;
-
-          if (_metaVariable && 'loadChildren' in _metaVariable) {
+          const _metaVariable = (metaVariable instanceof Promise ? await metaVariable : metaVariable) as MetaVariable;
+          if ('loadChildren' in _metaVariable) {
             await _metaVariable.loadChildren(maxDepth);
             results.push(_metaVariable);
           }
