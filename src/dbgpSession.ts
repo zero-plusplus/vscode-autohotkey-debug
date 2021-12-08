@@ -482,6 +482,8 @@ export class Session extends EventEmitter {
   private readonly pendingCommands = new Map<number, Command>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
+  private packetProcessStart_ms = 0;
+  private packetProcessElapsedTime_ms = 0;
   public get socketWritable(): boolean {
     return this.socket.writable;
   }
@@ -925,6 +927,23 @@ export class Session extends EventEmitter {
     //               command="command_name"
     //               transaction_id="transaction_id"/>
     //     [NULL]
+    if (this.packetProcessStart_ms === 0) {
+      this.packetProcessStart_ms = new Date().getTime();
+    }
+    const elapsedTime_ms = new Date().getTime() - this.packetProcessStart_ms;
+    if (5000 < elapsedTime_ms) {
+      this.packetProcessElapsedTime_ms += elapsedTime_ms;
+      this.emit('warning', `[Warn] The communication with the debugger is taking more than ${Math.floor(this.packetProcessElapsedTime_ms / 1000)} second. If you are using Log point, please reduce the depth specification of the child elements`);
+      this.packetProcessStart_ms = 0;
+
+      const timeout = 30000 < this.packetProcessElapsedTime_ms;
+      if (timeout) {
+        this.socket.emit('error', Error('The debug session was forcibly stopped because the communication with the debugger did not finish within the specified time'));
+        this.packetProcessStart_ms = 0;
+        this.packetProcessElapsedTime_ms = 0;
+      }
+    }
+
     const currentPacket = Buffer.concat([ this.insufficientData, packet ]);
     this.insufficientData = Buffer.from('');
 
@@ -954,6 +973,8 @@ export class Session extends EventEmitter {
       });
 
       this.emit('message', response);
+      this.packetProcessStart_ms = 0;
+      this.packetProcessElapsedTime_ms = 0;
 
       const restPacket = currentPacket.slice(terminatorIndex + 1);
       if (0 < restPacket.length) {

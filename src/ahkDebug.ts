@@ -1588,6 +1588,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 }
 
                 this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                this.sendTerminateEvent();
               })
               .on('close', () => {
                 this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
