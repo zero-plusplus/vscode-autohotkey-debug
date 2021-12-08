@@ -1390,7 +1390,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const metaVariables = new MetaVariableValueMap(this.currentMetaVariableMap.entries());
     metaVariables.set('hitCount', hitCount);
 
-    const evalucatedMessages = await this.evaluateLog(logMessage, metaVariables, 99);
+    const evalucatedMessages = await this.evaluateLog(logMessage, metaVariables);
     const stringMessages = evalucatedMessages.filter((message) => typeof message === 'string' || typeof message === 'number') as string[];
     const objectMessages = evalucatedMessages.filter((message) => typeof message === 'object') as Array<Scope | Category | Categories | Variable>;
     if (objectMessages.length === 0) {
@@ -1415,12 +1415,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     event.body.variablesReference = variablesReference;
     this.sendEvent(event);
   }
-  private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap, maxDepth?: number): Promise<MetaVariableValue[]> {
+  private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap): Promise<MetaVariableValue[]> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
 
-    const variableRegex = /(?<!\\)\{\{(?<metaVariableName>[^\r\n}]+)\}\}|(?<!\\)\{(?<variableName>[^\r\n}]+)\}/gu;
+    const defaultMaxDepth = 2 <= this.session!.ahkVersion.mejor ? 3 : 6;
+    const variableRegex = /(?<!\\)\{\{(?<metaVariableName>[^\r\n:}]+)(:(?<metaVariableNameDepth>\d+))?\}\}|(?<!\\)\{(?<variableName>[^\r\n:}]+)(:(?<variableNameDepth>\d+))?\}/gu;
     if (format.search(variableRegex) === -1) {
       return [ unescapeLogMessage(format) ];
     }
@@ -1439,7 +1440,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         message += format.slice(currentIndex, match.index);
       }
 
-      const { variableName, metaVariableName } = match.groups;
+      const { variableName, variableNameDepth, metaVariableName, metaVariableNameDepth } = match.groups;
       if (metaVariableName) {
         const metaVariable = metaVariables?.createMetaVariable(metaVariableName);
         if (isPrimitive(metaVariable?.rawValue)) {
@@ -1448,6 +1449,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         else if (metaVariable) {
           const _metaVariable = (metaVariable instanceof Promise ? await metaVariable : metaVariable) as MetaVariable;
           if ('loadChildren' in _metaVariable) {
+            const maxDepth = metaVariableNameDepth ? parseInt(metaVariableNameDepth, 10) : defaultMaxDepth;
             await _metaVariable.loadChildren(maxDepth);
             results.push(_metaVariable);
           }
@@ -1457,7 +1459,8 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else {
-        const property = await this.session!.evaluate(variableName);
+        const maxDepth = variableNameDepth ? parseInt(variableNameDepth, 10) : defaultMaxDepth;
+        const property = await this.session!.evaluate(variableName, undefined, maxDepth);
 
         if (property) {
           if (property instanceof dbgp.ObjectProperty) {
