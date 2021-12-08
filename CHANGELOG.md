@@ -33,6 +33,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#157](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/157) When an object is output at a log point, etc., instead of being split, it is output as one. Also, if the output is used together with a string, it will be treated as a label
 * [#163](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/163) Restored true base objects to `<base>` notation
 * [#165](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/165) The hover information is now displayed even if there is bracket notation or simple variables
+* [#176](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/176) Add a format to set the depth of child elements to be written when an object is output with log points, etc
 
 ### Fixed
 * [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects
