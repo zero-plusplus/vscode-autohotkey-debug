@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog][Keep a Changelog] and this project adheres to [Semantic Versioning][Semantic Versioning].
 
 ## [Unreleased]
-If you want to see what the next version of the plan is, check out the [milestones](https://github.com/zero-plusplus/vscode-autohotkey-debug/milestones).
+If you want to see what the next version of the plan is, check out the [here](https://github.com/zero-plusplus/vscode-autohotkey-debug/labels/milestone).
 Also want to check the development status, check the [commit history](https://github.com/zero-plusplus/vscode-autohotkey-debug/commits/develop) of the develop branch.
 
 ---
