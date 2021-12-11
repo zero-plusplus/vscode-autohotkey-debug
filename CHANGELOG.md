@@ -16,36 +16,35 @@ Also want to check the development status, check the [commit history](https://gi
 ## [Released]
 ## [1.10.0] - 2021-xx-xx
 ### Added
-* [#75](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/75) Support some context menus to copy the value of a variable in data inspection
-* [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
-* [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useAnnounce` attribute in launch.json
-* [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useOutputDebug` attribute in launch.json
-* [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Support ClearConsole directive
-* [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Support `Add to Watch` and `Copy as Expression` in the context menu of data inspection
-* [#150](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/150) Support `{now}`, `{callstack}`, `{callstackNames}`, `{thisCallstack}` in meta variables
-* [#151](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/151) Suport meta varible `{variablesCategories}`
-* [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Support some context menus to view the value of a variable in data inspection
-* [#161](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/161) Support `has` operator in conditional breakpoint
-* [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Support `contanis` operator in conditional breakpoint
-* [#173](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/173) Support `cwd` attribute in launch.json
+* [#75](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/75) Add some context menus to copy the value of a variable in data inspection
+* [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Add `variableCategories` attribute to launch.json
+* [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Add `useAnnounce` attribute to launch.json
+* [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Add `useOutputDebug` attribute to launch.json
+* [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Add ClearConsole directive to debug directive
+* [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Add `Add to Watch` and `Copy as Expression` to context menu of data inspection
+* [#150](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/150) Add `{now}`, `{callstack}`, `{callstackNames}`, `{thisCallstack}` to meta variables
+* [#151](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/151) Add `{variablesCategories}` to meta variables
+* [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable to data inspection
+* [#161](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/161) Add `has` operator to conditional breakpoint
+* [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Add `contanis` operator to conditional breakpoint
+* [#173](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/173) Add `cwd` attribute to launch.json
+* Add a some snippet to launch.json
 
 ### Changed
 * [#157](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/157) When an object is output at a log point, etc., instead of being split, it is output as one. Also, if the output is used together with a string, it will be treated as a label
 * [#163](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/163) Restored true base objects to `<base>` notation
-* [#165](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/165) The hover information is now displayed even if there is bracket notation or simple variables
-* [#176](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/176) Add a format to set the depth of child elements to be written when an object is output with log points, etc
+* [#165](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/165) Change the hover information to show the value of properties that contain bracket notation such as `var[key].property`
+* [#176](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/176) Add a new format to log points, etc., to specify the depth of the child elements to retrieve, such as `{variableName:depth}`
 
 ### Fixed
-* [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) Unable to retrieve child of child elements of logged objects
-* [#149](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/149) Watch expression will only show the contents of the latest call stack
-* [#164](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/164) Remove unnecessary debugger commands
-* [#164](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/164) Remove unnecessary debugger commands
+* [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) The object's child elements output by log point, etc. cannot be retrieved except in the function scope at the time of output
+* [#149](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/149) Watch expression only show the contents of the latest call stack
+* [#164](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/164) Fix inefficient debugging command call process
 * [#167](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/167) `0x0` is not treated as falsy in conditional breakpoint
 * [#168](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/168) When a string is specified as bracket notation in a conditional breakpoint, it is not evaluated correctly
-* [#169](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/169) When a true is specifed for a conditional breakpoint, if it contains capital letters, it will not be evaluated correctly
+* [#169](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/169) When a `true` is specifed in a conditional breakpoint, if it contains capital letters, it will not be evaluated correctly
 * [#171](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171) Cannot correctly retrieve children of object with key containing linebreak
-* In launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense in attach mode
-* In launch.json, snippets in attach mode is not displayed
+* When `"attach"` is specified for request when editing launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense
 * The breakpoint operation may fail
 
 ## [1.9.0] - 2021-10-03
