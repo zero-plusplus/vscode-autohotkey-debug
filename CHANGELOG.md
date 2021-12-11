@@ -16,17 +16,17 @@ Also want to check the development status, check the [commit history](https://gi
 ## [Released]
 ## [1.10.0] - 2021-xx-xx
 ### Added
-* [#75](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/75) Add some context menus to copy the value of a variable in data inspection
+* [#75](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/75) Support some context menus to copy the value of a variable in data inspection
 * [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Support `variableCategories` attribute in launch.json
 * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useAnnounce` attribute in launch.json
 * [#142](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/142) Support `useOutputDebug` attribute in launch.json
 * [#147](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/147) Support ClearConsole directive
 * [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Support `Add to Watch` and `Copy as Expression` in the context menu of data inspection
-* [#150](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/150) Add `{now}`, `{callstack}`, `{callstackNames}`, `{thisCallstack}` in meta variables
+* [#150](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/150) Support `{now}`, `{callstack}`, `{callstackNames}`, `{thisCallstack}` in meta variables
 * [#151](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/151) Suport meta varible `{variablesCategories}`
-* [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable in data inspection
-* [#161](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/161) Add `has` operator in conditional breakpoint
-* [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Add `contanis` operator in conditional breakpoint
+* [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Support some context menus to view the value of a variable in data inspection
+* [#161](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/161) Support `has` operator in conditional breakpoint
+* [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Support `contanis` operator in conditional breakpoint
 * [#173](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/173) Support `cwd` attribute in launch.json
 
 ### Changed
