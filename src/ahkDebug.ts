@@ -1420,7 +1420,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       return string.replace(/\\([{}])/gu, '$1');
     };
 
-    const defaultMaxDepth = 2 <= this.session!.ahkVersion.mejor ? 3 : 6;
     const variableRegex = /(?<!\\)\{\{(?<metaVariableName>[^\r\n:}]+)(:(?<metaVariableNameDepth>\d+))?\}\}|(?<!\\)\{(?<variableName>[^\r\n:}]+)(:(?<variableNameDepth>\d+))?\}/gu;
     if (format.search(variableRegex) === -1) {
       return [ unescapeLogMessage(format) ];
@@ -1449,7 +1448,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         else if (metaVariable) {
           const _metaVariable = (metaVariable instanceof Promise ? await metaVariable : metaVariable) as MetaVariable;
           if ('loadChildren' in _metaVariable) {
-            const maxDepth = metaVariableNameDepth ? parseInt(metaVariableNameDepth, 10) : defaultMaxDepth;
+            const maxDepth = metaVariableNameDepth ? parseInt(metaVariableNameDepth, 10) : 1;
             await _metaVariable.loadChildren(maxDepth);
             results.push(_metaVariable);
           }
@@ -1459,7 +1458,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else {
-        const maxDepth = variableNameDepth ? parseInt(variableNameDepth, 10) : defaultMaxDepth;
+        const maxDepth = variableNameDepth ? parseInt(variableNameDepth, 10) : 1;
         const property = await this.session!.evaluate(variableName, undefined, maxDepth);
 
         if (property) {
