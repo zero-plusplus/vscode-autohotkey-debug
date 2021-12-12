@@ -106,6 +106,21 @@ const runSandBoxTest = async(): Promise<void> => {
     code --install-extension C:\\Users\\WDAGUtilityAccount\\Desktop\\${packageName}\\${packageName}.vsix
     code C:\\Users\\WDAGUtilityAccount\\Desktop\\${packageName}\\demo
 
+    # The following will be installed last due to slow processing
+    # Install autohotkey_h
+    Invoke-RestMethod -Uri "https://github.com/HotKeyIt/ahkdll-v1-release/archive/master.zip" -OutFile "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h.zip"
+    Expand-Archive -Path "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h.zip" -DestinationPath "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h"
+    New-Item "C:\\Program Files\\AutoHotkey\\h" -ItemType Directory
+    Copy-Item -Path "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h\\ahkdll-v1-release-master\\x64w_MT\\AutoHotkey.exe" -Destination "C:\\Program Files\\AutoHotkey\\h\\AutoHotkey.exe"
+    Copy-Item -Path "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h\\ahkdll-v1-release-master\\x64w_MT\\AutoHotkey.dll" -Destination "C:\\Program Files\\AutoHotkey\\h\\AutoHotkey.dll"
+
+    # Install autohotkey_h2
+    Invoke-RestMethod -Uri "https://github.com/HotKeyIt/ahkdll-v2-release/archive/master.zip" -OutFile "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h2.zip"
+    Expand-Archive -Path "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h2.zip" -DestinationPath "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h2"
+    New-Item "C:\\Program Files\\AutoHotkey\\h\\v2" -ItemType Directory
+    Copy-Item -Path "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h2\\ahkdll-v2-release-master\\x64w_MT\\AutoHotkey.exe" -Destination "C:\\Program Files\\AutoHotkey\\h\\v2\\AutoHotkey.exe"
+    Copy-Item -Path "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey_h2\\ahkdll-v2-release-master\\x64w_MT\\AutoHotkey.dll" -Destination "C:\\Program Files\\AutoHotkey\\h\\v2\\AutoHotkey.dll"
+
     exit
   `);
   spawn('WindowsSandBox', [ wsbPath ], { detached: true });
