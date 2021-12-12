@@ -145,6 +145,7 @@
             "stopOnEntry": false,
             "maxChildren": 10000,
             "useAnnounce": "detail",
+            "variableCategories": "recommend",
         },
         {
             "name": "AutoHotkey Attach",
