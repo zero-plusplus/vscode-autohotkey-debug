@@ -537,6 +537,12 @@ export class VariableManager {
       if (categoryData.hidden === true) {
         continue;
       }
+
+      const existSources = defaultScopes.some((scope) => equalsIgnoreCase(scope.name, categoryData.label));
+      if (!existSources) {
+        continue;
+      }
+
       const category = new Category(defaultScopes, categoryData, this.categoriesData);
       if (categoryData.hidden === 'auto') {
         await category.loadChildren();
