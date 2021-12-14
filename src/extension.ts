@@ -61,7 +61,6 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
       {
         label: 'Static',
         source: 'Static',
-        hidden: 'auto',
       },
       {
         label: 'Global',
