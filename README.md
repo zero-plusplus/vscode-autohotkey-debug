@@ -21,7 +21,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#148](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/148) Add `Add to Watch` and `Copy as Expression` to context menu of data inspection
     * Added: [#150](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/150) Add `{now}`, `{callstack}`, `{callstackNames}`, `{thisCallstack}` to meta variables
     * Added: [#151](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/151) Add `{variablesCategories}` to meta variables
-    * Added: [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable to data inspection
+    * Added: [#154](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/154) Add some context menus to view the value of a variable in data inspection
     * Added: [#161](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/161) Add `has` operator to conditional breakpoint
     * Added: [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Add `contanis` operator to conditional breakpoint
     * Added: [#173](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/173) Add `cwd` attribute to launch.json
