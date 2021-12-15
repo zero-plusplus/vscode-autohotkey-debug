@@ -26,9 +26,9 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#162](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/162) Add `contanis` operator to conditional breakpoint
     * Added: [#173](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/173) Add `cwd` attribute to launch.json
     * Added: Add a some snippet to launch.json
-    * Changed: [#157](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/157) When an object is output at a log point, etc., instead of being split, it is output as one. Also, if the output is used together with a string, it will be treated as a label
+    * Changed: [#157](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/157) The specification has been changed so that when multiple objects are output at log points, etc., they are grouped together and only one message is output
     * Changed: [#163](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/163) Restored true base objects to `<base>` notation
-    * Changed: [#165](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/165) Change the hover information to show the value of properties that contain bracket notation such as `var[key].property`
+    * Changed: [#165](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/165) The hover information has been improved so that it can display the value of properties that contain bracket notation such as `var[key].property`
     * Changed: [#176](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/176) Add a new format to log points, etc., to specify the depth of the child elements to retrieve, such as `{variableName:depth}`
     * Fixed: [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) The object's child elements output by log point, etc. cannot be retrieved except in the function scope at the time of output
     * Fixed: [#149](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/149) Watch expression only show the contents of the latest call stack
