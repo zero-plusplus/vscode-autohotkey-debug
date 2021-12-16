@@ -396,7 +396,7 @@
                   "error",
                   "detail"
                 ],
-                "description": "Enables/disables announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
                 "default": true
               },
               "skipFunctions": {
@@ -713,7 +713,7 @@
                   "error",
                   "detail"
                 ],
-                "description": "Enables/disables announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
                 "default": true
               },
               "skipFunctions": {
