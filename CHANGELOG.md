@@ -37,7 +37,6 @@ Also want to check the development status, check the [commit history](https://gi
 * [#176](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/176) Add a new format to log points, etc., to specify the depth of the child elements to retrieve, such as `{variableName:depth}`
 
 ### Fixed
-* [#146](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/146) The object's child elements output by log point, etc. cannot be retrieved except in the function scope at the time of output
 * [#149](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/149) Watch expression only show the contents of the latest call stack
 * [#164](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/164) Fix inefficient debugging command call process
 * [#167](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/167) `0x0` is not treated as falsy in conditional breakpoint
