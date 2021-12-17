@@ -4,7 +4,7 @@ import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
 import { LazyMetaVariableValue, MetaVariableValue, MetaVariableValueMap } from './VariableManager';
 import { isFloatLike, isIntegerLike, isNumberLike, isPrimitive } from './util';
-import { isObject, isString } from 'ts-predicates';
+import { isObject } from 'ts-predicates';
 
 type Value = string | number | boolean | { address: number } | undefined;
 type Operator = (a: Value, b: Value) => boolean;
@@ -264,7 +264,7 @@ export class ConditionalEvaluator {
           else {
             const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
             const isRegExp = String(searchValue).startsWith('/');
-            result = isString(searchValue) ? keys.some((key) => {
+            result = isPrimitive(searchValue) ? keys.some((key) => {
               if (key === '<enum>') {
                 return false;
               }
@@ -287,7 +287,7 @@ export class ConditionalEvaluator {
             else {
               const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
               const isRegExp = String(searchValue).startsWith('/');
-              result = isString(searchValue) ? children.some((child) => {
+              result = isPrimitive(searchValue) ? children.some((child) => {
                 if (child.type === 'object') {
                   return false;
                 }
