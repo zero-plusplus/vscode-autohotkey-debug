@@ -7,7 +7,7 @@ import { rtrim } from 'underscore.string';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isNumberLike, isPrimitive, toArray } from './util';
 import { equalsIgnoreCase } from './stringUtils';
-import { CategoryData, MatcherData } from '../extension';
+import { CategoryData, MatcherData, ScopeSelector } from '../extension';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 import { AhkDebugSession } from '../ahkDebug';
 
@@ -538,7 +538,9 @@ export class VariableManager {
         continue;
       }
 
-      const existSources = defaultScopes.some((scope) => equalsIgnoreCase(scope.name, categoryData.label));
+      const existSources = defaultScopes.some((scope) => {
+        return toArray<ScopeSelector>(categoryData.source).some((source) => equalsIgnoreCase(scope.name, source));
+      });
       if (!existSources) {
         continue;
       }
