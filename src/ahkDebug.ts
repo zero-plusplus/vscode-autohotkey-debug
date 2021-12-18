@@ -118,6 +118,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   private readonly loadedSources: string[] = [];
   private errorMessage = '';
+  private isTimeout = false;
   private exitCode?: number | undefined;
   // The warning message is processed earlier than the server initialization, so it needs to be delayed.
   private readonly delayedWarningMessages: string[] = [];
@@ -167,10 +168,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    if (!args.restart) {
+    if (!args.restart && !this.isTimeout) {
       if (isNumber(this.exitCode)) {
-        this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
-        this.sendAnnounce('Debugging stopped.');
+        this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
+        this.sendAnnounce('Debugging stopped');
       }
       else if (args.terminateDebuggee === true && !this.config.cancelReason) {
         this.sendAnnounce(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.');
@@ -1243,6 +1244,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     this.isTerminateRequested = true;
+    this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
     this.sendEvent(new TerminatedEvent());
   }
   private async sendStoppedEvent(stopReason: StopReason): Promise<void> {
@@ -1558,6 +1560,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         .listen(args.port, args.hostname)
         .on('connection', (socket) => {
           try {
+            socket.setTimeout(30 * 1000);
             this.session = new dbgp.Session(socket, this.traceLogger)
               .on('init', (initPacket: dbgp.InitPacket) => {
                 if (typeof this.session === 'undefined') {
@@ -1585,8 +1588,14 @@ export class AhkDebugSession extends LoggingDebugSession {
                 if (error) {
                   this.sendAnnounce(`Session closed for the following reasons: ${error.message}`, 'stderr');
                 }
+                this.sendTerminateEvent();
+              })
+              .on('timeout', (message: string) => {
+                this.isTimeout = true;
 
-                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                // If the message is output in disconnectRequest, it may not be displayed, so output it here
+                this.sendAnnounce('Session closed for the following reasons: Timeout in communication with the debugger', 'stderr');
+                this.sendAnnounce('[HINT] Timeout may occur if you specify a large number for `depth` when outputting object at log points, etc.');
                 this.sendTerminateEvent();
               })
               .on('close', () => {
