@@ -245,7 +245,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.config = args;
 
     if (this.config.cancelReason) {
-      this.sendAnnounce(`${this.config.cancelReason}\n`, 'stderr');
+      this.sendAnnounce(`${this.config.cancelReason}`, 'stderr');
       this.sendTerminateEvent();
       this.sendResponse(response);
       return;
@@ -253,13 +253,13 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const ahkProcess = new AutoHotkeyLauncher(this.config).attach();
     if (!ahkProcess) {
-      this.sendAnnounce(`Failed to attach "${this.config.program}".\n`, 'stderr');
+      this.sendAnnounce(`Failed to attach "${this.config.program}".`, 'stderr');
       this.sendTerminateEvent();
       this.sendResponse(response);
       return;
     }
 
-    this.sendAnnounce(`Attached to "${this.config.program}".\n`);
+    this.sendAnnounce(`Attached to "${this.config.program}".`);
     this.ahkProcess = ahkProcess;
     this.ahkProcess.event
       .on('close', (exitCode?: number) => {
@@ -268,7 +268,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
 
         if (isNumber(exitCode)) {
-          this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}\n`, exitCode === 0 ? 'console' : 'stderr', exitCode === 0 ? 'detail' : 'error');
+          this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}`, exitCode === 0 ? 'console' : 'stderr', exitCode === 0 ? 'detail' : 'error');
         }
         this.sendTerminateEvent();
       })
@@ -1219,7 +1219,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (targetLevel < outputLevel) {
       return;
     }
-    this.sendEvent(new OutputEvent(message, category));
+    this.sendEvent(new OutputEvent(`${message}\n`, category));
   }
   private sendOutputEvent(message: string, category: 'stdout' | 'stderr' | 'console' = 'stdout'): void {
     this.sendEvent(new OutputEvent(message, category));
@@ -1563,9 +1563,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                 if (typeof this.session === 'undefined') {
                   return;
                 }
-                this.sendAnnounce(`Debugger Adapter Version: ${String(debuggerAdapterVersion)}\n`, 'console', 'detail');
-                this.sendAnnounce(`Debug Configuration (${this.config.request}): ${this.config.name}\n`, 'console', 'detail');
-                this.sendAnnounce(`AutoHotkey Version: ${this.session.ahkVersion.full}\n`, 'console', 'detail');
+                this.sendAnnounce(`Debugger Adapter Version: ${String(debuggerAdapterVersion)}`, 'console', 'detail');
+                this.sendAnnounce(`Debug Configuration (${this.config.request}): ${this.config.name}`, 'console', 'detail');
+                this.sendAnnounce(`AutoHotkey Version: ${this.session.ahkVersion.full}`, 'console', 'detail');
                 if (0 < this.delayedWarningMessages.length) {
                   this.delayedWarningMessages.forEach((message) => {
                     this.sendAnnounce(message, 'stdout');
@@ -1583,7 +1583,7 @@ export class AhkDebugSession extends LoggingDebugSession {
               })
               .on('error', (error?: Error) => {
                 if (error) {
-                  this.sendOutputEvent(`Session closed for the following reasons: ${error.message}\n`, 'stderr');
+                  this.sendAnnounce(`Session closed for the following reasons: ${error.message}`, 'stderr');
                 }
 
                 this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));

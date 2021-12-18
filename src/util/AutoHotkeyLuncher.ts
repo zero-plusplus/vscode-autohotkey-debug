@@ -44,7 +44,7 @@ export class AutoHotkeyLauncher {
     });
 
     return {
-      command: `"${runtime}" ${launchArgs.join(' ')}\n`,
+      command: `"${runtime}" ${launchArgs.join(' ')}`,
       event,
       close: (): void => {
         ahkProcess.kill();
@@ -73,7 +73,7 @@ export class AutoHotkeyLauncher {
       event.emit('stderr', String(data));
     });
     return {
-      command: `"${runtime}" ${launchArgs.join(' ')}\n`,
+      command: `"${runtime}" ${launchArgs.join(' ')}`,
       event,
       close: (): void => {
         ahkProcess.kill();
