@@ -1326,7 +1326,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       throw Error(`This message shouldn't appear.`);
     }
 
-    if (!breakpoint.condition) {
+    if (!(breakpoint.condition || breakpoint.hitCondition)) {
       return true;
     }
 
