@@ -938,7 +938,7 @@ export class Session extends EventEmitter {
 
       const timeout = 30000 < this.packetProcessElapsedTime_ms;
       if (timeout) {
-        this.socket.emit('error', Error('The debug session was forcibly stopped because the communication with the debugger did not finish within the specified time'));
+        this.socket.emit('error', Error('The debug session is forcibly stopping because the communication with the debugger was not finished within the specified time'));
         this.packetProcessStart_ms = 0;
         this.packetProcessElapsedTime_ms = 0;
       }
