@@ -497,10 +497,7 @@ export class Session extends EventEmitter {
         this.handlePacket(packet);
       })
       .on('error', (error: Error) => this.emit('error', error))
-      .on('close', () => this.emit('close'))
-      .on('timeout', () => {
-        this.emit('timeout');
-      });
+      .on('close', () => this.emit('close'));
 
     this.on('message', (xml: XmlDocument) => {
       if (xml.init) {

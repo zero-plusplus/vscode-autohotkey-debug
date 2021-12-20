@@ -1392,7 +1392,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const metaVariables = new MetaVariableValueMap(this.currentMetaVariableMap.entries());
     metaVariables.set('hitCount', hitCount);
 
-    const evalucatedMessages = await this.evaluateLog(logMessage, metaVariables);
+    const evalucatedMessages = await this.evaluateLog(logMessage, metaVariables, breakpoint);
     const stringMessages = evalucatedMessages.filter((message) => typeof message === 'string' || typeof message === 'number') as string[];
     const objectMessages = evalucatedMessages.filter((message) => typeof message === 'object') as Array<Scope | Category | Categories | Variable>;
     if (objectMessages.length === 0) {
@@ -1417,7 +1417,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     event.body.variablesReference = variablesReference;
     this.sendEvent(event);
   }
-  private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap): Promise<MetaVariableValue[]> {
+  private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap, logpoint?: Breakpoint): Promise<MetaVariableValue[]> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
@@ -1427,6 +1427,17 @@ export class AhkDebugSession extends LoggingDebugSession {
       return [ unescapeLogMessage(format) ];
     }
 
+    const timeout_ms = 30 * 1000;
+    const timeout = (): void => {
+      this.isTimeout = true;
+
+      // If the message is output in disconnectRequest, it may not be displayed, so output it here
+      this.sendAnnounce('Debugging stopped for the following reasons: Timeout occurred in communication with the debugger when the following log was output', 'stderr');
+      this.sendAnnounce(`[${logpoint!.filePath}:${logpoint!.unverifiedLine ?? logpoint!.line}] ${logpoint!.logMessage.trimEnd()}`, 'stderr');
+      this.sendAnnounce('[HINT] Timeout occurred due to outputting the object to the debug console. It seems that a large number is specified for `depth`; it is recommended to keep it around 10 for AutoHotkey v1 and 3~5 for v2.', 'stderr');
+      this.sendTerminateEvent();
+      throw Error('Timeout in communication with the debugger when outputting the log');
+    };
     const results: MetaVariableValue[] = [];
     let message = '', currentIndex = 0;
     for await (const match of format.matchAll(variableRegex)) {
@@ -1451,7 +1462,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           const _metaVariable = (metaVariable instanceof Promise ? await metaVariable : metaVariable) as MetaVariable;
           if ('loadChildren' in _metaVariable) {
             const maxDepth = metaVariableNameDepth ? parseInt(metaVariableNameDepth, 10) : 1;
-            await _metaVariable.loadChildren(maxDepth);
+            await timeoutPromise(_metaVariable.loadChildren(logpoint ? maxDepth : 1), timeout_ms).catch(timeout);
             results.push(_metaVariable);
           }
         }
@@ -1461,8 +1472,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       else {
         const maxDepth = variableNameDepth ? parseInt(variableNameDepth, 10) : 1;
-        const property = await this.session!.evaluate(variableName, undefined, maxDepth);
 
+        const property = await timeoutPromise(this.session!.evaluate(variableName, undefined, logpoint ? maxDepth : 1), timeout_ms).catch(timeout);
         if (property) {
           if (property instanceof dbgp.ObjectProperty) {
             if (message !== '') {
@@ -1560,7 +1571,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         .listen(args.port, args.hostname)
         .on('connection', (socket) => {
           try {
-            socket.setTimeout(30 * 1000);
             this.session = new dbgp.Session(socket, this.traceLogger)
               .on('init', (initPacket: dbgp.InitPacket) => {
                 if (typeof this.session === 'undefined') {
@@ -1588,14 +1598,6 @@ export class AhkDebugSession extends LoggingDebugSession {
                 if (error) {
                   this.sendAnnounce(`Session closed for the following reasons: ${error.message}`, 'stderr');
                 }
-                this.sendTerminateEvent();
-              })
-              .on('timeout', (message: string) => {
-                this.isTimeout = true;
-
-                // If the message is output in disconnectRequest, it may not be displayed, so output it here
-                this.sendAnnounce('Session closed for the following reasons: Timeout in communication with the debugger', 'stderr');
-                this.sendAnnounce('[HINT] Timeout may occur if you specify a large number for `depth` when outputting object at log points, etc.');
                 this.sendTerminateEvent();
               })
               .on('close', () => {
