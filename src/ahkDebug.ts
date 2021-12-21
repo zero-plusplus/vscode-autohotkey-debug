@@ -1580,7 +1580,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendAnnounce(`AutoHotkey Version: ${this.session.ahkVersion.full}`, 'console', 'detail');
                 if (0 < this.delayedWarningMessages.length) {
                   this.delayedWarningMessages.forEach((message) => {
-                    this.sendAnnounce(message, 'stdout');
+                    this.sendOutputEvent(message, 'stdout');
                   });
                 }
 
