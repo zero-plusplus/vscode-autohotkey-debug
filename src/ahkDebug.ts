@@ -1301,24 +1301,27 @@ export class AhkDebugSession extends LoggingDebugSession {
       }));
     }
 
-    const callstack = this.currentStackFrames?.map((stackFrame) => {
-      return {
-        name: stackFrame.name,
-        path: stackFrame.source.path,
-        line: stackFrame.line,
-      };
-    }) ?? [];
+    const callstack = Object.fromEntries(this.currentStackFrames?.map((stackFrame, i) => {
+      return [
+        `[${i + 1}]`,
+        {
+          name: stackFrame.name,
+          path: stackFrame.source.path,
+          line: stackFrame.line,
+        },
+      ];
+    }) ?? []);
     metaVariables.set('callstack', callstack);
-    callstack.forEach((callstackItem, i) => {
-      metaVariables.set(`callstack[${i + 1}]`, callstackItem);
+    Object.entries(callstack).forEach(([ index, callstackItem ]) => {
+      metaVariables.set(`callstack${index}`, callstackItem);
       Object.entries(callstackItem).forEach(([ key, value ]) => {
-        metaVariables.set(`callstack[${i + 1}].${key}`, value);
+        metaVariables.set(`callstack${index}.${key}`, value);
       });
     });
-    const callstackNames = callstack.map((callstackItem) => callstackItem.name);
+    const callstackNames = Object.fromEntries(Object.entries(callstack).map(([ index, callstackItem ]) => [ index, callstackItem.name ]));
     metaVariables.set('callstackNames', callstackNames);
-    callstackNames.forEach((callstackName, i) => {
-      metaVariables.set(`callstackNames[${i + 1}]`, callstackName);
+    Object.entries(callstackNames).forEach(([ index, callstackName ]) => {
+      metaVariables.set(`callstackNames${index}`, callstackName);
     });
     return metaVariables;
   }
