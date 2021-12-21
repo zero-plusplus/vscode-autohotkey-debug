@@ -582,9 +582,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const variables = await (metaVariable?.rawValue as Variable | undefined)?.createMembers(args)
-      ?? await this.variableManager!.getObjectVariable(args.variablesReference)?.createMembers(args)
       ?? await this.variableManager!.getCategory(args.variablesReference)?.createChildren()
-      ?? await this.variableManager?.createVariables(args);
+      ?? await this.variableManager!.createVariables(args);
     if (variables) {
       response.body = {
         variables: variables.map((variable) => ({
