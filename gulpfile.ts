@@ -92,7 +92,7 @@ const runSandBoxTest = async(): Promise<void> => {
     $env:ChocolateyInstall = Convert-Path "$((Get-Command choco).path)\\..\\.."
     Import-Module "$env:ChocolateyInstall\\helpers\\chocolateyProfile.psm1"
 
-    choco install vscode -y
+    choco install vscode -y -Version 1.49.0
     choco install autohotkey -y
     # Install autohotkey2
     Invoke-RestMethod -Uri "https://www.autohotkey.com/download/ahk-v2.zip" -OutFile "C:\\Users\\WDAGUtilityAccount\\Downloads\\autohotkey2.zip"
