@@ -1244,7 +1244,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     this.isTerminateRequested = true;
-    this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
     this.sendEvent(new TerminatedEvent());
   }
   private async sendStoppedEvent(stopReason: StopReason): Promise<void> {
@@ -1598,6 +1597,8 @@ export class AhkDebugSession extends LoggingDebugSession {
                 if (error) {
                   this.sendAnnounce(`Session closed for the following reasons: ${error.message}`, 'stderr');
                 }
+
+                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
                 this.sendTerminateEvent();
               })
               .on('close', () => {
