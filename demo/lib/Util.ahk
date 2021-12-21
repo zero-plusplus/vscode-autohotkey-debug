@@ -7,6 +7,15 @@ Util_CreateLargeArray()
     }
     return arr
 }
+Util_CreateGiantArray()
+{
+    arr := []
+    Loop 500
+    {
+        arr.push(Util_CreateLargeArray())
+    }
+    return arr
+}
 Util_CreateMaxSizeArray()
 {
     arr := []
