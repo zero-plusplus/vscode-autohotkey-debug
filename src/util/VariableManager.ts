@@ -379,7 +379,7 @@ export class Variable implements DebugProtocol.Variable {
   }
   public async loadChildren(): Promise<void> {
     if (!this.isLoadedChildren) {
-      const reloadedProperty = await this.session.safeFetchProperty(this.context, this.fullName, 2);
+      const reloadedProperty = await this.session.safeFetchProperty(this.context, this.fullName, 1);
       if (reloadedProperty) {
         this._property = reloadedProperty;
       }

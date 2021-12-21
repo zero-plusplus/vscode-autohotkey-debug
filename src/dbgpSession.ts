@@ -480,6 +480,7 @@ export class Session extends EventEmitter {
   private readonly socket: Socket;
   private readonly logger?: TraceLogger;
   private readonly pendingCommands = new Map<number, Command>();
+  private readonly safeFetchPropertyCache = new Map<Context, Map<string, Property>>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
   public get socketWritable(): boolean {
@@ -729,7 +730,20 @@ export class Session extends EventEmitter {
 
     const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
     const propertyName = variablePathArray[variablePathArray.length - 1];
-    const property = await this.fetchProperty(context, parentVariablePath, maxDepth);
+
+    if (!this.safeFetchPropertyCache.has(context)) {
+      this.safeFetchPropertyCache.set(context, new Map<string, Property>());
+    }
+    const cache = this.safeFetchPropertyCache.get(context)!;
+    let property: Property | undefined;
+    if (cache.has(parentVariablePath)) {
+      property = cache.get(parentVariablePath)!;
+    }
+    else {
+      property = await this.fetchProperty(context, parentVariablePath, maxDepth + 1);
+      cache.set(parentVariablePath, property!);
+    }
+
     if (property instanceof ObjectProperty) {
       const child = property.children.find((child) => equalsIgnoreCase(child.name, propertyName));
       if (child) {
