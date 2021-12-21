@@ -604,7 +604,7 @@ export class VariableManager {
       stackFrames.push(new StackFrame(
         this.session,
         {
-          name: 'Idling (Click me if you want to see the variables)',
+          name: 'Standby',
           fileUri: URI.file(this.debugAdapter.config.program).path,
           level: 0,
           line: 0,
