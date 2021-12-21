@@ -708,7 +708,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
         if (metaVariableParsed.status) {
-          const metaVariableName = metaVariableParsed.value.value.value;
+          const metaVariableName = metaVariableParsed.value.value;
           const metaVariableMap = this.metaVaribalesByFrameId.get(args.frameId);
           const metaVariable = metaVariableMap?.createMetaVariable(metaVariableName);
           if (!metaVariable) {

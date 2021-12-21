@@ -174,7 +174,7 @@ export const createParser = function(version: AhkVersion): P.Language {
           if (primitive.type === 'String') {
             return `["${String(result[1].value.value)}"]`;
           }
-          return `[${String(result[1].value.value)}]`;
+          return `[${String(result[1].value.value.value)}]`;
         }
         return `[${String(result[1].value)}]`;
       });
@@ -205,7 +205,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       ).map((result) => {
         return {
           type: 'MetaVariable',
-          value: result[1],
+          value: result[1].value,
         };
       });
     },
