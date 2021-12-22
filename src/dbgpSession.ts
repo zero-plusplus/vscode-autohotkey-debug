@@ -569,13 +569,13 @@ export class Session extends EventEmitter {
   public async sendPropertyGetCommand(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<PropertyGetResponse> {
     const commandParams = `-n ${unescapeAhk(name, this.ahkVersion)} -c ${context.id} -d ${context.stackFrame.level}`;
     let dbgpResponse: XmlNode;
-    if (this.DEFAULT_MAX_DEPTH < maxDepth) {
+    if (this.DEFAULT_MAX_DEPTH === maxDepth) {
+      dbgpResponse = await this.sendCommand('property_get', commandParams);
+    }
+    else {
       await this.sendFeatureSetCommand('max_depth', maxDepth);
       dbgpResponse = await this.sendCommand('property_get', commandParams);
       await this.sendFeatureSetCommand('max_depth', this.DEFAULT_MAX_DEPTH);
-    }
-    else {
-      dbgpResponse = await this.sendCommand('property_get', commandParams);
     }
     const response = new PropertyGetResponse(dbgpResponse, context);
 
