@@ -480,7 +480,6 @@ export class Session extends EventEmitter {
   private readonly socket: Socket;
   private readonly logger?: TraceLogger;
   private readonly pendingCommands = new Map<number, Command>();
-  private readonly safeFetchPropertyCache = new Map<Context, Map<string, Property>>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
   public get socketWritable(): boolean {
@@ -731,17 +730,16 @@ export class Session extends EventEmitter {
     const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
     const propertyName = variablePathArray[variablePathArray.length - 1];
 
-    if (!this.safeFetchPropertyCache.has(context)) {
-      this.safeFetchPropertyCache.set(context, new Map<string, Property>());
+    const preload = await this.fetchProperty(context, parentVariablePath, 0);
+    if (!preload || !(preload instanceof ObjectProperty)) {
+      return undefined;
     }
-    const cache = this.safeFetchPropertyCache.get(context)!;
-    let property: Property | undefined;
-    if (cache.has(parentVariablePath)) {
-      property = cache.get(parentVariablePath)!;
+    if (![ 'Prototype', 'Class' ].includes(preload.className)) {
+      return this.fetchProperty(context, name, maxDepth);
     }
-    else {
-      property = await this.fetchProperty(context, parentVariablePath, maxDepth + 1);
-      cache.set(parentVariablePath, property!);
+    const property = await this.fetchProperty(context, parentVariablePath, maxDepth + 1);
+    if (!property) {
+      return undefined;
     }
 
     if (property instanceof ObjectProperty) {
