@@ -304,8 +304,8 @@ export class ConditionalEvaluator {
       }
     }
     else if (expression.type === 'MetaVariable') {
-      if (metaVariableMap.has(expression.value.value)) {
-        primitiveValue = metaVariableMap.get(expression.value.value)!;
+      if (metaVariableMap.has(expression.value)) {
+        primitiveValue = metaVariableMap.get(expression.value)!;
       }
     }
     else if (expression.type === 'PropertyName') {
@@ -374,7 +374,7 @@ export class ConditionalEvaluator {
     }
 
     if (parsed.type === 'MetaVariable') {
-      const metaVariable = metaVariableMap.get(parsed.value.value);
+      const metaVariable = metaVariableMap.get(parsed.value);
       return metaVariable;
     }
     else if (parsed.type === 'PropertyName') {
