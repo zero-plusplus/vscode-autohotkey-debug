@@ -1409,7 +1409,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return prev;
     }, '') || objectMessages.reduce((prev, current) => (prev ? `${prev}, ${current.name}` : current.name), '');
 
-    const variableGroup = objectMessages.length === 1 ? new MetaVariable(label, objectMessages[0]) : new MetaVariable(label, objectMessages.map((obj) => new MetaVariable(obj.name, obj)));
+    const variableGroup = new MetaVariable(label, objectMessages.map((obj) => new MetaVariable(obj.name, obj)));
     const variablesReference = this.variableManager!.createVariableReference(variableGroup);
     this.logObjectsMap.set(variablesReference, variableGroup);
 
