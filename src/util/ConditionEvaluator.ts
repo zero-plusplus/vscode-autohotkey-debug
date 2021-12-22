@@ -182,7 +182,7 @@ export class ConditionalEvaluator {
             }
           }
           else if ((valueA instanceof dbgp.Property || isPrimitive(valueA)) && (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string')) {
-            const valueAType = valueA instanceof dbgp.Property ? valueA.type : String(a.value?.value?.type ?? a.value.type).toLowerCase();
+            const valueAType = valueA instanceof dbgp.Property ? valueA.type : String(a.value?.value?.type ?? a.value.type ?? 'string').toLowerCase();
             const valueBType = String(valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB)
               .toLowerCase()
               .replace(/(?<=\b)int(?=\b)/ui, 'integer');
