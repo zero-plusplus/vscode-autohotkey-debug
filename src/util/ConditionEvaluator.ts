@@ -274,7 +274,9 @@ export class ConditionalEvaluator {
           }
         }
         else if (operatorType.type === 'ContainsOperator') {
-          const children = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => (child instanceof dbgp.PrimitiveProperty ? { type: 'primitive', value: child.value } : { type: 'object', value: (child as dbgp.ObjectProperty).address })) : Object.entries(valueA ?? {}).map(([ key, value ]) => (isPrimitive(value) ? { type: 'primitive', value } : { type: 'object' }));
+          const children = valueA instanceof dbgp.ObjectProperty
+            ? valueA.children.map((child) => (child instanceof dbgp.PrimitiveProperty ? { type: 'primitive', value: child.value } : { type: 'object', value: (child as dbgp.ObjectProperty).address }))
+            : Object.entries(valueA ?? {}).map(([ key, value ]) => (isPrimitive(value) ? { type: 'primitive', value } : { type: 'object' }));
           if (valueB instanceof dbgp.Property || isPrimitive(valueB)) {
             if (valueB instanceof dbgp.ObjectProperty) {
               result = children.some((child) => {
