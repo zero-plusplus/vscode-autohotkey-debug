@@ -105,7 +105,7 @@ export class ConditionalEvaluator {
     this.parser = createParser(this.session.ahkVersion);
   }
   public async eval(expressions: string, metaVariableMap: MetaVariableValueMap): Promise<boolean> {
-    const parsed = this.parser.Expressions.parse(expressions);
+    const parsed = this.parser.Expressions.parse(expressions.trim());
     if (!parsed.status) {
       return false;
     }
