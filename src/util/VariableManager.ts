@@ -321,7 +321,10 @@ export class VariableGroup extends Array<Scope | Category | Categories | Variabl
 }
 export class Variable implements DebugProtocol.Variable {
   public readonly hasChildren: boolean;
-  public readonly isLoadedChildren: boolean;
+  public _isLoadedChildren: boolean;
+  public get isLoadedChildren(): boolean {
+    return this._isLoadedChildren;
+  }
   public readonly session: dbgp.Session;
   public readonly name: string;
   public get value(): string {
@@ -363,7 +366,7 @@ export class Variable implements DebugProtocol.Variable {
   }
   constructor(session: dbgp.Session, property: dbgp.Property) {
     this.hasChildren = property instanceof dbgp.ObjectProperty;
-    this.isLoadedChildren = property instanceof dbgp.ObjectProperty && 0 < property.children.length;
+    this._isLoadedChildren = property instanceof dbgp.ObjectProperty && 0 < property.children.length;
 
     this.session = session;
     this._property = property;
@@ -382,6 +385,7 @@ export class Variable implements DebugProtocol.Variable {
       const reloadedProperty = await this.session.safeFetchProperty(this.context, this.fullName, 1);
       if (reloadedProperty) {
         this._property = reloadedProperty;
+        this._isLoadedChildren = true;
       }
     }
   }
