@@ -243,6 +243,7 @@ export const createParser = function(version: AhkVersion): P.Language {
     Expressions(rules) {
       return P.alt(
         P.seq(
+          rules._,
           rules.Expression,
           rules._,
           rules.LogicalOperator,
@@ -257,10 +258,10 @@ export const createParser = function(version: AhkVersion): P.Language {
           end: result.end,
         };
 
-        if (result.value.length === 6) {
+        if (result.value.length === 7) {
           return {
             type: 'Expressions',
-            value: [ result.value[0], result.value[2], result.value[4], result.value[5] ],
+            value: [ result.value[1], result.value[3], result.value[5], result.value[6] ],
             pos,
           };
         }
