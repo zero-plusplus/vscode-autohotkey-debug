@@ -30,6 +30,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Changed: [#163](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/163) Restored true base objects to `<base>` notation
     * Changed: [#165](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/165) The hover information has been improved so that it can display the value of properties that contain bracket notation such as `var[key].property`
     * Changed: [#176](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/176) Add a new format to log points, etc., to specify the depth of the child elements to retrieve, such as `{variableName:depth}`
+    * Changed: Change so that [numerical variables](https://www.autohotkey.com/docs/Variables.htm#CommandLine) representing  command line arguments are not suggested by IntelliSense
     * Fixed: [#149](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/149) Watch expression only show the contents of the latest call stack
     * Fixed: [#164](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/164) Fix inefficient debugging command call process
     * Fixed: [#167](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/167) `0x0` is not treated as falsy in conditional breakpoint
