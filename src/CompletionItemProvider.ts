@@ -174,6 +174,9 @@ export const completionItemProvider = {
       if (property.name === '<enum>') {
         return false;
       }
+      if ((/\d+/u).test(property.name)) {
+        return false;
+      }
       if (isBracketNotation && property.name.startsWith('[') && !property.fullName.toLocaleLowerCase().startsWith(word.toLowerCase())) {
         return false;
       }
