@@ -38,6 +38,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Fixed: [#169](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/169) When a `true` is specifed in a conditional breakpoint, if it contains capital letters, it will not be evaluated correctly
     * Fixed: [#171](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171) Cannot correctly retrieve children of object with key containing linebreak
     * Fixed: [#177](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/177) Whenever a conditional breakpoint contains a space in front of the condition, it is evaluated as `false`
+    * Fixed: [#178](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/178) v2 only bug. Bracket notation suggestion displays properties that are not actually available
     * Fixed: When `"attach"` is specified for request when editing launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense
     * Fixed: The breakpoint operation may fail
 

@@ -45,6 +45,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#169](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/169) When a `true` is specifed in a conditional breakpoint, if it contains capital letters, it will not be evaluated correctly
 * [#171](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171) Cannot correctly retrieve children of object with key containing linebreak
 * [#177](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/177) Whenever a conditional breakpoint contains a space in front of the condition, it is evaluated as `false`
+* [#178](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/178) v2 only bug. Bracket notation suggestion displays properties that are not actually available
 * When `"attach"` is specified for request when editing launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense
 * The breakpoint operation may fail
 
