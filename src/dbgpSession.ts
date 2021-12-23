@@ -889,6 +889,11 @@ export class Session extends EventEmitter {
       if (closeQuoteRegExp.test(propertyName)) {
         return this.fetchAllProperties();
       }
+
+      const fixedVariablePath = parentVariablePath;
+      return (await getChildren(fixedVariablePath) ?? []).filter((child) => {
+        return child.name.startsWith('[');
+      });
     }
 
     return await getChildren(parentVariablePath) ?? [];
