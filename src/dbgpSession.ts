@@ -877,26 +877,20 @@ export class Session extends EventEmitter {
     }
 
     const propertyName = propertyPathArray[propertyPathArray.length - 1];
+    const parentVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
+
     const isBracketNotation = propertyName.startsWith('[');
-    if (isBracketNotation) {
-      const openQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
+    if (isBracketNotation && 2 <= this.ahkVersion.mejor) {
+      const openQuoteRegExp = /(?<!\[|`)("|')\s*$/u;
       if (openQuoteRegExp.test(propertyName)) {
         return this.fetchAllProperties();
       }
-      const closeQuoteRegExp = 2 <= this.ahkVersion.mejor ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
+      const closeQuoteRegExp = /(?<!\[)("|')\s*(\])?$\s*$/u;
       if (closeQuoteRegExp.test(propertyName)) {
         return this.fetchAllProperties();
       }
-
-      const fixedVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
-      const children = await getChildren(fixedVariablePath);
-      if (children) {
-        return children;
-      }
-      return [];
     }
 
-    const parentVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
     return await getChildren(parentVariablePath) ?? [];
   }
   public async close(): Promise<void> {

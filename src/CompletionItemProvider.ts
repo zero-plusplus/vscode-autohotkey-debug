@@ -177,9 +177,6 @@ export const completionItemProvider = {
       if ((/\d+/u).test(property.name)) {
         return false;
       }
-      if (isBracketNotation && property.name.startsWith('[') && !property.fullName.toLocaleLowerCase().startsWith(word.toLowerCase())) {
-        return false;
-      }
       if (property.isIndexKey) {
         return false;
       }
@@ -190,7 +187,7 @@ export const completionItemProvider = {
       return true;
     });
 
-    return fixedProperties.map((property): vscode.CompletionItem => {
+    const completionItems = fixedProperties.map((property): vscode.CompletionItem => {
       const completionItem = new vscode.CompletionItem(property.name.replace(/<|>/gu, ''));
       completionItem.kind = createKind(property);
       completionItem.detail = createDetail(property);
@@ -204,8 +201,12 @@ export const completionItemProvider = {
           return str.replace(/""/gu, '`"');
         };
         const fixLabel = (label: string): string => {
+          if (2 <= this.session!.ahkVersion.mejor) {
+            const fixedLabel = label.replace(/^\[("|')?/u, '').replace(/("|')?\]$/u, '');
+            return fixQuote(fixedLabel);
+          }
           const fixedLabel = label.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
-          return this.session!.ahkVersion.mejor === 2 ? fixQuote(fixedLabel) : fixedLabel;
+          return fixedLabel;
         };
 
         const fixedLabel = fixLabel(property.name);
@@ -239,5 +240,7 @@ export const completionItemProvider = {
 
       return completionItem;
     });
+
+    return completionItems;
   },
 } as CompletionItemProvider;
