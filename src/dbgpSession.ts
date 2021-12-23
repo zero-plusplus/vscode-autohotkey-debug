@@ -839,7 +839,7 @@ export class Session extends EventEmitter {
     // #region util
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
       const children = [ ...property.children ];
-      const base = await this.evaluate(`${property.fullName}.<base>`, undefined, 2);
+      const base = await this.evaluate(`${property.fullName}.<base>`);
       if (base instanceof ObjectProperty) {
         const nestedChildren = (await getInheritedChildren(base)).filter((property) => property.name !== '<base>');
         children.push(...nestedChildren);
@@ -848,7 +848,7 @@ export class Session extends EventEmitter {
       return uniqBy(children, (property) => property.name.replace(/^<|>$/gu, '').toLocaleLowerCase());
     };
     const getChildren = async(variablePath: string): Promise<Property[] | undefined> => {
-      const property = await this.evaluate(variablePath, undefined, 2);
+      const property = await this.evaluate(variablePath);
       if (property instanceof ObjectProperty) {
         return getInheritedChildren(property);
       }
