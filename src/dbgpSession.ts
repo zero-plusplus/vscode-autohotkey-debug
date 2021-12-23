@@ -730,13 +730,18 @@ export class Session extends EventEmitter {
     const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
     const propertyName = variablePathArray[variablePathArray.length - 1];
 
-    const preload = await this.fetchProperty(context, parentVariablePath, 0);
-    if (!preload || !(preload instanceof ObjectProperty)) {
-      return undefined;
+    // When using index notation, be sure to use a safe method of acquisition, as direct acquisition may result in errors
+    const isIndexAccess = variablePathArray[variablePathArray.length - 1].startsWith('[');
+    if (!isIndexAccess) {
+      const preload = await this.fetchProperty(context, parentVariablePath, 0);
+      if (!preload || !(preload instanceof ObjectProperty)) {
+        return undefined;
+      }
+      if (![ 'Prototype', 'Class' ].includes(preload.className)) {
+        return this.fetchProperty(context, name, maxDepth);
+      }
     }
-    if (![ 'Prototype', 'Class' ].includes(preload.className)) {
-      return this.fetchProperty(context, name, maxDepth);
-    }
+
     const property = await this.fetchProperty(context, parentVariablePath, maxDepth + 1);
     if (!property) {
       return undefined;
