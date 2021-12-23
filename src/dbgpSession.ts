@@ -817,6 +817,10 @@ export class Session extends EventEmitter {
     const splitedVariablePathList = splitVariablePath(this.ahkVersion, variablePath);
     for await (const pathPart of splitedVariablePathList) {
       let resolvedPathPart = pathPart;
+      if (2 <= this.ahkVersion.mejor && resolvedPathPart.startsWith(`['`) && resolvedPathPart.endsWith(`']`)) {
+        resolvedPathPart = resolvedPathPart.replace(/^\['/u, '["').replace(/'\]$/u, '"]').replace(/`'/u, `'`).replace(/(?<!^\[)"(?!\]$)/u, '`"');
+      }
+
       const isBracketNotationWithVariable = (2 <= this.ahkVersion.mejor ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
       if (isBracketNotationWithVariable) {
         const _variablePath = pathPart.slice(1, -1);

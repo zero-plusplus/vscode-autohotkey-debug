@@ -106,7 +106,7 @@ export const findWord = (ahkVersion: AhkVersion, document: vscode.TextDocument, 
       case `'`: {
         if (2 <= ahkVersion.mejor) {
           quote = char;
-          result.push('"');
+          result.push(quote);
           continue;
         }
         result.push(char);
