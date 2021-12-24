@@ -666,6 +666,48 @@ export class Session extends EventEmitter {
   public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
   }
+  public async existsProperty(context: Context, name: string): Promise<boolean> {
+    const splitedVariablePathList = splitVariablePath(this.ahkVersion, this.normalizeVariablePath(name));
+
+    for await (const [ i ] of Object.entries(splitedVariablePathList.slice(0, -1))) {
+      const index = Number(i);
+      const currentName = joinVariablePathArray(splitedVariablePathList.slice(0, index + 1));
+      const property = await this.safeFetchProperty(context, currentName, 1);
+      if (!property) {
+        return false;
+      }
+
+      const lastLoop = splitedVariablePathList.length - 1 <= index;
+      if (!lastLoop && property instanceof PrimitiveProperty) {
+        return false;
+      }
+
+      if (property instanceof ObjectProperty) {
+        const childName = splitedVariablePathList[index + 1];
+        const containsChild = property.children.some((child) => equalsIgnoreCase(child.name, childName));
+        if (containsChild) {
+          continue;
+        }
+        const inherited = await this.fetchInheritedProperty(context, property.fullName, childName);
+        if (inherited) {
+          continue;
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+  public normalizeVariablePath(variablePath: string): string {
+    const normalizedPathList: string[] = [];
+    for (const part of splitVariablePath(this.ahkVersion, variablePath)) {
+      let normalizedPath = part;
+      if (2 <= this.ahkVersion.mejor && part.startsWith(`['`) && normalizedPath.endsWith(`']`)) {
+        normalizedPath = part.replace(/^\['/u, '["').replace(/'\]$/u, '"]').replace(/`'/u, `'`).replace(/(?<!^\[)"(?!\]$)/u, '`"');
+      }
+      normalizedPathList.push(normalizedPath);
+    }
+    return joinVariablePathArray(normalizedPathList);
+  }
   public async fetchAllPropertyNames(): Promise<string[]> {
     const { stackFrames } = await this.sendStackGetCommand();
     if (stackFrames.length === 0) {
@@ -780,9 +822,13 @@ export class Session extends EventEmitter {
       _stackFrame = stackFrames[0];
     }
 
-    const resolvedName = (await this.resolveVariablePath(name));
+    const resolvedName = (await this.resolveVariablePath(name, stackFrame));
     const { contexts } = await this.sendContextNamesCommand(_stackFrame);
     for await (const context of contexts) {
+      if (!(await this.existsProperty(context, resolvedName))) {
+        return undefined;
+      }
+
       const property = await this.safeFetchProperty(context, resolvedName, maxDepth);
       if (property) {
         return property;
@@ -807,14 +853,11 @@ export class Session extends EventEmitter {
     }
     return undefined;
   }
-  public async resolveVariablePath(variablePath: string): Promise<string> {
+  public async resolveVariablePath(variablePath: string, stackFrame?: StackFrame): Promise<string> {
     const resolvedVariablePathArray: string[] = [];
     const splitedVariablePathList = splitVariablePath(this.ahkVersion, variablePath);
     for await (const pathPart of splitedVariablePathList) {
-      let resolvedPathPart = pathPart;
-      if (2 <= this.ahkVersion.mejor && resolvedPathPart.startsWith(`['`) && resolvedPathPart.endsWith(`']`)) {
-        resolvedPathPart = resolvedPathPart.replace(/^\['/u, '["').replace(/'\]$/u, '"]').replace(/`'/u, `'`).replace(/(?<!^\[)"(?!\]$)/u, '`"');
-      }
+      let resolvedPathPart = this.normalizeVariablePath(pathPart);
 
       const isBracketNotationWithVariable = (2 <= this.ahkVersion.mejor ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
       if (isBracketNotationWithVariable) {
@@ -824,7 +867,7 @@ export class Session extends EventEmitter {
           continue;
         }
 
-        const property = await this.evaluate(_variablePath);
+        const property = await this.evaluate(_variablePath, stackFrame);
         if (property instanceof PrimitiveProperty) {
           const escapedValue = property.value.replace(/"/gu, 2 <= this.ahkVersion.mejor ? '`"' : '""');
           resolvedPathPart = isNumberLike(escapedValue) ? `[${escapedValue}]` : `["${escapedValue}"]`;
