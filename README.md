@@ -62,7 +62,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 See [CHANGELOG](CHANGELOG.md) for details.
 
 # Installation
-1. Install [VSCode](https://code.visualstudio.com/) with version `1.45.0` or higher
+1. Install [VSCode](https://code.visualstudio.com/) with version `1.49.0` or higher
 2. Install [AutoHotkey](https://www.autohotkey.com/)
 3. **Install an another extension to support AutoHotkey** (the famous [slevesque.vscode-autohotkey](https://marketplace.visualstudio.com/items?itemName=slevesque.vscode-autohotkey), If you use v2, use [dudelmoser.vscode-autohotkey2](https://marketplace.visualstudio.com/items?itemName=dudelmoser.vscode-autohotkey2), etc.)
 4. Open VSCode, press `Ctrl + P` then type `ext install zero-plusplus.vscode-autohotkey-debug`
