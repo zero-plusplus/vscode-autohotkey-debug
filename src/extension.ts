@@ -1,33 +1,20 @@
 /* eslint-disable require-atomic-updates */
 import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
-import {
-  CancellationToken,
-  DebugAdapterDescriptor,
-  DebugAdapterDescriptorFactory,
-  DebugAdapterInlineImplementation,
-  DebugConfiguration,
-  DebugConfigurationProvider,
-  DebugSession,
-  ExtensionContext,
-  ProviderResult,
-  WorkspaceFolder,
-  debug,
-  languages,
-  window,
-  workspace,
-} from 'vscode';
+import * as vscode from 'vscode';
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
-import { defaults, isString, range } from 'lodash';
-import * as isPortTaken from 'is-port-taken';
-import * as jsonc from 'jsonc-parser';
+import { defaults, groupBy, isString, range } from 'lodash';
+import isPortTaken from 'is-port-taken';
+import * as jsonc from 'jsonc-simple-parser';
 import { getAhkVersion } from './util/getAhkVersion';
-import { completionItemProvider } from './CompletionItemProvider';
+import { completionItemProvider, findWord } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
 import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import normalizeToUnix = require('normalize-path');
-import * as glob from 'fast-glob';
+import normalizeToUnix from 'normalize-path';
+import glob from 'fast-glob';
+import { registerCommands } from './commands';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { isDirectory, toArray } from './util/util';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -41,8 +28,108 @@ const ahkPathResolve = (filePath: string, cwd?: string): string => {
 };
 const normalizePath = (filePath: string): string => (filePath ? path.normalize(filePath) : filePath); // If pass in an empty string, path.normalize returns '.'
 
-class AhkConfigurationProvider implements DebugConfigurationProvider {
-  public resolveDebugConfiguration(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): ProviderResult<DebugConfiguration> {
+export type ScopeName = 'Local' | 'Static' | 'Global';
+export type ScopeSelector = '*' | ScopeName;
+export type MatcherData = {
+  method?: 'include' | 'exclude';
+  ignorecase?: boolean;
+  pattern?: string;
+  static?: boolean;
+  builtin?: boolean;
+  type?: string;
+  className?: string;
+};
+export type CategoryData = {
+  label: string;
+  source: ScopeSelector | ScopeName[];
+  hidden?: boolean | 'auto';
+  noduplicate?: boolean;
+  matchers?: MatcherData[];
+};
+export type CategoriesData = 'recommend' | Array<ScopeSelector | CategoryData>;
+
+const normalizeCategories = (categories?: CategoriesData): CategoryData[] | undefined => {
+  if (!categories) {
+    return undefined;
+  }
+  if (categories === 'recommend') {
+    return [
+      {
+        label: 'Local',
+        source: 'Local',
+      },
+      {
+        label: 'Static',
+        source: 'Static',
+      },
+      {
+        label: 'Global',
+        source: 'Global',
+        noduplicate: true,
+        matchers: [ { method: 'exclude', pattern: '^\\d+$' } ],
+      },
+      {
+        label: 'Built-in Global',
+        source: 'Global',
+        matchers: [
+          { builtin: true },
+          { method: 'exclude', pattern: '^\\d+$' },
+        ],
+      },
+    ];
+  }
+
+  const normalized: CategoryData[] = [];
+  for (const category of categories) {
+    if (typeof category !== 'string') {
+      normalized.push(category);
+    }
+
+    switch (category) {
+      case 'Global': {
+        normalized.push({
+          label: 'Global',
+          source: 'Global',
+        });
+        continue;
+      }
+      case 'Local': {
+        normalized.push({
+          label: 'Local',
+          source: 'Local',
+        });
+        continue;
+      }
+      case 'Static': {
+        normalized.push({
+          label: 'Static',
+          source: 'Static',
+        });
+        continue;
+      }
+      default: continue;
+    }
+  }
+
+  const checkNoduplicate = (categoriesData: CategoryData[]): void => {
+    const groupedCategoriesData = Object.entries(groupBy(categoriesData, (categoryData) => JSON.stringify(toArray<string>(categoryData.source).sort((a, b) => a.localeCompare(b)))));
+    groupedCategoriesData;
+    for (const [ , categoriesDataBySource ] of groupedCategoriesData) {
+      const categoriesWithNoduplicate = categoriesDataBySource.filter((categoryData) => categoryData.noduplicate);
+      if (categoriesWithNoduplicate.length === 0 || categoriesWithNoduplicate.length === 1) {
+        continue;
+      }
+
+      const source = JSON.stringify(categoriesWithNoduplicate[0].source);
+      throw Error(`There are multiple \`noduplicate\` attributes set for the category with \`${source}\` as the source. This attribute can only be set to one of the categories that have the same source.`);
+    }
+  };
+  checkNoduplicate(normalized);
+  return normalized;
+};
+
+class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
+  public resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
     if (config.extends && folder) {
       const jsonPath = path.resolve(folder.uri.fsPath, '.vscode', 'launch.json');
       if (existsSync(jsonPath)) {
@@ -72,23 +159,26 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       usePerfTips: false,
       useDebugDirective: false,
       useAutoJumpToError: false,
+      useOutputDebug: true,
       useUIAVersion: false,
+      useAnnounce: true,
       trace: false,
+      // The following is not a configuration, but is set to pass data to the debug adapter.
       cancelReason: undefined,
     });
 
     // Deprecated. I''ll get rid of it eventually
     if (config.type === 'ahk') {
-      window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
+      vscode.window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
       config.type = 'autohotkey';
     }
 
-    if (config.openFileOnExit === '${file}' && !window.activeTextEditor) {
+    if (config.openFileOnExit === '${file}' && !vscode.window.activeTextEditor) {
       config.openFileOnExit = undefined;
     }
     return config;
   }
-  public async resolveDebugConfigurationWithSubstitutedVariables(folder: WorkspaceFolder | undefined, config: DebugConfiguration, token?: CancellationToken): Promise<DebugConfiguration> {
+  public async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration> {
     // init request
     ((): void => {
       if (config.request === 'launch') {
@@ -104,7 +194,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     // init runtime
     await (async(): Promise<void> => {
       if (typeof config.runtime === 'undefined') {
-        const doc = await workspace.openTextDocument(config.program ?? window.activeTextEditor?.document.uri.fsPath);
+        const doc = await vscode.workspace.openTextDocument(config.program ?? vscode.window.activeTextEditor?.document.uri.fsPath);
         config.runtime = doc.languageId.toLowerCase() === 'ahk'
           ? config.runtime_v1
           : config.runtime_v2; // ahk2 or ah2
@@ -145,17 +235,17 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         }
 
         if (typeof config.runtimeArgs_v1 === 'undefined') {
-          config.runtimeArgs_v1 = ahkVersion.mejor === 1 && ahkVersion.minor === 1 && 33 <= ahkVersion.teeny
+          config.runtimeArgs_v1 = ahkVersion.mejor <= 1.1 && ahkVersion.minor === 1 && 33 <= ahkVersion.patch
             ? [ '/ErrorStdOut=UTF-8' ]
             : [ '/ErrorStdOut' ];
         }
         if (typeof config.runtimeArgs_v2 === 'undefined') {
-          config.runtimeArgs_v2 = 112 <= ahkVersion.alpha || 0 < ahkVersion.beta
+          config.runtimeArgs_v2 = 112 <= (ahkVersion.alpha ?? 0) || 0 < (ahkVersion.beta ?? 0)
             ? [ '/ErrorStdOut=UTF-8' ]
             : [ '/ErrorStdOut' ];
         }
 
-        const doc = await workspace.openTextDocument(config.program);
+        const doc = await vscode.workspace.openTextDocument(config.program);
         config.runtimeArgs = doc.languageId.toLowerCase() === 'ahk'
           ? config.runtimeArgs_v1
           : config.runtimeArgs_v2; // ahk2 or ah2
@@ -229,7 +319,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         }
         if (!portRange.permitted) {
           const message = `Port number \`${port}\` is already in use. Would you like to start debugging using \`${port + 1}\`?\n If you don't want to see this message, set a value for \`port\` of \`launch.json\`.`;
-          const result = await window.showInformationMessage(message, { modal: true }, 'Yes');
+          const result = await vscode.window.showInformationMessage(message, { modal: true }, 'Yes');
           if (!result) {
             break;
           }
@@ -244,15 +334,17 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       if (config.request === 'attach') {
         const scriptPathList = getRunningAhkScriptList(config.runtime);
         if (scriptPathList.length === 0) {
+          config.program = '';
           config.cancelReason = `Canceled the attachment because no running AutoHotkey script was found.`;
           return;
         }
         if (config.program === undefined) {
-          const scriptPath = await window.showQuickPick(scriptPathList);
+          const scriptPath = await vscode.window.showQuickPick(scriptPathList);
           if (scriptPath) {
             config.program = scriptPath;
             return;
           }
+          config.program = '';
           config.cancelReason = `Cancel the attach.`;
           return;
         }
@@ -270,6 +362,17 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       if (config.program) {
         config.program = path.resolve(config.program);
       }
+    })();
+
+    // init cwd
+    ((): void => {
+      if (!config.cwd) {
+        config.cwd = path.dirname(config.program);
+      }
+      if (!isDirectory(config.cwd)) {
+        throw Error(`\`cwd\` must be a absolute path of directory.\nSpecified: "${path.resolve(String(config.cwd))}"`);
+      }
+      config.cwd = path.resolve(config.cwd);
     })();
 
     // init args
@@ -368,6 +471,7 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       const defaultDirectiveComment = {
         useBreakpointDirective: true,
         useOutputDirective: true,
+        useClearConsoleDirective: true,
       };
 
       if (config.useDebugDirective === true) {
@@ -383,6 +487,25 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
         throw Error('`useAutoJumpToError` must be a boolean.');
       }
     })();
+
+    // init useOutputDebug
+    ((): void => {
+      if (!(isBoolean(config.useOutputDebug) || isPlainObject(config.useOutputDebug))) {
+        throw Error('`useOutputDebug` must be a boolean or object.');
+      }
+      const defaultUseOutputDebug = {
+        category: 'stderr',
+        useTrailingLinebreak: false,
+      };
+      if (isPlainObject(config.useOutputDebug)) {
+        defaults(config.useOutputDebug, defaultUseOutputDebug);
+        return;
+      }
+      if (config.useOutputDebug) {
+        config.useOutputDebug = defaultUseOutputDebug;
+      }
+    })();
+
 
     // init skipFunctions
     ((): void => {
@@ -406,6 +529,25 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
       config.skipFiles = await glob(skipFiles, { onlyFiles: true, unique: true });
     })();
 
+    // init useAnnounce
+    ((): void => {
+      if (!(isBoolean(config.useAnnounce) || [ 'error', 'detail' ].includes(config.useAnnounce))) {
+        throw Error('`useAnnounce` must be a boolean, "error" or "detail".');
+      }
+    })();
+
+    // init variableCategories
+    ((): void => {
+      if (!config.variableCategories) {
+        return;
+      }
+      if (config.variableCategories === 'recommend' || isArray(config.variableCategories)) {
+        config.variableCategories = normalizeCategories(config.variableCategories as CategoriesData);
+        return;
+      }
+      throw Error('`variableCategories` must be a "recommend" or array.');
+    })();
+
     // init trace
     ((): void => {
       if (!isBoolean(config.trace)) {
@@ -416,18 +558,48 @@ class AhkConfigurationProvider implements DebugConfigurationProvider {
     return config;
   }
 }
-class InlineDebugAdapterFactory implements DebugAdapterDescriptorFactory {
-  public createDebugAdapterDescriptor(_session: DebugSession): ProviderResult<DebugAdapterDescriptor> {
-    return new DebugAdapterInlineImplementation(new AhkDebugSession());
+class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
+  public createDebugAdapterDescriptor(_session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
+    return new vscode.DebugAdapterInlineImplementation(new AhkDebugSession());
   }
 }
 
-export const activate = (context: ExtensionContext): void => {
+export const activate = (context: vscode.ExtensionContext): void => {
   const provider = new AhkConfigurationProvider();
 
-  context.subscriptions.push(debug.registerDebugConfigurationProvider('ahk', provider));
-  context.subscriptions.push(debug.registerDebugConfigurationProvider('autohotkey', provider));
-  context.subscriptions.push(debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
+  registerCommands(context);
 
-  context.subscriptions.push(languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2', 'autohotkey' ], completionItemProvider, '.'));
+  context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('ahk', provider));
+  context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('autohotkey', provider));
+  context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
+  context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], completionItemProvider, '.'));
+
+  const findWordRange = (ahkVersion: AhkVersion, document: vscode.TextDocument, position: vscode.Position, offset = 0): vscode.Range | undefined => {
+    const range = document.getWordRangeAtPosition(position);
+    if (!range) {
+      return undefined;
+    }
+    const wordBeforeCursor = findWord(ahkVersion, document, position);
+    const fixedRange = new vscode.Range(new vscode.Position(position.line, position.character - wordBeforeCursor.length), range.end);
+    const debug = document.getText(fixedRange); debug;
+    return fixedRange;
+  };
+  context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk' ], {
+    provideEvaluatableExpression(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.EvaluatableExpression> {
+      const range = findWordRange(new AhkVersion('1.0'), document, position);
+      if (!range) {
+        return undefined;
+      }
+      return new vscode.EvaluatableExpression(range);
+    },
+  }));
+  context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk2', 'ah2' ], {
+    provideEvaluatableExpression(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.EvaluatableExpression> {
+      const range = findWordRange(new AhkVersion('2.0'), document, position);
+      if (!range) {
+        return undefined;
+      }
+      return new vscode.EvaluatableExpression(range);
+    },
+  }));
 };

@@ -13,6 +13,7 @@ export interface BreakpointAdvancedData {
   hitCount: number;
   unverifiedLine?: number;
   unverifiedColumn?: number;
+  action?: () => Promise<void>;
 }
 export type BreakpointKind = 'breakpoint' | 'logpoint' | 'conditional breakpoint' | 'conditional logpoint';
 export class Breakpoint implements BreakpointAdvancedData {
@@ -27,6 +28,7 @@ export class Breakpoint implements BreakpointAdvancedData {
   public hitCount = 0;
   public unverifiedLine?: number;
   public unverifiedColumn?: number;
+  public action?: () => Promise<void>;
   public get filePath(): string {
     return URI.parse(this.fileUri).fsPath;
   }
@@ -50,8 +52,9 @@ export class Breakpoint implements BreakpointAdvancedData {
     this.logMessage = advancedData?.logMessage ?? '';
     this.logGroup = advancedData?.logGroup;
     this.hidden = advancedData?.hidden ?? false;
-    this.unverifiedLine = advancedData?.unverifiedLine;
+    this.unverifiedLine = advancedData?.unverifiedLine ?? dbgpBreakpoint.line;
     this.unverifiedColumn = advancedData?.unverifiedColumn;
+    this.action = advancedData?.action;
   }
 }
 export class LineBreakpoints extends Array<Breakpoint> {
@@ -76,8 +79,8 @@ export class LineBreakpoints extends Array<Breakpoint> {
   }
   public hasAdvancedBreakpoint(): boolean {
     for (const breakpoint of this) {
-      const { condition, hitCondition, logMessage, logGroup } = breakpoint;
-      if (condition || hitCondition || logMessage || logGroup) {
+      const { condition, hitCondition, logMessage, logGroup, action } = breakpoint;
+      if (condition || hitCondition || logMessage || logGroup || action) {
         return true;
       }
     }
@@ -96,16 +99,11 @@ export class BreakpointManager {
     return this.breakpointsMap.has(key);
   }
   public getLineBreakpoints(fileUri: string, line: number): LineBreakpoints | null {
-    const targetFilePath = URI.parse(fileUri).fsPath;
-
-    for (const [ , lineBreakpoints ] of this.breakpointsMap) {
-      if (!equalsIgnoreCase(targetFilePath, lineBreakpoints.filePath)) {
-        continue;
+    const key = this.createKey(fileUri, line);
+    for (const [ targetKey, lineBreakpoints ] of this.breakpointsMap) {
+      if (key === targetKey) {
+        return lineBreakpoints;
       }
-      if (line !== lineBreakpoints.line) {
-        continue;
-      }
-      return lineBreakpoints;
     }
     return null;
   }
@@ -193,7 +191,9 @@ export class BreakpointManager {
     // The following encoding differences have been converted to path
     // file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"
     // file:///w:/project/vscode-autohotkey-debug/demo/demo.ahk
-    const filePath = URI.parse(fileUri).fsPath.toLowerCase();
+
+    const uri = URI.parse(fileUri);
+    const filePath = uri.scheme === 'file' ? uri.fsPath.toLowerCase() : fileUri.toLowerCase();
     return `${filePath},${line}`;
   }
 }

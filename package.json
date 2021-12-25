@@ -4,7 +4,7 @@
   "description": "Advanced debugging support for AutoHotkey(includes H) v1 and v2",
   "author": "zero-plusplus <git@zero-plusplus.com>",
   "license": "MIT",
-  "main": "./build/src/extension",
+  "main": "./build/extension",
   "repository": {
     "type": "git",
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug.git"
@@ -13,17 +13,18 @@
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug/issues"
   },
   "scripts": {
-    "build": "npx gulp build",
-    "watch": "npx gulp watch",
-    "clean": "npx gulp clean",
-    "test": "npm run lint && mocha -r ts-node/register ./test/**/*.test.ts",
-    "lint": "npx gulp lint",
-    "package": "npx gulp packaging",
-    "vscode:prepublish": "npx gulp bundleWithoutClean"
+    "build": "gulp build",
+    "watch": "gulp watch",
+    "clean": "gulp clean",
+    "test": "npm run lint && mocha ./test/*.ts",
+    "test:sandbox": "gulp testBySandBox",
+    "lint": "gulp lint",
+    "package": "gulp packaging",
+    "vscode:prepublish": "gulp buildMain"
   },
   "publisher": "zero-plusplus",
   "engines": {
-    "vscode": "^1.45.0"
+    "vscode": "^1.49.0"
   },
   "icon": "image/icon.png",
   "keywords": [
@@ -53,6 +54,118 @@
         "language": "ah2"
       }
     ],
+    "commands": [
+      {
+        "command": "vscode-autohotkey-debug.variables-view.viewValue",
+        "title": "View Value"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.viewAsText",
+        "title": "View as Text"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.ViewAsEachBaseNumbers",
+        "title": "View as Each Base Numbers"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsText",
+        "title": "Copy as Text"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
+        "title": "Copy as Binary"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
+        "title": "Copy as Decimal"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
+        "title": "Copy as Hex"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
+        "title": "Copy as Scientific Notation"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "vscode-autohotkey-debug.variables-view.viewValue",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.viewAsText",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.ViewAsEachBaseNumbers",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsText",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
+          "when": "false"
+        }
+      ],
+      "debug/variables/context": [
+        {
+          "command": "vscode-autohotkey-debug.variables-view.viewValue",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'string' || debugProtocolVariableMenuContext == 'number'",
+          "group": "1_view@1"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.viewAsText",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'string'",
+          "group": "1_view@2"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.ViewAsEachBaseNumbers",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'number'",
+          "group": "1_view@3"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsText",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'string'",
+          "group": "5_cutcopypaste@90"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsBinary",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'number'",
+          "group": "5_cutcopypaste@91"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsDecimal",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'number'",
+          "group": "5_cutcopypaste@92"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsHex",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'number'",
+          "group": "5_cutcopypaste@93"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
+          "when": "debugConfigurationType == 'autohotkey' && debugProtocolVariableMenuContext == 'number'",
+          "group": "5_cutcopypaste@94"
+        }
+      ]
+    },
     "debuggers": [
       {
         "type": "autohotkey",
@@ -111,6 +224,10 @@
                 "default": [
                   "/ErrorStdOut"
                 ]
+              },
+              "cwd": {
+                "type": "string",
+                "description": "The absolute path of the current working directory."
               },
               "hostname": {
                 "type": "string",
@@ -224,6 +341,11 @@
                     "type": "boolean",
                     "description": "Enable / disable Output directive.",
                     "default": true
+                  },
+                  "useClearConsoleDirective": {
+                    "type": "boolean",
+                    "description": "Enable / disable ClearConsole directive.",
+                    "default": true
                   }
                 },
                 "description": "Enable / disable Debug directive. See the README for detailed instructions on how to set it up.",
@@ -238,6 +360,44 @@
                 "type": "boolean",
                 "description": "If you don't know about UIA, ignore it. This setting must be `true` if you want to use the UIA version of AutoHotkey. There are some limitations, please check the README.",
                 "default": false
+              },
+              "useOutputDebug": {
+                "type": [
+                  "boolean",
+                  "object"
+                ],
+                "description": "Whether to show OutputDebug in the debug console. Or more detailed settings about its behavior.",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "stdout",
+                      "stderr",
+                      "console"
+                    ],
+                    "default": "stderr"
+                  },
+                  "useTrailingLinebreak": {
+                    "type": "boolean",
+                    "description": "Add a trailing linebreak. If the trailing line is a linebreak, do nothing.",
+                    "default": false
+                  }
+                },
+                "default": true
+              },
+              "useAnnounce": {
+                "type": [
+                  "boolean",
+                  "string"
+                ],
+                "enum": [
+                  false,
+                  true,
+                  "error",
+                  "detail"
+                ],
+                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "default": true
               },
               "skipFunctions": {
                 "type": "array",
@@ -256,6 +416,137 @@
               "extends": {
                 "type": "string",
                 "description": "Specifies the `name` attribute of another configuration. Inherits all attributes of the matched configuration."
+              },
+              "variableCategories": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "description": "Customize a group of variables for data inspection.",
+                "examples": [
+                  "recommend",
+                  []
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "object"
+                  ],
+                  "examples": [
+                    "Local",
+                    "Static",
+                    "Global",
+                    {}
+                  ],
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "description": "The title displayed in the group."
+                    },
+                    "source": {
+                      "type": [
+                        "string",
+                        "array"
+                      ],
+                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to use multiple sources, specify them as an array.",
+                      "examples": [
+                        "Local",
+                        "Static",
+                        "Global",
+                        []
+                      ],
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "Local",
+                          "Static",
+                          "Global"
+                        ]
+                      }
+                    },
+                    "hidden": {
+                      "type": [
+                        "boolean",
+                        "string"
+                      ],
+                      "description": "Show / hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
+                      "examples": [
+                        "auto"
+                      ],
+                      "default": false
+                    },
+                    "noduplicate": {
+                      "type": "boolean",
+                      "description": "Disallow / allow duplication with variables of different categories that have the same source. This attribute can only be set for one of the categories that have the same source.",
+                      "default": false
+                    },
+                    "matchers": {
+                      "type": "array",
+                      "description": "An object representing a match condition. If multiple conditions are specified, all of them will be matched or not.",
+                      "items": {
+                        "type": [
+                          "string",
+                          "object"
+                        ],
+                        "examples": [
+                          "*",
+                          "Local",
+                          "Static",
+                          "Global",
+                          {}
+                        ],
+                        "properties": {
+                          "method": {
+                            "type": "string",
+                            "description": "If you want to filter variable that match the conditions, specify \"exclude\". Otherwise, omit this attribute or specify \"include\".",
+                            "enum": [
+                              "include",
+                              "exclude"
+                            ]
+                          },
+                          "pattern": {
+                            "type": "string",
+                            "description": "Regular expression patterns for variable name."
+                          },
+                          "ignorecase": {
+                            "type": "boolean",
+                            "description": "If true, matcher.pattern will ignore case."
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "The type name recognized by the debugger.",
+                            "enum": [
+                              "undefined",
+                              "string",
+                              "number",
+                              "integer",
+                              "float",
+                              "primitive",
+                              "object"
+                            ]
+                          },
+                          "className": {
+                            "type": "string",
+                            "description": "The class name recognized by the debugger.",
+                            "examples": [
+                              "Class",
+                              "Func",
+                              "Object"
+                            ]
+                          },
+                          "builtin": {
+                            "type": "boolean",
+                            "description": "Whether it is a built-in variable or not."
+                          },
+                          "static": {
+                            "type": "boolean",
+                            "description": "Whether it is a static variable or not."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               },
               "trace": {
                 "type": "boolean",
@@ -364,6 +655,11 @@
                     "type": "boolean",
                     "description": "Enable / disable Output directive.",
                     "default": true
+                  },
+                  "useClearConsoleDirective": {
+                    "type": "boolean",
+                    "description": "Enable / disable ClearConsole directive.",
+                    "default": true
                   }
                 },
                 "description": "Enable / disable Debug directive. See the README for detailed instructions on how to set it up.",
@@ -374,9 +670,200 @@
                 "description": "Open the error source when debugging is terminated due to an load-time error. This takes precedence over `openFileOnExit`.",
                 "default": false
               },
+              "useOutputDebug": {
+                "type": [
+                  "boolean",
+                  "object"
+                ],
+                "description": "Whether to show OutputDebug in the debug console. Or more detailed settings about its behavior.",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "stdout",
+                      "stderr",
+                      "console"
+                    ],
+                    "default": "stderr"
+                  },
+                  "prefix": {
+                    "type": "string",
+                    "description": "String to be appended to the prefix of the message."
+                  },
+                  "suffix": {
+                    "type": "string",
+                    "description": "String to be appended to the suffix of the message."
+                  },
+                  "removeTrailingLinebreak": {
+                    "type": "boolean",
+                    "description": "Remove the trailing line-break(\"`r`n\" or \"`n\") character.",
+                    "default": false
+                  }
+                },
+                "default": true
+              },
+              "useAnnounce": {
+                "type": [
+                  "boolean",
+                  "string"
+                ],
+                "enum": [
+                  false,
+                  true,
+                  "error",
+                  "detail"
+                ],
+                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "default": true
+              },
+              "skipFunctions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of functions names to skip when executing steps. The name corresponds to wildcard."
+              },
+              "skipFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Array of file paths to skip when executing steps. The path corresponds to glob."
+              },
               "extends": {
                 "type": "string",
                 "description": "Specifies the `name` attribute of another configuration. Inherits all attributes of the matched configuration."
+              },
+              "variableCategories": {
+                "type": [
+                  "string",
+                  "array"
+                ],
+                "description": "Customize a group of variables for data inspection.",
+                "examples": [
+                  "recommend",
+                  []
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "object"
+                  ],
+                  "examples": [
+                    "Local",
+                    "Static",
+                    "Global",
+                    {}
+                  ],
+                  "properties": {
+                    "label": {
+                      "type": "string",
+                      "description": "The title displayed in the group."
+                    },
+                    "source": {
+                      "type": [
+                        "string",
+                        "array"
+                      ],
+                      "description": "Specifies \"Local\", \"Global\". If you are using AutoHotkey_H, additionally you can specify \"Static\". If you want to use multiple sources, specify them as an array.",
+                      "examples": [
+                        "Local",
+                        "Static",
+                        "Global",
+                        []
+                      ],
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "Local",
+                          "Static",
+                          "Global"
+                        ]
+                      }
+                    },
+                    "hidden": {
+                      "type": [
+                        "boolean",
+                        "string"
+                      ],
+                      "description": "Show / hide categories. If \"auto\" is specified, the category will be hidden when the variable in the category is 0.",
+                      "examples": [
+                        "auto"
+                      ],
+                      "default": false
+                    },
+                    "noduplicate": {
+                      "type": "boolean",
+                      "description": "Disallow / allow duplication with variables of different categories that have the same source. This attribute can only be set for one of the categories that have the same source.",
+                      "default": false
+                    },
+                    "matchers": {
+                      "type": "array",
+                      "description": "An object representing a match condition. If multiple conditions are specified, all of them will be matched or not.",
+                      "items": {
+                        "type": [
+                          "string",
+                          "object"
+                        ],
+                        "examples": [
+                          "*",
+                          "Local",
+                          "Static",
+                          "Global",
+                          {}
+                        ],
+                        "properties": {
+                          "method": {
+                            "type": "string",
+                            "description": "If you want to filter variable that match the conditions, specify \"exclude\". Otherwise, omit this attribute or specify \"include\".",
+                            "enum": [
+                              "include",
+                              "exclude"
+                            ]
+                          },
+                          "pattern": {
+                            "type": "string",
+                            "description": "Regular expression patterns for variable name."
+                          },
+                          "ignorecase": {
+                            "type": "boolean",
+                            "description": "If true, matcher.pattern will ignore case."
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "The type name recognized by the debugger.",
+                            "enum": [
+                              "undefined",
+                              "string",
+                              "number",
+                              "integer",
+                              "float",
+                              "primitive",
+                              "object"
+                            ]
+                          },
+                          "className": {
+                            "type": "string",
+                            "description": "The class name recognized by the debugger.",
+                            "examples": [
+                              "Class",
+                              "Func",
+                              "Object"
+                            ]
+                          },
+                          "builtin": {
+                            "type": "boolean",
+                            "description": "Whether it is a built-in variable or not."
+                          },
+                          "static": {
+                            "type": "boolean",
+                            "description": "Whether it is a static variable or not."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               },
               "trace": {
                 "type": "boolean",
@@ -389,7 +876,7 @@
         "configurationSnippets": [
           {
             "label": "AutoHotkey Debug",
-            "description": "A new configuration for 'debugging' a user selected (ahk | ahk2 | ah2) file.",
+            "description": "A new configuration for debugging the current open file (ahk or ahk2, ah2).",
             "body": {
               "name": "AutoHotkey Debug",
               "type": "autohotkey",
@@ -397,20 +884,58 @@
               "program": "^\"\\${file}\"",
               "args": []
             }
+          },
+          {
+            "label": "AutoHotkey Debug (Advanced Configuration)",
+            "description": "A new advanced configuration for debugging the current open file (ahk or ahk2, ah2).",
+            "body": {
+              "name": "AutoHotkey Debug (Advanced Configuration)",
+              "type": "autohotkey",
+              "request": "launch",
+              "program": "^\"\\${file}\"",
+              "args": [],
+              "port": "9002-9010",
+              "variableCategories": "recommend",
+              "useDebugDirective": true,
+              "useAutoJumpToError": true
+            }
+          },
+          {
+            "label": "AutoHotkey Attach",
+            "description": "A new configuration for debugging by attach a user selected script.",
+            "body": {
+              "name": "AutoHotkey Attach",
+              "type": "autohotkey",
+              "request": "attach"
+            }
+          },
+          {
+            "label": "AutoHotkey Attach (Advanced Configuration)",
+            "description": "A new advanced configuration for debugging by attach a user selected script.",
+            "body": {
+              "name": "AutoHotkey Attach (Advanced Configuration)",
+              "type": "autohotkey",
+              "request": "attach",
+              "port": "9002-9010",
+              "variableCategories": "recommend",
+              "useDebugDirective": true,
+              "useAutoJumpToError": true
+            }
           }
         ]
       }
     ]
   },
   "dependencies": {
-    "@zero-plusplus/ahk-include-path-resolver": "^1.0.11",
+    "@zero-plusplus/autohotkey-utilities": "github:zero-plusplus/node-autohotkey-utilities#develop",
     "async-lock": "^1.2.8",
     "convert-hrtime": "^3.0.0",
     "fast-glob": "^3.2.7",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
     "is-port-taken": "^0.0.3",
-    "jsonc-parser": "^3.0.0",
+    "jsonc-simple-parser": "^2.2.0",
+    "lazy-promise": "^4.0.0",
     "lodash": "^4.17.20",
     "matcher": "^4.0.0",
     "normalize-path": "^3.0.0",
@@ -428,6 +953,7 @@
   "devDependencies": {
     "@types/async-lock": "^1.1.2",
     "@types/convert-hrtime": "^3.0.2",
+    "@types/fs-extra": "^9.0.13",
     "@types/gulp": "^4.0.7",
     "@types/he": "^1.1.1",
     "@types/lodash": "^4.14.165",
@@ -438,26 +964,20 @@
     "@types/parsimmon": "^1.10.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
-    "@types/vscode": "^1.45.0",
-    "@types/webpack": "^4.41.25",
-    "@types/webpack-merge": "^4.1.5",
-    "@zero-plusplus/eslint-my-rules": "^1.0.28",
+    "@types/vscode": "^1.49.0",
+    "@zero-plusplus/eslint-my-rules": "github:zero-plusplus/eslint-my-rules",
     "del": "^6.0.0",
-    "esbuild-loader": "^2.4.0",
-    "esbuild-register": "^2.6.0",
-    "fork-ts-checker-webpack-plugin": "^6.0.3",
+    "esbuild": "^0.14.1",
+    "esbuild-register": "^3.2.0",
+    "fs-extra": "^10.0.0",
     "gulp": "^4.0.2",
     "gulp-run-command": "^0.0.10",
     "husky": "^4.3.0",
     "mocha": "^7.1.1",
     "source-map-support": "^0.5.19",
-    "ts-loader": "^8.0.11",
     "ts-node": "^8.9.0",
-    "types-tsconfig": "^1.2.0",
-    "typescript": "^4.1.2",
+    "typescript": "^4.4.4",
     "vsce": "^1.88.0",
-    "vscode-debugadapter-testsupport": "^1.40.3",
-    "webpack": "^5.6.0",
-    "webpack-merge": "^5.4.0"
+    "vscode-debugadapter-testsupport": "^1.40.3"
   }
 }

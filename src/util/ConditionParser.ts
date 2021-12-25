@@ -1,5 +1,5 @@
 import * as P from 'parsimmon';
-import { AhkVersion } from './util';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 
 export type Parser = P.Language;
 export const createParser = function(version: AhkVersion): P.Language {
@@ -11,21 +11,21 @@ export const createParser = function(version: AhkVersion): P.Language {
       return P.whitespace;
     },
     StringLiteral(rules) {
-      return version.mejor === 1
+      return version.mejor <= 1.1
         ? rules.StringDoubleLiteral
         : P.alt(rules.StringDoubleLiteral, rules.StringSingleLiteral);
     },
     StringDoubleLiteral(rules) {
       return P.seq(
         P.string('"'),
-        version.mejor === 1
+        version.mejor <= 1.1
           ? P.regex(/(?:``|""|[^"\n])*/ui)
           : P.regex(/(?:``|`"|[^"\n])*/ui),
         P.string('"'),
       ).map((result) => {
         const convertedEscape = result[1]
-          .replace(version.mejor === 1 ? /""/gu : /`"/gu, '"')
-          .replace(version.mejor === 1 ? /`(,|%|`|;|:)/gu : /`(`|;|:|\{)/gu, '$1')
+          .replace(version.mejor <= 1.1 ? /""/gu : /`"/gu, '"')
+          .replace(version.mejor <= 1.1 ? /`(,|%|`|;|:)/gu : /`(`|;|:|\{)/gu, '$1')
           .replace(/`n/gu, '\n')
           .replace(/`r/gu, '\r')
           .replace(/`b/gu, '\b')
@@ -78,42 +78,37 @@ export const createParser = function(version: AhkVersion): P.Language {
       return P.string('-');
     },
     IntegerLiteral(rules) {
-      return P.seq(
-        P.alt(rules.NegativeOperator, P.string('')),
-        P.regex(/(?:[1-9][0-9]+|[0-9])/ui),
-      ).map((result) => {
+      return P.regex(/(-)?(?:[1-9][0-9]+|[0-9])/ui).map((result) => {
         return {
           type: 'Integer',
-          value: result.join(''),
+          value: parseInt(result, 10),
         };
       });
     },
     FloatLiteral(rules) {
       return P.seq(
-        P.alt(rules.NegativeOperator, P.string('')),
         rules.IntegerLiteral,
         P.regex(/\.[0-9]+/ui),
       ).map((result) => {
+        const floatString = `${String(result[0].value)}${result[1]}`;
         return {
           type: 'Float',
-          value: `${String(result[0])}${String(result[1].value)}${result[2]}`,
+          value: 2 <= version.mejor ? parseFloat(floatString) : floatString,
         };
       });
     },
     HexLiteral(rules) {
-      return P.seq(
-        P.alt(rules.NegativeOperator, P.string('')),
-        P.regex(/0x(?:[0-9a-f]+)/ui),
-      ).map((result) => {
+      return P.regex(/(-)?0x(?:[0-9a-f]+)/ui).map((result) => {
+        const hexString = result;
         return {
           type: 'Hex',
-          value: result.join(''),
+          value: 2 <= version.mejor ? parseInt(hexString, 16) : hexString,
         };
       });
     },
     ScientificLiteral(rules) {
       return P.seq(
-        version.mejor === 1
+        version.mejor <= 1.1
           ? rules.FloatLiteral
           : P.alt(rules.FloatLiteral, rules.IntegerLiteral),
         P.regex(/e[+]?\d+/ui),
@@ -121,7 +116,7 @@ export const createParser = function(version: AhkVersion): P.Language {
         const rawValue = `${String(result[0].value)}${result[1]}`;
         return {
           type: 'Scientific',
-          value: version.mejor === 1 ? rawValue : Number(rawValue).toFixed(1),
+          value: version.mejor <= 1.1 ? rawValue : Number(rawValue).toFixed(1),
         };
       });
     },
@@ -129,7 +124,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       return P.regex(/true|false/ui).map((result) => {
         return {
           type: 'Boolean',
-          value: result === 'true' ? '1' : '0',
+          value: (/^true$/ui).test(result) ? '1' : '0',
         };
       });
     },
@@ -152,7 +147,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       });
     },
     Identifer(rules) {
-      return version.mejor === 1
+      return version.mejor <= 1.1
         ? P.regex(/[\w#@$]+/ui)
         : P.regex(/[\w]+/ui);
     },
@@ -168,10 +163,14 @@ export const createParser = function(version: AhkVersion): P.Language {
         P.alt(rules.Primitive, rules.PropertyName),
         P.string(']'),
       ).map((result) => {
-        if ('type' in result[1] && result[1].type === 'PropertyName') {
-          return `${result[0]}${result[1].value as string}${result[2]}`;
+        if ('type' in result[1] && result[1].type === 'Primitive') {
+          const primitive = result[1].value;
+          if (primitive.type === 'String') {
+            return `["${String(result[1].value.value)}"]`;
+          }
+          return `[${String(result[1].value.value.value)}]`;
         }
-        return `${result[0]}${result[1].value.value.value as string}${result[2]}`;
+        return `[${String(result[1].value)}]`;
       });
     },
     BaseAccesor(rules) {
@@ -195,12 +194,12 @@ export const createParser = function(version: AhkVersion): P.Language {
     MetaVariable(rules) {
       return P.seq(
         P.string('{'),
-        P.regex(/[\w_]+/u),
+        rules.PropertyName,
         P.string('}'),
       ).map((result) => {
         return {
           type: 'MetaVariable',
-          value: result[1],
+          value: result[1].value,
         };
       });
     },
@@ -300,6 +299,8 @@ export const createParser = function(version: AhkVersion): P.Language {
         rules.ComparisonOperator,
         rules.IsOperator,
         rules.InOperator,
+        rules.HasOperator,
+        rules.ContainsOperator,
       );
     },
     LogicalOperator(rules) {
@@ -340,6 +341,22 @@ export const createParser = function(version: AhkVersion): P.Language {
       return P.regex(/\s+(not in|in)\s+/ui).map((result) => {
         return {
           type: 'InOperator',
+          value: result.toLowerCase().trim(),
+        };
+      });
+    },
+    HasOperator(rules) {
+      return P.regex(/\s+(not has|has)\s+/ui).map((result) => {
+        return {
+          type: 'HasOperator',
+          value: result.toLowerCase().trim(),
+        };
+      });
+    },
+    ContainsOperator(rules) {
+      return P.regex(/\s+(not contains|contains)\s+/ui).map((result) => {
+        return {
+          type: 'ContainsOperator',
           value: result.toLowerCase().trim(),
         };
       });

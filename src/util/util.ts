@@ -1,13 +1,45 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { statSync } from 'fs';
+import { isArray } from 'ts-predicates';
 
+export const isDirectory = (dirPath): boolean => {
+  try {
+    return statSync(dirPath).isDirectory();
+  }
+  catch {
+  }
+  return false;
+};
+export const isPrimitive = (value: any): value is string | number | boolean => {
+  return typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean';
+};
 export const isNumberLike = (value: any): boolean => {
   if (typeof value === 'string') {
-    return value.trim() !== '' && !isNaN((value as any) - 0);
+    if (value === '' || (/\s+/u).test(value)) {
+      return false;
+    }
+    return Boolean(!isNaN(Number(value.trim())) || parseFloat(value.trim()));
   }
   if (typeof value === 'number') {
     return true;
   }
   return false;
+};
+export const isFloatLike = (value): boolean => {
+  if (!isNumberLike(value)) {
+    return false;
+  }
+  return String(value).includes('.');
+};
+export const isIntegerLike = (value: any): boolean => {
+  if (isFloatLike(value)) {
+    return false;
+  }
+  return !isNaN(Number(value)) && Number.isInteger(parseFloat(value));
+};
+export const toArray = <T>(value: any): T[] => {
+  return (isArray(value) ? value : [ value ]) as T[];
 };
 export const timeoutPromise = async<T>(promise: Promise<T>, timeout: number): Promise<T | void> => {
   return Promise.race([
@@ -33,8 +65,8 @@ export const splitVariablePath = (ahkVersion: AhkVersion, variablePath: string):
     if (quote) {
       part += char;
       const isEscapeQuote = (
-        (ahkVersion.mejor === 2 && char === '`' && nextChar === quote)
-        || (ahkVersion.mejor === 1 && char === quote && nextChar === quote)
+        (2 <= ahkVersion.mejor && char === '`' && nextChar === quote)
+        || (ahkVersion.mejor <= 1.1 && char === quote && nextChar === quote)
       );
       if (isEscapeQuote) {
         part += nextChar;
@@ -120,92 +152,13 @@ export const joinVariablePathArray = (pathArray: string[]): string => {
     return part;
   }).join('');
 };
-export class AhkVersion {
-  public readonly full: string;
-  public readonly mejor: number = 0;
-  public readonly minor: number = 0;
-  public readonly teeny: number = 0;
-  public readonly patch: number = 0;
-  public readonly alpha: number = 0;
-  public readonly beta: number = 0;
-  constructor(version: string) {
-    const splitedVersion = version.split('.').map((part) => {
-      const versionPart = parseInt(part, 10);
-      if (isNaN(versionPart)) {
-        return 0;
-      }
-      return versionPart;
-    });
-
-    this.full = version;
-    this.mejor = splitedVersion[0];
-    this.minor = splitedVersion[1];
-
-    const alphaMatch = version.match(/-(?:a(\d+)|alpha)/u);
-    if (alphaMatch) {
-      this.alpha = typeof alphaMatch[1] === 'undefined' ? 0 : parseInt(alphaMatch[1], 10); // Note: AutoHotkey_H does not have the alpha code set. It is always `2.0-alpha`
-    }
-    const betaMatch = version.match(/-(?:beta\.)(\d+)/u);
-    if (betaMatch) {
-      this.beta = typeof betaMatch[1] === 'undefined' ? 0 : parseInt(betaMatch[1], 10);
-    }
-
-    if (this.alpha === 0 && this.beta === 0) {
-      this.teeny = splitedVersion[2] ?? 0;
-      this.patch = splitedVersion[3] ?? 0;
-    }
-  }
-  public static greaterThan(a: string, b: string): boolean {
-    return new AhkVersion(a).greaterThan(b);
-  }
-  public static greaterThanEquals(a: string, b: string): boolean {
-    return new AhkVersion(a).greaterThanEquals(b);
-  }
-  public static lessThan(a: string, b: string): boolean {
-    return new AhkVersion(a).lessThan(b);
-  }
-  public static lessThanEquals(a: string, b: string): boolean {
-    return new AhkVersion(a).lessThanEquals(b);
-  }
-  public greaterThan(version: string | AhkVersion): boolean {
-    return this.compareByInequality(version, '>');
-  }
-  public greaterThanEquals(version: string | AhkVersion): boolean {
-    return this.compareByInequality(version, '>=');
-  }
-  public lessThan(version: string | AhkVersion): boolean {
-    return this.compareByInequality(version, '<');
-  }
-  public lessThanEquals(version: string | AhkVersion): boolean {
-    return this.compareByInequality(version, '<=');
-  }
-  public toArray(): number[] {
-    return [ this.mejor, this.minor, this.teeny, this.patch, this.alpha ];
-  }
-  private compareByInequality(version: string | AhkVersion, inequality: '<' | '<=' | '>' | '>='): boolean {
-    const target = version instanceof AhkVersion ? version : new AhkVersion(version);
-    const compare = {
-      '<': (a: number, b: number): boolean => a < b,
-      '<=': (a: number, b: number): boolean => a <= b,
-      '>': (a: number, b: number): boolean => a > b,
-      '>=': (a: number, b: number): boolean => a >= b,
-    }[inequality];
-
-    if (this.full === target.full) {
-      return true;
-    }
-
-    const versionPartsA = this.toArray();
-    const versionPartsB = target.toArray();
-    for (let i = 0; i < versionPartsA.length; i++) {
-      const a = versionPartsA[i];
-      const b = versionPartsB[i];
-      if (a === b) {
-        continue;
-      }
-      return compare(a, b);
-    }
-
-    return false; // Never gonna here
-  }
-}
+export const now = (): string => {
+  const now = new Date();
+  const month = String(now.getMonth()).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const milliSeconds = String(now.getMilliseconds()).padStart(3, '0');
+  return `${now.getFullYear()}/${month}/${date} ${hours}:${minutes}:${seconds}.${milliSeconds}`;
+};

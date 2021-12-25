@@ -16,7 +16,105 @@
             "openFileOnExit": "${file}",
             "internalConsoleOptions": "openOnSessionStart",
             "useAutoJumpToError": true,
-            "trace": false
+            "trace": false,
+            "useOutputDebug": {
+                "useTrailingLinebreak": true
+            },
+            "useAnnounce": "detail",
+            "variableCategories": "recommend"
+        },
+        {
+            "name": "VariableCategories Test",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${file}",
+            "runtime_v1": "AutoHotkey.exe",
+            "runtime_v2": "v2/AutoHotkey.exe",
+            "args": [],
+            "port": "9002-9010",
+            "stopOnEntry": false,
+            "useDebugDirective": true,
+            "usePerfTips": true,
+            "openFileOnExit": "${file}",
+            "internalConsoleOptions": "openOnSessionStart",
+            "useAutoJumpToError": true,
+            "trace": false,
+            "variableCategories": [
+                "Local",
+                {
+                    "label": "Global",
+                    "source": "Global",
+                    "noduplicate": true,
+                    "matchers": [
+                        {
+                            "method": "exclude",
+                            "pattern": "\\d"
+                        },
+                    ]
+                },
+                {
+                    "label": "Global Func",
+                    "source": "Global",
+                    "hidden": "auto",
+                    "matchers": [
+                        {
+                            "method": "exclude",
+                            "pattern": "\\d"
+                        },
+                        {
+                            "className": "Func",
+                            "builtin": false,
+                        },
+                    ],
+                },
+                {
+                    "label": "Built-in Func",
+                    "source": "Global",
+                    "hidden": "auto",
+                    "matchers": [
+                        {
+                            "method": "exclude",
+                            "pattern": "\\d"
+                        },
+                        {
+                            "className": "Func",
+                            "builtin": true,
+                        },
+                    ],
+                },
+                {
+                    "label": "Built-in Global",
+                    "source": "Global",
+                    "matchers": [
+                        {
+                            "method": "exclude",
+                            "pattern": "\\d"
+                        },
+                        {
+                            "method": "exclude",
+                            "className": "Func",
+                        },
+                        {
+                            "builtin": true,
+                        }
+                    ],
+                },
+                {
+                    "label": "Constant",
+                    "source": "Global",
+                    "matchers": [
+                        {
+                            "pattern": "^[A-Z_]+$",
+                            "ignorecase": false,
+                        }
+                    ],
+                },
+                {
+                    "label": "All",
+                    "source": [ "Local", "Static", "Global" ],
+                },
+            ],
+            "useAnnounce": "detail",
         },
         {
             "name": "AutoHotkey Debug (UIA)",
@@ -33,7 +131,8 @@
             "internalConsoleOptions": "openOnSessionStart",
             "useAutoJumpToError": true,
             "useUIAVersion": true,
-            "trace": false
+            "useAnnounce": "detail",
+            "trace": false,
         },
         {
             "name": "AutoHotkey_H Debug",
@@ -44,7 +143,9 @@
             "program": "${file}",
             "args": [],
             "stopOnEntry": false,
-            "maxChildren": 10000
+            "maxChildren": 10000,
+            "useAnnounce": "detail",
+            "variableCategories": "recommend",
         },
         {
             "name": "AutoHotkey Attach",
@@ -56,6 +157,7 @@
             "useDebugDirective": true,
             "openFileOnExit": "${file}",
             "useAutoJumpToError": true,
+            "useAnnounce": "detail",
             "trace": false,
         },
         {
@@ -67,6 +169,7 @@
             "useDebugDirective": true,
             "openFileOnExit": "${file}",
             "useAutoJumpToError": true,
+            "useAnnounce": "detail",
             "stopOnEntry": true,
             "trace": false,
         },

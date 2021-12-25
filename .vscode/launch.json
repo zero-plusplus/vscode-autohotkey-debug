@@ -17,6 +17,11 @@
         "${workspaceFolder}/build/**/*.js"
       ],
       "preLaunchTask": "subtask:watch",
+      "skipFiles": [
+          "<node_internals>/**",
+          "**",
+          "!${workspaceFolder}/**"
+      ],
     },
     {
       "name": "Extension Test without lint",

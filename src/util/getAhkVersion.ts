@@ -1,5 +1,5 @@
 import { SpawnSyncOptions, spawnSync } from 'child_process';
-import { AhkVersion } from './util';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 
 export const getAhkVersion = (ahkRuntime: string, options?: SpawnSyncOptions): AhkVersion | null => {
   const ahkCode = 'FileOpen("*", "w").write(A_AhkVersion)';

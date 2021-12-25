@@ -23,7 +23,7 @@ export class AutoHotkeyLauncher {
     return this.launchByNode();
   }
   public launchByNode(): AutoHotkeyProcess {
-    const { noDebug, runtime, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
+    const { noDebug, runtime, cwd, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
 
     const launchArgs = [
       ...(noDebug ? [] : [ `/Debug=${hostname}:${port}` ]),
@@ -32,7 +32,7 @@ export class AutoHotkeyLauncher {
       ...args,
     ];
     const event = new EventEmitter();
-    const ahkProcess = spawn(runtime, launchArgs, { cwd: path.dirname(program), env });
+    const ahkProcess = spawn(runtime, launchArgs, { cwd, env });
     ahkProcess.on('close', (exitCode?: number) => {
       event.emit('close', exitCode);
     });
@@ -44,7 +44,7 @@ export class AutoHotkeyLauncher {
     });
 
     return {
-      command: `"${runtime}" ${launchArgs.join(' ')}\n`,
+      command: `"${runtime}" ${launchArgs.join(' ')}`,
       event,
       close: (): void => {
         ahkProcess.kill();
@@ -73,7 +73,7 @@ export class AutoHotkeyLauncher {
       event.emit('stderr', String(data));
     });
     return {
-      command: `"${runtime}" ${launchArgs.join(' ')}\n`,
+      command: `"${runtime}" ${launchArgs.join(' ')}`,
       event,
       close: (): void => {
         ahkProcess.kill();
@@ -88,7 +88,7 @@ export class AutoHotkeyLauncher {
       return false;
     }
 
-    const ahkCode = version.mejor === 1 ? `
+    const ahkCode = version.mejor <= 1.1 ? `
       DetectHiddenWindows On
       SetTitleMatchMode RegEx
       if (WinExist("i)${escapePcreRegExEscape(program)} ahk_class AutoHotkey")) {

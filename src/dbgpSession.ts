@@ -3,10 +3,14 @@ import { EventEmitter } from 'events';
 import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
-import * as convertHrTime from 'convert-hrtime';
-import { range, uniq, uniqBy } from 'lodash';
+import convertHrTime from 'convert-hrtime';
+import { uniq, uniqBy } from 'lodash';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { AhkVersion, isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
+import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
+import { equalsIgnoreCase } from './util/stringUtils';
+import { TraceLogger } from './util/TraceLogger';
+import { unescapeAhk } from './util/VariableManager';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -175,8 +179,8 @@ export abstract class Property {
 
     this.context = context;
     this.facet = facet as PropertyFacet;
-    this.fullName = fullname.replace(/<base>/gui, 'base');
-    this.name = name.replace('<base>', 'base');
+    this.fullName = fullname;
+    this.name = name;
     this.type = type as PropertyType;
     this.size = parseInt(size, 10);
   }
@@ -195,11 +199,11 @@ export class ObjectProperty extends Property {
   public address: number;
   public page: number;
   public pageSize: number;
-  public get maxIndex(): number | null {
+  public get maxIndex(): number | undefined {
     for (let reverseIndex = this.children.length - 1; 0 <= reverseIndex; reverseIndex--) {
       const property = this.children[reverseIndex];
       const index = property.index;
-      if (index !== null) {
+      if (index) {
         return index;
       }
     }
@@ -208,7 +212,7 @@ export class ObjectProperty extends Property {
     if (isEmptyArrayInV2) {
       return 0;
     }
-    return null;
+    return undefined;
   }
   constructor(propertyNode: XmlNode, context: Context) {
     super(propertyNode, context);
@@ -225,7 +229,7 @@ export class ObjectProperty extends Property {
       const indexes: number[] = [];
       properties.forEach((propertyNode) => {
         const child = Property.from(propertyNode, context);
-        if (child.name === '<enume>') {
+        if (child.name === '<enum>') {
           return;
         }
         if (child.index) {
@@ -467,13 +471,14 @@ export class SourceResponse extends Response {
   }
 }
 export class Session extends EventEmitter {
-  public readonly DEFAULT_DEPTH = 1;
+  public readonly DEFAULT_MAX_DEPTH = 1;
   public readonly id: number = 1;
   private _ahkVersion!: AhkVersion;
   public get ahkVersion(): AhkVersion {
     return this._ahkVersion;
   }
   private readonly socket: Socket;
+  private readonly logger?: TraceLogger;
   private readonly pendingCommands = new Map<number, Command>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
@@ -483,9 +488,10 @@ export class Session extends EventEmitter {
   public get socketClosed(): boolean {
     return !this.socket.writable;
   }
-  constructor(socket: Socket) {
+  constructor(socket: Socket, logger?: TraceLogger) {
     super();
 
+    this.logger = logger;
     this.socket = socket
       .on('data', (packet: Buffer): void => {
         this.handlePacket(packet);
@@ -497,7 +503,7 @@ export class Session extends EventEmitter {
       if (xml.init) {
         const initPacket = new InitPacket(xml.init);
         Promise.all([
-          this.sendFeatureSetCommand('max_depth', this.DEFAULT_DEPTH),
+          this.sendFeatureSetCommand('max_depth', this.DEFAULT_MAX_DEPTH),
           this.sendStdoutCommand('redirect'),
           this.sendStderrCommand('redirect'),
           this.sendCommand('property_set', '-n A_DebuggerName -c 1', 'Visual Studio Code'),
@@ -523,7 +529,7 @@ export class Session extends EventEmitter {
             .from(xml.stream.content, 'base64')
             .toString('utf8')
             .replace('\0', '');
-          this.emit(type, data);
+          this.emit(type === 'stderr' ? 'outputdebug' : type, data);
         }
       }
     });
@@ -559,26 +565,26 @@ export class Session extends EventEmitter {
   public async sendStackDepthCommand(): Promise<StackDepthResponse> {
     return new StackDepthResponse(await this.sendCommand('stack_depth'));
   }
-  public async sendPropertyGetCommand(context: Context, name: string, maxDepth?: number): Promise<PropertyGetResponse> {
-    const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-
-    // An error occurs if `base` is included when retrieving dynamic properties. This bug? can be avoided by converting to `<base>` format.
-    let fixedName = name;
-    if (this.ahkVersion.mejor === 2 && (/\.base/ui).test(name)) {
-      const fixedPathArray = splitVariablePath(this.ahkVersion, name).map(((pathPart) => {
-        if (pathPart.startsWith('[')) {
-          return pathPart;
-        }
-        return pathPart.replace(/base/ui, '<base>');
-      }));
-      fixedName = joinVariablePathArray(fixedPathArray);
+  public async sendPropertyGetCommand(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<PropertyGetResponse> {
+    const commandParams = `-n ${unescapeAhk(name, this.ahkVersion)} -c ${context.id} -d ${context.stackFrame.level}`;
+    let dbgpResponse: XmlNode;
+    if (this.DEFAULT_MAX_DEPTH === maxDepth) {
+      dbgpResponse = await this.sendCommand('property_get', commandParams);
     }
+    else {
+      await this.sendFeatureSetCommand('max_depth', maxDepth);
+      dbgpResponse = await this.sendCommand('property_get', commandParams);
+      await this.sendFeatureSetCommand('max_depth', this.DEFAULT_MAX_DEPTH);
+    }
+    const response = new PropertyGetResponse(dbgpResponse, context);
 
-    await this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
-    const dbgpResponse = await this.sendCommand('property_get', `-n ${fixedName} -c ${context.id} -d ${context.stackFrame.level}`);
-    await this.sendFeatureSetCommand('max_depth', maxDepth_backup);
-
-    return new PropertyGetResponse(dbgpResponse, context);
+    // Workaround the bug of not being able to get the base object correctly
+    const shouldAvoidBug = name.endsWith('<base>') && 0 < response.properties.length && response.properties[0].type === 'undefined'
+    && ((this.ahkVersion.mejor <= 1.1 && this.ahkVersion.lessThanEquals('1.1.33.10')) || (this.ahkVersion.mejor === 2.0 && this.ahkVersion.lessThanEquals('2.0-a103')));
+    if (shouldAvoidBug) {
+      return this.sendPropertyGetCommand(context, name.replace(/<base>$/u, 'base'), maxDepth);
+    }
+    return response;
   }
   public async sendContinuationCommand(commandName: ContinuationCommandName): Promise<ContinuationResponse> {
     const startTime = process.hrtime();
@@ -622,12 +628,17 @@ export class Session extends EventEmitter {
   public async sendContextNamesCommand(stackFrame: StackFrame): Promise<ContextNamesResponse> {
     return new ContextNamesResponse(await this.sendCommand('context_names'), stackFrame);
   }
-  public async sendContextGetCommand(context: Context, maxDepth?: number): Promise<ContextGetResponse> {
-    const maxDepth_backup = parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-
-    await this.sendFeatureSetCommand('max_depth', maxDepth ?? maxDepth_backup);
-    const dbgpResponse = await this.sendCommand('context_get', `-c ${context.id} -d ${context.stackFrame.level}`);
-    await this.sendFeatureSetCommand('max_depth', maxDepth_backup);
+  public async sendContextGetCommand(context: Context, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<ContextGetResponse> {
+    const commandParams = `-c ${context.id} -d ${context.stackFrame.level}`;
+    let dbgpResponse: XmlNode;
+    if (this.DEFAULT_MAX_DEPTH < maxDepth) {
+      await this.sendFeatureSetCommand('max_depth', maxDepth);
+      dbgpResponse = await this.sendCommand('context_get', commandParams);
+      await this.sendFeatureSetCommand('max_depth', this.DEFAULT_MAX_DEPTH);
+    }
+    else {
+      dbgpResponse = await this.sendCommand('context_get', commandParams);
+    }
 
     return new ContextGetResponse(dbgpResponse, context);
   }
@@ -655,7 +666,49 @@ export class Session extends EventEmitter {
   public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
   }
-  public async fetchAllVariableNames(): Promise<string[]> {
+  public async existsProperty(context: Context, name: string): Promise<boolean> {
+    const splitedVariablePathList = splitVariablePath(this.ahkVersion, this.normalizeVariablePath(name));
+
+    for await (const [ i ] of Object.entries(splitedVariablePathList.slice(0, -1))) {
+      const index = Number(i);
+      const currentName = joinVariablePathArray(splitedVariablePathList.slice(0, index + 1));
+      const property = await this.safeFetchProperty(context, currentName, 1);
+      if (!property) {
+        return false;
+      }
+
+      const lastLoop = splitedVariablePathList.length - 1 <= index;
+      if (!lastLoop && property instanceof PrimitiveProperty) {
+        return false;
+      }
+
+      if (property instanceof ObjectProperty) {
+        const childName = splitedVariablePathList[index + 1];
+        const containsChild = property.children.some((child) => equalsIgnoreCase(child.name, childName));
+        if (containsChild) {
+          continue;
+        }
+        const inherited = await this.fetchInheritedProperty(context, property.fullName, childName);
+        if (inherited) {
+          continue;
+        }
+        return false;
+      }
+    }
+    return true;
+  }
+  public normalizeVariablePath(variablePath: string): string {
+    const normalizedPathList: string[] = [];
+    for (const part of splitVariablePath(this.ahkVersion, variablePath)) {
+      let normalizedPath = part;
+      if (2 <= this.ahkVersion.mejor && part.startsWith(`['`) && normalizedPath.endsWith(`']`)) {
+        normalizedPath = part.replace(/^\['/u, '["').replace(/'\]$/u, '"]').replace(/`'/u, `'`).replace(/(?<!^\[)"(?!\]$)/u, '`"');
+      }
+      normalizedPathList.push(normalizedPath);
+    }
+    return joinVariablePathArray(normalizedPathList);
+  }
+  public async fetchAllPropertyNames(): Promise<string[]> {
     const { stackFrames } = await this.sendStackGetCommand();
     if (stackFrames.length === 0) {
       return [];
@@ -669,110 +722,24 @@ export class Session extends EventEmitter {
     }
     return uniq(variableNames);
   }
-  public async fetchProperty(context: Context, name: string, maxDepth?: number): Promise<Property | null> {
-    const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    const { properties } = await this.sendPropertyGetCommand(context, name, _maxDepth);
+  public async fetchProperty(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> {
+    const { properties } = await this.sendPropertyGetCommand(context, name, maxDepth);
     const property = properties[0];
-    if (property.type !== 'undefined') {
+    if (property.type === 'undefined') {
+      return undefined;
+    }
+
+    // Worked around a bug where getting a variable in the AutoExec section would get the variable in the top stack frame.
+    if (property.context.stackFrame.name === 'Auto-execute thread') {
+      if ([ 'Local', 'Static' ].includes(property.context.name)) {
+        return undefined;
+      }
       return property;
     }
-    return null;
+
+    return property;
   }
-  public async evaluate(name: string, maxDepth?: number): Promise<Property | null> {
-    // #region util
-    const resolveVariablePath = async(variablePath: string): Promise<string> => {
-      const resolvedVariablePathArray: string[] = [];
-      for await (const pathPart of splitVariablePath(this.ahkVersion, variablePath)) {
-        const isBracketNotationWithVariable = (): boolean => (this.ahkVersion.mejor === 2 ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
-
-        let resolvedPathPart = pathPart;
-        if (isBracketNotationWithVariable()) {
-          const _variablePath = pathPart.slice(1, -1);
-          const property = await this.evaluate(_variablePath);
-          if (property instanceof PrimitiveProperty) {
-            const escapedValue = property.value.replace(/"/gu, this.ahkVersion.mejor === 2 ? '`"' : '""');
-            resolvedPathPart = isNumberLike(escapedValue) ? `[${escapedValue}]` : `["${escapedValue}"]`;
-          }
-          else if (property instanceof ObjectProperty) {
-            resolvedPathPart = `[Object(${property.address})]`;
-          }
-        }
-        resolvedVariablePathArray.push(resolvedPathPart);
-      }
-      return joinVariablePathArray(resolvedVariablePathArray);
-    };
-    const findInheritedProperty = async(context: Context, parentName: string, key: string): Promise<Property | null> => {
-      const baseProperty = await this.fetchProperty(context, `${parentName}.base`);
-      if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
-        return null;
-      }
-      const property = await this.evaluate(`${baseProperty.fullName}.${key}`);
-      if (property) {
-        return property;
-      }
-      return findInheritedProperty(context, baseProperty.fullName, key);
-    };
-    const safeFetchProperty = async(context: Context, name: string, maxDepth?: number): Promise<Property | null> => {
-      const variablePathArray = splitVariablePath(this.ahkVersion, name);
-      const bracketNotationIndex = variablePathArray.findIndex((part) => part.startsWith('['));
-      if (bracketNotationIndex === -1) {
-        return this.fetchProperty(context, name);
-      }
-
-      let variablePath = variablePathArray.shift()!;
-      for await (const i of range(variablePathArray.length)) {
-        const part = variablePathArray[i];
-        if (!part.startsWith('[')) {
-          variablePath += `.${part}`;
-          continue;
-        }
-
-        const property = await this.fetchProperty(context, variablePath, maxDepth);
-        if (!(property && property instanceof ObjectProperty)) {
-          return null;
-        }
-        const hasChild = Boolean(property.children.find((child) => child.name === part));
-        if (!hasChild) {
-          return null;
-        }
-      }
-      return this.fetchProperty(context, name, maxDepth);
-    };
-    // #endregion util
-    const { stackFrames } = await this.sendStackGetCommand();
-    if (stackFrames.length === 0) {
-      return null;
-    }
-
-    const _maxDepth = maxDepth ?? parseInt((await this.sendFeatureGetCommand('max_depth')).value, 10);
-    const resolvedName = await resolveVariablePath(name);
-    const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
-    for await (const context of contexts) {
-      const property = await safeFetchProperty(context, resolvedName, _maxDepth);
-      if (property) {
-        return property;
-      }
-
-      const variablePathArray = splitVariablePath(this.ahkVersion, resolvedName);
-      if (variablePathArray.length < 2) {
-        continue;
-      }
-      const shortName = variablePathArray.pop()!;
-      const parentName = joinVariablePathArray(variablePathArray);
-
-      // Common to v1 and v2, do not search for inherited properties when using bracket notation
-      if (shortName.startsWith('[')) {
-        continue;
-      }
-
-      const inheritedProperty = await findInheritedProperty(context, parentName, shortName);
-      if (inheritedProperty) {
-        return inheritedProperty;
-      }
-    }
-    return null;
-  }
-  public async fetchAllVariables(maxDepth?: number): Promise<Property[]> {
+  public async fetchAllProperties(maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property[]> {
     const { stackFrames } = await this.sendStackGetCommand();
     if (stackFrames.length === 0) {
       return [];
@@ -791,67 +758,187 @@ export class Session extends EventEmitter {
     }
     return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
   }
+  // workaround the issue of getting dynamic properties directly, which causes errors, get the parent element and return its child elements
+  public async safeFetchProperty(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> {
+    // Under 1.1, the dynamic property issue does not occur
+    if (this.ahkVersion.mejor <= 1.1) {
+      return this.fetchProperty(context, name, maxDepth);
+    }
+    const variablePathArray = splitVariablePath(this.ahkVersion, name);
+    if (variablePathArray.length === 1) {
+      return this.fetchProperty(context, name, maxDepth);
+    }
+
+    const parentVariablePath = joinVariablePathArray(variablePathArray.slice(0, -1));
+    const propertyName = variablePathArray[variablePathArray.length - 1];
+
+    const preload = await this.fetchProperty(context, parentVariablePath, 0);
+    if (!preload || !(preload instanceof ObjectProperty)) {
+      return undefined;
+    }
+    if (![ 'Prototype', 'Class' ].includes(preload.className)) {
+      return this.fetchProperty(context, name, maxDepth);
+    }
+    const property = await this.fetchProperty(context, parentVariablePath, maxDepth + 1);
+    if (!property) {
+      return undefined;
+    }
+
+    if (property instanceof ObjectProperty) {
+      const child = property.children.find((child) => equalsIgnoreCase(child.name, propertyName));
+      if (child) {
+        // If the dynamic property is tried to be retrieved with `base` instead of `<base>`, an error will occur, so this can be avoided by converting it to `<base>`
+        const shouldFixBug = (/(?<!<)base(?!>)/u).test(child.fullName) && child instanceof PrimitiveProperty && child.value === '<error>';
+        if (shouldFixBug) {
+          return this.fetchProperty(context, child.fullName.replace(/(?<!<)base(?!>)/gu, '<base>'), maxDepth);
+        }
+        return child;
+      }
+      return property.children.find((child) => child.name === '<base>' && equalsIgnoreCase(child.name, `<${propertyName}>`));
+    }
+    return undefined;
+  }
+  public async fetchInheritedProperty(context: Context, parentName: string, key: string): Promise<Property | undefined> {
+    const baseProperty = await this.fetchProperty(context, `${parentName}.<base>`);
+    if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
+      return undefined;
+    }
+    const property = await this.safeFetchProperty(context, `${baseProperty.fullName}.${key}`);
+    if (property) {
+      return property;
+    }
+    return this.fetchInheritedProperty(context, baseProperty.fullName, key);
+  }
+  public async evaluate(name: string, stackFrame?: StackFrame, maxDepth = 1): Promise<Property | undefined> {
+    let _stackFrame: StackFrame;
+    if (stackFrame) {
+      _stackFrame = stackFrame;
+    }
+    else {
+      const stackFrames = (await this.sendStackGetCommand()).stackFrames;
+      if (stackFrames.length === 0) {
+        return undefined;
+      }
+      _stackFrame = stackFrames[0];
+    }
+
+    const resolvedName = (await this.resolveVariablePath(name, stackFrame));
+    const { contexts } = await this.sendContextNamesCommand(_stackFrame);
+    for await (const context of contexts) {
+      if (!(await this.existsProperty(context, resolvedName))) {
+        return undefined;
+      }
+
+      const property = await this.safeFetchProperty(context, resolvedName, maxDepth);
+      if (property) {
+        return property;
+      }
+
+      const variablePathArray = splitVariablePath(this.ahkVersion, resolvedName);
+      if (variablePathArray.length < 2) {
+        continue;
+      }
+      const shortName = variablePathArray.pop()!;
+
+      // Common to v1 and v2, do not search for inherited properties when using bracket notation
+      if (shortName.startsWith('[')) {
+        continue;
+      }
+
+      const parentName = joinVariablePathArray(variablePathArray);
+      const inheritedProperty = await this.fetchInheritedProperty(context, parentName, shortName);
+      if (inheritedProperty) {
+        return inheritedProperty;
+      }
+    }
+    return undefined;
+  }
+  public async resolveVariablePath(variablePath: string, stackFrame?: StackFrame): Promise<string> {
+    const resolvedVariablePathArray: string[] = [];
+    const splitedVariablePathList = splitVariablePath(this.ahkVersion, variablePath);
+    for await (const pathPart of splitedVariablePathList) {
+      let resolvedPathPart = this.normalizeVariablePath(pathPart);
+
+      const isBracketNotationWithVariable = (2 <= this.ahkVersion.mejor ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
+      if (isBracketNotationWithVariable) {
+        const _variablePath = pathPart.slice(1, -1);
+        if (isNumberLike(_variablePath)) {
+          resolvedVariablePathArray.push(pathPart);
+          continue;
+        }
+
+        const property = await this.evaluate(_variablePath, stackFrame);
+        if (property instanceof PrimitiveProperty) {
+          const escapedValue = property.value.replace(/"/gu, 2 <= this.ahkVersion.mejor ? '`"' : '""');
+          resolvedPathPart = isNumberLike(escapedValue) ? `[${escapedValue}]` : `["${escapedValue}"]`;
+        }
+        else if (property instanceof ObjectProperty) {
+          resolvedPathPart = `[Object(${property.address})]`;
+        }
+      }
+      resolvedVariablePathArray.push(resolvedPathPart);
+    }
+    return joinVariablePathArray(resolvedVariablePathArray);
+  }
   public async fetchSuggestList(variablePath: string): Promise<Property[]> {
+    const fixedVariablePath = variablePath.replace(/<|>/gu, '');
+
     // #region util
     const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
       const children = [ ...property.children ];
-      const base = await this.evaluate(`${property.fullName}.base`, 1);
+      const base = await this.evaluate(`${property.fullName}.<base>`);
       if (base instanceof ObjectProperty) {
-        children.push(...await getInheritedChildren(base));
+        const nestedChildren = (await getInheritedChildren(base)).filter((property) => property.name !== '<base>');
+        children.push(...nestedChildren);
       }
-      return children;
+      // return children;
+      return uniqBy(children, (property) => property.name.replace(/^<|>$/gu, '').toLocaleLowerCase());
     };
-    const getChildren = async(variablePathOrProperty: string | Property): Promise<Property[] | null> => {
-      const property = typeof variablePathOrProperty === 'string' ? await this.evaluate(variablePathOrProperty) : variablePathOrProperty;
+    const getChildren = async(variablePath: string): Promise<Property[] | undefined> => {
+      const property = await this.evaluate(variablePath);
       if (property instanceof ObjectProperty) {
-        const children = (await getInheritedChildren(property));
-        return uniqBy(children, (property) => property.name.toLowerCase());
+        return getInheritedChildren(property);
       }
-      return null;
+      return undefined;
     };
     // #endregion util
 
-    if ((/(\[|\])\s*$/u).test(variablePath)) {
-      return this.fetchAllVariables();
-    }
-
-    const propertyPathArray = splitVariablePath(this.ahkVersion, variablePath);
-    if (propertyPathArray.length === 0 || propertyPathArray.length === 1) {
-      return this.fetchAllVariables();
+    if ((/(\[|\])\s*$/u).test(fixedVariablePath)) {
+      return this.fetchAllProperties();
     }
 
     // e.g. `object..field`
-    const isMultipleDot = (/\.{2,}$/u).test(variablePath);
+    const isMultipleDot = (/\.{2,}$/u).test(fixedVariablePath);
     if (isMultipleDot) {
       return [];
     }
 
-    const lastPath = propertyPathArray[propertyPathArray.length - 1];
-    const isBracketNotation = lastPath.startsWith('[');
-    if (isBracketNotation) {
-      const openQuoteRegExp = this.ahkVersion.mejor === 2 ? /(?<!\[|`)("|')\s*$/u : /(?!\[|")"\s*$/u;
-      if (openQuoteRegExp.test(lastPath)) {
-        return this.fetchAllVariables();
-      }
-      const closeQuoteRegExp = this.ahkVersion.mejor === 2 ? /(?<!\[)("|')\s*(\])?$\s*$/u : /(?<!\[)(")\s*(\])?$/u;
-      if (closeQuoteRegExp.test(lastPath)) {
-        return this.fetchAllVariables();
-      }
-
-      const fixedVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
-      const children = await getChildren(fixedVariablePath);
-      if (children) {
-        return children;
-      }
-      return [];
+    const propertyPathArray = splitVariablePath(this.ahkVersion, fixedVariablePath);
+    if (propertyPathArray.length === 0 || propertyPathArray.length === 1) {
+      return this.fetchAllProperties();
     }
 
+    const propertyName = propertyPathArray[propertyPathArray.length - 1];
     const parentVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
-    const parentProperty = await this.evaluate(parentVariablePath);
-    if (!parentProperty) {
-      return [];
+
+    const isBracketNotation = propertyName.startsWith('[');
+    if (isBracketNotation && 2 <= this.ahkVersion.mejor) {
+      const openQuoteRegExp = /(?<!\[|`)("|')\s*$/u;
+      if (openQuoteRegExp.test(propertyName)) {
+        return this.fetchAllProperties();
+      }
+      const closeQuoteRegExp = /(?<!\[)("|')\s*(\])?$\s*$/u;
+      if (closeQuoteRegExp.test(propertyName)) {
+        return this.fetchAllProperties();
+      }
+
+      const fixedVariablePath = parentVariablePath;
+      return (await getChildren(fixedVariablePath) ?? []).filter((child) => {
+        return child.name.startsWith('[');
+      });
     }
-    return await getChildren(parentProperty) ?? [];
+
+    return await getChildren(parentVariablePath) ?? [];
   }
   public async close(): Promise<void> {
     this.removeAllListeners();
@@ -870,6 +957,8 @@ export class Session extends EventEmitter {
     return this.transactionCounter;
   }
   private async write(command: string): Promise<void> {
+    this.logger?.log(`<command>${command}`);
+
     return new Promise<void>((resolve, reject) => {
       if (!this.socket.writable) {
         reject(new Error('Socket not writable.'));
@@ -909,7 +998,9 @@ export class Session extends EventEmitter {
       }
 
       // Received response
-      const xml_str = data.toString();
+      // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171
+      // If it contains a newline, it should be escaped in an AutoHotkey-like manner.
+      const xml_str = data.toString().replace(/\r\n/gu, '`r`n').replace(/\n/gu, '`n');
       const response = parser.parse(xml_str, {
         attributeNamePrefix: '',
         attrNodeName: 'attributes',
