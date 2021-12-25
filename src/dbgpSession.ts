@@ -826,7 +826,7 @@ export class Session extends EventEmitter {
     const { contexts } = await this.sendContextNamesCommand(_stackFrame);
     for await (const context of contexts) {
       if (!(await this.existsProperty(context, resolvedName))) {
-        return undefined;
+        continue;
       }
 
       const property = await this.safeFetchProperty(context, resolvedName, maxDepth);
