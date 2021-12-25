@@ -1402,12 +1402,15 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const label = evalucatedMessages.reduce((prev: string, current): string => {
+    let label = evalucatedMessages.reduce((prev: string, current): string => {
       if (typeof current === 'string' || typeof current === 'number') {
         return `${prev}${current}`;
       }
       return prev;
-    }, '') || objectMessages.reduce((prev, current) => (prev ? `${prev}, ${current.name}` : current.name), '');
+    }, '');
+    if (!label) {
+      label = objectMessages.reduce((prev, current) => (prev ? `${prev}, ${current.name}` : current.name), '');
+    }
 
     const variableGroup = new MetaVariable(label, objectMessages.map((obj) => new MetaVariable(obj.name, obj)));
     const variablesReference = this.variableManager!.createVariableReference(variableGroup);
