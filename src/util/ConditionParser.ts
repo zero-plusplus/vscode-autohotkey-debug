@@ -330,7 +330,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       });
     },
     IsOperator(rules) {
-      return P.regex(/\s+(is not|is)\s+/ui).map((result) => {
+      return P.regex(/\s+is(\s+not)?\s+/ui).map((result) => {
         return {
           type: 'IsOperator',
           value: result.toLowerCase().trim(),
@@ -338,7 +338,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       });
     },
     InOperator(rules) {
-      return P.regex(/\s+(not in|in)\s+/ui).map((result) => {
+      return P.regex(/\s+(not\s+)?in\s+/ui).map((result) => {
         return {
           type: 'InOperator',
           value: result.toLowerCase().trim(),
@@ -354,7 +354,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       });
     },
     ContainsOperator(rules) {
-      return P.regex(/\s+(not contains|contains)\s+/ui).map((result) => {
+      return P.regex(/\s+(not\s+)?contains\s+/ui).map((result) => {
         return {
           type: 'ContainsOperator',
           value: result.toLowerCase().trim(),
