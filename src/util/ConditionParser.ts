@@ -346,7 +346,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       });
     },
     HasOperator(rules) {
-      return P.regex(/\s+(not has|has)\s+/ui).map((result) => {
+      return P.regex(/\s+has(\s+not)?\s+/ui).map((result) => {
         return {
           type: 'HasOperator',
           value: result.toLowerCase().trim(),
