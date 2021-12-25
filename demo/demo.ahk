@@ -37,6 +37,7 @@ demo()
     arr_empty := []
     arr := [ str, int, Util_CreateLargeArray() ]
     arr_maxsize := Util_CreateMaxSizeArray()
+    arr_giant := Util_CreateGiantArray()
     arr_like := Util_CreateLargeArray()
     arr_like.size := arr_like.length()
     arr_sparse := { 1: str, 9000: int }

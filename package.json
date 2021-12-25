@@ -4,7 +4,7 @@
   "description": "Advanced debugging support for AutoHotkey(includes H) v1 and v2",
   "author": "zero-plusplus <git@zero-plusplus.com>",
   "license": "MIT",
-  "main": "./build/src/extension",
+  "main": "./build/extension",
   "repository": {
     "type": "git",
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug.git"
@@ -13,13 +13,14 @@
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug/issues"
   },
   "scripts": {
-    "build": "npx gulp build",
-    "watch": "npx gulp watch",
-    "clean": "npx gulp clean",
-    "test": "npm run lint && mocha -r ts-node/register ./test/**/*.test.ts",
-    "lint": "npx gulp lint",
-    "package": "npx gulp packaging",
-    "vscode:prepublish": "npx gulp bundleWithoutClean"
+    "build": "gulp build",
+    "watch": "gulp watch",
+    "clean": "gulp clean",
+    "test": "npm run lint && mocha ./test/*.ts",
+    "test:sandbox": "gulp testBySandBox",
+    "lint": "gulp lint",
+    "package": "gulp packaging",
+    "vscode:prepublish": "gulp buildMain"
   },
   "publisher": "zero-plusplus",
   "engines": {
@@ -395,7 +396,7 @@
                   "error",
                   "detail"
                 ],
-                "description": "Enables/disables announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
                 "default": true
               },
               "skipFunctions": {
@@ -712,7 +713,7 @@
                   "error",
                   "detail"
                 ],
-                "description": "Enables/disables announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
                 "default": true
               },
               "skipFunctions": {
@@ -933,7 +934,8 @@
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
     "is-port-taken": "^0.0.3",
-    "jsonc-parser": "^3.0.0",
+    "jsonc-simple-parser": "^2.2.0",
+    "lazy-promise": "^4.0.0",
     "lodash": "^4.17.20",
     "matcher": "^4.0.0",
     "normalize-path": "^3.0.0",
@@ -951,6 +953,7 @@
   "devDependencies": {
     "@types/async-lock": "^1.1.2",
     "@types/convert-hrtime": "^3.0.2",
+    "@types/fs-extra": "^9.0.13",
     "@types/gulp": "^4.0.7",
     "@types/he": "^1.1.1",
     "@types/lodash": "^4.14.165",
@@ -962,25 +965,19 @@
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
     "@types/vscode": "^1.49.0",
-    "@types/webpack": "^4.41.25",
-    "@types/webpack-merge": "^4.1.5",
     "@zero-plusplus/eslint-my-rules": "github:zero-plusplus/eslint-my-rules",
     "del": "^6.0.0",
-    "esbuild-loader": "^2.4.0",
-    "esbuild-register": "^2.6.0",
-    "fork-ts-checker-webpack-plugin": "^6.0.3",
+    "esbuild": "^0.14.1",
+    "esbuild-register": "^3.2.0",
+    "fs-extra": "^10.0.0",
     "gulp": "^4.0.2",
     "gulp-run-command": "^0.0.10",
     "husky": "^4.3.0",
     "mocha": "^7.1.1",
     "source-map-support": "^0.5.19",
-    "ts-loader": "^8.0.11",
     "ts-node": "^8.9.0",
-    "types-tsconfig": "^1.2.0",
     "typescript": "^4.4.4",
     "vsce": "^1.88.0",
-    "vscode-debugadapter-testsupport": "^1.40.3",
-    "webpack": "^5.6.0",
-    "webpack-merge": "^5.4.0"
+    "vscode-debugadapter-testsupport": "^1.40.3"
   }
 }

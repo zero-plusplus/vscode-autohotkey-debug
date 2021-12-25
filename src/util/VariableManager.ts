@@ -7,7 +7,7 @@ import { rtrim } from 'underscore.string';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isNumberLike, isPrimitive, toArray } from './util';
 import { equalsIgnoreCase } from './stringUtils';
-import { CategoryData, MatcherData } from '../extension';
+import { CategoryData, MatcherData, ScopeSelector } from '../extension';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 import { AhkDebugSession } from '../ahkDebug';
 
@@ -57,12 +57,8 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
     ? `${objectProperty.className}(${maxIndex!}) [`
     : `${objectProperty.className} {`;
 
-  const children = objectProperty.children.slice(0, 100);
+  const children = objectProperty.children.slice(0, 100).filter((property) => property.name !== '<base>');
   for (const child of children) {
-    if (child.name === '<base>') {
-      continue;
-    }
-
     const displayValue = child instanceof dbgp.PrimitiveProperty
       ? formatPrimitiveProperty(child)
       : (child as dbgp.ObjectProperty).className;
@@ -321,10 +317,15 @@ export class VariableGroup extends Array<Scope | Category | Categories | Variabl
 }
 export class Variable implements DebugProtocol.Variable {
   public readonly hasChildren: boolean;
-  public readonly isLoadedChildren: boolean;
+  public _isLoadedChildren: boolean;
+  public get isLoadedChildren(): boolean {
+    return this._isLoadedChildren;
+  }
   public readonly session: dbgp.Session;
   public readonly name: string;
-  public readonly value: string;
+  public get value(): string {
+    return formatProperty(this.property, this.session.ahkVersion);
+  }
   public readonly variablesReference: number;
   public readonly __vscodeVariableMenuContext: 'string' | 'number' | 'object';
   public readonly type?: string;
@@ -361,12 +362,11 @@ export class Variable implements DebugProtocol.Variable {
   }
   constructor(session: dbgp.Session, property: dbgp.Property) {
     this.hasChildren = property instanceof dbgp.ObjectProperty;
-    this.isLoadedChildren = property instanceof dbgp.ObjectProperty && 0 < property.children.length;
+    this._isLoadedChildren = property instanceof dbgp.ObjectProperty && 0 < property.children.length;
 
     this.session = session;
     this._property = property;
     this.name = property.name;
-    this.value = formatProperty(property, this.session.ahkVersion);
     this.variablesReference = this.hasChildren ? handles.create(this) : 0;
     this.type = property.type;
     if (property instanceof dbgp.PrimitiveProperty) {
@@ -378,9 +378,10 @@ export class Variable implements DebugProtocol.Variable {
   }
   public async loadChildren(): Promise<void> {
     if (!this.isLoadedChildren) {
-      const reloadedProperty = await this.session.fetchProperty(this.context, this.fullName, 1);
+      const reloadedProperty = await this.session.safeFetchProperty(this.context, this.fullName, 1);
       if (reloadedProperty) {
         this._property = reloadedProperty;
+        this._isLoadedChildren = true;
       }
     }
   }
@@ -536,6 +537,14 @@ export class VariableManager {
       if (categoryData.hidden === true) {
         continue;
       }
+
+      const existSources = defaultScopes.some((scope) => {
+        return toArray<ScopeSelector>(categoryData.source).some((source) => equalsIgnoreCase(scope.name, source));
+      });
+      if (!existSources) {
+        continue;
+      }
+
       const category = new Category(defaultScopes, categoryData, this.categoriesData);
       if (categoryData.hidden === 'auto') {
         await category.loadChildren();
@@ -595,7 +604,7 @@ export class VariableManager {
       stackFrames.push(new StackFrame(
         this.session,
         {
-          name: 'Idling (Click me if you want to see the variables)',
+          name: 'Standby',
           fileUri: URI.file(this.debugAdapter.config.program).path,
           level: 0,
           line: 0,

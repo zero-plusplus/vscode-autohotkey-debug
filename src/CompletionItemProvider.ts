@@ -106,7 +106,7 @@ export const findWord = (ahkVersion: AhkVersion, document: vscode.TextDocument, 
       case `'`: {
         if (2 <= ahkVersion.mejor) {
           quote = char;
-          result.push('"');
+          result.push(quote);
           continue;
         }
         result.push(char);
@@ -174,7 +174,7 @@ export const completionItemProvider = {
       if (property.name === '<enum>') {
         return false;
       }
-      if (isBracketNotation && property.name.startsWith('[') && !property.fullName.toLocaleLowerCase().startsWith(word.toLowerCase())) {
+      if ((/\d+/u).test(property.name)) {
         return false;
       }
       if (property.isIndexKey) {
@@ -187,7 +187,7 @@ export const completionItemProvider = {
       return true;
     });
 
-    return fixedProperties.map((property): vscode.CompletionItem => {
+    const completionItems = fixedProperties.map((property): vscode.CompletionItem => {
       const completionItem = new vscode.CompletionItem(property.name.replace(/<|>/gu, ''));
       completionItem.kind = createKind(property);
       completionItem.detail = createDetail(property);
@@ -201,8 +201,12 @@ export const completionItemProvider = {
           return str.replace(/""/gu, '`"');
         };
         const fixLabel = (label: string): string => {
+          if (2 <= this.session!.ahkVersion.mejor) {
+            const fixedLabel = label.replace(/^\[("|')?/u, '').replace(/("|')?\]$/u, '');
+            return fixQuote(fixedLabel);
+          }
           const fixedLabel = label.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
-          return this.session!.ahkVersion.mejor === 2 ? fixQuote(fixedLabel) : fixedLabel;
+          return fixedLabel;
         };
 
         const fixedLabel = fixLabel(property.name);
@@ -236,5 +240,7 @@ export const completionItemProvider = {
 
       return completionItem;
     });
+
+    return completionItems;
   },
 } as CompletionItemProvider;

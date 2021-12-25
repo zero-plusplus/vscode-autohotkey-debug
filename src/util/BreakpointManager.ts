@@ -52,7 +52,7 @@ export class Breakpoint implements BreakpointAdvancedData {
     this.logMessage = advancedData?.logMessage ?? '';
     this.logGroup = advancedData?.logGroup;
     this.hidden = advancedData?.hidden ?? false;
-    this.unverifiedLine = advancedData?.unverifiedLine;
+    this.unverifiedLine = advancedData?.unverifiedLine ?? dbgpBreakpoint.line;
     this.unverifiedColumn = advancedData?.unverifiedColumn;
     this.action = advancedData?.action;
   }

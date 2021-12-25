@@ -78,23 +78,19 @@ export const createParser = function(version: AhkVersion): P.Language {
       return P.string('-');
     },
     IntegerLiteral(rules) {
-      return P.seq(
-        P.alt(rules.NegativeOperator, P.string('')),
-        P.regex(/(?:[1-9][0-9]+|[0-9])/ui),
-      ).map((result) => {
+      return P.regex(/(-)?(?:[1-9][0-9]+|[0-9])/ui).map((result) => {
         return {
           type: 'Integer',
-          value: parseInt(result.join(''), 10),
+          value: parseInt(result, 10),
         };
       });
     },
     FloatLiteral(rules) {
       return P.seq(
-        P.alt(rules.NegativeOperator, P.string('')),
         rules.IntegerLiteral,
         P.regex(/\.[0-9]+/ui),
       ).map((result) => {
-        const floatString = `${String(result[0])}${String(result[1].value)}${result[2]}`;
+        const floatString = `${String(result[0].value)}${result[1]}`;
         return {
           type: 'Float',
           value: 2 <= version.mejor ? parseFloat(floatString) : floatString,
@@ -102,13 +98,11 @@ export const createParser = function(version: AhkVersion): P.Language {
       });
     },
     HexLiteral(rules) {
-      return P.seq(
-        P.alt(rules.NegativeOperator, P.string('')),
-        P.regex(/0x(?:[0-9a-f]+)/ui),
-      ).map((result) => {
+      return P.regex(/(-)?0x(?:[0-9a-f]+)/ui).map((result) => {
+        const hexString = result;
         return {
           type: 'Hex',
-          value: parseInt(result.join(''), 10),
+          value: 2 <= version.mejor ? parseInt(hexString, 16) : hexString,
         };
       });
     },
@@ -174,7 +168,7 @@ export const createParser = function(version: AhkVersion): P.Language {
           if (primitive.type === 'String') {
             return `["${String(result[1].value.value)}"]`;
           }
-          return `[${String(result[1].value.value)}]`;
+          return `[${String(result[1].value.value.value)}]`;
         }
         return `[${String(result[1].value)}]`;
       });
@@ -205,7 +199,7 @@ export const createParser = function(version: AhkVersion): P.Language {
       ).map((result) => {
         return {
           type: 'MetaVariable',
-          value: result[1],
+          value: result[1].value,
         };
       });
     },

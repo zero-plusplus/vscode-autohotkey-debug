@@ -15,8 +15,9 @@ import {
 import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
-import * as AsyncLock from 'async-lock';
+import AsyncLock from 'async-lock';
 import { range } from 'lodash';
+import LazyPromise from 'lazy-promise';
 import { ImplicitFunctionPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
 import {
   Breakpoint,
@@ -32,15 +33,16 @@ import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
-import { isPrimitive, timeoutPromise } from './util/util';
+import { isPrimitive, now, timeoutPromise } from './util/util';
 import { isNumber } from 'ts-predicates';
-import * as matcher from 'matcher';
-import { Categories, Category, MetaVariable, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import matcher from 'matcher';
+import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 import { CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
+  name: string;
   program: string;
   request: 'launch' | 'attach';
   runtime: string;
@@ -116,6 +118,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   private readonly loadedSources: string[] = [];
   private errorMessage = '';
+  private isTimeout = false;
   private exitCode?: number | undefined;
   // The warning message is processed earlier than the server initialization, so it needs to be delayed.
   private readonly delayedWarningMessages: string[] = [];
@@ -165,10 +168,10 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    if (!args.restart) {
+    if (!args.restart && !this.isTimeout) {
       if (isNumber(this.exitCode)) {
-        this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}\n`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
-        this.sendAnnounce('Debugging stopped.');
+        this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
+        this.sendAnnounce('Debugging stopped');
       }
       else if (args.terminateDebuggee === true && !this.config.cancelReason) {
         this.sendAnnounce(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.');
@@ -243,7 +246,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.config = args;
 
     if (this.config.cancelReason) {
-      this.sendAnnounce(`${this.config.cancelReason}\n`, 'stderr');
+      this.sendAnnounce(`${this.config.cancelReason}`, 'stderr');
       this.sendTerminateEvent();
       this.sendResponse(response);
       return;
@@ -251,13 +254,13 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const ahkProcess = new AutoHotkeyLauncher(this.config).attach();
     if (!ahkProcess) {
-      this.sendAnnounce(`Failed to attach "${this.config.program}".\n`, 'stderr');
+      this.sendAnnounce(`Failed to attach "${this.config.program}".`, 'stderr');
       this.sendTerminateEvent();
       this.sendResponse(response);
       return;
     }
 
-    this.sendAnnounce(`Attached to "${this.config.program}".\n`);
+    this.sendAnnounce(`Attached to "${this.config.program}".`);
     this.ahkProcess = ahkProcess;
     this.ahkProcess.event
       .on('close', (exitCode?: number) => {
@@ -266,7 +269,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
 
         if (isNumber(exitCode)) {
-          this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}\n`, exitCode === 0 ? 'console' : 'stderr', exitCode === 0 ? 'detail' : 'error');
+          this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}`, exitCode === 0 ? 'console' : 'stderr', exitCode === 0 ? 'detail' : 'error');
         }
         this.sendTerminateEvent();
       })
@@ -579,9 +582,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const variables = await (metaVariable?.rawValue as Variable | undefined)?.createMembers(args)
-      ?? await this.variableManager!.getObjectVariable(args.variablesReference)?.createMembers(args)
       ?? await this.variableManager!.getCategory(args.variablesReference)?.createChildren()
-      ?? await this.variableManager?.createVariables(args);
+      ?? await this.variableManager!.createVariables(args);
     if (variables) {
       response.body = {
         variables: variables.map((variable) => ({
@@ -705,7 +707,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
         if (metaVariableParsed.status) {
-          const metaVariableName = metaVariableParsed.value.value.value;
+          const metaVariableName = metaVariableParsed.value.value;
           const metaVariableMap = this.metaVaribalesByFrameId.get(args.frameId);
           const metaVariable = metaVariableMap?.createMetaVariable(metaVariableName);
           if (!metaVariable) {
@@ -1217,7 +1219,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (targetLevel < outputLevel) {
       return;
     }
-    this.sendEvent(new OutputEvent(message, category));
+    this.sendEvent(new OutputEvent(`${message}\n`, category));
   }
   private sendOutputEvent(message: string, category: 'stdout' | 'stderr' | 'console' = 'stdout'): void {
     this.sendEvent(new OutputEvent(message, category));
@@ -1262,8 +1264,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private createMetaVariables(response: dbgp.ContinuationResponse): MetaVariableValueMap {
     const metaVariables = new MetaVariableValueMap();
-    const now = new Date();
-    metaVariables.set('now', `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}.${String(now.getMilliseconds()).padStart(3, '0')}`);
+    metaVariables.set('now', now());
     metaVariables.set('hitCount', -1);
 
     if (this.currentMetaVariableMap) {
@@ -1284,35 +1285,42 @@ export class AhkDebugSession extends LoggingDebugSession {
     metaVariables.set('thisCallstack', thisCallstack);
     this.metaVaribalesByFrameId.set(frameId, metaVariables);
 
-    const categories = this.variableManager!.createCategories(-1);
+    const categories = new LazyPromise<Categories>((resolve) => {
+      this.variableManager!.createCategories(-1).then((result) => {
+        resolve(result);
+      });
+    });
     metaVariables.set('variableCategories', categories);
     const categoriesLength = this.config.variableCategories?.length ?? 3;
     for (const i of range(categoriesLength)) {
-      metaVariables.set(`variableCategories[${i + 1}]`, new Promise((resolve) => {
+      metaVariables.set(`variableCategories[${i + 1}]`, new LazyPromise((resolve) => {
         categories.then((categories) => {
           resolve(categories[i]);
         });
       }));
     }
 
-    const callstack = this.currentStackFrames?.map((stackFrame) => {
-      return {
-        name: stackFrame.name,
-        path: stackFrame.source.path,
-        line: stackFrame.line,
-      };
-    }) ?? [];
+    const callstack = Object.fromEntries(this.currentStackFrames?.map((stackFrame, i) => {
+      return [
+        `[${i + 1}]`,
+        {
+          name: stackFrame.name,
+          path: stackFrame.source.path,
+          line: stackFrame.line,
+        },
+      ];
+    }) ?? []);
     metaVariables.set('callstack', callstack);
-    callstack.forEach((callstackItem, i) => {
-      metaVariables.set(`callstack[${i + 1}]`, callstackItem);
+    Object.entries(callstack).forEach(([ index, callstackItem ]) => {
+      metaVariables.set(`callstack${index}`, callstackItem);
       Object.entries(callstackItem).forEach(([ key, value ]) => {
-        metaVariables.set(`callstack[${i + 1}].${key}`, value);
+        metaVariables.set(`callstack${index}.${key}`, value);
       });
     });
-    const callstackNames = callstack.map((callstackItem) => callstackItem.name);
+    const callstackNames = Object.fromEntries(Object.entries(callstack).map(([ index, callstackItem ]) => [ index, callstackItem.name ]));
     metaVariables.set('callstackNames', callstackNames);
-    callstackNames.forEach((callstackName, i) => {
-      metaVariables.set(`callstackNames[${i + 1}]`, callstackName);
+    Object.entries(callstackNames).forEach(([ index, callstackName ]) => {
+      metaVariables.set(`callstackNames${index}`, callstackName);
     });
     return metaVariables;
   }
@@ -1321,7 +1329,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       throw Error(`This message shouldn't appear.`);
     }
 
-    if (!breakpoint.condition) {
+    if (!(breakpoint.condition || breakpoint.hitCondition)) {
       return true;
     }
 
@@ -1385,7 +1393,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const metaVariables = new MetaVariableValueMap(this.currentMetaVariableMap.entries());
     metaVariables.set('hitCount', hitCount);
 
-    const evalucatedMessages = await this.evaluateLog(logMessage, metaVariables, 99);
+    const evalucatedMessages = await this.evaluateLog(logMessage, metaVariables, breakpoint);
     const stringMessages = evalucatedMessages.filter((message) => typeof message === 'string' || typeof message === 'number') as string[];
     const objectMessages = evalucatedMessages.filter((message) => typeof message === 'object') as Array<Scope | Category | Categories | Variable>;
     if (objectMessages.length === 0) {
@@ -1396,12 +1404,12 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const label = evalucatedMessages.reduce((prev: string, current): string => {
       if (typeof current === 'string' || typeof current === 'number') {
-        return prev + current;
+        return `${prev}${current}`;
       }
       return prev;
     }, '') || objectMessages.reduce((prev, current) => (prev ? `${prev}, ${current.name}` : current.name), '');
 
-    const variableGroup = objectMessages.length === 1 ? new MetaVariable(label, objectMessages[0]) : new MetaVariable(label, objectMessages.map((obj) => new MetaVariable(obj.name, obj)));
+    const variableGroup = new MetaVariable(label, objectMessages.map((obj) => new MetaVariable(obj.name, obj)));
     const variablesReference = this.variableManager!.createVariableReference(variableGroup);
     this.logObjectsMap.set(variablesReference, variableGroup);
 
@@ -1410,17 +1418,28 @@ export class AhkDebugSession extends LoggingDebugSession {
     event.body.variablesReference = variablesReference;
     this.sendEvent(event);
   }
-  private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap, maxDepth?: number): Promise<Array<string | Variable | Scope | Category | Categories>> {
+  private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap, logpoint?: Breakpoint): Promise<MetaVariableValue[]> {
     const unescapeLogMessage = (string: string): string => {
       return string.replace(/\\([{}])/gu, '$1');
     };
 
-    const variableRegex = /(?<!\\)\{\{(?<metaVariableName>[^\r\n}]+)\}\}|(?<!\\)\{(?<variableName>[^\r\n}]+)\}/gu;
+    const variableRegex = /(?<!\\)\{\{(?<metaVariableName>[^\r\n:}]+)(:(?<metaVariableNameDepth>\d+))?\}\}|(?<!\\)\{(?<variableName>[^\r\n:}]+)(:(?<variableNameDepth>\d+))?\}/gu;
     if (format.search(variableRegex) === -1) {
       return [ unescapeLogMessage(format) ];
     }
 
-    const results: Array<string | Variable | Scope | Category | Categories> = [];
+    const timeout_ms = 30 * 1000;
+    const timeout = (): void => {
+      this.isTimeout = true;
+
+      // If the message is output in disconnectRequest, it may not be displayed, so output it here
+      this.sendAnnounce('Debugging stopped for the following reasons: Timeout occurred in communication with the debugger when the following log was output', 'stderr');
+      this.sendAnnounce(`[${logpoint!.filePath}:${logpoint!.unverifiedLine ?? logpoint!.line}] ${logpoint!.logMessage.trimEnd()}`, 'stderr');
+      this.sendAnnounce('[HINT] Timeout occurred due to outputting the object to the debug console. It seems that a large number is specified for `depth`; it is recommended to keep it around 10 for AutoHotkey v1 and 3~5 for v2.', 'stderr');
+      this.sendTerminateEvent();
+      throw Error('Timeout in communication with the debugger when outputting the log');
+    };
+    const results: MetaVariableValue[] = [];
     let message = '', currentIndex = 0;
     for await (const match of format.matchAll(variableRegex)) {
       if (typeof match.index === 'undefined') {
@@ -1434,17 +1453,17 @@ export class AhkDebugSession extends LoggingDebugSession {
         message += format.slice(currentIndex, match.index);
       }
 
-      const { variableName, metaVariableName } = match.groups;
+      const { variableName, variableNameDepth, metaVariableName, metaVariableNameDepth } = match.groups;
       if (metaVariableName) {
         const metaVariable = metaVariables?.createMetaVariable(metaVariableName);
         if (isPrimitive(metaVariable?.rawValue)) {
           message += metaVariable!.rawValue;
         }
         else if (metaVariable) {
-          const _metaVariable = metaVariable instanceof Promise ? await metaVariable : metaVariable;
-
-          if (_metaVariable && 'loadChildren' in _metaVariable) {
-            await _metaVariable.loadChildren(maxDepth);
+          const _metaVariable = (metaVariable instanceof Promise ? await metaVariable : metaVariable) as MetaVariable;
+          if ('loadChildren' in _metaVariable) {
+            const maxDepth = metaVariableNameDepth ? parseInt(metaVariableNameDepth, 10) : 1;
+            await timeoutPromise(_metaVariable.loadChildren(logpoint ? maxDepth : 1), timeout_ms).catch(timeout);
             results.push(_metaVariable);
           }
         }
@@ -1453,8 +1472,9 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
       }
       else {
-        const property = await this.session!.evaluate(variableName);
+        const maxDepth = variableNameDepth ? parseInt(variableNameDepth, 10) : 1;
 
+        const property = await timeoutPromise(this.session!.evaluate(variableName, undefined, logpoint ? maxDepth : 1), timeout_ms).catch(timeout);
         if (property) {
           if (property instanceof dbgp.ObjectProperty) {
             if (message !== '') {
@@ -1557,11 +1577,12 @@ export class AhkDebugSession extends LoggingDebugSession {
                 if (typeof this.session === 'undefined') {
                   return;
                 }
-                this.sendAnnounce(`Debugger Adapter Version: ${String(debuggerAdapterVersion)}\n`, 'console', 'detail');
-                this.sendAnnounce(`AutoHotkey Version: ${this.session.ahkVersion.full}\n`, 'console', 'detail');
+                this.sendAnnounce(`Debugger Adapter Version: ${String(debuggerAdapterVersion)}`, 'console', 'detail');
+                this.sendAnnounce(`Debug Configuration (${this.config.request}): ${this.config.name}`, 'console', 'detail');
+                this.sendAnnounce(`AutoHotkey Version: ${this.session.ahkVersion.full}`, 'console', 'detail');
                 if (0 < this.delayedWarningMessages.length) {
                   this.delayedWarningMessages.forEach((message) => {
-                    this.sendAnnounce(message, 'stdout');
+                    this.sendOutputEvent(message, 'stdout');
                   });
                 }
 
@@ -1576,10 +1597,11 @@ export class AhkDebugSession extends LoggingDebugSession {
               })
               .on('error', (error?: Error) => {
                 if (error) {
-                  this.sendOutputEvent(`Session closed for the following reasons: ${error.message}\n`, 'stderr');
+                  this.sendAnnounce(`Session closed for the following reasons: ${error.message}`, 'stderr');
                 }
 
                 this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                this.sendTerminateEvent();
               })
               .on('close', () => {
                 this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));

@@ -4,15 +4,14 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
 import { defaults, groupBy, isString, range } from 'lodash';
-import * as isPortTaken from 'is-port-taken';
-import * as jsonc from 'jsonc-parser';
+import isPortTaken from 'is-port-taken';
+import * as jsonc from 'jsonc-simple-parser';
 import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider, findWord } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
 import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import normalizeToUnix = require('normalize-path');
-import * as glob from 'fast-glob';
+import normalizeToUnix from 'normalize-path';
+import glob from 'fast-glob';
 import { registerCommands } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isDirectory, toArray } from './util/util';
@@ -57,17 +56,17 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
     return [
       {
         label: 'Local',
-        source: [ 'Local', 'Static' ],
+        source: 'Local',
+      },
+      {
+        label: 'Static',
+        source: 'Static',
       },
       {
         label: 'Global',
         source: 'Global',
-        matchers: [
-          {
-            method: 'exclude',
-            builtin: true,
-          },
-        ],
+        noduplicate: true,
+        matchers: [ { method: 'exclude', pattern: '^\\d+$' } ],
       },
       {
         label: 'Built-in Global',
@@ -335,6 +334,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (config.request === 'attach') {
         const scriptPathList = getRunningAhkScriptList(config.runtime);
         if (scriptPathList.length === 0) {
+          config.program = '';
           config.cancelReason = `Canceled the attachment because no running AutoHotkey script was found.`;
           return;
         }
@@ -344,6 +344,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
             config.program = scriptPath;
             return;
           }
+          config.program = '';
           config.cancelReason = `Cancel the attach.`;
           return;
         }

@@ -1,30 +1,37 @@
-import * as createPcre from 'pcre-to-regexp';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-import regexParser = require('regex-parser');
+import createPcre from 'pcre-to-regexp';
+import regexParser from 'regex-parser';
 import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
 import { LazyMetaVariableValue, MetaVariableValue, MetaVariableValueMap } from './VariableManager';
 import { isFloatLike, isIntegerLike, isNumberLike, isPrimitive } from './util';
+import { isObject } from 'ts-predicates';
 
-type Operator = (a, b) => boolean;
+type Value = string | number | boolean | { address: number } | undefined;
+type Operator = (a: Value, b: Value) => boolean;
 const not = (predicate): Operator => (a, b): boolean => !predicate(a, b);
-// eslint-disable-next-line eqeqeq
-const equals: Operator = (a, b) => a == b;
+const equals: Operator = (a, b) => {
+  const _a = isObject(a) ? a.address : a;
+  const _b = isObject(b) ? b.address : b;
+  // eslint-disable-next-line eqeqeq
+  return _a == _b;
+};
 const equalsIgnoreCase: Operator = (a, b) => {
-  const containsObjectAddress = typeof a === 'number' || typeof b === 'number';
-  if (containsObjectAddress) {
-    return a === b;
+  if (isObject(a) || isObject(b)) {
+    return equals(a, b);
   }
-  return a.toLowerCase() === b.toLocaleLowerCase();
+  return String(a).toLowerCase() === String(b).toLocaleLowerCase();
 };
 const inequality = (sign: string): Operator => {
   return (a, b): boolean => {
-    const containsObjectAddress = typeof a === 'number' || typeof b === 'number';
-    if (containsObjectAddress) {
+    if (typeof a === 'undefined' || typeof b === 'undefined') {
       return false;
     }
-    const _a = parseFloat(a);
-    const _b = parseFloat(b);
+    if (isObject(a) || isObject(b)) {
+      return false;
+    }
+
+    const _a = typeof a === 'string' ? parseFloat(a) : a;
+    const _b = typeof b === 'string' ? parseFloat(b) : b;
     if (Number.isNaN(_a) || Number.isNaN(_b)) {
       return false;
     }
@@ -44,7 +51,7 @@ const inequality = (sign: string): Operator => {
     return false;
   };
 };
-const ahkRegexToJsRegex = function(ahkRegex: string): RegExp {
+const ahkRegexToJsRegex = (ahkRegex: string): RegExp => {
   if (ahkRegex.startsWith('/')) {
     return regexParser(ahkRegex);
   }
@@ -63,13 +70,15 @@ const ahkRegexToJsRegex = function(ahkRegex: string): RegExp {
   return createPcre(`%${pattern}%${flags}`);
 };
 const regexCompare: Operator = function(input, ahkRegex) {
-  const containsObjectAddress = typeof input === 'number' || typeof ahkRegex === 'number';
-  if (containsObjectAddress) {
+  if (typeof input === 'undefined' || typeof ahkRegex === 'undefined') {
+    return false;
+  }
+  if (isObject(input) || isObject(ahkRegex)) {
     return false;
   }
 
-  const regex = ahkRegexToJsRegex(ahkRegex);
-  return regex.test(input);
+  const regex = ahkRegexToJsRegex(String(ahkRegex));
+  return regex.test(String(input));
 };
 const comparisonOperators: { [key: string]: Operator} = {
   '=': equalsIgnoreCase,
@@ -85,7 +94,7 @@ const comparisonOperators: { [key: string]: Operator} = {
 };
 const logicalOperators: { [key: string]: Operator} = {
   '&&': (a, b) => Boolean(a && b),
-  '||': (a, b) => Boolean(a || b),
+  '||': (a, b) => Boolean(a ?? b),
 };
 
 export class ConditionalEvaluator {
@@ -96,7 +105,7 @@ export class ConditionalEvaluator {
     this.parser = createParser(this.session.ahkVersion);
   }
   public async eval(expressions: string, metaVariableMap: MetaVariableValueMap): Promise<boolean> {
-    const parsed = this.parser.Expressions.parse(expressions);
+    const parsed = this.parser.Expressions.parse(expressions.trim());
     if (!parsed.status) {
       return false;
     }
@@ -123,7 +132,7 @@ export class ConditionalEvaluator {
 
       if (operatorType.type === 'ComparisonOperator') {
         const operator = comparisonOperators[operatorType.value];
-        const getValue = async(parsed): Promise<string | number | null> => {
+        const getValue = async(parsed): Promise<Value> => {
           const value = await this.evalValue(parsed, metaVariableMap);
 
           if (this.session.ahkVersion.mejor <= 1.1 && !value) {
@@ -134,18 +143,18 @@ export class ConditionalEvaluator {
             return value;
           }
           else if (value instanceof dbgp.ObjectProperty) {
-            return value.address;
+            return { address: value.address };
           }
           else if (value instanceof dbgp.PrimitiveProperty) {
             return value.value;
           }
 
-          return null;
+          return undefined;
         };
         const _a = await getValue(a);
         const _b = await getValue(b);
 
-        if (_a !== null && _b !== null) {
+        if (typeof _a !== 'undefined' && typeof _b !== 'undefined') {
           return operator(_a, _b);
         }
       }
@@ -173,7 +182,7 @@ export class ConditionalEvaluator {
             }
           }
           else if ((valueA instanceof dbgp.Property || isPrimitive(valueA)) && (valueB instanceof dbgp.PrimitiveProperty || typeof valueB === 'string')) {
-            const valueAType = valueA instanceof dbgp.Property ? valueA.type : String(a.value?.value?.type ?? a.value.type).toLowerCase();
+            const valueAType = valueA instanceof dbgp.Property ? valueA.type : String(a.value?.value?.type ?? a.value.type ?? 'string').toLowerCase();
             const valueBType = String(valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB)
               .toLowerCase()
               .replace(/(?<=\b)int(?=\b)/ui, 'integer');
@@ -245,7 +254,7 @@ export class ConditionalEvaluator {
           }
         }
         else if (operatorType.type === 'HasOperator' && (valueA instanceof dbgp.ObjectProperty || valueA instanceof Object)) {
-          const keys = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => child.name) : Object.keys(valueA);
+          const keys = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => (child.isIndexKey ? String(child.index) : child.name)) : Object.keys(valueA);
           if (valueB instanceof dbgp.ObjectProperty) {
             result = keys.some((key) => {
               const match = key.match(/^\[Object\((?<address>\d+)\)\]$/u);
@@ -255,17 +264,19 @@ export class ConditionalEvaluator {
           else {
             const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
             const isRegExp = String(searchValue).startsWith('/');
-            result = keys.some((key) => {
+            result = isPrimitive(searchValue) ? keys.some((key) => {
               if (key === '<enum>') {
                 return false;
               }
               const fixedName = key.replace(/^\["|^<|"\]$|>$/gu, '');
               return isRegExp ? regexCompare(fixedName, searchValue) : equals(fixedName, searchValue);
-            });
+            }) : false;
           }
         }
         else if (operatorType.type === 'ContainsOperator') {
-          const children = valueA instanceof dbgp.ObjectProperty ? valueA.children.map((child) => (child instanceof dbgp.PrimitiveProperty ? { type: 'primitive', value: child.value } : { type: 'object', value: (child as dbgp.ObjectProperty).address })) : Object.entries(valueA ?? {}).map(([ key, value ]) => (isPrimitive(value) ? { type: 'primitive', value } : { type: 'object' }));
+          const children = valueA instanceof dbgp.ObjectProperty
+            ? valueA.children.map((child) => (child instanceof dbgp.PrimitiveProperty ? { type: 'primitive', value: child.value } : { type: 'object', value: (child as dbgp.ObjectProperty).address }))
+            : Object.entries(valueA ?? {}).map(([ key, value ]) => (isPrimitive(value) ? { type: 'primitive', value } : { type: 'object' }));
           if (valueB instanceof dbgp.Property || isPrimitive(valueB)) {
             if (valueB instanceof dbgp.ObjectProperty) {
               result = children.some((child) => {
@@ -278,12 +289,12 @@ export class ConditionalEvaluator {
             else {
               const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
               const isRegExp = String(searchValue).startsWith('/');
-              result = children.some((child) => {
+              result = isPrimitive(searchValue) ? children.some((child) => {
                 if (child.type === 'object') {
                   return false;
                 }
                 return isRegExp ? regexCompare(child.value, searchValue) : equals(child.value, searchValue);
-              });
+              }) : false;
             }
           }
         }
@@ -295,8 +306,8 @@ export class ConditionalEvaluator {
       }
     }
     else if (expression.type === 'MetaVariable') {
-      if (metaVariableMap.has(expression.value.value)) {
-        primitiveValue = metaVariableMap.get(expression.value.value)!;
+      if (metaVariableMap.has(expression.value)) {
+        primitiveValue = metaVariableMap.get(expression.value)!;
       }
     }
     else if (expression.type === 'PropertyName') {
@@ -365,7 +376,7 @@ export class ConditionalEvaluator {
     }
 
     if (parsed.type === 'MetaVariable') {
-      const metaVariable = metaVariableMap.get(parsed.value.value);
+      const metaVariable = metaVariableMap.get(parsed.value);
       return metaVariable;
     }
     else if (parsed.type === 'PropertyName') {
