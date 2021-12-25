@@ -94,7 +94,7 @@ I am currently not accepting source code contributions (i.e. Pull Request). Inst
 
 I usually reply by the next day.
 
-# Donate
-If you like this extension, please consider becoming a [donate or sponsor](https://github.com/sponsors/zero-plusplus) (Github account required).
+# Development support
+You can support development with [donate or sponsor](https://github.com/sponsors/zero-plusplus) (Github account required).
 
-**Please note, however, that I have not setup a reward, as I am dedicated to development.**
+**Please note, that I have not setup a reward, as I am dedicated to development.**
