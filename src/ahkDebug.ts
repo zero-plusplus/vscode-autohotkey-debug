@@ -215,7 +215,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         })
         .on('stdout', (message: string) => {
           const fixedData = this.fixPathOfRuntimeError(message);
-          if (!this.session) {
+          if (!this.session && !this.config.noDebug) {
             this.delayedWarningMessages.push(fixedData);
             return;
           }
