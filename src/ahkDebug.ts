@@ -1343,7 +1343,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         conditionResult = await this.conditionalEvaluator.eval(condition, metaVariable);
       }
       if (hitCondition) {
-        const match = hitCondition.match(/^(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)$/u);
+        const match = hitCondition.match(/^\s*(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)\s*$/u);
         if (match?.groups) {
           const { operator = '>=' } = match.groups;
           const number = parseInt(match.groups.number, 10);
