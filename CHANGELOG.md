@@ -16,6 +16,7 @@ Also want to check the development status, check the [commit history](https://gi
 ## [Released]
 ## [1.10.1] - 2022-xx-xx
 ### Fixed
+* [#180](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/180) Hit conditional breakpoint do not work properly if they contain spaces before or after the condition
 * [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) Child elements of ComObjects may not be displayed correctly in data inspection
 * [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) 4 errors may occur when displaying ComObject child elements in data inspection
 
