@@ -12,6 +12,10 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 * Since `1.10.0` is a large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)
 
 ### Update
+* `1.11.1` - 2022-xx-xx
+    * Fixed: [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) Child elements of ComObjects may not be displayed correctly in data inspection
+    * Fixed: [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) 4 errors may occur when displaying ComObject child elements in data inspection
+
 * `1.10.0` - 2021-12-25
     * Added: [#75](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/75) Add some context menus to copy the value of a variable in data inspection
     * Added: [#88](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/88) Add `variableCategories` attribute to launch.json
@@ -46,19 +50,6 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 * `1.9.0` - 2021-10-03
     * Added: [#69](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/69) Support `skipFiles` and `skipFunctions` in launch.json
     * Added: [#143](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/143) Support `extends` attribute in launch.json
-
-* `1.8.0` - 2021-09-23
-    * Added: [#67](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/67) Support attach mode
-    * Added: [#78](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/78) `useUIAVersion` to launch.json
-    * Changed: [#129](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/129) Only when using `useAutoJumpToError`. When jumping to an error, highlight the jump destination for a short while
-    * Changed: [#131](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/131) Enable the disconnect button
-    * Fixed: [#130](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/130) When the error code is `0`, the debug exit message is not displayed
-    * Fixed: [#133](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/133) v2 only bug. Debugging crashes when trying to look at a child element of an instance of a class with `__Enum` meta-function
-    * Fixed: [#135](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/135) v2 only bug. Hovering over `&variable` does not show variable information
-    * Fixed: [#135](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/135) Information is not displayed when uninitialized variable names are hovered over
-    * Fixed: [#137](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/137) If `${file}` is set to `openFileOnExit` when the editor is not open, an error occurs and debugging cannot be started
-    * Fixed: [#138](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/138) Conditional breakpoints do not recognize boolean values
-    * Fixed: [#139](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/139) v2 only bug. Conditional breakpoints cannot compare numbers in scientific notation correctly
 
 See [CHANGELOG](CHANGELOG.md) for details.
 

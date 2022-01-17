@@ -421,7 +421,10 @@ export class Variable implements DebugProtocol.Variable {
       }
 
       const variable = new Variable(this.session, property);
-      await variable.loadChildren();
+
+      if (this.property.className !== 'ComObject') {
+        await variable.loadChildren();
+      }
       variables.push(variable);
     }
     return variables;
