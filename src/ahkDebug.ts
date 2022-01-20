@@ -1599,16 +1599,19 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendOutputEvent(`${warning}\n`);
               })
               .on('error', (error?: Error) => {
+                if (this.isClosedSession) {
+                  return;
+                }
                 if (error) {
                   this.sendAnnounce(`Session closed for the following reasons: ${error.message}`, 'stderr');
                 }
 
-                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                // this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
                 this.sendTerminateEvent();
               })
-              .on('close', () => {
-                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
-              })
+              // .on('close', () => {
+              //   this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+              // })
               .on('stdout', (data) => {
                 this.ahkProcess!.event.emit('stdout', String(data));
               })
