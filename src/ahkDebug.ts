@@ -207,6 +207,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           if (this.isTerminateRequested) {
             return;
           }
+          this.traceLogger.log('Autohotkey close');
 
           if (isNumber(exitCode)) {
             this.exitCode = exitCode;
@@ -742,7 +743,10 @@ export class AhkDebugSession extends LoggingDebugSession {
           throw Error('Error: Could not get stack frame');
         }
 
-        const property = await this.session!.evaluate(propertyName, stackFrame.dbgpStackFrame);
+        const property = await this.session!.evaluate(propertyName, stackFrame.dbgpStackFrame).catch((errorMessage) => {
+          this.sendAnnounce(errorMessage, 'stderr');
+          this.sendTerminateEvent();
+        });
         if (!property) {
           if (args.context === 'hover' && (await this.session!.fetchAllPropertyNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
             response.body = {
@@ -1599,15 +1603,16 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendOutputEvent(`${warning}\n`);
               })
               .on('error', (error?: Error) => {
-                if (this.isClosedSession) {
-                  return;
-                }
-                if (error) {
+                this.traceLogger.log('session error');
+                if (!this.isTerminateRequested && error) {
                   this.sendAnnounce(`Session closed for the following reasons: ${error.message}`, 'stderr');
                 }
 
                 // this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
                 this.sendTerminateEvent();
+              })
+              .on('close', () => {
+                this.traceLogger.log('session close');
               })
               .on('stdout', (data) => {
                 this.ahkProcess!.event.emit('stdout', String(data));
@@ -1627,7 +1632,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             resolve();
           }
           catch (error: unknown) {
-            this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
+            this.traceLogger.log('Failed to start session');
             reject(error);
           }
         });

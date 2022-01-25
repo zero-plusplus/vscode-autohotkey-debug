@@ -21,6 +21,7 @@ export interface XmlNode {
   attributes: {
     [key: string]: string;
   };
+  stream?: XmlNode;
   breakpoint?: XmlNode;
   content?: string;
   context?: XmlNode[];
@@ -268,6 +269,13 @@ export class PropertyGetResponse extends Response {
     if (response.property) {
       const properties = Array.isArray(response.property) ? response.property : [ response.property ];
       properties.forEach((property: XmlNode) => {
+        const stream = property.property?.find((property) => property.stream)?.stream;
+        if (stream) {
+          const errorMessage = Buffer.from(String(stream.content), 'base64').toString();
+          if (errorMessage.startsWith('Critical Error:  Function recursion limit exceeded.')) {
+            throw new Error(`AutoHotkey has crashed and the debugger adapter has been killed.\nThis will close the message box that displays AutoHotkey error message (Presumably you see the message box displayed for a moment). \nThe following is the error message.\n\n${errorMessage}`);
+          }
+        }
         this.properties.push(Property.from(property, context));
       });
     }
@@ -567,16 +575,17 @@ export class Session extends EventEmitter {
   }
   public async sendPropertyGetCommand(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<PropertyGetResponse> {
     const commandParams = `-n ${unescapeAhk(name, this.ahkVersion)} -c ${context.id} -d ${context.stackFrame.level}`;
-    let dbgpResponse: XmlNode;
+    let response: PropertyGetResponse;
     if (this.DEFAULT_MAX_DEPTH === maxDepth) {
-      dbgpResponse = await this.sendCommand('property_get', commandParams);
+      const dbgpResponse = await this.sendCommand('property_get', commandParams);
+      response = new PropertyGetResponse(dbgpResponse, context);
     }
     else {
       await this.sendFeatureSetCommand('max_depth', maxDepth);
-      dbgpResponse = await this.sendCommand('property_get', commandParams);
+      const dbgpResponse = await this.sendCommand('property_get', commandParams);
+      response = new PropertyGetResponse(dbgpResponse, context);
       await this.sendFeatureSetCommand('max_depth', this.DEFAULT_MAX_DEPTH);
     }
-    const response = new PropertyGetResponse(dbgpResponse, context);
 
     // Workaround the bug of not being able to get the base object correctly
     const shouldAvoidBug = name.endsWith('<base>') && 0 < response.properties.length && response.properties[0].type === 'undefined'
