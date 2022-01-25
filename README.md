@@ -12,7 +12,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 * Since `1.10.0` is a large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)
 
 ### Update
-* `1.11.1` - 2022-xx-xx
+* `1.10.1` - 2022-xx-xx
     * Fixed: [#179](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/179) `Run Without Debugging` does not print any output to the debug console
     * Fixed: [#180](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/180) Hit conditional breakpoint do not work properly if they contain spaces before or after the condition
     * Fixed: [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) Child elements of ComObjects may not be displayed correctly in data inspection
