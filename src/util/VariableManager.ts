@@ -87,7 +87,7 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
   value += isArray ? ']' : '}';
   return value;
 };
-const isComObject = (property: dbgp.ObjectProperty): boolean => {
+export const isComObject = (property: dbgp.ObjectProperty): boolean => {
   const comPropertyInfos = [
     [ 'Value', 'integer' ],
     [ 'VarType', 'integer' ],

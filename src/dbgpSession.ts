@@ -10,7 +10,7 @@ import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
-import { unescapeAhk } from './util/VariableManager';
+import { isComObject, unescapeAhk } from './util/VariableManager';
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -776,7 +776,7 @@ export class Session extends EventEmitter {
     if (!preload || !(preload instanceof ObjectProperty)) {
       return undefined;
     }
-    if (![ 'Prototype', 'Class' ].includes(preload.className)) {
+    if (!isComObject(preload) && ![ 'Prototype', 'Class' ].includes(preload.className)) {
       return this.fetchProperty(context, name, maxDepth);
     }
     const property = await this.fetchProperty(context, parentVariablePath, maxDepth + 1);
