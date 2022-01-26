@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.10.1] - 2022-xx-xx
+## [1.10.1] - 2022-01-26
 ### Fixed
 * [#179](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/179) `Run Without Debugging` does not print any output to the debug console
 * [#180](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/180) Hit conditional breakpoint do not work properly if they contain spaces before or after the condition
