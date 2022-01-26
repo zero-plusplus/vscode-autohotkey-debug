@@ -18,7 +18,7 @@ Also want to check the development status, check the [commit history](https://gi
 ### Fixed
 * [#179](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/179) `Run Without Debugging` does not print any output to the debug console
 * [#180](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/180) Hit conditional breakpoint do not work properly if they contain spaces before or after the condition
-* [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) Child elements of ComObjects may not be displayed correctly in data inspection
+* [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) ComObject child elements may not be displayed correctly in data inspection, watch expression, etc.
 * [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) 4 errors may occur when displaying ComObject child elements in data inspection
 * [#189](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/189) Stopping the debugger adapter due to ECONNRESET error
 
