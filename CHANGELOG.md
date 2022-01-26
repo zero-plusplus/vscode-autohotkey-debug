@@ -14,6 +14,14 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.10.1] - 2022-xx-xx
+### Fixed
+* [#179](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/179) `Run Without Debugging` does not print any output to the debug console
+* [#180](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/180) Hit conditional breakpoint do not work properly if they contain spaces before or after the condition
+* [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) Child elements of ComObjects may not be displayed correctly in data inspection
+* [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) 4 errors may occur when displaying ComObject child elements in data inspection
+* [#189](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/189) Stopping the debugger adapter due to ECONNRESET error
+
 ## [1.10.0] - 2021-12-25
 ### Added
 * [#75](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/75) Add some context menus to copy the value of a variable in data inspection
@@ -43,6 +51,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#167](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/167) `0x0` is not treated as falsy in conditional breakpoint
 * [#168](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/168) When a string is specified as bracket notation in a conditional breakpoint, it is not evaluated correctly
 * [#169](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/169) When a `true` is specifed in a conditional breakpoint, if it contains capital letters, it will not be evaluated correctly
+* [#170](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/170) If the script exits after using a conditional breakpoint that returns false, an error ECONNRESET may occur
 * [#171](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171) Cannot correctly retrieve children of object with key containing linebreak
 * [#177](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/177) Whenever a conditional breakpoint contains a space in front of the condition, it is evaluated as `false`
 * [#178](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/178) v2 only bug. Bracket notation suggestion displays properties that are not actually available
@@ -418,6 +427,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.10.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.0..v1.10.1
 [1.10.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.9.0..v1.10.0
 [1.9.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.8.0..v1.9.0
 [1.8.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.7.1..v1.8.0

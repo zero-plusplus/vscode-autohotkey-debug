@@ -87,6 +87,29 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
   value += isArray ? ']' : '}';
   return value;
 };
+export const isComObject = (property: dbgp.ObjectProperty): boolean => {
+  const comPropertyInfos = [
+    [ 'Value', 'integer' ],
+    [ 'VarType', 'integer' ],
+    [ 'DispatchType', 'string' ],
+    [ 'DispatchIID', 'string' ],
+  ];
+
+  if (property.children.length !== 4) {
+    return false;
+  }
+  for (const comPropertyInfo of comPropertyInfos) {
+    const [ expectedName, expectedType ] = comPropertyInfo;
+    const comProperty = property.children.find((child) => child.name === expectedName);
+    if (!comProperty) {
+      return false;
+    }
+    if (comProperty.type !== expectedType) {
+      return false;
+    }
+  }
+  return true;
+};
 
 const handles = new DebugAdapter.Handles();
 
@@ -421,7 +444,9 @@ export class Variable implements DebugProtocol.Variable {
       }
 
       const variable = new Variable(this.session, property);
-      await variable.loadChildren();
+      if (!isComObject(this.property)) {
+        await variable.loadChildren();
+      }
       variables.push(variable);
     }
     return variables;

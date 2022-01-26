@@ -207,6 +207,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           if (this.isTerminateRequested) {
             return;
           }
+          this.traceLogger.log('Autohotkey close');
 
           if (isNumber(exitCode)) {
             this.exitCode = exitCode;
@@ -215,7 +216,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         })
         .on('stdout', (message: string) => {
           const fixedData = this.fixPathOfRuntimeError(message);
-          if (!this.session) {
+          if (!this.session && !this.config.noDebug) {
             this.delayedWarningMessages.push(fixedData);
             return;
           }
@@ -742,7 +743,10 @@ export class AhkDebugSession extends LoggingDebugSession {
           throw Error('Error: Could not get stack frame');
         }
 
-        const property = await this.session!.evaluate(propertyName, stackFrame.dbgpStackFrame);
+        const property = await this.session!.evaluate(propertyName, stackFrame.dbgpStackFrame).catch((errorMessage) => {
+          this.sendAnnounce(errorMessage, 'stderr');
+          this.sendTerminateEvent();
+        });
         if (!property) {
           if (args.context === 'hover' && (await this.session!.fetchAllPropertyNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
             response.body = {
@@ -1343,7 +1347,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         conditionResult = await this.conditionalEvaluator.eval(condition, metaVariable);
       }
       if (hitCondition) {
-        const match = hitCondition.match(/^(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)$/u);
+        const match = hitCondition.match(/^\s*(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)\s*$/u);
         if (match?.groups) {
           const { operator = '>=' } = match.groups;
           const number = parseInt(match.groups.number, 10);
@@ -1599,15 +1603,16 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.sendOutputEvent(`${warning}\n`);
               })
               .on('error', (error?: Error) => {
-                if (error) {
+                this.traceLogger.log('session error');
+                if (!this.isTerminateRequested && error) {
                   this.sendAnnounce(`Session closed for the following reasons: ${error.message}`, 'stderr');
                 }
 
-                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                // this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
                 this.sendTerminateEvent();
               })
               .on('close', () => {
-                this.sendEvent(new ThreadEvent('Session exited.', this.session!.id));
+                this.traceLogger.log('session close');
               })
               .on('stdout', (data) => {
                 this.ahkProcess!.event.emit('stdout', String(data));
@@ -1627,7 +1632,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             resolve();
           }
           catch (error: unknown) {
-            this.sendEvent(new ThreadEvent('Failed to start session.', this.session!.id));
+            this.traceLogger.log('Failed to start session');
             reject(error);
           }
         });
