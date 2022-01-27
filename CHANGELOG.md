@@ -14,7 +14,13 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.10.1] - 2022-01-26
+## [1.10.2] - 2022-01-27
+### Fixed
+* [#192](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/192) Debug adapter may crash when evaluating variables in hover, watch expressions, etc.
+
+## [1.10.1] - 2022-01-26 [YANKED]
+**Note: This version is broken. This will be fixed in `1.10.1`.**
+
 ### Fixed
 * [#179](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/179) `Run Without Debugging` does not print any output to the debug console
 * [#180](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/180) Hit conditional breakpoint do not work properly if they contain spaces before or after the condition
@@ -427,6 +433,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.10.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.1..v1.10.2
 [1.10.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.0..v1.10.1
 [1.10.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.9.0..v1.10.0
 [1.9.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.8.0..v1.9.0
