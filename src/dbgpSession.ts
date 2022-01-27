@@ -103,6 +103,8 @@ export class DbgpError extends Error {
     this.code = parseInt(code, 10);
   }
 }
+export class DbgpCriticalError extends Error {
+}
 export class Response {
   public transactionId: number;
   public commandName: CommandName;
@@ -269,13 +271,17 @@ export class PropertyGetResponse extends Response {
     if (response.property) {
       const properties = Array.isArray(response.property) ? response.property : [ response.property ];
       properties.forEach((property: XmlNode) => {
-        const stream = property.property?.find((property) => property.stream)?.stream;
-        if (stream) {
-          const errorMessage = Buffer.from(String(stream.content), 'base64').toString();
-          if (errorMessage.startsWith('Critical Error:  Function recursion limit exceeded.')) {
-            throw new Error(`AutoHotkey has crashed and the debugger adapter has been killed.\nThis will close the message box that displays AutoHotkey error message (Presumably you see the message box displayed for a moment). \nThe following is the error message.\n\n${errorMessage}`);
+        if (property.property) {
+          const properties = Array.isArray(property.property) ? property.property : [ property.property ];
+          const stream = properties.find((property) => property.stream)?.stream;
+          if (stream) {
+            const errorMessage = Buffer.from(String(stream.content), 'base64').toString();
+            if (errorMessage.startsWith('Critical Error:  Function recursion limit exceeded.')) {
+              throw new DbgpCriticalError(`AutoHotkey has crashed and the debugger adapter has been killed.\nThis will close the message box that displays AutoHotkey error message (Presumably you see the message box displayed for a moment). \nThe following is the error message.\n\n${errorMessage}`);
+            }
           }
         }
+
         this.properties.push(Property.from(property, context));
       });
     }
