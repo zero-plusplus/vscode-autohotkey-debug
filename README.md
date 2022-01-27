@@ -5,14 +5,18 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 
 # News
 ### Important Notices
-* Much of the README content has been migrated to the [Github wiki](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki). If you want to see the description of each feature, please refer to there
+* **In `1.10.1`, there was a fatal bug that caused the debug adapter to crash in some cases when evaluating values in watch expression.
+This has been fixed in `1.10.2`, so please update**.
 
 * The required version of VSCode has been raised from [1.45.0](https://code.visualstudio.com/updates/v1_45) to [1.49.0](https://code.visualstudio.com/updates/v1_49). Regardless, it is recommended that you install the latest version as some functions may not work
 
-* Since `1.10.0` is a large update with additions and fixes, there may be new bugs. If you find any, please report them in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues)
+* Much of the README content has been migrated to the [Github wiki](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki). If you want to see the description of each feature, please refer to there
 
 ### Update
-* `1.10.1` - 2022-01-26
+* `1.10.2` - 2022-01-27
+    * Fixed: [#192](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/192) Debug adapter may crash when evaluating variables in hover, watch expressions, etc.
+
+* **[YANKED]** `1.10.1` - 2022-01-26
     * Fixed: [#179](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/179) `Run Without Debugging` does not print any output to the debug console
     * Fixed: [#180](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/180) Hit conditional breakpoint do not work properly if they contain spaces before or after the condition
     * Fixed: [#188](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/188) ComObject child elements may not be displayed correctly in data inspection, watch expression, etc.

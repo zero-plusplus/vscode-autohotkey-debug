@@ -743,9 +743,11 @@ export class AhkDebugSession extends LoggingDebugSession {
           throw Error('Error: Could not get stack frame');
         }
 
-        const property = await this.session!.evaluate(propertyName, stackFrame.dbgpStackFrame).catch((errorMessage) => {
-          this.sendAnnounce(errorMessage, 'stderr');
-          this.sendTerminateEvent();
+        const property = await this.session!.evaluate(propertyName, stackFrame.dbgpStackFrame).catch((error: unknown) => {
+          if (error instanceof dbgp.DbgpCriticalError) {
+            this.sendAnnounce(error.message, 'stderr');
+            this.sendTerminateEvent();
+          }
         });
         if (!property) {
           if (args.context === 'hover' && (await this.session!.fetchAllPropertyNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
