@@ -13,6 +13,10 @@ This has been fixed in `1.10.2`, so please update**.
 * Much of the README content has been migrated to the [Github wiki](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki). If you want to see the description of each feature, please refer to there
 
 ### Update
+* `1.10.3` - 2022-xx-xx
+    * Fixed: [#199](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/199) Debugging will not start if scripts are included that are loaded into each other using `#Include`
+    * Fixed: [#199](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/199) [The standard library](https://www.autohotkey.com/docs/Functions.htm#lib) may not be displayed in Loaded scripts
+
 * `1.10.2` - 2022-01-27
     * Fixed: [#192](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/192) Debug adapter may crash when evaluating variables in hover, watch expressions, etc.
 
@@ -54,10 +58,6 @@ This has been fixed in `1.10.2`, so please update**.
     * Fixed: [#178](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/178) v2 only bug. Bracket notation suggestion displays properties that are not actually available
     * Fixed: When `"attach"` is specified for request when editing launch.json, `skipFiles` and `skipFunctions` are not displayed in the IntelliSense
     * Fixed: The breakpoint operation may fail
-
-* `1.9.0` - 2021-10-03
-    * Added: [#69](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/69) Support `skipFiles` and `skipFunctions` in launch.json
-    * Added: [#143](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/143) Support `extends` attribute in launch.json
 
 See [CHANGELOG](CHANGELOG.md) for details.
 

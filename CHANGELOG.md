@@ -14,6 +14,11 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.10.3] - 2022-xx-xx
+### Fixed
+* [#199](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/199) Debugging will not start if scripts are included that are loaded into each other using `#Include`
+* [#199](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/199) [The standard library](https://www.autohotkey.com/docs/Functions.htm#lib) may not be displayed in Loaded scripts
+
 ## [1.10.2] - 2022-01-27
 ### Fixed
 * [#192](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/192) Debug adapter may crash when evaluating variables in hover, watch expressions, etc.
@@ -433,6 +438,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.10.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.2..v1.10.3
 [1.10.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.1..v1.10.2
 [1.10.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.0..v1.10.1
 [1.10.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.9.0..v1.10.0
