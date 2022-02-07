@@ -816,9 +816,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       return this.loadedSources;
     }
     const extractor = new IncludePathExtractor(this.session!.ahkVersion);
-    this.loadedSources.push(this.config.program, ...extractor.extract(this.config.program));
+    this.loadedSources.push(this.config.program, ...extractor.extract(this.config.program, { A_AhkPath: this.config.runtime }));
     const implicitFunctionPathExtractor = new ImplicitFunctionPathExtractor(this.session!.ahkVersion);
-    this.loadedSources.push(...implicitFunctionPathExtractor.extract(this.config.program));
+    this.loadedSources.push(...implicitFunctionPathExtractor.extract(this.config.program, { A_AhkPath: this.config.runtime }));
     return this.loadedSources;
   }
   private async registerDebugDirective(): Promise<void> {
