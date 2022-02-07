@@ -120,6 +120,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private errorMessage = '';
   private isTimeout = false;
   private exitCode?: number | undefined;
+  private raisedCriticalError?: boolean;
   // The warning message is processed earlier than the server initialization, so it needs to be delayed.
   private readonly delayedWarningMessages: string[] = [];
   constructor() {
@@ -169,6 +170,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     if (!args.restart && !this.isTimeout) {
+      if (this.raisedCriticalError) {
+        this.sendAnnounce('Debugging stopped');
+      }
       if (isNumber(this.exitCode)) {
         this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
         this.sendAnnounce('Debugging stopped');
@@ -769,6 +773,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       catch (error: unknown) {
         if (error instanceof dbgp.DbgpCriticalError) {
+          this.raisedCriticalError = true;
           this.sendAnnounce(error.message, 'stderr');
           this.sendTerminateEvent();
           return;
@@ -1388,6 +1393,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error: unknown) {
       if (error instanceof dbgp.DbgpCriticalError) {
+        this.raisedCriticalError = true;
         this.sendAnnounce(error.message, 'stderr');
         this.sendTerminateEvent();
       }
@@ -1435,6 +1441,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error: unknown) {
       if (error instanceof dbgp.DbgpCriticalError) {
+        this.raisedCriticalError = true;
         this.sendAnnounce(error.message, 'stderr');
         this.sendTerminateEvent();
       }
@@ -1499,6 +1506,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const property = await timeoutPromise(this.session!.evaluate(variableName, undefined, logpoint ? maxDepth : 1), timeout_ms).catch((error: unknown) => {
           if (error instanceof dbgp.DbgpCriticalError) {
+            this.raisedCriticalError = true;
             this.sendAnnounce(error.message, 'stderr');
             this.sendTerminateEvent();
             return;
@@ -1588,6 +1596,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error: unknown) {
       if (error instanceof dbgp.DbgpCriticalError) {
+        this.raisedCriticalError = true;
         this.sendAnnounce(error.message, 'stderr');
         this.sendTerminateEvent();
       }
