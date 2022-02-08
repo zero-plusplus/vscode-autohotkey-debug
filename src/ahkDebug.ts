@@ -18,7 +18,7 @@ import { sync as pathExistsSync } from 'path-exists';
 import AsyncLock from 'async-lock';
 import { range } from 'lodash';
 import LazyPromise from 'lazy-promise';
-import { ImplicitFunctionPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
+import { ImplicitLibraryPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
 import {
   Breakpoint,
   BreakpointAdvancedData,
@@ -831,22 +831,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       return this.loadedSources;
     }
 
-    const tasks: Array<Promise<void>> = [];
-    tasks.push(new Promise((resolve) => {
-      const extractor = new IncludePathExtractor(this.session!.ahkVersion);
-      this.loadedSources.push(this.config.program, ...extractor.extract(this.config.program, { A_AhkPath: this.config.runtime }));
-      resolve();
-    }));
+    const extractor = new IncludePathExtractor(this.session!.ahkVersion);
+    this.loadedSources.push(...[ this.config.program, ...extractor.extract(this.config.program, { A_AhkPath: this.config.runtime }) ]);
     if (this.config.useLoadedScripts !== false && this.config.useLoadedScripts.scanImplicitLibrary) {
-      tasks.push(new Promise((resolve) => {
-        const implicitFunctionPathExtractor = new ImplicitFunctionPathExtractor(this.session!.ahkVersion);
-        this.loadedSources.push(...implicitFunctionPathExtractor.extract(this.config.program, { A_AhkPath: this.config.runtime }));
-        resolve();
-      }));
+      const implicitFunctionPathExtractor = new ImplicitLibraryPathExtractor(this.session!.ahkVersion);
+      this.loadedSources.push(...implicitFunctionPathExtractor.extract(this.loadedSources, { A_AhkPath: this.config.runtime }));
     }
 
-    await Promise.all(tasks);
-    return this.loadedSources;
+    return Promise.resolve(this.loadedSources);
   }
   private async registerDebugDirective(): Promise<void> {
     if (!this.config.useDebugDirective) {
