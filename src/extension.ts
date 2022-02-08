@@ -542,10 +542,14 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
         throw Error('`useLoadedScripts` must be a boolean or object.');
       }
 
+      const defaultValue = {
+        scanImplicitLibrary: true,
+      };
       if (config.useLoadedScripts === true) {
-        config.useLoadedScripts = {
-          scanImplicitLibrary: true,
-        };
+        config.useLoadedScripts = defaultValue;
+      }
+      else {
+        defaults(config.useLoadedScripts, defaultValue);
       }
     })();
 
