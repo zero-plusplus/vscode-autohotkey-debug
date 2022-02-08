@@ -72,6 +72,9 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     useTrailingLinebreak: boolean;
   };
   useAnnounce: AnnounceLevel;
+  useLoadedScripts: false | {
+    scanImplicitLibrary: boolean;
+  };
   openFileOnExit: string;
   trace: boolean;
   skipFunctions?: string[];
@@ -794,7 +797,13 @@ export class AhkDebugSession extends LoggingDebugSession {
   // eslint-disable-next-line @typescript-eslint/require-await
   protected async loadedSourcesRequest(response: DebugProtocol.LoadedSourcesResponse, args: DebugProtocol.LoadedSourcesArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('loadedSourcesRequest');
-    const loadedScriptPathList = this.getAllLoadedSourcePath();
+
+    if (!this.config.useLoadedScripts) {
+      this.sendResponse(response);
+      return;
+    }
+
+    const loadedScriptPathList = await this.getAllLoadedSourcePath();
 
     const sources: DebugProtocol.Source[] = [];
     await Promise.all(loadedScriptPathList.map(async(filePath): Promise<void> => {
@@ -817,14 +826,26 @@ export class AhkDebugSession extends LoggingDebugSession {
     response.body = { sources };
     this.sendResponse(response);
   }
-  private getAllLoadedSourcePath(): string[] {
+  private async getAllLoadedSourcePath(): Promise<string[]> {
     if (0 < this.loadedSources.length) {
       return this.loadedSources;
     }
-    const extractor = new IncludePathExtractor(this.session!.ahkVersion);
-    this.loadedSources.push(this.config.program, ...extractor.extract(this.config.program, { A_AhkPath: this.config.runtime }));
-    const implicitFunctionPathExtractor = new ImplicitFunctionPathExtractor(this.session!.ahkVersion);
-    this.loadedSources.push(...implicitFunctionPathExtractor.extract(this.config.program, { A_AhkPath: this.config.runtime }));
+
+    const tasks: Array<Promise<void>> = [];
+    tasks.push(new Promise((resolve) => {
+      const extractor = new IncludePathExtractor(this.session!.ahkVersion);
+      this.loadedSources.push(this.config.program, ...extractor.extract(this.config.program, { A_AhkPath: this.config.runtime }));
+      resolve();
+    }));
+    if (this.config.useLoadedScripts !== false && this.config.useLoadedScripts.scanImplicitLibrary) {
+      tasks.push(new Promise((resolve) => {
+        const implicitFunctionPathExtractor = new ImplicitFunctionPathExtractor(this.session!.ahkVersion);
+        this.loadedSources.push(...implicitFunctionPathExtractor.extract(this.config.program, { A_AhkPath: this.config.runtime }));
+        resolve();
+      }));
+    }
+
+    await Promise.all(tasks);
     return this.loadedSources;
   }
   private async registerDebugDirective(): Promise<void> {
@@ -837,7 +858,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       useClearConsoleDirective,
     } = this.config.useDebugDirective;
 
-    const filePathList = this.getAllLoadedSourcePath();
+    const filePathList = await this.getAllLoadedSourcePath();
     // const DEBUG_start = process.hrtime();
     await Promise.all(filePathList.map(async(filePath) => {
       const document = await vscode.workspace.openTextDocument(filePath);
