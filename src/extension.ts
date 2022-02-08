@@ -162,6 +162,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       useOutputDebug: true,
       useUIAVersion: false,
       useAnnounce: true,
+      useLoadedScripts: true,
       trace: false,
       // The following is not a configuration, but is set to pass data to the debug adapter.
       cancelReason: undefined,
@@ -533,6 +534,19 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
     ((): void => {
       if (!(isBoolean(config.useAnnounce) || [ 'error', 'detail' ].includes(config.useAnnounce))) {
         throw Error('`useAnnounce` must be a boolean, "error" or "detail".');
+      }
+    })();
+
+    // init useLoadedScripts
+    ((): void => {
+      if (!(isBoolean(config.useLoadedScripts) || isPlainObject(config.useLoadedScripts))) {
+        throw Error('`useLoadedScripts` must be a boolean or object.');
+      }
+
+      if (config.useLoadedScripts === true) {
+        config.useLoadedScripts = {
+          scanImplicitLibrary: true,
+        };
       }
     })();
 

@@ -14,7 +14,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.10.3] - 2022-xx-xx
+## [1.11.0] - 2022-xx-xx
+### Added
+* [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json
+
 ### Fixed
 * [#189](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/189) Refix. Stopping the debugger adapter due to ECONNRESET error
 * [#198](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/198) The error message when ECONNRESET occurs is incorrect
@@ -440,7 +443,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[1.10.3]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.2..v1.10.3
+[1.11.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.2..v1.11.0
 [1.10.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.1..v1.10.2
 [1.10.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.0..v1.10.1
 [1.10.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.9.0..v1.10.0

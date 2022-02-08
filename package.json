@@ -399,6 +399,21 @@
                 "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
                 "default": true
               },
+              "useLoadedScripts": {
+                "type": [
+                  "boolean",
+                  "object"
+                ],
+                "properties": {
+                  "scanImplicitLibrary": {
+                    "type": "boolean",
+                    "description": "It scans for implicitly used libraries and displays them in Loaded Scripts. However, it will slow down the start of debugging. This attribute also affects the debug directive.",
+                    "default": true
+                  }
+                },
+                "description": "Enable / disable Loaded Scripts. If disabled, the debug startup time will be faster.",
+                "default": true
+              },
               "skipFunctions": {
                 "type": "array",
                 "items": {
@@ -714,6 +729,21 @@
                   "detail"
                 ],
                 "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "default": true
+              },
+              "useLoadedScripts": {
+                "type": [
+                  "boolean",
+                  "object"
+                ],
+                "properties": {
+                  "scanImplicitLibrary": {
+                    "type": "boolean",
+                    "description": "It scans for implicitly used libraries and displays them in Loaded Scripts. However, it will slow down the start of debugging. This attribute also affects the debug directive.",
+                    "default": true
+                  }
+                },
+                "description": "Enable / disable Loaded Scripts. If disabled, the debug startup time will be faster.",
                 "default": true
               },
               "skipFunctions": {
