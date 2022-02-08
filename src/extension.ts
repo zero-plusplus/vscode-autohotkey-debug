@@ -206,7 +206,6 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       }
       if (config.runtime) {
         config.runtime = ahkPathResolve(config.runtime);
-        return;
       }
 
       if (!existsSync(config.runtime)) {
