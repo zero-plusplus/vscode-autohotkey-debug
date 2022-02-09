@@ -176,7 +176,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (this.raisedCriticalError) {
         this.sendAnnounce('Debugging stopped');
       }
-      if (isNumber(this.exitCode)) {
+      else if (isNumber(this.exitCode)) {
         this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
         this.sendAnnounce('Debugging stopped');
       }
