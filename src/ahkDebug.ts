@@ -16,7 +16,7 @@ import { DebugProtocol } from 'vscode-debugprotocol';
 import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import AsyncLock from 'async-lock';
-import { range } from 'lodash';
+import { chunk, range } from 'lodash';
 import LazyPromise from 'lazy-promise';
 import { ImplicitLibraryPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
 import {
@@ -850,91 +850,94 @@ export class AhkDebugSession extends LoggingDebugSession {
       useClearConsoleDirective,
     } = this.config.useDebugDirective;
 
-    const filePathList = await this.getAllLoadedSourcePath();
+    const filePathListChunked = chunk(await this.getAllLoadedSourcePath(), 50); // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/203
+
     // const DEBUG_start = process.hrtime();
-    await Promise.all(filePathList.map(async(filePath) => {
-      const document = await vscode.workspace.openTextDocument(filePath);
-      const fileUri = URI.file(filePath).toString();
+    for await (const filePathList of filePathListChunked) {
+      await Promise.all(filePathList.map(async(filePath) => {
+        const document = await vscode.workspace.openTextDocument(filePath);
+        const fileUri = URI.file(filePath).toString();
 
-      await Promise.all(range(document.lineCount).map(async(line_0base) => {
-        const textLine = document.lineAt(line_0base);
-        const match = textLine.text.match(/^\s*;\s*@Debug-(?<directiveType>[\w_]+)(?::(?<params>[\w_:]+))?\s*(?=\(|\[|-|=|$)(?:\((?<condition>[^\n)]+)\))?\s*(?:\[(?<hitCondition>[^\n]+)\])?\s*(?:(?<outputOperator>->|=>)?(?<leaveLeadingSpace>\|)?(?<message>.*))?$/ui);
-        if (!match?.groups) {
-          return;
-        }
-
-        const directiveType = match.groups.directiveType.toLowerCase();
-        const {
-          condition = '',
-          hitCondition = '',
-          outputOperator,
-          message = '',
-        } = match.groups;
-        const params = match.groups.params ? match.groups.params.split(':') : '';
-        const removeLeadingSpace = match.groups.leaveLeadingSpace ? !match.groups.leaveLeadingSpace : true;
-
-        let logMessage = message;
-        if (removeLeadingSpace) {
-          logMessage = logMessage.trimLeft();
-        }
-        if (outputOperator === '=>') {
-          logMessage += '\n';
-        }
-
-        const line = line_0base + 1;
-        if (useBreakpointDirective && directiveType === 'breakpoint') {
-          if (0 < params.length) {
+        await Promise.all(range(document.lineCount).map(async(line_0base) => {
+          const textLine = document.lineAt(line_0base);
+          const match = textLine.text.match(/^\s*;\s*@Debug-(?<directiveType>[\w_]+)(?::(?<params>[\w_:]+))?\s*(?=\(|\[|-|=|$)(?:\((?<condition>[^\n)]+)\))?\s*(?:\[(?<hitCondition>[^\n]+)\])?\s*(?:(?<outputOperator>->|=>)?(?<leaveLeadingSpace>\|)?(?<message>.*))?$/ui);
+          if (!match?.groups) {
             return;
           }
 
-          const advancedData = {
-            condition,
-            hitCondition,
-            logMessage,
-            hidden: true,
-          } as BreakpointAdvancedData;
-          await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
-        }
-        else if (useOutputDirective && directiveType === 'output') {
-          let logGroup: string | undefined;
-          if (0 < params.length) {
-            if (equalsIgnoreCase(params[0], 'start')) {
-              logGroup = 'start';
-            }
-            else if (equalsIgnoreCase(params[0], 'startCollapsed')) {
-              logGroup = 'startCollapsed';
-            }
-            else if (equalsIgnoreCase(params[0], 'end')) {
-              logGroup = 'end';
-            }
+          const directiveType = match.groups.directiveType.toLowerCase();
+          const {
+            condition = '',
+            hitCondition = '',
+            outputOperator,
+            message = '',
+          } = match.groups;
+          const params = match.groups.params ? match.groups.params.split(':') : '';
+          const removeLeadingSpace = match.groups.leaveLeadingSpace ? !match.groups.leaveLeadingSpace : true;
+
+          let logMessage = message;
+          if (removeLeadingSpace) {
+            logMessage = logMessage.trimLeft();
           }
-          const newCondition = condition;
-          const advancedData = {
-            condition: newCondition,
-            hitCondition,
-            logMessage,
-            logGroup,
-            hidden: true,
-          } as BreakpointAdvancedData;
-          await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
-        }
-        else if (useClearConsoleDirective && directiveType === 'clearconsole') {
-          const advancedData = {
-            condition,
-            hitCondition,
-            logMessage,
-            hidden: true,
-            action: async() => {
-              // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
-              await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-              await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-              await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-            },
-          } as BreakpointAdvancedData;
-          await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
-        }
+          if (outputOperator === '=>') {
+            logMessage += '\n';
+          }
+
+          const line = line_0base + 1;
+          if (useBreakpointDirective && directiveType === 'breakpoint') {
+            if (0 < params.length) {
+              return;
+            }
+
+            const advancedData = {
+              condition,
+              hitCondition,
+              logMessage,
+              hidden: true,
+            } as BreakpointAdvancedData;
+            await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+          }
+          else if (useOutputDirective && directiveType === 'output') {
+            let logGroup: string | undefined;
+            if (0 < params.length) {
+              if (equalsIgnoreCase(params[0], 'start')) {
+                logGroup = 'start';
+              }
+              else if (equalsIgnoreCase(params[0], 'startCollapsed')) {
+                logGroup = 'startCollapsed';
+              }
+              else if (equalsIgnoreCase(params[0], 'end')) {
+                logGroup = 'end';
+              }
+            }
+            const newCondition = condition;
+            const advancedData = {
+              condition: newCondition,
+              hitCondition,
+              logMessage,
+              logGroup,
+              hidden: true,
+            } as BreakpointAdvancedData;
+            await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+          }
+          else if (useClearConsoleDirective && directiveType === 'clearconsole') {
+            const advancedData = {
+              condition,
+              hitCondition,
+              logMessage,
+              hidden: true,
+              action: async() => {
+                // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
+                await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+                await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+                await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+              },
+            } as BreakpointAdvancedData;
+            await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+          }
+        }));
       }));
-    }));
+    }
     // const DEBUG_hrtime = process.hrtime(DEBUG_start);
     // // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
     // // eslint-disable-next-line no-mixed-operators
