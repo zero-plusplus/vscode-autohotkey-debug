@@ -4,15 +4,14 @@
 This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/) that provides many [advanced features](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Features) in addition to the basic debugging features.
 
 # News
-### Important Notices
-* **In `1.10.1`, there was a fatal bug that caused the debug adapter to crash in some cases when evaluating values in watch expression.
-This has been fixed in `1.10.2`, so please update**.
+## Important Notices
+* There have been major changes in `1.10.0` and some fatal bugs have been found. If you encounter problems, please update to the latest version or downgrade to `1.9.0`. Also, if you report it on [GitHub](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues), I will reply the same day or the next day
 
 * The required version of VSCode has been raised from [1.45.0](https://code.visualstudio.com/updates/v1_45) to [1.49.0](https://code.visualstudio.com/updates/v1_49). Regardless, it is recommended that you install the latest version as some functions may not work
 
 * Much of the README content has been migrated to the [Github wiki](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki). If you want to see the description of each feature, please refer to there
 
-### Update
+## Update
 * `1.11.0` - 2022-xx-xx
     * Added: [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json
     * Changed: [AutoHotkey v2-128](https://www.autohotkey.com/boards/viewtopic.php?f=37&t=2120&sid=e7d43fe09e912b95ab2d1747a47f8bad&start=80#p385995) and later no longer performs auto-include libraries detection. This will speed up the initialization time for debugging in the affected version
