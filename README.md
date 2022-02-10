@@ -15,6 +15,8 @@ This has been fixed in `1.10.2`, so please update**.
 ### Update
 * `1.11.0` - 2022-xx-xx
     * Added: [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json
+    * Changed: [AutoHotkey v2-128](https://www.autohotkey.com/boards/viewtopic.php?f=37&t=2120&sid=e7d43fe09e912b95ab2d1747a47f8bad&start=80#p385995) and later no longer performs auto-include libraries detection. This will speed up the initialization time for debugging in the affected version
+    * Changed: Improved detection of auto-include libraries to reduce the occurrence of wrong detections
     * Fixed: [#189](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/189) Refix. Stopping the debugger adapter due to ECONNRESET error
     * Fixed: [#198](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/198) The error message when ECONNRESET occurs is incorrect
     * Fixed: [#199](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/199) Debugging will not start if scripts are included that are loaded into each other using `#Include`
