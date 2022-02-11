@@ -14,8 +14,6 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 ## Update
 * `1.11.0` - 2022-xx-xx
     * Added: [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json
-    * Changed: [AutoHotkey v2-128](https://www.autohotkey.com/boards/viewtopic.php?f=37&t=2120&sid=e7d43fe09e912b95ab2d1747a47f8bad&start=80#p385995) and later no longer performs auto-include libraries detection. This will speed up the initialization time for debugging in the affected version
-    * Changed: Improved detection of auto-include libraries to reduce the occurrence of wrong detections
     * Fixed: [#189](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/189) Refix. Stopping the debugger adapter due to ECONNRESET error
     * Fixed: [#198](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/198) The error message when ECONNRESET occurs is incorrect
     * Fixed: [#199](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/199) Loaded Scripts process may become extremely slow. broken by `1.10.0`
@@ -23,6 +21,8 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Fixed: [#199](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/199) [The standard library](https://www.autohotkey.com/docs/Functions.htm#lib) may not be displayed in Loaded scripts, and the debugger directive may not work
     * Fixed: [#202](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/202) Error message is not displayed when a non-existent runtime is specified
     * Fixed: [#203](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/203) If the number of loaded scripts exceeds 60, only the first debug will fail
+    * Fixed: [#204](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/204) [AutoHotkey v2-128](https://www.autohotkey.com/boards/viewtopic.php?f=37&t=2120&sid=e7d43fe09e912b95ab2d1747a47f8bad&start=80#p385995) and later versions may show auto-include-libraries in Loaded Scripts that are not actually loaded
+    * Fixed: [#205](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/205) When a library call is included in a string or in a comment, files that are not actually loaded may appear in the Loaded Scripts
 
 * `1.10.2` - 2022-01-27
     * Fixed: [#192](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/192) Debug adapter may crash when evaluating variables in hover, watch expressions, etc.
