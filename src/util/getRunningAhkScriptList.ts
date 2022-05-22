@@ -21,7 +21,7 @@ export const getRunningAhkScriptList = (ahkRuntime: string, options?: SpawnSyncO
         RegExMatch(title, "O)(?<path>.+)(?=\\s-)", match)
         processPathList .= match.path "\`n"
       }
-      FileOpen("*", "w").write(RTrim(processPathList, "\`n"))
+      FileOpen("*", "w", "CP65001").write(RTrim(processPathList, "\`n"))
     ` : `
       A_DetectHiddenWindows := true
       idList := WinGetList("ahk_class AutoHotkey")
@@ -35,7 +35,7 @@ export const getRunningAhkScriptList = (ahkRuntime: string, options?: SpawnSyncO
         RegExMatch(title, "(?<path>.+)(?=\\s-)", &match)
         processPathList .= match.path "\`n"
       }
-      FileOpen("*", "w").write(RTrim(processPathList, "\`n"))
+      FileOpen("*", "w", "CP65001").write(RTrim(processPathList, "\`n"))
     `;
   const result = spawnSync(ahkRuntime, [ '/ErrorStdOut', '*' ], { ...options, input: ahkCode });
   if (result.error) {
