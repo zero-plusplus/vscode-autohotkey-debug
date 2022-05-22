@@ -1678,7 +1678,7 @@ export class AhkDebugSession extends LoggingDebugSession {
               })
               .on('outputdebug', (data) => {
                 const message = String(data);
-                const isRuntimeError = (/Error:\s\s[^\s].*Line#.*--->.*Try to continue anyway\?$/us).test(message);
+                const isRuntimeError = (/^Error.*:\s*[^\s].+Line#.*--->\t\d+:.+$/us).test(message);
                 this.ahkProcess!.event.emit(isRuntimeError ? 'stderr' : 'outputdebug', message);
               });
 
