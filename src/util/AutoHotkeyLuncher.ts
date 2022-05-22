@@ -105,7 +105,7 @@ export class AutoHotkeyLauncher {
       }
       ExitApp(1)
     `;
-    const result = spawnSync(runtime, [ '/ErrorStdOut', '*' ], { input: ahkCode });
+    const result = spawnSync(runtime, [ '/ErrorStdOut', '/CP65001', '*' ], { input: ahkCode });
     if (result.error) {
       return false;
     }
