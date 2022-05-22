@@ -1,10 +1,9 @@
 /* eslint-disable require-atomic-updates */
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { defaults, groupBy, isString, range } from 'lodash';
 import isPortTaken from 'is-port-taken';
-import * as jsonc from 'jsonc-simple-parser';
 import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider, findWord } from './CompletionItemProvider';
 import { AhkDebugSession } from './ahkDebug';
@@ -14,6 +13,7 @@ import glob from 'fast-glob';
 import { registerCommands } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isDirectory, toArray } from './util/util';
+import { equalsIgnoreCase } from './util/stringUtils';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -129,15 +129,14 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
 
 class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
   public resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
-    if (config.extends && folder) {
-      const jsonPath = path.resolve(folder.uri.fsPath, '.vscode', 'launch.json');
-      if (existsSync(jsonPath)) {
-        const launchJson = jsonc.parse(readFileSync(jsonPath, { encoding: 'utf-8' }));
-        const extendConfig = launchJson.configurations.find((conf) => conf.name === config.extends);
-        if (!extendConfig) {
+    if (config.extends) {
+      const launch = vscode.workspace.getConfiguration().get<Record<string, any>>('launch');
+      if (launch && 'configurations' in launch && Array.isArray(launch.configurations)) {
+        const sourceConfig = launch.configurations.find((conf) => equalsIgnoreCase(conf.name, config.extends));
+        if (!sourceConfig) {
           throw Error(`No matching configuration found. Please modify the \`extends\` attribute. \nSpecified: ${String(config.extends)}`);
         }
-        defaults(config, extendConfig);
+        defaults(config, sourceConfig);
       }
     }
 
