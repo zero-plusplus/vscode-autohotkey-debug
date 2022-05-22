@@ -15,6 +15,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 * `1.12.0` - 2022-xx-xx
     * Fixed: [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
     * Fixed: [#212](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/212) Some errors were not detected and raw error messages were output. This caused `useAutoJumpToError` to not work in some cases
+    * Fixed: [#215](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/215) The list of running AutoHotkey processes displayed before attaching does not display correctly when it contains multibyte strings
 
 * `1.11.0` - 2022-02-11
     * Added: [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json
