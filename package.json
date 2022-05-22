@@ -974,7 +974,6 @@
     "pcre-to-regexp": "^1.1.0",
     "read-dir-deep": "^7.0.1",
     "regex-parser": "^2.2.11",
-    "ts-predicates": "^1.0.14",
     "underscore.string": "^3.3.5",
     "vscode-debugadapter": "^1.40.0",
     "vscode-debugprotocol": "^1.40.0",

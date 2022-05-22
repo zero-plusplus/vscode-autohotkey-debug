@@ -5,8 +5,6 @@ demo/
 image/
 !image/icon.png
 node_modules/
-!node_modules/ts-predicates
-!node_modules/typeof-util
 !node_modules/vscode-uri
 src/
 test/

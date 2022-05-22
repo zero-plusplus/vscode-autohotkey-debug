@@ -34,7 +34,6 @@ import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
 import { isPrimitive, now, timeoutPromise } from './util/util';
-import { isNumber } from 'ts-predicates';
 import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
 import { CategoryData } from './extension';
@@ -176,7 +175,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (this.raisedCriticalError) {
         this.sendAnnounce('Debugging stopped');
       }
-      else if (isNumber(this.exitCode)) {
+      else if (typeof this.exitCode === 'number') {
         this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
         this.sendAnnounce('Debugging stopped');
       }
@@ -216,7 +215,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
           this.traceLogger.log('Autohotkey close');
 
-          if (isNumber(exitCode)) {
+          if (typeof exitCode === 'number') {
             this.exitCode = exitCode;
           }
           this.sendTerminateEvent();
@@ -276,7 +275,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           return;
         }
 
-        if (isNumber(exitCode)) {
+        if (typeof exitCode === 'number') {
           this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}`, exitCode === 0 ? 'console' : 'stderr', exitCode === 0 ? 'detail' : 'error');
         }
         this.sendTerminateEvent();

@@ -4,19 +4,18 @@ import { Parser, createParser } from './ConditionParser';
 import * as dbgp from '../dbgpSession';
 import { LazyMetaVariableValue, MetaVariableValue, MetaVariableValueMap } from './VariableManager';
 import { isFloatLike, isIntegerLike, isNumberLike, isPrimitive } from './util';
-import { isObject } from 'ts-predicates';
 
 type Value = string | number | boolean | { address: number } | undefined;
 type Operator = (a: Value, b: Value) => boolean;
 const not = (predicate): Operator => (a, b): boolean => !predicate(a, b);
 const equals: Operator = (a, b) => {
-  const _a = isObject(a) ? a.address : a;
-  const _b = isObject(b) ? b.address : b;
+  const _a = typeof a === 'object' ? a.address : a;
+  const _b = typeof b === 'object' ? b.address : b;
   // eslint-disable-next-line eqeqeq
   return _a == _b;
 };
 const equalsIgnoreCase: Operator = (a, b) => {
-  if (isObject(a) || isObject(b)) {
+  if (typeof a === 'object' || typeof b === 'object') {
     return equals(a, b);
   }
   return String(a).toLowerCase() === String(b).toLocaleLowerCase();
@@ -26,7 +25,7 @@ const inequality = (sign: string): Operator => {
     if (typeof a === 'undefined' || typeof b === 'undefined') {
       return false;
     }
-    if (isObject(a) || isObject(b)) {
+    if (typeof a === 'object' || typeof b === 'object') {
       return false;
     }
 
@@ -73,7 +72,7 @@ const regexCompare: Operator = function(input, ahkRegex) {
   if (typeof input === 'undefined' || typeof ahkRegex === 'undefined') {
     return false;
   }
-  if (isObject(input) || isObject(ahkRegex)) {
+  if (typeof input === 'object' || typeof ahkRegex === 'object') {
     return false;
   }
 

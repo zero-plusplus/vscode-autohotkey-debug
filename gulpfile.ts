@@ -38,8 +38,6 @@ const esbuildOptions: esbuild.BuildOptions = {
   minify: true,
   treeShaking: true,
   external: [
-    'ts-predicates',
-    'typeof-util',
     'vscode-uri',
     'vscode',
   ],

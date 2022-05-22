@@ -2,7 +2,6 @@
 import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
 import { defaults, groupBy, isString, range } from 'lodash';
 import isPortTaken from 'is-port-taken';
 import * as jsonc from 'jsonc-simple-parser';
@@ -215,7 +214,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init useUIAVersion
     ((): void => {
-      if (!isBoolean(config.useUIAVersion)) {
+      if (typeof config.useUIAVersion !== 'boolean') {
         throw Error('`useUIAVersion` must be a boolean.');
       }
     })();
@@ -254,10 +253,9 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
         config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
       }
 
-      if (isArray(config.runtimeArgs)) {
-        return;
+      if (!Array.isArray(config.runtimeArgs)) {
+        throw Error('`runtimeArgs` must be a array.');
       }
-      throw Error('`runtimeArgs` must be a array.');
     })();
 
     // init hostname
@@ -377,14 +375,14 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init args
     ((): void => {
-      if (!isArray(config.args)) {
+      if (!Array.isArray(config.args)) {
         throw Error('`args` must be a array.');
       }
     })();
 
     // init env
     ((): void => {
-      if (!isPlainObject(config.env)) {
+      if (typeof config.env !== 'object' || Array.isArray(config.env)) {
         throw Error('`env` must be a object.');
       }
 
@@ -393,8 +391,6 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
         env[key.toLowerCase()] = value;
       }
       for (const [ key, value ] of Object.entries(config.env)) {
-        const a = value ?? '';
-        a;
         env[key.toLowerCase()] = value ?? '';
       }
 
@@ -403,7 +399,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init stopOnEntry
     ((): void => {
-      if (!isBoolean(config.stopOnEntry)) {
+      if (typeof config.stopOnEntry !== 'boolean') {
         throw Error('`stopOnEntry` must be a boolean.');
       }
     })();
@@ -431,14 +427,14 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init useIntelliSenseInDebugging
     ((): void => {
-      if (!isBoolean(config.useIntelliSenseInDebugging)) {
+      if (typeof config.useIntelliSenseInDebugging !== 'boolean') {
         throw Error('`useIntelliSenseInDebugging` must be a boolean.');
       }
     })();
 
     // init usePerfTips
     ((): void => {
-      if (!(isBoolean(config.usePerfTips) || isString(config.usePerfTips) || isPlainObject(config.usePerfTips))) {
+      if (!(typeof config.usePerfTips === 'boolean' || typeof config.usePerfTips === 'string' || typeof config.usePerfTips === 'object') || Array.isArray(config.usePerfTips) || config.usePerfTips === null) {
         throw Error('`usePerfTips` must be a boolean, a string or a object.');
       }
 
@@ -461,7 +457,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init useDebugDirective
     ((): void => {
-      if (!(isBoolean(config.useDebugDirective) || isPlainObject(config.useDebugDirective))) {
+      if (!(typeof config.useDebugDirective === 'boolean' || typeof config.useDebugDirective === 'object') || Array.isArray(config.useDebugDirective) || config.useDebugDirective === null) {
         throw Error('`useDebugDirective` must be a boolean or a object.');
       }
       if (config.useDebugDirective === false) {
@@ -483,21 +479,21 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init useAutoJumpToError
     ((): void => {
-      if (!isBoolean(config.useAutoJumpToError)) {
+      if (typeof config.useAutoJumpToError !== 'boolean') {
         throw Error('`useAutoJumpToError` must be a boolean.');
       }
     })();
 
     // init useOutputDebug
     ((): void => {
-      if (!(isBoolean(config.useOutputDebug) || isPlainObject(config.useOutputDebug))) {
+      if (!(typeof config.useOutputDebug === 'boolean' || typeof config.useOutputDebug === 'object') || Array.isArray(config.useOutputDebug) || config.useOutputDebug === null) {
         throw Error('`useOutputDebug` must be a boolean or object.');
       }
       const defaultUseOutputDebug = {
         category: 'stderr',
         useTrailingLinebreak: false,
       };
-      if (isPlainObject(config.useOutputDebug)) {
+      if (typeof config.useOutputDebug === 'object') {
         defaults(config.useOutputDebug, defaultUseOutputDebug);
         return;
       }
@@ -512,7 +508,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (!config.skipFunctions) {
         return;
       }
-      if (!isArray(config.skipFunctions)) {
+      if (!Array.isArray(config.skipFunctions)) {
         throw Error('`skipFunctions` must be a array of string.');
       }
     })();
@@ -522,7 +518,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (!config.skipFiles) {
         return;
       }
-      if (!isArray(config.skipFiles)) {
+      if (!Array.isArray(config.skipFiles)) {
         throw Error('`skipFiles` must be a array of string.');
       }
       const skipFiles = config.skipFiles.map((filePath) => normalizeToUnix(String(filePath)));
@@ -531,14 +527,14 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init useAnnounce
     ((): void => {
-      if (!(isBoolean(config.useAnnounce) || [ 'error', 'detail' ].includes(config.useAnnounce))) {
+      if (!(typeof config.useAnnounce === 'boolean' || [ 'error', 'detail' ].includes(config.useAnnounce))) {
         throw Error('`useAnnounce` must be a boolean, "error" or "detail".');
       }
     })();
 
     // init useLoadedScripts
     ((): void => {
-      if (!(isBoolean(config.useLoadedScripts) || isPlainObject(config.useLoadedScripts))) {
+      if (!(typeof config.useLoadedScripts === 'boolean' || typeof config.useLoadedScripts === 'object') || Array.isArray(config.useLoadedScripts) || config.useLoadedScripts === null) {
         throw Error('`useLoadedScripts` must be a boolean or object.');
       }
 
@@ -558,7 +554,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (!config.variableCategories) {
         return;
       }
-      if (config.variableCategories === 'recommend' || isArray(config.variableCategories)) {
+      if (config.variableCategories === 'recommend' || Array.isArray(config.variableCategories)) {
         config.variableCategories = normalizeCategories(config.variableCategories as CategoriesData);
         return;
       }
@@ -567,7 +563,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init trace
     ((): void => {
-      if (!isBoolean(config.trace)) {
+      if (typeof config.trace !== 'boolean') {
         throw Error('`trace` must be a boolean.');
       }
     })();

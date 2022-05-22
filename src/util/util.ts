@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { statSync } from 'fs';
-import { isArray } from 'ts-predicates';
 
 export const isDirectory = (dirPath): boolean => {
   try {
@@ -39,7 +38,7 @@ export const isIntegerLike = (value: any): boolean => {
   return !isNaN(Number(value)) && Number.isInteger(parseFloat(value));
 };
 export const toArray = <T>(value: any): T[] => {
-  return (isArray(value) ? value : [ value ]) as T[];
+  return (Array.isArray(value) ? value : [ value ]) as T[];
 };
 export const timeoutPromise = async<T>(promise: Promise<T>, timeout: number): Promise<T | void> => {
   return Promise.race([
