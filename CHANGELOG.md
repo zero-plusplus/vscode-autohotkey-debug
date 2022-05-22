@@ -16,6 +16,7 @@ Also want to check the development status, check the [commit history](https://gi
 ## [Released]
 ## [1.12.0] - 2022-xx-xx
 ### Fixed
+* [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
 * [#212](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/212) Some errors were not detected and raw error messages were output. This caused `useAutoJumpToError` to not work in some cases
 
 ## [1.11.0] - 2022-02-11
