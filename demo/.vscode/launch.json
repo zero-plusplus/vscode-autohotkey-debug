@@ -21,6 +21,7 @@
                 "useTrailingLinebreak": true
             },
             "useAnnounce": "detail",
+            "useExtendedErrorMessage": true,
             "variableCategories": "recommend"
         },
         {

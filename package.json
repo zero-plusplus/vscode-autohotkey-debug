@@ -414,6 +414,11 @@
                 "description": "Enable / disable Loaded Scripts. If disabled, the debug startup time will be faster.",
                 "default": true
               },
+              "useExtendedErrorMessage": {
+                "type": "boolean",
+                "description": "",
+                "default": true
+              },
               "skipFunctions": {
                 "type": "array",
                 "items": {
