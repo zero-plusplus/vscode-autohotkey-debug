@@ -9,7 +9,9 @@
             "runtime_v1": "AutoHotkey.exe",
             "runtime_v2": "v2/AutoHotkey.exe",
             "runtimeArgs": [
-                "/include ${SuppressErrorDialog.ahk}",
+                "/CP65001",
+                "/ErrorStdOut=UTF-8",
+                "/include ${SuppressErrorDialog.ahk}"
             ],
             "args": [],
             "port": "9002-9010",
