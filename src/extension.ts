@@ -272,11 +272,15 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
       if (config.runtimeArgs.some((arg) => String(arg).match('/include'))) {
         config.runtimeArgs = config.runtimeArgs.flatMap((arg) => {
-          const libPath = getExternalLibraryPath();
-          if (libPath) {
-            return [ '/include', libPath ];
+          const _arg = String(arg);
+          if (_arg.toLowerCase().includes(libraryPseudoVariableName.toLowerCase())) {
+            const libPath = getExternalLibraryPath();
+            if (_arg.toLowerCase().includes('/include')) {
+              return [ '/include', libPath ];
+            }
+            return [ libPath ];
           }
-          return [ String(arg) ];
+          return [ _arg ];
         });
       }
     })();
