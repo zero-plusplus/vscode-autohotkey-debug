@@ -3,6 +3,7 @@
  * @auther zero-plusplus
  * @link https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a
  */
+#ErrorStdOut "UTF-8"
 /**
  * Confirmed in v2.0-beta.1
  * Suppresses run-time error dialogs and instead outputs their contents to standard output.

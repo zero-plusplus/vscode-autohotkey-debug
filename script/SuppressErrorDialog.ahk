@@ -3,6 +3,7 @@
  * @auther zero-plusplus
  * @link https://gist.github.com/zero-plusplus/107d88903f8cb869d3a1600db51b7b0a
  */
+#ErrorStdOut, UTF-8
 /**
  * Suppresses run-time error dialogs and instead outputs their contents to standard output.
  *
@@ -18,7 +19,7 @@
  */
 SuppressErrorDialog(enable := true) {
   static _init_ := SuppressErrorDialog()
-  
+
   OnError("SuppressErrorDialog_OnError", enable)
 }
 SuppressErrorDialog_OnError(exception) {
@@ -42,7 +43,7 @@ SuppressErrorDialog_OnError(exception) {
   }
 
   OutputDebug, %message%`n
-  ExitApp %ERROR_CODE%
+  ExitApp, %ERROR_CODE%
 }
 SuppressErrorDialog_CallStack()
 {

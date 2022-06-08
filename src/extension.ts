@@ -161,7 +161,6 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       useUIAVersion: false,
       useAnnounce: true,
       useLoadedScripts: true,
-      useExtendedErrorMessage: false,
       trace: false,
       // The following is not a configuration, but is set to pass data to the debug adapter.
       cancelReason: undefined,
@@ -179,7 +178,19 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
     return config;
   }
   public async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration> {
+    const libraryPseudoVariableName = '${SuppressErrorDialog.ahk}';
     let ahkVersion: AhkVersion | undefined;
+    const getExternalLibraryPath = (): string => {
+      if (!ahkVersion) {
+        ahkVersion = getAhkVersion(config.runtime, { env: config.env });
+        if (!ahkVersion) {
+          throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);
+        }
+      }
+      return ahkVersion.mejor === 2.0
+        ? path.resolve(__dirname, '..', 'script', 'SuppressErrorDialog.ahk2')
+        : path.resolve(__dirname, '..', 'script', 'SuppressErrorDialog.ahk');
+    };
 
     // init request
     ((): void => {
@@ -257,6 +268,16 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
       if (!Array.isArray(config.runtimeArgs)) {
         throw Error('`runtimeArgs` must be a array.');
+      }
+
+      if (config.runtimeArgs.some((arg) => String(arg).match('/include'))) {
+        config.runtimeArgs = config.runtimeArgs.flatMap((arg) => {
+          const libPath = getExternalLibraryPath();
+          if (libPath) {
+            return [ '/include', libPath ];
+          }
+          return [ String(arg) ];
+        });
       }
     })();
 
@@ -523,6 +544,11 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (!Array.isArray(config.skipFiles)) {
         throw Error('`skipFiles` must be a array of string.');
       }
+      if (config.skipFiles.includes(libraryPseudoVariableName)) {
+        config.skipFiles = config.skipFiles.map((file) => {
+          return String(file).replace(libraryPseudoVariableName, getExternalLibraryPath());
+        });
+      }
       const skipFiles = config.skipFiles.map((filePath) => normalizeToUnix(String(filePath)));
       config.skipFiles = await glob(skipFiles, { onlyFiles: true, unique: true });
     })();
@@ -548,35 +574,6 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       }
       else {
         defaults(config.useLoadedScripts, defaultValue);
-      }
-    })();
-
-    // init useExtendedErrorMessage
-    ((): void => {
-      if (!config.useExtendedErrorMessage) {
-        return;
-      }
-      if (typeof config.useExtendedErrorMessage !== 'boolean') {
-        throw Error('`useExtendedErrorMessage` must be a boolean.');
-      }
-      if (!ahkVersion || (ahkVersion.mejor === 1.1 && ahkVersion.lessThan('1.1.34.00')) || (ahkVersion.mejor === 2.0 && ahkVersion.lessThan('2.0-a135'))) {
-        throw Error('To use `useExtendedErrorMessage`, the runtime version must be 1.1.34.00 and 2.0-a135 or higher.');
-      }
-
-      if (Array.isArray(config.runtimeArgs)) {
-        if (config.runtimeArgs.some((arg) => arg.toLowerCase().startsWith('/include'))) {
-          throw Error('The `/include` argument is used in runtimeArgs. If using `useExtendedErrorMessage`, it must be removed.');
-        }
-        const libPath = ahkVersion.mejor === 2.0
-          ? path.resolve(__dirname, '..', 'script', 'SuppressErrorDialog.ahk2')
-          : path.resolve(__dirname, '..', 'script', 'SuppressErrorDialog.ahk');
-        config.runtimeArgs.push('/include');
-        config.runtimeArgs.push(libPath);
-
-        if (!Array.isArray(config.skipFiles)) {
-          config.skipFiles = [];
-        }
-        config.skipFiles.push(libPath);
       }
     })();
 
