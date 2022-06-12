@@ -197,31 +197,110 @@
               },
               "runtimeArgs": {
                 "type": "array",
-                "items": {
-                  "type": "string"
-                },
+                "items": [
+                  {
+                    "type": "string",
+                    "examples": [
+                      "/force",
+                      "/restart",
+                      "/CP65001",
+                      "/ErrorStdOut",
+                      "/ErrorStdOut=UTF-8",
+                      "/include",
+                      "/include ${SuppressErrorDialog.ahk}"
+                    ]
+                  }
+                ],
                 "description": "Arguments to pass to AutoHotkey.exe. However \"/debug\" will be ignored.",
+                "examples": [
+                  [
+                    "/CP65001",
+                    "/ErrorStdOut"
+                  ],
+                  [
+                    "/CP65001",
+                    "/ErrorStdOut=UTF-8"
+                  ],
+                  [
+                    "/CP65001",
+                    "/ErrorStdOut=UTF-8",
+                    "/include ${SuppressErrorDialog.ahk}"
+                  ]
+                ],
                 "default": [
+                  "/CP65001",
                   "/ErrorStdOut"
                 ]
               },
               "runtimeArgs_v1": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "examples": [
+                    "/f",
+                    "/force",
+                    "/r",
+                    "/restart",
+                    "/CP65001",
+                    "/ErrorStdOut",
+                    "/ErrorStdOut=UTF-8",
+                    "/include",
+                    "/include ${SuppressErrorDialog.ahk}"
+                  ]
                 },
                 "description": "This is the \"runtimeArgs\" when the extension is \".ahk\". If \"runtimeArgs\" is set, it takes precedence.",
+                "examples": [
+                  [
+                    "/CP65001",
+                    "/ErrorStdOut"
+                  ],
+                  [
+                    "/CP65001",
+                    "/ErrorStdOut=UTF-8"
+                  ],
+                  [
+                    "/CP65001",
+                    "/ErrorStdOut=UTF-8",
+                    "/include ${SuppressErrorDialog.ahk}"
+                  ]
+                ],
                 "default": [
+                  "/CP65001",
                   "/ErrorStdOut"
                 ]
               },
               "runtimeArgs_v2": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "examples": [
+                    "/force",
+                    "/restart",
+                    "/CP65001",
+                    "/ErrorStdOut",
+                    "/ErrorStdOut=UTF-8",
+                    "/include",
+                    "/include ${SuppressErrorDialog.ahk}"
+                  ]
                 },
                 "description": "This is the \"runtimeArgs\" when the extension is \".ahk2\" or \".ah2\". If \"runtimeArgs\" is set, it takes precedence.",
+                "examples": [
+                  [
+                    "/CP65001",
+                    "/ErrorStdOut"
+                  ],
+                  [
+                    "/CP65001",
+                    "/ErrorStdOut=UTF-8"
+                  ],
+                  [
+                    "/CP65001",
+                    "/ErrorStdOut=UTF-8",
+                    "/include ${SuppressErrorDialog.ahk}"
+                  ]
+                ],
                 "default": [
+                  "/CP65001",
                   "/ErrorStdOut"
                 ]
               },
@@ -424,7 +503,10 @@
               "skipFiles": {
                 "type": "array",
                 "items": {
-                  "type": "string"
+                  "type": "string",
+                  "examples": [
+                    "${SuppressErrorDialog.ahk}"
+                  ]
                 },
                 "description": "Array of file paths to skip when executing steps. The path corresponds to glob."
               },

@@ -8,6 +8,11 @@
             "program": "${file}",
             "runtime_v1": "AutoHotkey.exe",
             "runtime_v2": "v2/AutoHotkey.exe",
+            "runtimeArgs": [
+                "/CP65001",
+                "/ErrorStdOut=UTF-8",
+                "/include ${SuppressErrorDialog.ahk}"
+            ],
             "args": [],
             "port": "9002-9010",
             "stopOnEntry": false,
@@ -20,6 +25,9 @@
             "useOutputDebug": {
                 "useTrailingLinebreak": true
             },
+            "skipFiles": [
+                "${SuppressErrorDialog.ahk}"
+            ],
             "useAnnounce": "detail",
             "variableCategories": "recommend"
         },
