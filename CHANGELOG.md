@@ -15,6 +15,9 @@ Also want to check the development status, check the [commit history](https://gi
 
 ## [Released]
 ## [1.12.0] - 2022-xx-xx
+### Added
+* [#213](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/213) Add pseudo-variable `${SuppressErrorDialog.ahk}` valid only for `runtimeArgs`, `runtimeArgs_v1`, `runtimeArgs_v2` and `skipFiles` in launch.json. This pseudo-variable is replaced by a library path that suppresses all errors and outputs them to the console, including call stack information. This library can be included in scripts to be debugged using [/include](https://www.autohotkey.com/docs/Scripts.htm#SlashInclude)
+
 ### Fixed
 * [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
 * [#212](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/212) Some errors were not detected and raw error messages were output. This caused `useAutoJumpToError` to not work in some cases
