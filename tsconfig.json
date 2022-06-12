@@ -28,8 +28,8 @@
 		"newLine": "crlf"
 	},
 	"include": [
+		"task/**/*",
 		"src/**/*",
-		"test/**/*",
-		"gulpfile.ts"
+		"test/**/*"
 	]
 }

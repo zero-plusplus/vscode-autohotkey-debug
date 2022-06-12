@@ -4,12 +4,12 @@ import * as net from 'net';
 
 suite('Debug session test', () => {
   setup(function(done) {
-    this.serverSocket = net.connect(9000, 'localhost');
+    this.serverSocket = net.connect(9002, 'localhost');
     this.session = new dbgp.Session(this.serverSocket);
     this.server = net.createServer((socket) => {
       this.socket = socket;
       done();
-    }).listen(9000, 'localhost');
+    }).listen(9002, 'localhost');
   });
 
   test('handlePacket', function(done) {
