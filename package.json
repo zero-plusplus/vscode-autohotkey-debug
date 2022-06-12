@@ -987,6 +987,28 @@
         },
         "configurationSnippets": [
           {
+            "label": "AutoHotkey Attach",
+            "description": "A new configuration for debugging by attach a user selected script.",
+            "body": {
+              "name": "AutoHotkey Attach",
+              "type": "autohotkey",
+              "request": "attach"
+            }
+          },
+          {
+            "label": "AutoHotkey Attach (Advanced Configuration)",
+            "description": "A new advanced configuration for debugging by attach a user selected script.",
+            "body": {
+              "name": "AutoHotkey Attach",
+              "type": "autohotkey",
+              "request": "attach",
+              "port": "9002-9010",
+              "variableCategories": "recommend",
+              "useDebugDirective": true,
+              "useAutoJumpToError": true
+            }
+          },
+          {
             "label": "AutoHotkey Debug",
             "description": "A new configuration for debugging the current open file (ahk or ahk2, ah2).",
             "body": {
@@ -1001,7 +1023,7 @@
             "label": "AutoHotkey Debug (Advanced Configuration)",
             "description": "A new advanced configuration for debugging the current open file (ahk or ahk2, ah2).",
             "body": {
-              "name": "AutoHotkey Debug (Advanced Configuration)",
+              "name": "AutoHotkey Debug",
               "type": "autohotkey",
               "request": "launch",
               "program": "^\"\\${file}\"",
@@ -1013,25 +1035,32 @@
             }
           },
           {
-            "label": "AutoHotkey Attach",
-            "description": "A new configuration for debugging by attach a user selected script.",
+            "label": "AutoHotkey Debug (Publisher Recommanded)",
+            "description": "A new advanced configuration recommended by the publisher for debugging the current open file (ahk or ahk2, ah2).",
             "body": {
-              "name": "AutoHotkey Attach",
+              "name": "AutoHotkey Debug",
               "type": "autohotkey",
-              "request": "attach"
-            }
-          },
-          {
-            "label": "AutoHotkey Attach (Advanced Configuration)",
-            "description": "A new advanced configuration for debugging by attach a user selected script.",
-            "body": {
-              "name": "AutoHotkey Attach (Advanced Configuration)",
-              "type": "autohotkey",
-              "request": "attach",
+              "request": "launch",
+              "program": "^\"\\${file}\"",
+              "runtimeArgs": [
+                  "/CP65001",
+                  "/ErrorStdOut=UTF-8",
+                  "/include ${SuppressErrorDialog.ahk}"
+              ],
+              "args": [],
               "port": "9002-9010",
-              "variableCategories": "recommend",
+              "useAnnounce": "detail",
+              "useAutoJumpToError": true,
               "useDebugDirective": true,
-              "useAutoJumpToError": true
+              "usePerfTips": true,
+              "useOutputDebug": {
+                  "useTrailingLinebreak": true
+              },
+              "skipFiles": [
+                  "${SuppressErrorDialog.ahk}"
+              ],
+              "openFileOnExit": "${file}",
+              "variableCategories": "recommend"
             }
           }
         ]
