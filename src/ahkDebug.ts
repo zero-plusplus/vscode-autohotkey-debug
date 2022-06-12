@@ -1229,7 +1229,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       if (breakpoint.action && await this.evaluateCondition(breakpoint)) {
         await breakpoint.action();
       }
-      if (breakpoint.logMessage && await this.evaluateCondition(breakpoint)) {
+      if ((breakpoint.logMessage || breakpoint.logGroup) && await this.evaluateCondition(breakpoint)) {
         await this.printLogMessage(breakpoint, 'stdout');
       }
     }
@@ -1430,7 +1430,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       const stringMessages = evalucatedMessages.filter((message) => typeof message === 'string' || typeof message === 'number') as string[];
       const objectMessages = evalucatedMessages.filter((message) => typeof message === 'object') as Array<Scope | Category | Categories | Variable>;
       if (objectMessages.length === 0) {
-        const event = new OutputEvent(stringMessages.join(''), logCategory);
+        const event: DebugProtocol.OutputEvent = new OutputEvent(stringMessages.join(''), logCategory);
+        event.body.group = logGroup;
         this.sendEvent(event);
         return;
       }
