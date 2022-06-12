@@ -11,6 +11,5 @@ test/
 .gitignore
 .huskyrc.js
 .mocharc.js
-gulpfile.ts
 tsconfig.json
 yarn-error.log

@@ -52,7 +52,6 @@
       "command": "npm run watch",
       "problemMatcher": [
         {
-          "owner": "gulp",
           "pattern": {
               "regexp": "^\\s*([^:]+):(\\d+):(\\d+) - (error) (.+)$",
               "file": 1,
@@ -63,8 +62,8 @@
           },
           "background": {
             "activeOnStart": true,
-            "beginsPattern": "^\\s*\\[\\d{1,2}:\\d{1,2}:\\d{1,2}\\] Starting 'watch.*$",
-            "endsPattern": "(^\\s*\\[\\d{1,2}:\\d{1,2}:\\d{1,2}\\] Finished 'watch' after .+$)|(^\\[esbuild\\] build completed$)"
+            "beginsPattern": "> ts-node task\\/watch\\.ts",
+            "endsPattern": "^\\[esbuild\\] build completed$"
           }
         }
       ]

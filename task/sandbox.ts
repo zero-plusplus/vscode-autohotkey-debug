@@ -1,64 +1,12 @@
-import * as gulp from 'gulp';
-import glob from 'fast-glob';
-import run from 'gulp-run-command';
-import del from 'del';
-import * as esbuild from 'esbuild';
-import { ESLint } from 'eslint';
-import * as fs from 'fs-extra';
 import * as path from 'path';
-import tsconfig from './tsconfig.json';
-import eslintrc from './.eslintrc';
-import { isDirectory } from './src/util/util';
+import * as fs from 'fs-extra';
 import { spawn } from 'child_process';
+import del from 'del';
+import { isDirectory } from '../src/util/util';
 
-const clean = async(): Promise<void> => {
-  await del('./build');
-};
-
-const tscheck = async(): Promise<void> => {
-  await run('tsc --noEmit')();
-};
-const eslint = async(): Promise<void> => {
-  const eslint = new ESLint({ baseConfig: eslintrc, fix: true, cache: true });
-  const results = await eslint.lintFiles(tsconfig.include).catch((err) => {
-    throw err;
-  });
-  await ESLint.outputFixes(results);
-};
-// #region build
-const esbuildCommonOptions: esbuild.BuildOptions = {
-  platform: 'node',
-  format: 'cjs',
-};
-const esbuildOptions: esbuild.BuildOptions = {
-  ...esbuildCommonOptions,
-  entryPoints: [ './src/extension.ts' ],
-  outfile: './build/extension.js',
-  bundle: true,
-  minify: true,
-  treeShaking: true,
-  external: [
-    'vscode-uri',
-    'vscode',
-  ],
-};
-const esbuildDebugOptions: esbuild.BuildOptions = {
-  ...esbuildCommonOptions,
-  entryPoints: glob.sync('./src/**/*.ts'),
-  outdir: 'build',
-  sourcemap: true,
-};
-const buildMain = async(): Promise<void> => {
-  await esbuild.build(esbuildOptions);
-};
-const buildMainDebug = async(): Promise<void> => {
-  await esbuild.build(esbuildDebugOptions);
-};
-// #endregion build
-
-const lint = gulp.parallel(tscheck, eslint);
-const runSandBoxTest = async(): Promise<void> => {
-  const packageJson = JSON.parse(await fs.readFile(`${__dirname}/package.json`, 'utf-8'));
+(async(): Promise<void> => {
+  const rootDir = path.resolve(__dirname, '..');
+  const packageJson = JSON.parse(await fs.readFile(`${rootDir}/package.json`, 'utf-8'));
   const packageName = String(packageJson.name);
   const packageVersion = String(packageJson.version);
   const tempDir = path.resolve(`${String(process.env.USERPROFILE)}/AppData/Local/Temp`);
@@ -82,8 +30,8 @@ const runSandBoxTest = async(): Promise<void> => {
     </Configuration>
   `);
 
-  await fs.copyFile(`${__dirname}/${packageName}-${packageVersion}.vsix`, `${wsbDirPath}/${packageName}.vsix`);
-  await fs.copy(`${__dirname}/demo`, `${wsbDirPath}/demo`);
+  await fs.copyFile(`${rootDir}/${packageName}-${packageVersion}.vsix`, `${wsbDirPath}/${packageName}.vsix`);
+  await fs.copy(`${rootDir}/demo`, `${wsbDirPath}/demo`);
   const installerPath = `${wsbDirPath}/installer.ps1`;
   await fs.writeFile(installerPath, `
     Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
@@ -120,43 +68,4 @@ const runSandBoxTest = async(): Promise<void> => {
     exit
   `);
   spawn('WindowsSandBox', [ wsbPath ], { detached: true });
-};
-
-const buildWithoutClean = gulp.parallel(lint, buildMain);
-const build = gulp.series(clean, buildWithoutClean);
-const vscePackage = async(): Promise<void> => {
-  await run('vsce package')();
-};
-const watchMain = async(): Promise<void> => {
-  await esbuild.build({
-    ...esbuildDebugOptions,
-    incremental: true,
-    watch: {
-      onRebuild: (err, result) => {
-        if (err) {
-          console.log(`[esbuild] error: ${err.message}`);
-        }
-        console.log(`[esbuild] build completed`);
-      },
-    },
-  });
-};
-const watch = gulp.series(clean, watchMain);
-const packaging = gulp.series(clean, gulp.parallel(lint, vscePackage));
-const testBySandBox = gulp.series(packaging, runSandBoxTest);
-
-export {
-  build,
-  buildWithoutClean,
-  buildMain,
-  buildMainDebug,
-  runSandBoxTest,
-  testBySandBox,
-  watch,
-  watchMain,
-  packaging,
-  clean,
-  lint,
-  tscheck,
-  eslint,
-};
+})();
