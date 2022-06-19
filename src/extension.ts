@@ -161,6 +161,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       useUIAVersion: false,
       useAnnounce: true,
       useLoadedScripts: true,
+      includeFiles: [],
       trace: false,
       // The following is not a configuration, but is set to pass data to the debug adapter.
       cancelReason: undefined,
@@ -283,6 +284,41 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
           return [ _arg ];
         });
       }
+    })();
+
+    // init includeFiles
+    ((): void => {
+      if (!Array.isArray(config.includeFiles)) {
+        throw Error('`includeFiles` must be a array of file paths.');
+      }
+
+      let foundInclude = false;
+      config.runtimeArgs = config.runtimeArgs.filter((arg) => {
+        const _arg = String(arg);
+        if ((/\/include/iu).test(_arg)) {
+          foundInclude = true;
+
+          const match = _arg.match(/\/include\s+(?<filePath>.+)/iu);
+          if (match?.groups) {
+            config.includeFiles.push(match.groups.filePath);
+            foundInclude = false;
+          }
+          return false;
+        }
+        if (foundInclude) {
+          foundInclude = false;
+          config.includeFiles.push(arg);
+          return false;
+        }
+        return true;
+      });
+
+      config.includeFiles = config.includeFiles.map((file) => {
+        if (file.toLowerCase().includes(libraryPseudoVariableName.toLowerCase())) {
+          return getExternalLibraryPath();
+        }
+        return String(file);
+      });
     })();
 
     // init hostname

@@ -1,9 +1,12 @@
+import { tmpdir } from 'os';
+import { unlinkSync, writeFileSync } from 'fs';
 import { spawn, spawnSync } from 'child_process';
 import { EventEmitter } from 'events';
 import * as path from 'path';
+import temp from 'temp';
 import { LaunchRequestArguments } from '../ahkDebug';
 import { getAhkVersion } from './getAhkVersion';
-import { escapePcreRegExEscape } from './stringUtils';
+import { equalsIgnoreCase, escapePcreRegExEscape } from './stringUtils';
 
 export type AutoHotkeyProcess = {
   command: string;
@@ -23,17 +26,40 @@ export class AutoHotkeyLauncher {
     return this.launchByNode();
   }
   public launchByNode(): AutoHotkeyProcess {
-    const { noDebug, runtime, cwd, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
+    const { noDebug, runtime, cwd, hostname, port, runtimeArgs, program, args, env, includeFiles } = this.launchRequest;
+
+    let tempIncludeFile: string | undefined;
+    const includeFile = includeFiles.length === 1 ? includeFiles[0] : '';
+    if (1 < includeFiles.length) {
+      const script = includeFiles
+        .map((file) => `#Include ${file.replaceAll('/', '\\')}`)
+        .join('\r\n');
+      tempIncludeFile = path.resolve(temp.path({ suffix: '.ahk' }));
+      writeFileSync(tempIncludeFile, script, 'utf-8');
+    }
 
     const launchArgs = [
       ...(noDebug ? [] : [ `/Debug=${hostname}:${port}` ]),
       ...runtimeArgs,
+      ...(includeFile === '' ? [] : [ '/include', tempIncludeFile ?? includeFile ]),
       `${program}`,
       ...args,
     ];
+
     const event = new EventEmitter();
     const ahkProcess = spawn(runtime, launchArgs, { cwd, env });
     ahkProcess.on('close', (exitCode?: number) => {
+      // The process deletes file, so check excessively
+      if (tempIncludeFile && equalsIgnoreCase(tmpdir().toLowerCase(), path.dirname(tempIncludeFile))) {
+        try {
+          unlinkSync(tempIncludeFile);
+        }
+        catch (err: unknown) {
+          if (err instanceof Error) {
+            console.log(err.message);
+          }
+        }
+      }
       event.emit('close', exitCode);
     });
     ahkProcess.stdout.on('data', (data) => {

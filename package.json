@@ -513,6 +513,16 @@
                 },
                 "description": "Array of file paths to skip when executing steps. The path corresponds to glob."
               },
+              "includeFiles": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "examples": [
+                    "${SuppressErrorDialog.ahk}"
+                  ]
+                },
+                "description": "Array of file paths to include. If more than one path is specified due to `/include` argument limitations, a temporary file will be created. This file will be deleted after debugging is finished."
+              },
               "extends": {
                 "type": "string",
                 "description": "Specifies the `name` attribute of another configuration. Inherits all attributes of the matched configuration."
@@ -1087,6 +1097,7 @@
     "pcre-to-regexp": "^1.1.0",
     "read-dir-deep": "^7.0.1",
     "regex-parser": "^2.2.11",
+    "temp": "^0.9.4",
     "underscore.string": "^3.3.5",
     "vscode-debugadapter": "^1.40.0",
     "vscode-debugprotocol": "^1.40.0",
@@ -1103,6 +1114,7 @@
     "@types/node": "^13.13.2",
     "@types/normalize-path": "^3.0.0",
     "@types/parsimmon": "^1.10.1",
+    "@types/temp": "^0.9.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
     "@types/vscode": "^1.49.0",

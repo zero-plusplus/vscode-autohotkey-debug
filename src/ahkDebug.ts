@@ -78,6 +78,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   trace: boolean;
   skipFunctions?: string[];
   skipFiles?: string[];
+  includeFiles: string[];
   variableCategories?: CategoryData[];
   // The following is not a configuration, but is set to pass data to the debug adapter.
   cancelReason?: string;
