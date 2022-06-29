@@ -7,7 +7,7 @@
             "request": "launch",
             "program": "${file}",
             "runtime_v1": "AutoHotkey.exe",
-            "runtime_v2": "v2/AutoHotkey.exe",
+            "runtime_v2": "v2/AutoHotkey64.exe",
             "runtimeArgs": [
                 "/CP65001",
                 "/ErrorStdOut=UTF-8",
@@ -37,7 +37,7 @@
             "request": "launch",
             "program": "${file}",
             "runtime_v1": "AutoHotkey.exe",
-            "runtime_v2": "v2/AutoHotkey.exe",
+            "runtime_v2": "v2/AutoHotkey64.exe",
             "args": [],
             "port": "9002-9010",
             "stopOnEntry": false,
