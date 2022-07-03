@@ -27,6 +27,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#212](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/212) Some errors were not detected and raw error messages were output. This caused `useAutoJumpToError` to not work in some cases
 * [#215](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/215) The list of running AutoHotkey processes displayed before attaching does not display correctly when it contains multibyte strings
 * [#220](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/220) Grouping of messages using Debug Directive is not working, such as `; @Debug-Output:start`, `; @Debug-Output:end`
+* [#229](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/229) Raw error message on Critical Error
 
 ## [1.11.0] - 2022-02-11
 ### Added

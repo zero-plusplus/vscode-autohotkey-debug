@@ -233,7 +233,8 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.sendOutputEvent(this.errorMessage, 'stderr');
         })
         .on('outputdebug', (message: string) => {
-          this.sendOutputDebug(message);
+          this.errorMessage = this.fixPathOfRuntimeError(message);
+          this.sendOutputDebug(this.errorMessage);
         });
       this.sendAnnounce(`${this.ahkProcess.command}`);
       await this.createServer(args);
@@ -775,9 +776,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       catch (error: unknown) {
         if (error instanceof dbgp.DbgpCriticalError) {
-          this.raisedCriticalError = true;
-          this.sendAnnounce(error.message, 'stderr');
-          this.sendTerminateEvent();
+          this.criticalError(error);
           return;
         }
 
@@ -948,15 +947,15 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
       const line = parseInt(errorMessage.match(/--->\t(?<line>\d+):/u)!.groups!.line, 10);
       let fixed = errorMessage;
-      if (-1 < errorMessage.search(/^Error:\s{2}/gmu)) {
-        fixed = errorMessage.replace(/^(Error:\s{2})/gmu, `${this.config.program}:${line} : ==> `);
+      if (-1 < errorMessage.search(/^(Critical\s)?Error:\s{2}/gmu)) {
+        fixed = errorMessage.replace(/^((Critical\s)?Error:\s{2})/gmu, `${this.config.program}:${line} : ==> `);
       }
       else if (-1 < errorMessage.search(/^Error in #include file /u)) {
         fixed = errorMessage.replace(/Error in #include file "(.+)":\n\s*(.+)/gmu, `$1:${line} : ==> $2`);
       }
 
       fixed = fixed.replace(/\n(Specifically:)/u, '     $1');
-      fixed = fixed.substr(0, fixed.indexOf('Line#'));
+      fixed = fixed.substring(0, fixed.indexOf('Line#'));
       return `${fixed.replace(/\s+$/u, '')}\n`;
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
@@ -1344,11 +1343,19 @@ export class AhkDebugSession extends LoggingDebugSession {
         metaVariables.set(`callstack${index}.${key}`, value);
       });
     });
+    metaVariables.set('callstack.trace', Object.entries(callstack).map(([ i, item ]) => {
+      const trace = `> ${item.path}:${item.line} [${item.name}]`;
+      if (i === '[1]') {
+        return `[Call Stack]\r\n${trace}`;
+      }
+      return trace;
+    }).join('\r\n'));
     const callstackNames = Object.fromEntries(Object.entries(callstack).map(([ index, callstackItem ]) => [ index, callstackItem.name ]));
     metaVariables.set('callstackNames', callstackNames);
     Object.entries(callstackNames).forEach(([ index, callstackName ]) => {
       metaVariables.set(`callstackNames${index}`, callstackName);
     });
+
     return metaVariables;
   }
   private async evaluateCondition(breakpoint: Breakpoint): Promise<boolean> {
@@ -1408,9 +1415,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error: unknown) {
       if (error instanceof dbgp.DbgpCriticalError) {
-        this.raisedCriticalError = true;
-        this.sendAnnounce(error.message, 'stderr');
-        this.sendTerminateEvent();
+        this.criticalError(error);
       }
     }
 
@@ -1457,11 +1462,15 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error: unknown) {
       if (error instanceof dbgp.DbgpCriticalError) {
-        this.raisedCriticalError = true;
-        this.sendAnnounce(error.message, 'stderr');
-        this.sendTerminateEvent();
+        this.criticalError(error);
       }
     }
+  }
+  private criticalError(error: Error): void {
+    this.raisedCriticalError = true;
+    const fixedMessage = this.fixPathOfRuntimeError(error.message);
+    this.sendAnnounce(fixedMessage, 'stderr');
+    this.sendTerminateEvent();
   }
   private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap, logpoint?: Breakpoint): Promise<MetaVariableValue[]> {
     const unescapeLogMessage = (string: string): string => {
@@ -1522,9 +1531,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const property = await timeoutPromise(this.session!.evaluate(variableName, undefined, logpoint ? maxDepth : 1), timeout_ms).catch((error: unknown) => {
           if (error instanceof dbgp.DbgpCriticalError) {
-            this.raisedCriticalError = true;
-            this.sendAnnounce(error.message, 'stderr');
-            this.sendTerminateEvent();
+            this.criticalError(error);
             return;
           }
           timeout();
@@ -1612,9 +1619,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error: unknown) {
       if (error instanceof dbgp.DbgpCriticalError) {
-        this.raisedCriticalError = true;
-        this.sendAnnounce(error.message, 'stderr');
-        this.sendTerminateEvent();
+        this.criticalError(error);
       }
     }
   }
