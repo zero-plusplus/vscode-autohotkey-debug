@@ -19,7 +19,8 @@ Also want to check the development status, check the [commit history](https://gi
 * [#213](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/213) Add pseudo-variable `${SuppressErrorDialog.ahk}` valid only for `runtimeArgs`, `runtimeArgs_v1`, `runtimeArgs_v2` and `skipFiles` in launch.json. This pseudo-variable is replaced by a library path that suppresses all errors and outputs them to the console, including call stack information. This library can be included in scripts to be debugged using [/include](https://www.autohotkey.com/docs/Scripts.htm#SlashInclude). Also added code snippet `AutoHotkey Debug (Publisher Recommanded)`, which is an example of how to use it
 
 ### Changed
-* [#219](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/219) Added `/CP65001` to the default value of `runtimeArgs`
+* [#219](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/219) Add `/CP65001` to the default value of `runtimeArgs`
+* [#225](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/225) Remove escape process of output text in debug directives
 
 ### Fixed
 * [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings

@@ -35,7 +35,7 @@ import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
 import { isPrimitive, now, timeoutPromise } from './util/util';
 import matcher from 'matcher';
-import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, escapeAhk, formatProperty } from './util/VariableManager';
+import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
 import { CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 
@@ -1539,7 +1539,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             results.push(new Variable(this.session!, property));
           }
           else if (property instanceof dbgp.PrimitiveProperty) {
-            message += escapeAhk(property.value, this.session!.ahkVersion);
+            message += property.value;
           }
         }
         else {
