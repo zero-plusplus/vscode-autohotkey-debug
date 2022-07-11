@@ -22,6 +22,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Fixed: [#215](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/215) The list of running AutoHotkey processes displayed before attaching does not display correctly when it contains multibyte strings
     * Fixed: [#220](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/220) Grouping of messages using Debug Directive is not working, such as `; @Debug-Output:start`, `; @Debug-Output:end`
     * Fixed: [#229](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/229) Raw error message on Critical Error
+    * Fixed: [#232](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/232) Output of members in bracketed notation in Output directive, Watch expression, etc. may not be evaluated correctly
 
 * `1.11.0` - 2022-02-11
     * Added: [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json

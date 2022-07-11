@@ -698,7 +698,12 @@ export class Session extends EventEmitter {
       }
 
       if (property instanceof ObjectProperty) {
-        const childName = splitedVariablePathList[index + 1];
+        let childName = splitedVariablePathList[index + 1];
+        const isIndex = (/^\[\d+\]$/u).test(childName);
+        if (!isIndex && childName.startsWith('[')) {
+          childName = childName.replace(/^\["?((?:""|[^"])*)"?\]$/u, '$1');
+        }
+
         const containsChild = property.children.some((child) => equalsIgnoreCase(child.name, childName));
         if (containsChild) {
           continue;
