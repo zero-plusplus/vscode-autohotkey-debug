@@ -7,7 +7,7 @@ import convertHrTime from 'convert-hrtime';
 import { uniq, uniqBy } from 'lodash';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
+import { isNumberLike, joinVariablePathArray, splitVariablePath, toFileUri } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
 import { isComObject, unescapeAhk } from './util/VariableManager';
@@ -410,7 +410,7 @@ export class Breakpoint {
     this.id = parseInt(id, 10);
     this.type = type as BreakpointType;
     this.state = state as BreakpointState;
-    this.fileUri = filename;
+    this.fileUri = toFileUri(filename);
     this.line = parseInt(lineno, 10);
     this.temporary = Boolean(parseInt(temporary, 10));
   }
@@ -667,7 +667,7 @@ export class Session extends EventEmitter {
     return new BreakpointGetResponse(await this.sendCommand('breakpoint_get', `-d ${breakpointId}`));
   }
   public async sendBreakpointSetCommand(fileUri: string, line: number): Promise<BreakpointSetResponse> {
-    return new BreakpointSetResponse(await this.sendCommand('breakpoint_set', `-t line -f ${fileUri} -n ${line}`));
+    return new BreakpointSetResponse(await this.sendCommand('breakpoint_set', `-t line -f ${toFileUri(fileUri)} -n ${line}`));
   }
   public async sendBreakpointRemoveCommand(id: number): Promise<Response> {
     return new Response(await this.sendCommand('breakpoint_remove', `-d ${id}`));

@@ -5,7 +5,7 @@ import { URI } from 'vscode-uri';
 import * as dbgp from '../dbgpSession';
 import { rtrim } from 'underscore.string';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isNumberLike, isPrimitive, toArray } from './util';
+import { isNumberLike, isPrimitive, toArray, toFileUri } from './util';
 import { equalsIgnoreCase } from './stringUtils';
 import { CategoryData, MatcherData, ScopeSelector } from '../extension';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
@@ -127,7 +127,7 @@ export class StackFrame implements DebugProtocol.StackFrame {
     this.id = handles.create(this);
     this.name = dbgpStackFrame.name;
     this.line = dbgpStackFrame.line;
-    const filePath = URI.parse(dbgpStackFrame.fileUri).fsPath;
+    const filePath = URI.parse(toFileUri(dbgpStackFrame.fileUri)).fsPath;
     this.source = new DebugAdapter.Source(path.basename(filePath), filePath);
 
     this.session = session;
