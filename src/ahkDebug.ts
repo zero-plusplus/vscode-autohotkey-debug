@@ -33,7 +33,7 @@ import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
-import { isPrimitive, now, timeoutPromise } from './util/util';
+import { isPrimitive, now, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
 import { CategoryData } from './extension';
@@ -303,7 +303,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       const filePath = args.source.path ?? '';
-      const fileUri = URI.file(filePath).toString();
+      const fileUri = toFileUri(filePath);
+
       const removedBreakpoints = await this.breakpointManager!.unregisterBreakpointsInFile(fileUri);
 
       const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];

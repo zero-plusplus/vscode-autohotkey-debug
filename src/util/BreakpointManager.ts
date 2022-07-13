@@ -2,6 +2,7 @@ import * as dbgp from '../dbgpSession';
 import { URI } from 'vscode-uri';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 import { equalsIgnoreCase } from './stringUtils';
+import { toFileUri } from './util';
 
 export type BreakpointLogGroup = 'start' | 'startCollapsed' | 'end' | undefined;
 export interface BreakpointAdvancedData {
@@ -101,7 +102,7 @@ export class BreakpointManager {
   public getLineBreakpoints(fileUri: string, line: number): LineBreakpoints | null {
     const key = this.createKey(fileUri, line);
     for (const [ targetKey, lineBreakpoints ] of this.breakpointsMap) {
-      if (key === targetKey) {
+      if (equalsIgnoreCase(key, targetKey)) {
         return lineBreakpoints;
       }
     }
@@ -187,13 +188,12 @@ export class BreakpointManager {
     }
     return removedBreakpoints;
   }
-  private createKey(fileUri: string, line: number): string {
+  private createKey(file: string, line: number): string {
     // The following encoding differences have been converted to path
     // file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"
     // file:///w:/project/vscode-autohotkey-debug/demo/demo.ahk
 
-    const uri = URI.parse(fileUri);
-    const filePath = uri.scheme === 'file' ? uri.fsPath.toLowerCase() : fileUri.toLowerCase();
-    return `${filePath},${line}`;
+    const fileUri = toFileUri(file);
+    return `${fileUri},${line}`;
   }
 }

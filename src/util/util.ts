@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { statSync } from 'fs';
+import { URI } from 'vscode-uri';
 
 export const isDirectory = (dirPath): boolean => {
   try {
@@ -160,4 +161,22 @@ export const now = (): string => {
   const seconds = String(now.getSeconds()).padStart(2, '0');
   const milliSeconds = String(now.getMilliseconds()).padStart(3, '0');
   return `${now.getFullYear()}/${month}/${date} ${hours}:${minutes}:${seconds}.${milliSeconds}`;
+};
+
+export const toFileUri = (file: string): string => {
+  const isUncPath = file.startsWith('\\\\');
+  if (isUncPath) {
+    return file;
+  }
+
+  const isUri = file.startsWith('file:');
+  if (isUri) {
+    const isUncUri = (/^file:\/\/\/(?!\w%3A)/iu).test(file);
+    if (isUncUri) {
+      return `${file.replace(/^file:\/\/(\/)?/u, '')}`;
+    }
+    return file;
+  }
+
+  return URI.file(file).toString();
 };
