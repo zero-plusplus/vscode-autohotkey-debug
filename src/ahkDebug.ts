@@ -855,7 +855,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     for await (const filePathList of filePathListChunked) {
       await Promise.all(filePathList.map(async(filePath) => {
         const document = await vscode.workspace.openTextDocument(filePath);
-        const fileUri = URI.file(filePath).toString();
+        const fileUri = toFileUri(filePath);
 
         await Promise.all(range(document.lineCount).map(async(line_0base) => {
           const textLine = document.lineAt(line_0base);
@@ -882,57 +882,64 @@ export class AhkDebugSession extends LoggingDebugSession {
             logMessage += '\n';
           }
 
-          const line = line_0base + 1;
-          if (useBreakpointDirective && directiveType === 'breakpoint') {
-            if (0 < params.length) {
-              return;
-            }
+          try {
+            const line = line_0base + 1;
+            if (useBreakpointDirective && directiveType === 'breakpoint') {
+              if (0 < params.length) {
+                return;
+              }
 
-            const advancedData = {
-              condition,
-              hitCondition,
-              logMessage,
-              hidden: true,
-            } as BreakpointAdvancedData;
-            await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
-          }
-          else if (useOutputDirective && directiveType === 'output') {
-            let logGroup: string | undefined;
-            if (0 < params.length) {
-              if (equalsIgnoreCase(params[0], 'start')) {
-                logGroup = 'start';
-              }
-              else if (equalsIgnoreCase(params[0], 'startCollapsed')) {
-                logGroup = 'startCollapsed';
-              }
-              else if (equalsIgnoreCase(params[0], 'end')) {
-                logGroup = 'end';
-              }
+              const advancedData = {
+                condition,
+                hitCondition,
+                logMessage,
+                hidden: true,
+              } as BreakpointAdvancedData;
+              await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
             }
-            const newCondition = condition;
-            const advancedData = {
-              condition: newCondition,
-              hitCondition,
-              logMessage,
-              logGroup,
-              hidden: true,
-            } as BreakpointAdvancedData;
-            await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+            else if (useOutputDirective && directiveType === 'output') {
+              let logGroup: string | undefined;
+              if (0 < params.length) {
+                if (equalsIgnoreCase(params[0], 'start')) {
+                  logGroup = 'start';
+                }
+                else if (equalsIgnoreCase(params[0], 'startCollapsed')) {
+                  logGroup = 'startCollapsed';
+                }
+                else if (equalsIgnoreCase(params[0], 'end')) {
+                  logGroup = 'end';
+                }
+              }
+              const newCondition = condition;
+              const advancedData = {
+                condition: newCondition,
+                hitCondition,
+                logMessage,
+                logGroup,
+                hidden: true,
+              } as BreakpointAdvancedData;
+              await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+            }
+            else if (useClearConsoleDirective && directiveType === 'clearconsole') {
+              const advancedData = {
+                condition,
+                hitCondition,
+                logMessage,
+                hidden: true,
+                action: async() => {
+                  // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
+                  await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+                  await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+                  await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+                },
+              } as BreakpointAdvancedData;
+              await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+            }
           }
-          else if (useClearConsoleDirective && directiveType === 'clearconsole') {
-            const advancedData = {
-              condition,
-              hitCondition,
-              logMessage,
-              hidden: true,
-              action: async() => {
-                // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
-                await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-                await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-                await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-              },
-            } as BreakpointAdvancedData;
-            await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+          catch (e: unknown) {
+            if (e instanceof Error) {
+              console.log(e.message);
+            }
           }
         }));
       }));

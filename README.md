@@ -24,6 +24,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Fixed: [#229](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/229) Raw error message on Critical Error
     * Fixed: [#232](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/232) Output of members in bracketed notation in Output directive, Watch expression, etc. may not be evaluated correctly
     * Fixed: [#234](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/234) Breakpoint do not work when `runtime` is a UNC path (e.g. `//server/folder`)
+    * Fixed: [#236](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/236) Debugging gets stuck if the last line of the included script is a debug directive
 
 * `1.11.0` - 2022-02-11
     * Added: [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json
