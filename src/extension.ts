@@ -248,13 +248,13 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
         if (typeof config.runtimeArgs_v1 === 'undefined') {
           config.runtimeArgs_v1 = ahkVersion.mejor <= 1.1 && ahkVersion.minor === 1 && 33 <= ahkVersion.patch
-            ? [ '/CP65001', '/ErrorStdOut=UTF-8' ]
-            : [ '/CP65001', '/ErrorStdOut' ];
+            ? [ '/ErrorStdOut=UTF-8' ]
+            : [ '/ErrorStdOut' ];
         }
         if (typeof config.runtimeArgs_v2 === 'undefined') {
           config.runtimeArgs_v2 = 112 <= (ahkVersion.alpha ?? 0) || 0 < (ahkVersion.beta ?? 0)
-            ? [ '/CP65001', '/ErrorStdOut=UTF-8' ]
-            : [ '/CP65001', '/ErrorStdOut' ];
+            ? [ '/ErrorStdOut=UTF-8' ]
+            : [ '/ErrorStdOut' ];
         }
 
         const doc = await vscode.workspace.openTextDocument(config.program);

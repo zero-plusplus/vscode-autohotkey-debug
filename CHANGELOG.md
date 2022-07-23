@@ -20,7 +20,6 @@ Also want to check the development status, check the [commit history](https://gi
 [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
 
 ### Changed
-* [#219](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/219) Add `/CP65001` to the default value of `runtimeArgs`
 * [#225](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/225) Remove escape process of output text in debug directives
 
 ### Fixed
