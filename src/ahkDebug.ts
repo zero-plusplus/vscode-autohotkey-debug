@@ -893,6 +893,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 condition,
                 hitCondition,
                 logMessage,
+                shouldBreak: true,
                 hidden: true,
               } as BreakpointAdvancedData;
               await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
@@ -974,15 +975,16 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     for await (const breakpoint of lineBreakpoints) {
-      if (breakpoint.action || breakpoint.logMessage) {
+      if (!breakpoint.shouldBreak) {
         continue;
       }
-      if (breakpoint.kind === 'breakpoint') {
-        return breakpoint;
+      if (breakpoint.hasCondition) {
+        if (await this.evaluateCondition(breakpoint)) {
+          return breakpoint;
+        }
+        continue;
       }
-      if (breakpoint.kind === 'conditional breakpoint' && await this.evaluateCondition(breakpoint)) {
-        return breakpoint;
-      }
+      return breakpoint;
     }
     return null;
   }

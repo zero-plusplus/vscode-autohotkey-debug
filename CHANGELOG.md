@@ -21,6 +21,7 @@ Also want to check the development status, check the [commit history](https://gi
 
 ### Changed
 * [#225](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/225) Remove escape process of output text in debug directives
+* [#238](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/238) Change breakpoint directive to break regardless of output
 
 ### Fixed
 * [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
