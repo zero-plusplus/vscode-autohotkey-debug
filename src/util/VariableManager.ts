@@ -1,6 +1,6 @@
 import * as path from 'path';
-import * as DebugAdapter from 'vscode-debugadapter';
-import { DebugProtocol } from 'vscode-debugprotocol';
+import * as DebugAdapter from '@vscode/debugadapter';
+import { DebugProtocol } from '@vscode/debugprotocol';
 import { URI } from 'vscode-uri';
 import * as dbgp from '../dbgpSession';
 import { rtrim } from 'underscore.string';
