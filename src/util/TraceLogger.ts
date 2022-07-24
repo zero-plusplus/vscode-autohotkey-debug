@@ -1,4 +1,4 @@
-import { Logger, logger } from 'vscode-debugadapter';
+import { Logger, logger } from '@vscode/debugadapter';
 import { now } from './util';
 
 export class TraceLogger {

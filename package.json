@@ -27,7 +27,7 @@
     "url": "https://github.com/sponsors/zero-plusplus"
   },
   "engines": {
-    "vscode": "^1.49.0"
+    "vscode": "^1.63.0"
   },
   "icon": "icon.png",
   "keywords": [
@@ -1088,8 +1088,6 @@
     "read-dir-deep": "^7.0.1",
     "regex-parser": "^2.2.11",
     "underscore.string": "^3.3.5",
-    "vscode-debugadapter": "^1.40.0",
-    "vscode-debugprotocol": "^1.40.0",
     "vscode-uri": "^2.1.2"
   },
   "devDependencies": {
@@ -1105,7 +1103,9 @@
     "@types/parsimmon": "^1.10.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
-    "@types/vscode": "^1.49.0",
+    "@types/vscode": "^1.63.0",
+    "@vscode/debugadapter": "^1.56.1",
+    "@vscode/debugprotocol": "^1.56.1",
     "@zero-plusplus/eslint-my-rules": "github:zero-plusplus/eslint-my-rules",
     "del": "^6.0.0",
     "esbuild": "^0.14.1",

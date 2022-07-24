@@ -5,11 +5,8 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 
 # News
 ## Important Notices
-* There have been major changes in `1.10.0` and some fatal bugs have been found. If you encounter problems, please update to the latest version or downgrade to `1.9.0`. Also, if you report it on [GitHub](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues), I will reply the same day or the next day
+* Raised the supported vscode version from `1.49.0` to `1.63.0` to use the [pre-release](https://code.visualstudio.com/updates/v1_63#_pre-release-extensions)
 
-* The required version of VSCode has been raised from [1.45.0](https://code.visualstudio.com/updates/v1_45) to [1.49.0](https://code.visualstudio.com/updates/v1_49). Regardless, it is recommended that you install the latest version as some functions may not work
-
-* Much of the README content has been migrated to the [Github wiki](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki). If you want to see the description of each feature, please refer to there
 
 ## Update
 * `1.12.0` - 2022-xx-xx
@@ -17,6 +14,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
     * Changed: [#225](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/225) Remove escape process of output text in debug directives
     * Changed: [#238](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/238) Change breakpoint directive to break regardless of output
+    * Changed: [#239](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/239) Raise the supported vscode version from `1.49.0` to `1.63.0` for using the pre-release
     * Fixed: [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
     * Fixed: [#212](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/212) Some errors were not detected and raw error messages were output. This caused `useAutoJumpToError` to not work in some cases
     * Fixed: [#215](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/215) The list of running AutoHotkey processes displayed before attaching does not display correctly when it contains multibyte strings

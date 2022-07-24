@@ -11,8 +11,8 @@ import {
   TerminatedEvent,
   Thread,
   ThreadEvent,
-} from 'vscode-debugadapter';
-import { DebugProtocol } from 'vscode-debugprotocol';
+} from '@vscode/debugadapter';
+import { DebugProtocol } from '@vscode/debugprotocol';
 import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import AsyncLock from 'async-lock';
