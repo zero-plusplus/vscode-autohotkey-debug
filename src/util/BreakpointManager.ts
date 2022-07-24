@@ -10,6 +10,7 @@ export interface BreakpointAdvancedData {
   hitCondition?: string;
   logMessage?: string;
   logGroup?: BreakpointLogGroup;
+  shouldBreak: boolean;
   hidden?: boolean;
   hitCount: number;
   unverifiedLine?: number;
@@ -27,21 +28,15 @@ export class Breakpoint implements BreakpointAdvancedData {
   public logGroup: BreakpointLogGroup;
   public hidden: boolean;
   public hitCount = 0;
+  public shouldBreak: boolean;
   public unverifiedLine?: number;
   public unverifiedColumn?: number;
   public action?: () => Promise<void>;
   public get filePath(): string {
     return URI.parse(this.fileUri).fsPath;
   }
-  public get kind(): BreakpointKind {
-    const logMode = Boolean(this.logMessage || this.logGroup);
-    if (this.condition || this.hitCondition) {
-      if (logMode) {
-        return 'conditional logpoint';
-      }
-      return 'conditional breakpoint';
-    }
-    return logMode ? 'logpoint' : 'breakpoint';
+  public get hasCondition(): boolean {
+    return Boolean(this.condition || this.hitCondition);
   }
   constructor(dbgpBreakpoint: dbgp.Breakpoint, advancedData?: BreakpointAdvancedData) {
     this.id = dbgpBreakpoint.id;
@@ -56,6 +51,11 @@ export class Breakpoint implements BreakpointAdvancedData {
     this.unverifiedLine = advancedData?.unverifiedLine ?? dbgpBreakpoint.line;
     this.unverifiedColumn = advancedData?.unverifiedColumn;
     this.action = advancedData?.action;
+
+    this.shouldBreak = !(this.logMessage || this.action);
+    if (advancedData?.shouldBreak) {
+      this.shouldBreak = advancedData.shouldBreak;
+    }
   }
 }
 export class LineBreakpoints extends Array<Breakpoint> {
