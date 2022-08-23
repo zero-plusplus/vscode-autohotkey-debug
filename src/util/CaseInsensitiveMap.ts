@@ -11,4 +11,8 @@ export class CaseInsensitiveMap<K, V> extends Map<K, V> {
     const _key = typeof key === 'string' ? key.toLowerCase() : key;
     return super.has(_key as K);
   }
+  public delete(key: K): boolean {
+    const _key = typeof key === 'string' ? key.toLowerCase() : key;
+    return super.delete(_key as K);
+  }
 }

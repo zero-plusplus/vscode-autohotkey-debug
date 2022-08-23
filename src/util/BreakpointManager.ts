@@ -177,7 +177,7 @@ export class BreakpointManager {
     }
   }
   public async unregisterBreakpointsInFile(fileUri: string): Promise<Breakpoint[]> {
-    const targetFilePath = URI.parse(fileUri).fsPath;
+    const targetFilePath = URI.parse(toFileUri(fileUri)).fsPath;
 
     const removedBreakpoints: Breakpoint[] = [];
     for await (const [ , lineBreakpoints ] of this.breakpointsMap) {
