@@ -1071,6 +1071,7 @@
     ]
   },
   "dependencies": {
+    "@types/semver": "^7.3.12",
     "@zero-plusplus/autohotkey-utilities": "github:zero-plusplus/node-autohotkey-utilities#develop",
     "async-lock": "^1.2.8",
     "convert-hrtime": "^3.0.0",
@@ -1087,6 +1088,7 @@
     "pcre-to-regexp": "^1.1.0",
     "read-dir-deep": "^7.0.1",
     "regex-parser": "^2.2.11",
+    "semver": "^7.3.7",
     "underscore.string": "^3.3.5",
     "vscode-uri": "^2.1.2"
   },
