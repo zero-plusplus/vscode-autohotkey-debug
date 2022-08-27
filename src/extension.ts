@@ -180,7 +180,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
     return config;
   }
   public async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration> {
-    const libraryPseudoVariableName = '${SuppressErrorDialog.ahk}';
+    const libraryPseudoVariableName = '${ahk:suppressErrorDialog}';
     let ahkVersion: AhkVersion | undefined;
     const getExternalLibraryPath = (): string => {
       if (!ahkVersion) {

@@ -11,7 +11,7 @@
             "runtimeArgs": [
                 "/CP65001",
                 "/ErrorStdOut=UTF-8",
-                "/include ${SuppressErrorDialog.ahk}"
+                "/include ${ahk:suppressErrorDialog}"
             ],
             "args": [],
             "port": "9002-9010",
@@ -26,7 +26,7 @@
                 "useTrailingLinebreak": true
             },
             "skipFiles": [
-                "${SuppressErrorDialog.ahk}"
+                "${ahk:suppressErrorDialog}"
             ],
             "useAnnounce": "detail",
             "variableCategories": "recommend"
