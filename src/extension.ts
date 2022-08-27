@@ -2,6 +2,8 @@
 import { existsSync } from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import { URI } from 'vscode-uri';
+import * as semver from 'semver';
 import { defaults, groupBy, isString, range } from 'lodash';
 import isPortTaken from 'is-port-taken';
 import { getAhkVersion } from './util/getAhkVersion';
@@ -191,6 +193,19 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
         ? path.resolve(__dirname, '..', 'script', 'SuppressErrorDialog.ahk2')
         : path.resolve(__dirname, '..', 'script', 'SuppressErrorDialog.ahk');
     };
+    const replaceToPinnedFilePath = (value: string): string => {
+      if (semver.gte(vscode.version, '1.67.0')) {
+        if (value === '${ahk:pinnedFile}') {
+          const tabGroups: any = (vscode.window as any).tabGroups;
+          const tab = tabGroups.all.flatMap((tabGroup: any) => tabGroup.tabs as unknown[]).find((tab) => tab.isPinned as boolean);
+          if (tab?.input?.uri) {
+            return URI.parse(tab.input.uri).fsPath;
+          }
+          return vscode.window.activeTextEditor?.document.uri.fsPath ?? value;
+        }
+      }
+      return value;
+    };
 
     // init request
     ((): void => {
@@ -202,6 +217,44 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       }
 
       throw Error('`request` must be "launch" or "attach".');
+    })();
+
+
+    // init program
+    await (async(): Promise<void> => {
+      config.program = replaceToPinnedFilePath(config.program);
+
+      if (config.request === 'attach') {
+        const scriptPathList = getRunningAhkScriptList(config.runtime);
+        if (scriptPathList.length === 0) {
+          config.program = '';
+          config.cancelReason = `Canceled the attachment because no running AutoHotkey script was found.`;
+          return;
+        }
+        if (config.program === undefined) {
+          const scriptPath = await vscode.window.showQuickPick(scriptPathList);
+          if (scriptPath) {
+            config.program = scriptPath;
+            return;
+          }
+          config.program = '';
+          config.cancelReason = `Cancel the attach.`;
+          return;
+        }
+        const isRunning = scriptPathList.map((scriptPath) => path.resolve(scriptPath.toLocaleLowerCase())).includes(path.resolve(config.program).toLowerCase());
+        if (!isRunning) {
+          config.cancelReason = `Canceled the attach because "${String(config.program)}" is not running.`;
+        }
+      }
+      if (!isString(config.program)) {
+        throw Error('`program` must be a string.');
+      }
+      if (config.request === 'launch' && !existsSync(config.program)) {
+        throw Error(`\`program\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.program))}"`);
+      }
+      if (config.program) {
+        config.program = path.resolve(config.program);
+      }
     })();
 
     // init runtime
@@ -354,41 +407,6 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       throw Error('`port` must be an unused port number.');
     })();
 
-    // init program
-    await (async(): Promise<void> => {
-      if (config.request === 'attach') {
-        const scriptPathList = getRunningAhkScriptList(config.runtime);
-        if (scriptPathList.length === 0) {
-          config.program = '';
-          config.cancelReason = `Canceled the attachment because no running AutoHotkey script was found.`;
-          return;
-        }
-        if (config.program === undefined) {
-          const scriptPath = await vscode.window.showQuickPick(scriptPathList);
-          if (scriptPath) {
-            config.program = scriptPath;
-            return;
-          }
-          config.program = '';
-          config.cancelReason = `Cancel the attach.`;
-          return;
-        }
-        const isRunning = scriptPathList.map((scriptPath) => path.resolve(scriptPath.toLocaleLowerCase())).includes(path.resolve(config.program).toLowerCase());
-        if (!isRunning) {
-          config.cancelReason = `Canceled the attach because "${String(config.program)}" is not running.`;
-        }
-      }
-      if (!isString(config.program)) {
-        throw Error('`program` must be a string.');
-      }
-      if (config.request === 'launch' && !existsSync(config.program)) {
-        throw Error(`\`program\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.program))}"`);
-      }
-      if (config.program) {
-        config.program = path.resolve(config.program);
-      }
-    })();
-
     // init cwd
     ((): void => {
       if (!config.cwd) {
@@ -440,6 +458,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init openFileOnExit
     ((): void => {
+      config.openFileOnExit = replaceToPinnedFilePath(config.openFileOnExit);
       if (typeof config.openFileOnExit === 'undefined') {
         return;
       }
@@ -529,7 +548,6 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       }
     })();
 
-
     // init skipFunctions
     ((): void => {
       if (!config.skipFunctions) {
@@ -553,7 +571,9 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
           return String(file).replace(libraryPseudoVariableName, getExternalLibraryPath());
         });
       }
-      const skipFiles = config.skipFiles.map((filePath) => normalizeToUnix(String(filePath)));
+      const skipFiles = config.skipFiles
+        .map((filePath) => replaceToPinnedFilePath(filePath))
+        .map((filePath) => normalizeToUnix(String(filePath)));
       config.skipFiles = await glob(skipFiles, { onlyFiles: true, unique: true });
     })();
 

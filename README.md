@@ -12,6 +12,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 * `1.12.0` - 2022-xx-xx
     * Added: [#213](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/213) Add pseudo-variable `${SuppressErrorDialog.ahk}` valid only for `runtimeArgs`, `runtimeArgs_v1`, `runtimeArgs_v2` and `skipFiles` in launch.json. This pseudo-variable is replaced by a library path that suppresses all errors and outputs them to the console, including call stack information. This library can be included in scripts to be debugged using [/include](https://www.autohotkey.com/docs/Scripts.htm#SlashInclude). Also added code snippet `AutoHotkey Debug (Publisher Recommanded)`, which is an example of how to use it
     * Added: [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
+    * Added: [#248](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/248) Add pseudo-variable `${ahk:pinnedFile}` valid only for `program`, `openFileOnExit` and `skipFiles` in launch.json
     * Changed: [#225](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/225) Remove escape process of output text in debug directives
     * Changed: [#238](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/238) Change breakpoint directive to break regardless of output
     * Changed: [#239](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/239) Raise the supported vscode version from `1.49.0` to `1.63.0` for using the pre-release
