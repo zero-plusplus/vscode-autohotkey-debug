@@ -201,7 +201,6 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
           if (tab?.input?.uri) {
             return URI.parse(tab.input.uri).fsPath;
           }
-          return vscode.window.activeTextEditor?.document.uri.fsPath ?? value;
         }
       }
       return value;
@@ -223,6 +222,9 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
     // init program
     await (async(): Promise<void> => {
       config.program = replaceToPinnedFilePath(config.program);
+      if (config.program === '${ahk:pinnedFile}') {
+        throw Error('`${ahk:pinnedFile}` was specified in `program`, but the pinned tab does not exist.');
+      }
 
       if (config.request === 'attach') {
         const scriptPathList = getRunningAhkScriptList(config.runtime);
