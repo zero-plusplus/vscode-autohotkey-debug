@@ -27,7 +27,7 @@ const convertToScientificNotation = (param: VariableContextMenuParam): string =>
   return Number(removeQuote(param.variable.value)).toExponential();
 };
 const showValue = async(text: string): Promise<void> => {
-  const uri = URI.parse(`valuepreview:${encodeURI(text)}.ahk`);
+  const uri = URI.parse(`valuepreview:${encodeURIComponent(text)}.ahk`);
   const doc = await vscode.workspace.openTextDocument(uri); // calls back into the provider
   await vscode.window.showTextDocument(doc, { preview: true });
 };
