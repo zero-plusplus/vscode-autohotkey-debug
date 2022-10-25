@@ -580,7 +580,8 @@ export class Session extends EventEmitter {
     return new StackDepthResponse(await this.sendCommand('stack_depth'));
   }
   public async sendPropertyGetCommand(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<PropertyGetResponse> {
-    const commandParams = `-n ${unescapeAhk(name, this.ahkVersion)} -c ${context.id} -d ${context.stackFrame.level}`;
+    const escapedName = unescapeAhk(name.replace(/"/gu, '\\"'), this.ahkVersion);
+    const commandParams = `-n "${escapedName}" -c ${context.id} -d ${context.stackFrame.level}`;
     let response: PropertyGetResponse;
     if (this.DEFAULT_MAX_DEPTH === maxDepth) {
       const dbgpResponse = await this.sendCommand('property_get', commandParams);
