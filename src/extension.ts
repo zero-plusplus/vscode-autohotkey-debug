@@ -219,44 +219,6 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       throw Error('`request` must be "launch" or "attach".');
     })();
 
-
-    // init program
-    await (async(): Promise<void> => {
-      config.program = replaceToPinnedFilePath(config.program);
-
-      if (config.request === 'attach') {
-        const scriptPathList = getRunningAhkScriptList(config.runtime);
-        if (scriptPathList.length === 0) {
-          config.program = '';
-          config.cancelReason = `Canceled the attachment because no running AutoHotkey script was found.`;
-          return;
-        }
-        if (config.program === undefined) {
-          const scriptPath = await vscode.window.showQuickPick(scriptPathList);
-          if (scriptPath) {
-            config.program = scriptPath;
-            return;
-          }
-          config.program = '';
-          config.cancelReason = `Cancel the attach.`;
-          return;
-        }
-        const isRunning = scriptPathList.map((scriptPath) => path.resolve(scriptPath.toLocaleLowerCase())).includes(path.resolve(config.program).toLowerCase());
-        if (!isRunning) {
-          config.cancelReason = `Canceled the attach because "${String(config.program)}" is not running.`;
-        }
-      }
-      if (!isString(config.program)) {
-        throw Error('`program` must be a string.');
-      }
-      if (config.request === 'launch' && !existsSync(config.program)) {
-        throw Error(`\`program\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.program))}"`);
-      }
-      if (config.program) {
-        config.program = path.resolve(config.program);
-      }
-    })();
-
     // init runtime
     await (async(): Promise<void> => {
       if (typeof config.runtime === 'undefined') {
@@ -405,6 +367,43 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       }
 
       throw Error('`port` must be an unused port number.');
+    })();
+
+    // init program
+    await (async(): Promise<void> => {
+      config.program = replaceToPinnedFilePath(config.program);
+
+      if (config.request === 'attach') {
+        const scriptPathList = getRunningAhkScriptList(config.runtime);
+        if (scriptPathList.length === 0) {
+          config.program = '';
+          config.cancelReason = `Canceled the attachment because no running AutoHotkey script was found.`;
+          return;
+        }
+        if (config.program === undefined) {
+          const scriptPath = await vscode.window.showQuickPick(scriptPathList);
+          if (scriptPath) {
+            config.program = scriptPath;
+            return;
+          }
+          config.program = '';
+          config.cancelReason = `Cancel the attach.`;
+          return;
+        }
+        const isRunning = scriptPathList.map((scriptPath) => path.resolve(scriptPath.toLocaleLowerCase())).includes(path.resolve(config.program).toLowerCase());
+        if (!isRunning) {
+          config.cancelReason = `Canceled the attach because "${String(config.program)}" is not running.`;
+        }
+      }
+      if (!isString(config.program)) {
+        throw Error('`program` must be a string.');
+      }
+      if (config.request === 'launch' && !existsSync(config.program)) {
+        throw Error(`\`program\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.program))}"`);
+      }
+      if (config.program) {
+        config.program = path.resolve(config.program);
+      }
     })();
 
     // init cwd
