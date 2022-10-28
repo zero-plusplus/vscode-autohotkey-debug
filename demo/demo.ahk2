@@ -1,5 +1,7 @@
 ﻿#SingleInstance Force
-#Include <Util>
+; #Include <Util>
+#Include "%A_LineFile%/../lib/Util.ahk"
+
 
 globalVar := "Global"
 global SuperGlobalVar := "SuperGlobal"

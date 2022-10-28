@@ -36,6 +36,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#236](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/236) Debugging gets stuck if the last line of the included script is a debug directive
 * [#254](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/254) When a string containing `#` is displayed in `View Value` and `View as Text` in the Variable View context menu, the subsequent string is not displayed
 * [#255](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/255) Objects with child elements in index notation such as `["a & -"]` may get stuck when retrieving child elements
+* [#256](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/256) v2 only bug. If double/single quotes are used in #Include directive, they do not appear in Loaded Scripts
 
 ## [1.11.0] - 2022-02-11
 ### Added
