@@ -36,7 +36,7 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { isPrimitive, now, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
-import { CategoryData } from './extension';
+import { AhkConfigurationProvider, CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
@@ -74,6 +74,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   useLoadedScripts: false | {
     scanImplicitLibrary: boolean;
   };
+  useExceptionBreakpoint: boolean;
   openFileOnExit: string;
   trace: boolean;
   skipFunctions?: string[];
@@ -85,7 +86,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
-type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause';
+type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause' | 'exception';
 export const serializePromise = async(promises: Array<Promise<void>>): Promise<void> => {
   await promises.reduce(async(prev, current): Promise<void> => {
     return prev.then(async() => current);
@@ -101,6 +102,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private pauseRequested = false;
   private isPaused = false;
   private isTerminateRequested = false;
+  private readonly configProvider: AhkConfigurationProvider;
   private get isClosedSession(): boolean {
     return this.session!.socketClosed || this.isTerminateRequested;
   }
@@ -125,9 +127,10 @@ export class AhkDebugSession extends LoggingDebugSession {
   private raisedCriticalError?: boolean;
   // The warning message is processed earlier than the server initialization, so it needs to be delayed.
   private readonly delayedWarningMessages: string[] = [];
-  constructor() {
+  constructor(provider: AhkConfigurationProvider) {
     super('autohotkey-debug.txt');
 
+    this.configProvider = provider;
     this.traceLogger = new TraceLogger((e): void => {
       this.sendEvent(e);
     });
@@ -146,6 +149,19 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportsSetVariable: true,
       supportTerminateDebuggee: true,
     };
+
+    const config = this.configProvider.config!;
+    if (config.useExceptionBreakpoint) {
+      // response.body.supportsExceptionOptions = true;
+      response.body.supportsExceptionInfoRequest = true;
+      response.body.exceptionBreakpointFilters = [
+        {
+          filter: 'Exceptions',
+          label: 'Exception Breakpoint',
+          default: false,
+        },
+      ];
+    }
 
     this.sendResponse(response);
   }
@@ -346,6 +362,37 @@ export class AhkDebugSession extends LoggingDebugSession {
       response.body = { breakpoints: vscodeBreakpoints };
       this.sendResponse(response);
     });
+  }
+  protected async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+    const state = args.filters[0] === 'Exceptions' && this.config.useExceptionBreakpoint;
+    await this.session!.sendExceptionBreakpointCommand(state);
+    this.sendResponse(response);
+  }
+  protected async exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments, request?: DebugProtocol.Request): Promise<void> {
+    const exception = (await this.session!.evaluate('<exception>')) as dbgp.ObjectProperty | undefined;
+    if (!exception) {
+      this.sendResponse(response);
+      return;
+    }
+
+    const classNameProperty = await this.session!.evaluate('<exception>.__CLASS');
+    const exceptionId = classNameProperty instanceof dbgp.PrimitiveProperty ? classNameProperty.value : '<exception>';
+    const messageProperty = await this.session!.evaluate('<exception>.Message');
+
+    response.body = {
+      exceptionId: messageProperty instanceof dbgp.PrimitiveProperty && messageProperty.value !== ''
+        ? `${exceptionId}: ${messageProperty.value}`
+        : exceptionId,
+      breakMode: 'always',
+      description: this.currentStackFrames!.map((stackFrame, index) => {
+        const message = `${stackFrame.name} (${stackFrame.source.path}:${stackFrame.line})`;
+        if (index === 0) {
+          return message;
+        }
+        return `  at ${message}`;
+      }).join('\n'),
+    };
+    this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('configurationDoneRequest');
@@ -1011,6 +1058,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     this.currentMetaVariableMap = this.createMetaVariables(response);
     const { source, line, name } = this.currentStackFrames[0];
+
+    // Exception Breakpoint
+    if (response.exitReason === 'error') {
+      await this.sendStoppedEvent('exception');
+      return;
+    }
 
     const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(source.path, line);
     let stopReason: StopReason = 'step';

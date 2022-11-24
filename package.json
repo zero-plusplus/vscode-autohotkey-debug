@@ -496,6 +496,11 @@
                 "description": "Enable / disable Loaded Scripts. If disabled, the debug startup time will be faster.",
                 "default": true
               },
+              "useExceptionBreakpoint": {
+                "type": "boolean",
+                "description": "If set `true`, exception breakpoint can be enabled. But this feature requires that the runtime supports exception breakpoint.",
+                "default": true
+              },
               "skipFunctions": {
                 "type": "array",
                 "items": {
@@ -829,6 +834,11 @@
                   }
                 },
                 "description": "Enable / disable Loaded Scripts. If disabled, the debug startup time will be faster.",
+                "default": true
+              },
+              "useExceptionBreakpoint": {
+                "type": "boolean",
+                "description": "If set `true`, exception breakpoint can be enabled. But this feature requires that the runtime supports exception breakpoint.",
                 "default": true
               },
               "skipFunctions": {
