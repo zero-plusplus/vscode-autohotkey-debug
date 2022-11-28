@@ -71,7 +71,7 @@ export type ParserContext = {
   parsedNodes: Node[];
 };
 
-export class FunctionFinder {
+export class SymbolFinder {
   private readonly sourceFile: string;
   private readonly version: AhkVersion;
   private readonly resolver: IncludePathResolver;

@@ -1,12 +1,12 @@
 import * as assert from 'assert';
 import * as path from 'path';
-import { FunctionFinder, NamedNodeBase } from '../../src/util/FunctionFinder';
+import { NamedNodeBase, SymbolFinder } from '../../src/util/SymbolFinder';
 
 const sampleDir = path.resolve(`${__dirname}/sample`);
 
-suite('FunctionFinder', () => {
+suite('SymbolFinder', () => {
   test('v1', () => {
-    const finder = new FunctionFinder(`${sampleDir}/A.ahk`, '1.1.35.0');
+    const finder = new SymbolFinder(`${sampleDir}/A.ahk`, '1.1.35.0');
     const result = finder.find().filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as NamedNodeBase[];
 
     assert.strictEqual(result[0].name, 'B_Method_1');
