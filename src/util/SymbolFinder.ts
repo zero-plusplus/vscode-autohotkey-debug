@@ -29,6 +29,7 @@ export interface NodeBase {
 }
 export interface NamedNodeBase extends NodeBase {
   name: string;
+  fullname: string;
 }
 export interface SkipNode extends NodeBase {
   type: 'skip';
@@ -54,11 +55,11 @@ export interface DynamicPropertyNode extends NamedNodeBase {
   block: Location;
   body: DynamicPropertyBody;
 }
-export interface GetterNode extends NodeBase {
+export interface GetterNode extends NamedNodeBase {
   type: 'getter';
   blockLocation: Location;
 }
-export interface SetterNode extends NodeBase {
+export interface SetterNode extends NamedNodeBase {
   type: 'setter';
   blockLocation: Location;
 }
@@ -72,18 +73,16 @@ export type ParserContext = {
 };
 
 export class SymbolFinder {
-  private readonly sourceFile: string;
   private readonly version: AhkVersion;
   private readonly resolver: IncludePathResolver;
   private readonly implicitExtractor: ImplicitLibraryPathExtractor;
-  constructor(sourceFile: string, version: string | AhkVersion) {
-    this.sourceFile = sourceFile;
+  constructor(version: string | AhkVersion) {
     this.version = typeof version === 'string' ? new AhkVersion(version) : version;
     this.resolver = new IncludePathResolver(this.version);
     this.implicitExtractor = new ImplicitLibraryPathExtractor(this.version);
   }
-  public find(name?: string | string[]): Node[] {
-    const context = this.createContext(this.sourceFile);
+  public find(sourceFile: string): Node[] {
+    const context = this.createContext(sourceFile);
     this.parse(context);
     return context.parsedNodes;
   }
@@ -97,10 +96,10 @@ export class SymbolFinder {
     const includeRegExp = /(?<skip>.*?)(?<include>(?<=^|(\r)?\n|\uFEFF)[^\S\r\n\uFEFF]*#Include\s+(\*i\s+)?(?<includePath>[^\r\n]+))/msiu;
     matchResults.push(source.match(includeRegExp));
 
-    const funcRegExp = /(?<skip>.*?)(?<func>(?<=^|(\r)?\n|\uFEFF)(?<funcIndent>[^\S\r\n\uFEFF]*)(?<funcName>[\w_$@#]+)\([\s\r\n]*)/msiu;
+    const funcRegExp = /(?<skip>.*?)(?<func>(?<=^|(\r)?\n|\uFEFF)(?<funcIndent>[^\S\r\n\uFEFF]*)(?<funcName>[\w_$@#]+)\([^)]*\)[\s\r\n]*\{)/msiu;
     matchResults.push(source.match(funcRegExp));
 
-    const propertyRegExp = /(?<skip>.*?)(?<property>(?<=^|(\r)?\n|\uFEFF)(?<propertyIndent>[^\S\r\n\uFEFF]*)(?<propertyName>[\w_$@#]+)(\[|\s*\{))/msiu;
+    const propertyRegExp = /(?<skip>.*?)(?<property>(?<=^|(\r)?\n|\uFEFF)(?<propertyIndent>[^\S\r\n\uFEFF]*)(?<propertyName>[\w_$@#]+)(\[[^\]*]\])?\s*\{)/msiu;
     matchResults.push(source.match(propertyRegExp));
 
     const sorted = matchResults
@@ -354,11 +353,17 @@ export class SymbolFinder {
     };
     return context;
   }
+  public createFullName(context: ParserContext, name: string): string {
+    if (0 < context.scope.length) {
+      return `${context.scope.join('')}.${name}`;
+    }
+    return name;
+  }
   public createLocation(context: ParserContext, startIndex: number, endIndex: number): Location {
-    const startLine_base0 = Array.from(context.source.slice(0, startIndex).matchAll(/(\r)?\n/gu)).length;
-    const startColumn_base0 = context.source.slice(0, startIndex).match(/(^|(\r)?\n)(?<lastLine>.+)$/u)?.groups?.lastLine.length ?? 0;
+    const startLine_base1 = Array.from(context.source.slice(0, startIndex).matchAll(/(\r)?\n/gu)).length + 1;
+    const startColumn_base1 = (context.source.slice(0, startIndex).match(/(^|(\r)?\n)(?<lastLine>.+)$/u)?.groups?.lastLine.length ?? 0) + 1;
     const value = context.source.slice(startIndex, endIndex);
-    const endLine_base0 = startLine_base0 + Array.from(value.matchAll(/(\r)?\n/gu)).length + 1;
+    const endLine_base0 = startLine_base1 + Array.from(value.matchAll(/(\r)?\n/gu)).length + 1;
     const endColumn_base0 = value.match(/(?<=^|(\r)?\n)(?<lastLine>.+)$/u)?.groups?.lastLine.length ?? 0;
 
     return {
@@ -367,8 +372,8 @@ export class SymbolFinder {
       startIndex,
       endIndex,
       start: {
-        line: startLine_base0,
-        column: startColumn_base0,
+        line: startLine_base1,
+        column: startColumn_base1,
       },
       end: {
         line: endLine_base0,
@@ -402,6 +407,7 @@ export class SymbolFinder {
     return {
       type: 'class',
       name,
+      fullname: this.createFullName(context, name),
       scope: context.scope.slice(),
       location,
       block: blockLocation,
@@ -411,6 +417,7 @@ export class SymbolFinder {
     return {
       type: 'function',
       name,
+      fullname: this.createFullName(context, name),
       scope: context.scope.slice(),
       location,
       block: blockLocation,
@@ -420,6 +427,7 @@ export class SymbolFinder {
     return {
       type: 'property',
       name,
+      fullname: this.createFullName(context, name),
       scope: context.scope.slice(),
       location,
       block: blockLocation,
@@ -427,16 +435,22 @@ export class SymbolFinder {
     };
   }
   public createGetterNode(context: ParserContext, location: Location, blockLocation: Location): GetterNode {
+    const name = 'set';
     return {
       type: 'getter',
+      name,
+      fullname: this.createFullName(context, name),
       scope: context.scope.slice(),
       location,
       blockLocation,
     };
   }
   public createSetterNode(context: ParserContext, location: Location, blockLocation: Location): SetterNode {
+    const name = 'set';
     return {
       type: 'setter',
+      name,
+      fullname: this.createFullName(context, name),
       scope: context.scope.slice(),
       location,
       blockLocation,

@@ -1,6 +1,8 @@
 import * as path from 'path';
 import * as net from 'net';
 import { stat } from 'fs';
+import wildcard from 'wildcard-match';
+import * as symbol from './util/SymbolFinder';
 
 import * as vscode from 'vscode';
 import {
@@ -38,8 +40,10 @@ import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
 import { AhkConfigurationProvider, CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
+import { SymbolFinder } from './util/SymbolFinder';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
+export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   name: string;
   program: string;
@@ -75,6 +79,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     scanImplicitLibrary: boolean;
   };
   useExceptionBreakpoint: boolean;
+  useFunctionBreakpoint: boolean | Array<string | FunctionBreakPointAdvancedData>;
   openFileOnExit: string;
   trace: boolean;
   skipFunctions?: string[];
@@ -103,6 +108,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   private isPaused = false;
   private isTerminateRequested = false;
   private readonly configProvider: AhkConfigurationProvider;
+  private symbolFinder?: symbol.SymbolFinder;
+  private callableSymbols: symbol.NamedNodeBase[] | undefined;
   private get isClosedSession(): boolean {
     return this.session!.socketClosed || this.isTerminateRequested;
   }
@@ -113,6 +120,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private variableManager?: VariableManager;
   private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | MetaVariable | undefined)>();
   private breakpointManager?: BreakpointManager;
+  private readonly registeredFunctionBreakpoints: Breakpoint[] = [];
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames?: StackFrames;
   private currentStackFrames?: StackFrames;
@@ -161,6 +169,9 @@ export class AhkDebugSession extends LoggingDebugSession {
           default: false,
         },
       ];
+    }
+    if (config.useFunctionBreakpoint) {
+      response.body.supportsFunctionBreakpoints = true;
     }
 
     this.sendResponse(response);
@@ -392,6 +403,56 @@ export class AhkDebugSession extends LoggingDebugSession {
         return `  at ${message}`;
       }).join('\n'),
     };
+    this.sendResponse(response);
+  }
+  protected async setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+    const breakpoints: Array<DebugProtocol.FunctionBreakpoint | FunctionBreakPointAdvancedData> = [ ...args.breakpoints ];
+    if (!this.callableSymbols) {
+      if (typeof this.config.useFunctionBreakpoint === 'object') {
+        breakpoints.push(...this.config.useFunctionBreakpoint.map((breakpoint) => {
+          return typeof breakpoint === 'string' ? { name: breakpoint } : breakpoint;
+        }));
+      }
+      this.callableSymbols = this.symbolFinder!
+        .find(this.config.program)
+        .filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as symbol.NamedNodeBase[];
+    }
+
+    for await (const breakpoint of breakpoints) {
+      const isMatch = wildcard(breakpoint.name, { separator: '.' });
+      const symbols = this.callableSymbols.filter((symbol) => isMatch(symbol.fullname));
+      for await (const symbol of symbols) {
+        try {
+          const existsBreakpoint = this.registeredFunctionBreakpoints.some((breakpoint) => {
+            return breakpoint.filePath === symbol.location.sourceFile && breakpoint.unverifiedLine === symbol.location.start.line;
+          });
+          if (existsBreakpoint) {
+            continue;
+          }
+
+          const fileUri = toFileUri(symbol.location.sourceFile);
+          const line = symbol.location.start.line;
+          const advancedData = {
+            condition: breakpoint.condition,
+            hitCondition: breakpoint.hitCondition,
+            hidden: true,
+            shouldBreak: false,
+            unverifiedLine: line,
+            unverifiedColumn: 1,
+          } as BreakpointAdvancedData;
+          if ('logPoint' in breakpoint && breakpoint.logPoint !== '') {
+            advancedData.logMessage = breakpoint.logPoint;
+          }
+
+          const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+          this.registeredFunctionBreakpoints.push(registeredBreakpoint);
+        }
+        catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
+          console.log(errorMessage);
+        }
+      }
+    }
     this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
@@ -1721,6 +1782,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                 completionItemProvider.session = this.session;
                 this.ahkParser = createParser(this.session.ahkVersion);
                 this.conditionalEvaluator = new ConditionalEvaluator(this.session);
+                if (this.config.useFunctionBreakpoint) {
+                  this.symbolFinder = new SymbolFinder(this.session.ahkVersion);
+                }
                 this.sendEvent(new InitializedEvent());
               })
               .on('warning', (warning: string) => {

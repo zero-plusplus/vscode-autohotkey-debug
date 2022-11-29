@@ -29,6 +29,7 @@
                 "${ahk:suppressErrorDialog}"
             ],
             "useAnnounce": "detail",
+            "useFunctionBreakpoint": true,
             "variableCategories": "recommend"
         },
         {

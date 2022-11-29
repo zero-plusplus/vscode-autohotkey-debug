@@ -6,8 +6,8 @@ const sampleDir = path.resolve(`${__dirname}/sample`);
 
 suite('SymbolFinder', () => {
   test('v1-1', () => {
-    const finder = new SymbolFinder(`${sampleDir}/A.ahk`, '1.1.35.0');
-    const result = finder.find().filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as NamedNodeBase[];
+    const finder = new SymbolFinder('1.1.35.0');
+    const result = finder.find(`${sampleDir}/A.ahk`).filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as NamedNodeBase[];
 
     assert.strictEqual(result[0].name, 'B_Method_1');
     assert.deepStrictEqual(result[0].scope, [ 'A', 'B' ]);
@@ -25,10 +25,8 @@ suite('SymbolFinder', () => {
     assert.strictEqual(result[7].name, 'Func_2');
   });
   test('v1-2', () => {
-    const finder = new SymbolFinder(`${__dirname}/../../demo/demo.ahk`, '1.1.35.0');
-    const result = finder.find().filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as NamedNodeBase[];
-    console.log(result);
-    console.log(result);
+    const finder = new SymbolFinder('1.1.35.0');
+    const result = finder.find(`${__dirname}/../../demo/demo.ahk`).filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as NamedNodeBase[];
 
     assert.strictEqual(result[0].name, 'Util_CreateLargeArray');
     assert.deepStrictEqual(result[0].scope, []);
