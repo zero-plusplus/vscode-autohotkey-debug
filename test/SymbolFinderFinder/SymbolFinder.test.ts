@@ -5,7 +5,7 @@ import { NamedNodeBase, SymbolFinder } from '../../src/util/SymbolFinder';
 const sampleDir = path.resolve(`${__dirname}/sample`);
 
 suite('SymbolFinder', () => {
-  test('v1', () => {
+  test('v1-1', () => {
     const finder = new SymbolFinder(`${sampleDir}/A.ahk`, '1.1.35.0');
     const result = finder.find().filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as NamedNodeBase[];
 
@@ -23,5 +23,22 @@ suite('SymbolFinder', () => {
     assert.deepStrictEqual(result[5].scope, [ 'A', 'C' ]);
     assert.strictEqual(result[6].name, 'Func_1');
     assert.strictEqual(result[7].name, 'Func_2');
+  });
+  test('v1-2', () => {
+    const finder = new SymbolFinder(`${__dirname}/../../demo/demo.ahk`, '1.1.35.0');
+    const result = finder.find().filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as NamedNodeBase[];
+    console.log(result);
+    console.log(result);
+
+    assert.strictEqual(result[0].name, 'Util_CreateLargeArray');
+    assert.deepStrictEqual(result[0].scope, []);
+    assert.strictEqual(result[1].name, 'Util_CreateGiantArray');
+    assert.deepStrictEqual(result[2].scope, []);
+    assert.strictEqual(result[2].name, 'Util_CreateMaxSizeArray');
+    assert.deepStrictEqual(result[2].scope, []);
+    assert.strictEqual(result[3].name, 'demo');
+    assert.deepStrictEqual(result[3].scope, []);
+    assert.strictEqual(result[4].name, 'method');
+    assert.deepStrictEqual(result[4].scope, [ 'Clazz' ]);
   });
 });

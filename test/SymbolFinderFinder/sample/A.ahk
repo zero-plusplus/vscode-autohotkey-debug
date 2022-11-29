@@ -7,6 +7,10 @@
   }
   A_Method_2()
   {
+    Send, {
+    if ({}) {
+      a = {
+    }
   }
   class C {
     C_Method_1() {

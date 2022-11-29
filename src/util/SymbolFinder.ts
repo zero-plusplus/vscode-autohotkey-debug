@@ -1,5 +1,5 @@
 import { readFileSync } from 'fs';
-import { AhkVersion, IncludePathResolver } from '@zero-plusplus/autohotkey-utilities';
+import { AhkVersion, ImplicitLibraryPathExtractor, IncludePathResolver } from '@zero-plusplus/autohotkey-utilities';
 
 export interface Position {
   line: number;
@@ -75,10 +75,12 @@ export class SymbolFinder {
   private readonly sourceFile: string;
   private readonly version: AhkVersion;
   private readonly resolver: IncludePathResolver;
+  private readonly implicitExtractor: ImplicitLibraryPathExtractor;
   constructor(sourceFile: string, version: string | AhkVersion) {
     this.sourceFile = sourceFile;
     this.version = typeof version === 'string' ? new AhkVersion(version) : version;
     this.resolver = new IncludePathResolver(this.version);
+    this.implicitExtractor = new ImplicitLibraryPathExtractor(this.version);
   }
   public find(name?: string | string[]): Node[] {
     const context = this.createContext(this.sourceFile);
@@ -117,6 +119,14 @@ export class SymbolFinder {
     return sorted[0];
   }
   public parse(context: ParserContext): void {
+    if (this.version.mejor === 1.1) {
+      const libraryFilePathList = this.implicitExtractor.extract([ context.sourceFile ]);
+      for (const libraryFilePath of libraryFilePathList) {
+        const newContext = this.createContext(libraryFilePath, context);
+        this.parse(newContext);
+        context.parsedNodes.push(...newContext.parsedNodes);
+      }
+    }
     while (true) {
       const match = this.matchTargets(context);
       if (!match?.groups) {
