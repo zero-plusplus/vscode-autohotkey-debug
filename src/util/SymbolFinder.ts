@@ -86,20 +86,35 @@ export class SymbolFinder {
     return context.parsedNodes;
   }
   public matchTargets(context: ParserContext): RegExpMatchArray | null {
-    const regex = new RegExp([
-      '(?<skip>.*?)',
-      '(',
-      '(?<class>(?<=^|(\\r)?\\n)[^\\S\\r\\n]*class\\s+(?<className>[\\w_$@#]+)(\\s+extends\\s+(?<superClassName>[\\w_.$@#]+))?[\\s\\r\\n]*\\{)',
-      '|',
-      '(?<include>(?<=^|(\\r)?\\n)[^\\S\\r\\n]*#Include\\s+(\\*i\\s+)?(?<includePath>[^\\r\\n]+))',
-      '|',
-      '(?<func>(?<=^|(\\r)?\\n)[^\\S\\r\\n]*(?<funcName>[\\w_$@#]+)\\([\\s\\r\\n]*)',
-      '|',
-      '(?<property>(?<=^|(\\r)?\\n)[^\\S\\r\\n]*(?<propertyName>[\\w_$@#]+)(\\[|\\s*\\{))',
-      ')',
-    ].join(''), 'msiu');
+    const source = context.source.slice(context.index);
 
-    return context.source.slice(context.index).match(regex);
+    const matchResults: Array<RegExpMatchArray | null> = [];
+    const classRegExp = /(?<skip>.*?)(?<class>(?<=^|(\r)?\n|\uFEFF)(?<classIndent>[^\S\r\n\uFEFF]*)class\s+(?<className>[\w_$@#]+)(\s+extends\s+(?<superClassName>[\w_.$@#]+))?\s*\{)/msiu;
+    matchResults.push(source.match(classRegExp));
+
+    const includeRegExp = /(?<skip>.*?)(?<include>(?<=^|(\r)?\n|\uFEFF)[^\S\r\n\uFEFF]*#Include\s+(\*i\s+)?(?<includePath>[^\r\n]+))/msiu;
+    matchResults.push(source.match(includeRegExp));
+
+    const funcRegExp = /(?<skip>.*?)(?<func>(?<=^|(\r)?\n|\uFEFF)(?<funcIndent>[^\S\r\n\uFEFF]*)(?<funcName>[\w_$@#]+)\([\s\r\n]*)/msiu;
+    matchResults.push(source.match(funcRegExp));
+
+    const propertyRegExp = /(?<skip>.*?)(?<property>(?<=^|(\r)?\n|\uFEFF)(?<propertyIndent>[^\S\r\n\uFEFF]*)(?<propertyName>[\w_$@#]+)(\[|\s*\{))/msiu;
+    matchResults.push(source.match(propertyRegExp));
+
+    const sorted = matchResults
+      .filter((result) => typeof result?.index === 'number')
+      .sort((a, b) => {
+        let index_a = a!.index!;
+        if (a?.groups?.skip) {
+          index_a += a.groups.skip.length;
+        }
+        let index_b = b!.index!;
+        if (b?.groups?.skip) {
+          index_b += b.groups.skip.length;
+        }
+        return index_a - index_b;
+      });
+    return sorted[0];
   }
   public parse(context: ParserContext): void {
     while (true) {
@@ -138,7 +153,7 @@ export class SymbolFinder {
       return;
     }
 
-    const blockLocation = this.createBlockLocation(context);
+    const blockLocation = this.createBlockLocation(context, match.groups.classIndent);
     if (!blockLocation) {
       return;
     }
@@ -218,7 +233,7 @@ export class SymbolFinder {
       return;
     }
 
-    const blockLocation = this.createBlockLocation(context);
+    const blockLocation = this.createBlockLocation(context, match.groups.funcIndent);
     if (!blockLocation) {
       return;
     }
@@ -262,7 +277,7 @@ export class SymbolFinder {
       return;
     }
 
-    const blockLocation = this.createBlockLocation(context);
+    const blockLocation = this.createBlockLocation(context, match.groups.propertyIndent);
     if (!blockLocation) {
       return;
     }
@@ -270,9 +285,9 @@ export class SymbolFinder {
     const regex = new RegExp([
       '(?<skip>.*?)',
       '(',
-      '(?<getter>(?<=^|(\\r)?\\n)[^\\S\\r\\n]*get\\s*\\{)',
+      '(?<getter>(?<=^|(\\r)?\\n)(?<getterIndent>[ \\t]*)get\\s*\\{)',
       '|',
-      '(?<setter>(?<=^|(\\r)?\\n)[^\\S\\r\\n]*set\\s*\\{)',
+      '(?<setter>(?<=^|(\\r)?\\n)(?<setterIndent>[ \\t]*)set\\s*\\{)',
       ')',
     ].join(''), 'ui');
 
@@ -292,7 +307,7 @@ export class SymbolFinder {
         this.parseSkipNode(context, match.groups.skip);
       }
       else if (match.groups.getter) {
-        const blockLocation = this.createBlockLocation(context);
+        const blockLocation = this.createBlockLocation(context, match.groups.getterIndent);
         if (!blockLocation) {
           break;
         }
@@ -301,7 +316,7 @@ export class SymbolFinder {
         context.index = blockLocation.endIndex;
       }
       else if (match.groups.setter) {
-        const blockLocation = this.createBlockLocation(context);
+        const blockLocation = this.createBlockLocation(context, match.groups.setterIndent);
         if (!blockLocation) {
           break;
         }
@@ -351,37 +366,20 @@ export class SymbolFinder {
       },
     };
   }
-  public createBlockLocation(context: ParserContext): Location | undefined {
-    const openBraceMatch = context.source.slice(context.index).match(/\{/u);
+  public createBlockLocation(context: ParserContext, indent: string): Location | undefined {
+    const source = context.source.slice(context.index);
+    const openBraceMatch = source.match(/\{/u);
     if (!openBraceMatch?.index) {
       return undefined;
     }
-    const startBlockIndex = context.index + openBraceMatch.index;
-    const length = context.source.length;
+    const openBraceIndex = context.index + openBraceMatch.index;
 
-    let isTeminated = false;
-    let index = startBlockIndex + 1;
-    let openBraceCount = 0;
-    while (index < length) {
-      const char = context.source.charAt(index);
-      if ((/(\r)?\n/u).test(char)) {
-        isTeminated = true;
-      }
-      else if (isTeminated && (/[^\s{}]/u).test(char)) {
-        isTeminated = false;
-      }
-      else if (char === '{') {
-        openBraceCount++;
-      }
-      else if (isTeminated && char === '}') {
-        if (openBraceCount === 0) {
-          break;
-        }
-        openBraceCount--;
-      }
-      index++;
+    const closeBraceMatch = source.match(new RegExp(`(?<=(^|(\\r)?\\n|[\\uFEFF])${indent})\\}`, 'msiu'));
+    if (!closeBraceMatch?.index) {
+      return undefined;
     }
-    return this.createLocation(context, startBlockIndex, index + 1);
+    const closeBraceindex = context.index + closeBraceMatch.index + 1;
+    return this.createLocation(context, openBraceIndex, closeBraceindex);
   }
   public createSkipNode(context: ParserContext, contents: string): SkipNode {
     return {
