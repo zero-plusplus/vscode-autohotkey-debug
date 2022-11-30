@@ -10,8 +10,6 @@ export interface Location {
   sourceFile: string;
   startIndex: number;
   endIndex: number;
-  start: Position;
-  end: Position;
   value: string;
 }
 
@@ -24,6 +22,7 @@ export type Node =
   | GetterNode
   | SetterNode;
 export interface NodeBase {
+  context: ParserContext;
   type: string;
   scope: string[];
   location: Location;
@@ -72,6 +71,21 @@ export type ParserContext = {
   index: number;
   scope: string[];
   parsedNodes: Node[];
+};
+
+export const getFullName = (node: NamedNodeBase): string => {
+  if (0 < node.scope.length) {
+    return `${node.scope.join('.')}.${node.name}`;
+  }
+  return node.name;
+};
+export const getLine = (node: NamedNodeBase, index: number): number => {
+  const startLine_base1 = Array.from(node.context.source.slice(0, index).matchAll(/\r\n|\n/gu)).length + 1;
+  return startLine_base1;
+};
+export const getColumn = (node: NamedNodeBase, index: number): number => {
+  const startColumn_base1 = (node.context.source.slice(0, index).match(/(^|(\r)?\n)(?<lastLine>.+)$/u)?.groups?.lastLine.length ?? 0) + 1;
+  return startColumn_base1;
 };
 
 export class SymbolFinder {
@@ -442,7 +456,10 @@ export class SymbolFinder {
   }
   public maskComment(source: string): string {
     return source.replace(/(\/\*(?:\*(?!\/)|[^*])*\*\/)/gsu, (substring) => {
-      return '*'.repeat(substring.length);
+      const lines = substring.split(/\r\n|\n/gu);
+      return lines.map((line) => {
+        return '*'.repeat(line.length);
+      }).join('\r\n');
     });
   }
   public createContext(sourceFile, prevContext?: ParserContext): ParserContext {
@@ -465,44 +482,17 @@ export class SymbolFinder {
     return name;
   }
   public createLocation(context: ParserContext, startIndex: number, endIndex: number): Location {
-    const startLine_base1 = Array.from(context.source.slice(0, startIndex).matchAll(/(\r)?\n/gu)).length + 1;
-    const startColumn_base1 = (context.source.slice(0, startIndex).match(/(^|(\r)?\n)(?<lastLine>.+)$/u)?.groups?.lastLine.length ?? 0) + 1;
     const value = context.source.slice(startIndex, endIndex);
-    const endLine_base0 = startLine_base1 + Array.from(value.matchAll(/(\r)?\n/gu)).length + 1;
-    const endColumn_base0 = value.match(/(?<=^|(\r)?\n)(?<lastLine>.+)$/u)?.groups?.lastLine.length ?? 0;
-
     return {
       sourceFile: context.sourceFile,
       value,
       startIndex,
       endIndex,
-      start: {
-        line: startLine_base1,
-        column: startColumn_base1,
-      },
-      end: {
-        line: endLine_base0,
-        column: endColumn_base0,
-      },
     };
-  }
-  public createBlockLocation(context: ParserContext, indent: string): Location | undefined {
-    const source = context.source.slice(context.index);
-    const openBraceMatch = source.match(/\{/u);
-    if (!openBraceMatch?.index) {
-      return undefined;
-    }
-    const openBraceIndex = context.index + openBraceMatch.index;
-
-    const closeBraceMatch = source.match(new RegExp(`(?<=(^|(\\r)?\\n|[\\uFEFF])${indent})\\}`, 'msiu'));
-    if (!closeBraceMatch?.index) {
-      return undefined;
-    }
-    const closeBraceindex = context.index + closeBraceMatch.index + 1;
-    return this.createLocation(context, openBraceIndex, closeBraceindex);
   }
   public createSkipNode(context: ParserContext, contents: string): SkipNode {
     return {
+      context,
       type: 'skip',
       scope: context.scope,
       location: this.createLocation(context, context.index, context.index + contents.length),
@@ -510,6 +500,7 @@ export class SymbolFinder {
   }
   public createClassNode(context: ParserContext, name: string, location: Location, blockLocation: Location): ClassNode {
     return {
+      context,
       type: 'class',
       name,
       fullname: this.createFullName(context, name),
@@ -520,6 +511,7 @@ export class SymbolFinder {
   }
   public createFunctionNode(context: ParserContext, name: string, location: Location, blockLocation: Location): FunctionNode {
     return {
+      context,
       type: 'function',
       name,
       fullname: this.createFullName(context, name),
@@ -530,10 +522,11 @@ export class SymbolFinder {
   }
   public createDynamicPropertyNode(context: ParserContext, name: string, location: Location, blockLocation: Location, body: DynamicPropertyBody): DynamicPropertyNode {
     return {
+      context,
       type: 'property',
-      name,
       fullname: this.createFullName(context, name),
       scope: context.scope.slice(),
+      name,
       location,
       block: blockLocation,
       body,
@@ -542,6 +535,7 @@ export class SymbolFinder {
   public createGetterNode(context: ParserContext, location: Location, blockLocation: Location): GetterNode {
     const name = 'get';
     return {
+      context,
       type: 'getter',
       name,
       fullname: this.createFullName(context, name),
@@ -553,6 +547,7 @@ export class SymbolFinder {
   public createSetterNode(context: ParserContext, location: Location, blockLocation: Location): SetterNode {
     const name = 'set';
     return {
+      context,
       type: 'setter',
       name,
       fullname: this.createFullName(context, name),

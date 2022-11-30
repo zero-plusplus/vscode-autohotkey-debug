@@ -1,11 +1,11 @@
 ﻿class B {
-  Accesor_1 {
+  Accessor_1 {
     get {
     }
     set {
     }
   }
-  Accesor_2[a, b] {
+  Accessor_2[a, b] {
     get {
     }
   }

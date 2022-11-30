@@ -1,4 +1,7 @@
-﻿class A {
+﻿/**
+ * abc
+ */
+class A {
   #Include %A_LineFile%\..\b.ahk
   A_Method_1() {
     A_Method_1_Inner() {

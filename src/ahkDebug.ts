@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as net from 'net';
 import { stat } from 'fs';
 import wildcard from 'wildcard-match';
-import * as symbol from './util/SymbolFinder';
+import * as sym from './util/SymbolFinder';
 
 import * as vscode from 'vscode';
 import {
@@ -108,8 +108,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   private isPaused = false;
   private isTerminateRequested = false;
   private readonly configProvider: AhkConfigurationProvider;
-  private symbolFinder?: symbol.SymbolFinder;
-  private callableSymbols: symbol.NamedNodeBase[] | undefined;
+  private symbolFinder?: sym.SymbolFinder;
+  private callableSymbols: sym.NamedNodeBase[] | undefined;
   private get isClosedSession(): boolean {
     return this.session!.socketClosed || this.isTerminateRequested;
   }
@@ -415,23 +415,23 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       this.callableSymbols = this.symbolFinder!
         .find(this.config.program)
-        .filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as symbol.NamedNodeBase[];
+        .filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as sym.NamedNodeBase[];
     }
 
     for await (const breakpoint of breakpoints) {
       const isMatch = wildcard(breakpoint.name, { separator: '.' });
-      const symbols = this.callableSymbols.filter((symbol) => isMatch(symbol.fullname));
+      const symbols = this.callableSymbols.filter((symbol) => isMatch(sym.getFullName(symbol)));
       for await (const symbol of symbols) {
         try {
           const existsBreakpoint = this.registeredFunctionBreakpoints.some((breakpoint) => {
-            return breakpoint.filePath === symbol.location.sourceFile && breakpoint.unverifiedLine === symbol.location.start.line;
+            return breakpoint.filePath === symbol.location.sourceFile && breakpoint.unverifiedLine === sym.getLine(symbol, symbol.location.startIndex);
           });
           if (existsBreakpoint) {
             continue;
           }
 
           const fileUri = toFileUri(symbol.location.sourceFile);
-          const line = symbol.location.start.line;
+          const line = sym.getLine(symbol, symbol.location.startIndex);
           const advancedData = {
             condition: breakpoint.condition,
             hitCondition: breakpoint.hitCondition,
