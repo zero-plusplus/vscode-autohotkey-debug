@@ -423,16 +423,21 @@ export class AhkDebugSession extends LoggingDebugSession {
       const symbols = this.callableSymbols.filter((symbol) => isMatch(sym.getFullName(symbol)));
       for await (const symbol of symbols) {
         try {
-          const existsBreakpoint = this.registeredFunctionBreakpoints.some((breakpoint) => {
-            return breakpoint.filePath === symbol.location.sourceFile && breakpoint.unverifiedLine === sym.getLine(symbol, symbol.location.startIndex);
+          const existsFunctionBreakpoint = this.registeredFunctionBreakpoints.find((breakpoint) => {
+            return breakpoint.group === 'function-breakpoint'
+              && breakpoint.filePath === symbol.location.sourceFile
+              && breakpoint.unverifiedLine === sym.getLine(symbol, symbol.location.startIndex);
           });
-          if (existsBreakpoint) {
+          if (existsFunctionBreakpoint) {
+            existsFunctionBreakpoint.condition = breakpoint.condition ?? '';
+            existsFunctionBreakpoint.hitCondition = breakpoint.hitCondition ?? '';
             continue;
           }
 
           const fileUri = toFileUri(symbol.location.sourceFile);
           const line = sym.getLine(symbol, symbol.location.startIndex);
           const advancedData = {
+            group: 'function-breakpoint',
             condition: breakpoint.condition,
             hitCondition: breakpoint.hitCondition,
             hidden: true,
