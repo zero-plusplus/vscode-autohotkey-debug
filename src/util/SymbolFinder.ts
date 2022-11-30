@@ -107,10 +107,24 @@ export class SymbolFinder {
       return funcMatch;
     }
 
-    const propertyRegExp = /(?<skip>.*?)(?<property>(?<=^|(\r)?\n|\uFEFF)(?<propertyIndent>[^\S\r\n\uFEFF]*)(?<propertyName>[\w_$@#]+)(\[[^\]*]\])?\s*\{)/siu;
+    const propertyRegExp = /(?<skip>.*?)(?<property>(?<=^|(\r)?\n|\uFEFF)(?<propertyIndent>[^\S\r\n\uFEFF]*)(?<propertyName>[\w_$@#]+)(\[[^\]]*\])?\s*\{)/siu;
     const propertyMatch = text.match(propertyRegExp);
     if (propertyMatch?.groups?.property) {
       return propertyMatch;
+    }
+    return null;
+  }
+  public matchAccesor(text: string): RegExpMatchArray | null {
+    const getterRegExp = /(?<skip>.*?)(?<getter>(?<=^|(\r)?\n)(?<getterIndent>[^\S\r\n\uFEFF]*)get\s*\{)/siu;
+    const getterMatch = text.match(getterRegExp);
+    if (getterMatch?.groups?.getter) {
+      return getterMatch;
+    }
+
+    const setterRegExp = /(?<skip>.*?)(?<setter>(?<=^|(\r)?\n)(?<setterIndent>[^\S\r\n\uFEFF]*)set\s*\{)/siu;
+    const setterMatch = text.match(setterRegExp);
+    if (setterMatch?.groups?.setter) {
+      return setterMatch;
     }
     return null;
   }
@@ -128,63 +142,56 @@ export class SymbolFinder {
       }
     }
 
-    let lastLineBreakIndex = -1;
     const stack: string[] = [];
     while (context.index < context.sourceLength) {
       const char = context.source.charAt(context.index);
       stack.push(char);
-      if (char === '\n' || (char === '\r' && context.source.charAt(context.index + 1) === '\n')) {
-        lastLineBreakIndex = context.index;
-      }
       if (char !== '{') {
         context.index++;
         continue;
       }
 
-      if (-1 < lastLineBreakIndex) {
-        context.index -= stack.length - lastLineBreakIndex;
-        const parsingText = stack.slice(lastLineBreakIndex + 1).join('');
-        const match = this.matchSymbols(parsingText);
-        if (!match?.groups) {
-          break;
-        }
-
-        if (match.groups.skip) {
-          this.parseSkipNode(context, match.groups.skip);
-        }
-
-        if (match.groups.include) {
-          // context.index -= (match.groups.include.length - 1);
-          this.parseIncludeNode(context, match.groups.include, match.groups.includePath);
-        }
-        else if (match.groups.class) {
-          // context.index -= (match.groups.class.length - 1);
-          this.parseClassNode(context, match.groups.className, match.groups.classIndent);
-        }
-        else if (match.groups.func) {
-          // context.index -= (match.groups.func.length - 1);
-          this.parseFunctionNode(context, match.groups.funcName, match.groups.funcIndent);
-        }
-        else {
-          context.index += (stack.length - 1);
-        }
-
-        stack.splice(0);
+      context.index -= (stack.length - 1);
+      const parsingText = stack.join('');
+      const match = this.matchSymbols(parsingText);
+      if (!match?.groups) {
+        break;
       }
+
+      if (match.groups.skip) {
+        this.parseSkipNode(context, match.groups.skip);
+      }
+
+      if (match.groups.include) {
+        this.parseIncludeNode(context, match.groups.include, match.groups.includePath);
+      }
+      else if (match.groups.class) {
+        this.parseClassNode(context, match.groups.className, match.groups.classIndent);
+      }
+      else if (match.groups.func) {
+        this.parseFunctionNode(context, match.groups.funcName, match.groups.funcIndent);
+      }
+      else {
+        context.index += (stack.length - 1);
+      }
+
+      stack.splice(0);
     }
   }
-  public parseSkipNode(context: ParserContext, contents: string): void {
+  public parseSkipNode(context: ParserContext, contents: string, skipSpace = false): void {
     context.index += contents.length;
 
     let _contents = contents;
-    while (context.index < context.sourceLength) {
-      const char = context.source.charAt(context.index);
-      if (char === ' ' || char === '\t') {
-        _contents += char;
-        context.index++;
-        continue;
+    if (skipSpace) {
+      while (context.index < context.sourceLength) {
+        const char = context.source.charAt(context.index);
+        if (char === ' ' || char === '\t') {
+          _contents += char;
+          context.index++;
+          continue;
+        }
+        break;
       }
-      break;
     }
     context.parsedNodes.push(this.createSkipNode(context, _contents));
   }
@@ -197,7 +204,7 @@ export class SymbolFinder {
     while (context.index < context.sourceLength) {
       const char = context.source.charAt(context.index);
       stack.push(char);
-      if (char === '}') {
+      if (stack.includes('\n') && char === '}') {
         const parsingText = stack.join('');
         const match = this.matchEndBlock(parsingText, indent);
         if (match) {
@@ -213,6 +220,7 @@ export class SymbolFinder {
           continue;
         }
 
+        context.index -= (stack.length - 1);
         const parsingText = stack.join('');
         const match = this.matchSymbols(parsingText);
         if (match?.groups?.skip) {
@@ -220,25 +228,20 @@ export class SymbolFinder {
         }
 
         if (match?.groups?.class) {
-          context.index -= (match.groups.class.length - 1);
           this.parseClassNode(context, match.groups.className, match.groups.classIndent);
         }
         else if (match?.groups?.func) {
-          context.index -= (match.groups.func.length - 1);
           this.parseFunctionNode(context, match.groups.funcName, match.groups.funcIndent);
         }
         else if (match?.groups?.include) {
-          context.index -= (match.groups.include.length - 1);
           this.parseIncludeNode(context, match.groups.include, match.groups.includePath);
         }
         else if (match?.groups?.property) {
-          context.index -= (match.groups.property.length - 1);
           this.parseDynamicPropertyNode(context, match.groups.propertyName, match.groups.propertyIndent);
         }
         else {
           context.index += (stack.length - 1);
         }
-
         stack.splice(0);
       }
       context.index++;
@@ -269,14 +272,13 @@ export class SymbolFinder {
     while (context.index < context.sourceLength) {
       const char = context.source.charAt(context.index);
       stack.push(char);
-      if (char === '}') {
+      if (stack.includes('\n') && char === '}') {
         const parsingText = stack.join('');
         const match = this.matchEndBlock(parsingText, indent);
         if (match) {
           context.index++;
           break;
         }
-
         stack.splice(0);
       }
       else if (char === '{') {
@@ -314,27 +316,24 @@ export class SymbolFinder {
     context.parsedNodes.push(functionNode);
   }
   public parseDynamicPropertyNode(context: ParserContext, name: string, indent: string): void {
-    const startIndex = context.index;
+    // const startIndex = context.index;
     const stack: string[] = [];
     context.scope.push(name);
 
-    const regex = new RegExp([
-      '(?<skip>.*?)',
-      '(',
-      '(?<getter>(?<=^|(\\r)?\\n)(?<getterIndent>[ \\t]*)get\\s*\\{)',
-      '|',
-      '(?<setter>(?<=^|(\\r)?\\n)(?<setterIndent>[ \\t]*)set\\s*\\{)',
-      ')',
-    ].join(''), 'ui');
-
+    const body: DynamicPropertyBody = {};
     let startBlockIndex = -1;
     while (context.index < context.sourceLength) {
+      if (body.getter && body.setter) {
+        break;
+      }
+
       const char = context.source.charAt(context.index);
       stack.push(char);
-      if (char === '}') {
+      if (stack.includes('\n') && char === '}') {
         const parsingText = stack.join('');
         const match = this.matchEndBlock(parsingText, indent);
         if (match) {
+          context.index++;
           break;
         }
         stack.splice(0);
@@ -349,16 +348,18 @@ export class SymbolFinder {
 
         context.index -= (stack.length - 1);
         const parsingText = stack.join('');
-        const match = parsingText.match(regex);
+        const match = this.matchAccesor(parsingText);
         if (match?.groups?.skip) {
           this.parseSkipNode(context, `${match.groups.skip}`);
         }
 
-        if (match?.groups?.getter) {
+        if (!body.getter && match?.groups?.getter) {
           this.parseGetterNode(context, match.groups.getterIndent);
+          // body.getter = context.parsedNodes.pop() as GetterNode;
         }
-        else if (match?.groups?.setter) {
-          this.parseGetterNode(context, match.groups.getterIndent);
+        else if (!body.setter && match?.groups?.setter) {
+          this.parseSetterNode(context, match.groups.setterIndent);
+          // body.setter = context.parsedNodes.pop() as SetterNode;
         }
         else {
           context.index += (stack.length - 1);
@@ -369,10 +370,10 @@ export class SymbolFinder {
       context.index++;
     }
 
-    const location = this.createLocation(context, startIndex, context.index);
-    const blockLocation = this.createLocation(context, startBlockIndex, context.index);
-    const functionNode = this.createFunctionNode(context, name, location, blockLocation);
-    context.parsedNodes.push(functionNode);
+    // const location = this.createLocation(context, startIndex, context.index);
+    // const blockLocation = this.createLocation(context, startBlockIndex, context.index);
+    // const propertyNode = this.createDynamicPropertyNode(context, name, location, blockLocation, body);
+    // context.parsedNodes.push(propertyNode);
     context.scope.pop();
   }
   public parseGetterNode(context: ParserContext, indent: string): void {
@@ -385,23 +386,27 @@ export class SymbolFinder {
     while (context.index < context.sourceLength) {
       const char = context.source.charAt(context.index);
       stack.push(char);
-      if (char === '}') {
+      if (stack.includes('\n') && char === '}') {
         const parsingText = stack.join('');
         const match = this.matchEndBlock(parsingText, indent);
-        if (match?.index) {
-          startBlockIndex = match.index;
+        if (match) {
+          context.index++;
           break;
         }
         stack.splice(0);
       }
+      else if (startBlockIndex === -1 && char === '{') {
+        startBlockIndex = context.index;
+        stack.splice(0);
+      }
       context.index++;
     }
+    context.scope.pop();
 
     const location = this.createLocation(context, startIndex, context.index);
     const blockLocation = this.createLocation(context, startBlockIndex, context.index);
-    const functionNode = this.createGetterNode(context, location, blockLocation);
-    context.parsedNodes.push(functionNode);
-    context.scope.pop();
+    const getterNode = this.createGetterNode(context, location, blockLocation);
+    context.parsedNodes.push(getterNode);
   }
   public parseSetterNode(context: ParserContext, indent: string): void {
     const startIndex = context.index;
@@ -413,23 +418,27 @@ export class SymbolFinder {
     while (context.index < context.sourceLength) {
       const char = context.source.charAt(context.index);
       stack.push(char);
-      if (char === '}') {
+      if (stack.includes('\n') && char === '}') {
         const parsingText = stack.join('');
         const match = this.matchEndBlock(parsingText, indent);
         if (match?.index) {
-          startBlockIndex = match.index;
+          context.index++;
           break;
         }
         stack.splice(0);
       }
+      else if (startBlockIndex === -1 && char === '{') {
+        startBlockIndex = context.index;
+        stack.splice(0);
+      }
       context.index++;
     }
+    context.scope.pop();
 
     const location = this.createLocation(context, startIndex, context.index);
     const blockLocation = this.createLocation(context, startBlockIndex, context.index);
-    const functionNode = this.createGetterNode(context, location, blockLocation);
-    context.parsedNodes.push(functionNode);
-    context.scope.pop();
+    const setterNode = this.createSetterNode(context, location, blockLocation);
+    context.parsedNodes.push(setterNode);
   }
   public maskComment(source: string): string {
     return source.replace(/(\/\*(?:\*(?!\/)|[^*])*\*\/)/gsu, (substring) => {
@@ -531,7 +540,7 @@ export class SymbolFinder {
     };
   }
   public createGetterNode(context: ParserContext, location: Location, blockLocation: Location): GetterNode {
-    const name = 'set';
+    const name = 'get';
     return {
       type: 'getter',
       name,
