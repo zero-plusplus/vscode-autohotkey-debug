@@ -6,6 +6,7 @@ import { toFileUri } from './util';
 
 export type BreakpointLogGroup = 'start' | 'startCollapsed' | 'end' | undefined;
 export interface BreakpointAdvancedData {
+  group?: string;
   condition?: string;
   hitCondition?: string;
   logMessage?: string;
@@ -26,6 +27,7 @@ export class Breakpoint implements BreakpointAdvancedData {
   public hitCondition: string;
   public logMessage: string;
   public logGroup: BreakpointLogGroup;
+  public group?: string;
   public hidden: boolean;
   public hitCount = 0;
   public shouldBreak: boolean;
@@ -47,6 +49,7 @@ export class Breakpoint implements BreakpointAdvancedData {
     this.hitCondition = advancedData?.hitCondition ?? '';
     this.logMessage = advancedData?.logMessage ?? '';
     this.logGroup = advancedData?.logGroup;
+    this.group = advancedData?.group;
     this.hidden = advancedData?.hidden ?? false;
     this.unverifiedLine = advancedData?.unverifiedLine ?? dbgpBreakpoint.line;
     this.unverifiedColumn = advancedData?.unverifiedColumn;

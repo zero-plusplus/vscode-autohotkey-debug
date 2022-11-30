@@ -676,6 +676,9 @@ export class Session extends EventEmitter {
   public async sendBreakpointListCommand(): Promise<BreakpointListResponse> {
     return new BreakpointListResponse(await this.sendCommand('breakpoint_list'));
   }
+  public async sendExceptionBreakpointCommand(state: boolean): Promise<BreakpointSetResponse> {
+    return new BreakpointSetResponse(await this.sendCommand('breakpoint_set', `-t exception -s ${state ? 'enabled' : 'disabled'}`));
+  }
   public async sendStdoutCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stdout', `-c ${StdModeEnum[mode]}`));
   }

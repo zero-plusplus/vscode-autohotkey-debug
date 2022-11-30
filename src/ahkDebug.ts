@@ -1,6 +1,8 @@
 import * as path from 'path';
 import * as net from 'net';
 import { stat } from 'fs';
+import wildcard from 'wildcard-match';
+import * as sym from './util/SymbolFinder';
 
 import * as vscode from 'vscode';
 import {
@@ -36,10 +38,12 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher'
 import { isPrimitive, now, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
-import { CategoryData } from './extension';
+import { AhkConfigurationProvider, CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
+import { SymbolFinder } from './util/SymbolFinder';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
+export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   name: string;
   program: string;
@@ -74,6 +78,8 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   useLoadedScripts: false | {
     scanImplicitLibrary: boolean;
   };
+  useExceptionBreakpoint: boolean;
+  useFunctionBreakpoint: boolean | Array<string | FunctionBreakPointAdvancedData>;
   openFileOnExit: string;
   trace: boolean;
   skipFunctions?: string[];
@@ -85,7 +91,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
-type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause';
+type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause' | 'exception';
 export const serializePromise = async(promises: Array<Promise<void>>): Promise<void> => {
   await promises.reduce(async(prev, current): Promise<void> => {
     return prev.then(async() => current);
@@ -101,6 +107,9 @@ export class AhkDebugSession extends LoggingDebugSession {
   private pauseRequested = false;
   private isPaused = false;
   private isTerminateRequested = false;
+  private readonly configProvider: AhkConfigurationProvider;
+  private symbolFinder?: sym.SymbolFinder;
+  private callableSymbols: sym.NamedNodeBase[] | undefined;
   private get isClosedSession(): boolean {
     return this.session!.socketClosed || this.isTerminateRequested;
   }
@@ -111,6 +120,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private variableManager?: VariableManager;
   private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | MetaVariable | undefined)>();
   private breakpointManager?: BreakpointManager;
+  private readonly registeredFunctionBreakpoints: Breakpoint[] = [];
   private conditionalEvaluator!: ConditionalEvaluator;
   private prevStackFrames?: StackFrames;
   private currentStackFrames?: StackFrames;
@@ -125,9 +135,10 @@ export class AhkDebugSession extends LoggingDebugSession {
   private raisedCriticalError?: boolean;
   // The warning message is processed earlier than the server initialization, so it needs to be delayed.
   private readonly delayedWarningMessages: string[] = [];
-  constructor() {
+  constructor(provider: AhkConfigurationProvider) {
     super('autohotkey-debug.txt');
 
+    this.configProvider = provider;
     this.traceLogger = new TraceLogger((e): void => {
       this.sendEvent(e);
     });
@@ -146,6 +157,22 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportsSetVariable: true,
       supportTerminateDebuggee: true,
     };
+
+    const config = this.configProvider.config!;
+    if (config.useExceptionBreakpoint) {
+      // response.body.supportsExceptionOptions = true;
+      response.body.supportsExceptionInfoRequest = true;
+      response.body.exceptionBreakpointFilters = [
+        {
+          filter: 'Exceptions',
+          label: 'Exception Breakpoint',
+          default: false,
+        },
+      ];
+    }
+    if (config.useFunctionBreakpoint) {
+      response.body.supportsFunctionBreakpoints = true;
+    }
 
     this.sendResponse(response);
   }
@@ -346,6 +373,92 @@ export class AhkDebugSession extends LoggingDebugSession {
       response.body = { breakpoints: vscodeBreakpoints };
       this.sendResponse(response);
     });
+  }
+  protected async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+    const state = args.filters[0] === 'Exceptions' && this.config.useExceptionBreakpoint;
+    await this.session!.sendExceptionBreakpointCommand(state);
+    this.sendResponse(response);
+  }
+  protected async exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments, request?: DebugProtocol.Request): Promise<void> {
+    const exception = (await this.session!.evaluate('<exception>')) as dbgp.ObjectProperty | undefined;
+    if (!exception) {
+      this.sendResponse(response);
+      return;
+    }
+
+    const classNameProperty = await this.session!.evaluate('<exception>.__CLASS');
+    const exceptionId = classNameProperty instanceof dbgp.PrimitiveProperty ? classNameProperty.value : '<exception>';
+    const messageProperty = await this.session!.evaluate('<exception>.Message');
+
+    response.body = {
+      exceptionId: messageProperty instanceof dbgp.PrimitiveProperty && messageProperty.value !== ''
+        ? `${exceptionId}: ${messageProperty.value}`
+        : exceptionId,
+      breakMode: 'always',
+      description: this.currentStackFrames!.map((stackFrame, index) => {
+        const message = `${stackFrame.name} (${stackFrame.source.path}:${stackFrame.line})`;
+        if (index === 0) {
+          return message;
+        }
+        return `  at ${message}`;
+      }).join('\n'),
+    };
+    this.sendResponse(response);
+  }
+  protected async setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+    const breakpoints: Array<DebugProtocol.FunctionBreakpoint | FunctionBreakPointAdvancedData> = [ ...args.breakpoints ];
+    if (!this.callableSymbols) {
+      if (typeof this.config.useFunctionBreakpoint === 'object') {
+        breakpoints.push(...this.config.useFunctionBreakpoint.map((breakpoint) => {
+          return typeof breakpoint === 'string' ? { name: breakpoint } : breakpoint;
+        }));
+      }
+      this.callableSymbols = this.symbolFinder!
+        .find(this.config.program)
+        .filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as sym.NamedNodeBase[];
+    }
+
+    for await (const breakpoint of breakpoints) {
+      const isMatch = wildcard(breakpoint.name, { separator: '.' });
+      const symbols = this.callableSymbols.filter((symbol) => isMatch(sym.getFullName(symbol)));
+      for await (const symbol of symbols) {
+        try {
+          const existsFunctionBreakpoint = this.registeredFunctionBreakpoints.find((breakpoint) => {
+            return breakpoint.group === 'function-breakpoint'
+              && breakpoint.filePath === symbol.location.sourceFile
+              && breakpoint.unverifiedLine === sym.getLine(symbol, symbol.location.startIndex);
+          });
+          if (existsFunctionBreakpoint) {
+            existsFunctionBreakpoint.condition = breakpoint.condition ?? '';
+            existsFunctionBreakpoint.hitCondition = breakpoint.hitCondition ?? '';
+            continue;
+          }
+
+          const fileUri = toFileUri(symbol.location.sourceFile);
+          const line = sym.getLine(symbol, symbol.location.startIndex);
+          const advancedData = {
+            group: 'function-breakpoint',
+            condition: breakpoint.condition,
+            hitCondition: breakpoint.hitCondition,
+            hidden: true,
+            shouldBreak: false,
+            unverifiedLine: line,
+            unverifiedColumn: 1,
+          } as BreakpointAdvancedData;
+          if ('logPoint' in breakpoint && breakpoint.logPoint !== '') {
+            advancedData.logMessage = breakpoint.logPoint;
+          }
+
+          const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
+          this.registeredFunctionBreakpoints.push(registeredBreakpoint);
+        }
+        catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
+          console.log(errorMessage);
+        }
+      }
+    }
+    this.sendResponse(response);
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('configurationDoneRequest');
@@ -1012,6 +1125,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.currentMetaVariableMap = this.createMetaVariables(response);
     const { source, line, name } = this.currentStackFrames[0];
 
+    // Exception Breakpoint
+    if (response.exitReason === 'error') {
+      await this.sendStoppedEvent('exception');
+      return;
+    }
+
     const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(source.path, line);
     let stopReason: StopReason = 'step';
     if (lineBreakpoints) {
@@ -1668,6 +1787,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                 completionItemProvider.session = this.session;
                 this.ahkParser = createParser(this.session.ahkVersion);
                 this.conditionalEvaluator = new ConditionalEvaluator(this.session);
+                if (this.config.useFunctionBreakpoint) {
+                  this.symbolFinder = new SymbolFinder(this.session.ahkVersion);
+                }
                 this.sendEvent(new InitializedEvent());
               })
               .on('warning', (warning: string) => {

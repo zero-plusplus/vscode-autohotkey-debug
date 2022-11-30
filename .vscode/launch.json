@@ -81,7 +81,7 @@
     },
     {
         "name": "Mocha Selected Tests",
-        "type": "pwa-node",
+        "type": "node",
         "request": "launch",
         "cwd": "${workspaceFolder}",
         "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",

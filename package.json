@@ -496,6 +496,43 @@
                 "description": "Enable / disable Loaded Scripts. If disabled, the debug startup time will be faster.",
                 "default": true
               },
+              "useExceptionBreakpoint": {
+                "type": "boolean",
+                "description": "If set `true`, exception breakpoint can be enabled. But this feature requires that the runtime supports exception breakpoint.",
+                "default": true
+              },
+              "useFunctionBreakpoint": {
+                "type": [
+                  "boolean",
+                  "array"
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "A name or wildcard of function to set breakpoint."
+                    },
+                    "condition": {
+                      "type": "string",
+                      "description": "A condition of a function breakpoint."
+                    },
+                    "hitCondition": {
+                      "type": "string",
+                      "description": "A hit condition of a function breakpoint."
+                    },
+                    "logPoint": {
+                      "type": "string",
+                      "description": "A log point of a function breakpoint."
+                    }
+                  }
+                },
+                "description": "If set `true`, function breakpoint can be enabled.",
+                "default": true
+              },
               "skipFunctions": {
                 "type": "array",
                 "items": {
@@ -831,6 +868,43 @@
                 "description": "Enable / disable Loaded Scripts. If disabled, the debug startup time will be faster.",
                 "default": true
               },
+              "useExceptionBreakpoint": {
+                "type": "boolean",
+                "description": "If set `true`, exception breakpoint can be enabled. But this feature requires that the runtime supports exception breakpoint.",
+                "default": true
+              },
+              "useFunctionBreakpoint": {
+                "type": [
+                  "boolean",
+                  "array"
+                ],
+                "items": {
+                  "type": [
+                    "string",
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "description": "A name or wildcard of function to set breakpoint."
+                    },
+                    "condition": {
+                      "type": "string",
+                      "description": "A condition of a function breakpoint."
+                    },
+                    "hitCondition": {
+                      "type": "string",
+                      "description": "A hit condition of a function breakpoint."
+                    },
+                    "logPoint": {
+                      "type": "string",
+                      "description": "A log point of a function breakpoint."
+                    }
+                  }
+                },
+                "description": "If set `true`, function breakpoint can be enabled.",
+                "default": true
+              },
               "skipFunctions": {
                 "type": "array",
                 "items": {
@@ -1090,7 +1164,8 @@
     "regex-parser": "^2.2.11",
     "semver": "^7.3.7",
     "underscore.string": "^3.3.5",
-    "vscode-uri": "^2.1.2"
+    "vscode-uri": "^2.1.2",
+    "wildcard-match": "^5.1.2"
   },
   "devDependencies": {
     "@types/async-lock": "^1.1.2",

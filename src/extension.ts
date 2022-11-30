@@ -8,7 +8,7 @@ import { defaults, groupBy, isString, range } from 'lodash';
 import isPortTaken from 'is-port-taken';
 import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider, findWord } from './CompletionItemProvider';
-import { AhkDebugSession } from './ahkDebug';
+import { AhkDebugSession, LaunchRequestArguments } from './ahkDebug';
 import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
 import normalizeToUnix from 'normalize-path';
 import glob from 'fast-glob';
@@ -129,7 +129,8 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
   return normalized;
 };
 
-class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
+export class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
+  public config?: LaunchRequestArguments;
   public resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
     if (config.extends) {
       const launch = vscode.workspace.getConfiguration().get<Record<string, any>>('launch');
@@ -163,6 +164,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       useUIAVersion: false,
       useAnnounce: true,
       useLoadedScripts: true,
+      useExceptionBreakpoint: false,
       trace: false,
       // The following is not a configuration, but is set to pass data to the debug adapter.
       cancelReason: undefined,
@@ -600,6 +602,13 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       }
     })();
 
+    // init useExceptionBreakpoint
+    ((): void => {
+      if (typeof config.useExceptionBreakpoint !== 'boolean') {
+        throw Error('`useExceptionBreakpoint` must be a boolean.');
+      }
+    })();
+
     // init variableCategories
     ((): void => {
       if (!config.variableCategories) {
@@ -619,12 +628,17 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       }
     })();
 
+    this.config = config as unknown as LaunchRequestArguments;
     return config;
   }
 }
 class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
+  public readonly provider: AhkConfigurationProvider;
+  constructor(provider: AhkConfigurationProvider) {
+    this.provider = provider;
+  }
   public createDebugAdapterDescriptor(_session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-    return new vscode.DebugAdapterInlineImplementation(new AhkDebugSession());
+    return new vscode.DebugAdapterInlineImplementation(new AhkDebugSession(this.provider));
   }
 }
 
@@ -635,7 +649,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
 
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('ahk', provider));
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('autohotkey', provider));
-  context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
+  context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory(provider)));
   context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], completionItemProvider, '.'));
 
   const findWordRange = (ahkVersion: AhkVersion, document: vscode.TextDocument, position: vscode.Position, offset = 0): vscode.Range | undefined => {
