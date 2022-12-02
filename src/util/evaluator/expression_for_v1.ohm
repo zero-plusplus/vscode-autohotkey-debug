@@ -1,0 +1,77 @@
+MyGrammer {
+  Expression
+    = BinaryExpression
+    | PrimaryExpression
+    | PrefixUnaryExpression
+    | PostfixUnaryExpression
+    | TernaryExpression
+
+  PrimaryExpression
+    = ParenthesizedExpression
+    | UnaryExpression
+    | literal
+
+  ParenthesizedExpression = "(" Expression ")"
+  UnaryExpression
+    = "+" PrimaryExpression
+    | "-" PrimaryExpression
+    | "!" PrimaryExpression
+    | "&" PrimaryExpression
+
+  PrefixUnaryExpression
+    = "++" PrimaryExpression
+    | "--" PrimaryExpression
+
+  PostfixUnaryExpression
+    = PrimaryExpression "++"
+    | PrimaryExpression "--"
+
+  TernaryExpression
+    = Expression "?" Expression ":" Expression
+
+  BinaryExpression
+    = AdditiveExpression
+  AdditiveExpression
+    = AdditiveExpression "+" MultiplicativeExpression -- plus
+    | AdditiveExpression "-" MultiplicativeExpression -- minus
+    | MultiplicativeExpression
+  MultiplicativeExpression
+    = MultiplicativeExpression "*" PrimaryExpression -- multi
+    | MultiplicativeExpression "/" PrimaryExpression -- div
+    | PrimaryExpression
+
+  whitespace
+    = space
+    | lineTerminator
+  lineTerminator
+    = "\r\n"
+    | "\n"
+
+  identifierStart = letter | "_" | "$" | "@" | "#"
+  identifierPart = identifierStart | digit
+  identifierName = identifierStart identifierPart*
+
+  literal
+    = thisLiteral
+    | stringLiteral
+    | numericLiteral
+    | booleanLiteral
+
+  thisLiteral = "this"
+
+  booleanLiteral = ("true" | "false")
+
+  stringLiteral = "\"" doubleCharacter* "\""
+  doubleEscapeSequence = "`," | "`%" | "`;" | "`::" | "`r" | "`n" | "`b" | "`t" | "`v" | "`a" | "`f"
+  doubleCharacter
+    = ~("\"" | "`" | lineTerminator) any
+    | doubleEscapeSequence
+
+  numericLiteral = decimalLiteral | hexIntegerLiteral
+  digitWithoutZero = "1".."9"
+  decimalLiteral = decimalIntegerLiteral
+  decimalIntegerLiteral = digitWithoutZero digit*
+  hexIntegerLiteral = "0x" hexDigit+
+                    | "0X" hexDigit+
+
+}
