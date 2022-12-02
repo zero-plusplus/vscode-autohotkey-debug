@@ -62,41 +62,14 @@
       ]
     },
     {
-      "name": "Mocha Tests",
+      "name": "Debug Jest Tests",
       "type": "node",
       "request": "launch",
-      "preLaunchTask": "subtask:build",
-      "cwd": "${workspaceFolder}",
-      "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-      "args": [
-        "${workspaceFolder}/build/test"
+      "runtimeArgs": [
+        "--inspect-brk",
+        "${workspaceRoot}/node_modules/jest/bin/jest.js",
+        "--runInBand"
       ],
-      "outFiles": [
-        "${workspaceFolder}/build/test/**/*.js"
-      ],
-      "internalConsoleOptions": "openOnSessionStart",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
-    },
-    {
-        "name": "Mocha Selected Tests",
-        "type": "node",
-        "request": "launch",
-        "cwd": "${workspaceFolder}",
-        "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-        "args": [
-          "${file}"
-        ],
-        "sourceMaps": true,
-        "internalConsoleOptions": "openOnSessionStart",
-        "resolveSourceMapLocations": [
-            "${workspaceFolder}/**",
-            "!**/node_modules/**"
-        ],
-        "skipFiles": [
-          "<node_internals>/**"
-        ]
     },
   ]
 }
