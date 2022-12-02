@@ -1,10 +1,11 @@
+import { describe, test } from '@jest/globals';
 import * as assert from 'assert';
 import * as path from 'path';
 import { NamedNodeBase, SymbolFinder } from '../../src/util/SymbolFinder';
 
 const sampleDir = path.resolve(`${__dirname}/sample`);
 
-suite('SymbolFinder', () => {
+describe('SymbolFinder', () => {
   test('v1-1', () => {
     const finder = new SymbolFinder('1.1.35.0');
     const result = finder.find(`${sampleDir}/A.ahk`).filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as NamedNodeBase[];

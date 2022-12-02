@@ -30,6 +30,7 @@
 	"include": [
 		"task/**/*",
 		"src/**/*",
-		"test/**/*"
+		"test/**/*",
+		"jest.config.ts"
 	]
 }

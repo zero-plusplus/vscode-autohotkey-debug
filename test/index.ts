@@ -1,8 +1,9 @@
+import { describe, test } from '@jest/globals';
 import * as assert from 'assert';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { splitVariablePath } from '../src/util/util';
 
-suite('splitVariablePath', () => {
+describe('splitVariablePath', () => {
   test('v1', () => {
     const ahkVersion = new AhkVersion('1.1.00');
     assert.deepStrictEqual(splitVariablePath(ahkVersion, 'a'), [ 'a' ]);

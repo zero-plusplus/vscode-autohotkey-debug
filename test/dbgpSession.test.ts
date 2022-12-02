@@ -1,15 +1,24 @@
-import * as assert from 'assert';
+import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../src/dbgpSession';
 import * as net from 'net';
 
-suite('Debug session test', () => {
-  setup(function(done) {
-    this.serverSocket = net.connect(9002, 'localhost');
-    this.session = new dbgp.Session(this.serverSocket);
-    this.server = net.createServer((socket) => {
-      this.socket = socket;
+describe('Debug session test', () => {
+  let socket: net.Socket;
+  let serverSocket: net.Socket;
+  let server: net.Server;
+  let session: dbgp.Session;
+  beforeAll(function(done) {
+    serverSocket = net.connect(9000, 'localhost');
+    session = new dbgp.Session(serverSocket);
+    server = net.createServer((_socket) => {
+      socket = _socket;
       done();
-    }).listen(9002, 'localhost');
+    }).listen(9000, 'localhost');
+  });
+  afterAll(function() {
+    socket.end();
+    session.close();
+    server.close();
   });
 
   test('handlePacket', function(done) {
@@ -20,8 +29,8 @@ suite('Debug session test', () => {
       '<init appid="AutoHotkey" ide_key="" session="" thread="7208" parent="" ',
       'language="AutoHotkey" protocol_version="1.0" fileuri="file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk"/>\0',
     ];
-    this.session.on('init', (response: dbgp.InitPacket) => {
-      assert.deepStrictEqual(response, {
+    session.on('init', (response: dbgp.InitPacket) => {
+      expect(response).toEqual(expect.objectContaining({
         appId: 'AutoHotkey',
         fileUri: 'file:///W%3A/project/vscode-autohotkey-debug/demo/demo.ahk',
         ideKey: '',
@@ -30,23 +39,18 @@ suite('Debug session test', () => {
         protocolVersion: '1.0',
         session: '',
         thread: '7208',
-      });
+      }));
     });
-    this.serverSocket.on('data', () => {
+    serverSocket.on('data', () => {
       const packet = packets.shift();
       if (typeof packet === 'undefined') {
         done();
         return;
       }
-      this.socket.write(Buffer.from(String(packet)));
+      socket.write(Buffer.from(String(packet)));
     });
 
     const packet = packets.shift();
-    this.socket.write(Buffer.from(String(packet)));
-  });
-  teardown(function() {
-    this.socket.end();
-    this.session.close();
-    this.server.close();
+    socket.write(Buffer.from(String(packet)));
   });
 });
