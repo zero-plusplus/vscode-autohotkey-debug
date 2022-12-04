@@ -15,10 +15,16 @@ describe('ExpressionParser for v1', () => {
       '(+1)',
       'this',
       '1 + 1 - 1 * 1 / 1',
+      'num - 123',
+      'true ? true : false',
+      'obj.member',
+      'obj.member[3]',
+      'arr[3]',
+      'arr[3, 4]',
     ];
     for (const testData of testDataList) {
       const result = parser.parse(testData);
-      assert.ok(result.succeeded(), result.message);
+      assert.ok(result.succeeded(), result.message ? `${testData}\n${result.message}` : testData);
     }
   });
 });

@@ -14,7 +14,6 @@ export class ExpressionParser {
       : 'expression_for_v2.ohm';
     const grammarText = fs.readFileSync(path.resolve(`${__dirname}/${grammarFileName}`), 'utf8').toString();
     this.grammar = ohm.grammar(grammarText);
-    // const semantics = grammar.createSemantics();
   }
   public parse(text: string): ohm.MatchResult {
     return this.grammar.match(text);
