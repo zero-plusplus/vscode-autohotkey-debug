@@ -3,6 +3,7 @@
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
 import * as dbgp from '../../dbgpSession';
+import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
 
 export type Node =
@@ -102,7 +103,10 @@ export class ExpressionEvaluator {
   }
   public async evalNode(node: Node, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     if (typeof node === 'string') {
-      return node;
+      if (node.startsWith('"') && node.endsWith('"')) {
+        return node.slice(1, -1);
+      }
+      return Number(node);
     }
 
     switch (node.type) {
@@ -139,7 +143,7 @@ export class ExpressionEvaluator {
 
     let _stackFrame = stackFrame;
     if (!_stackFrame) {
-      const stackFrames = (await this.session.sendStackGetCommand()).stackFrames;
+      const { stackFrames } = await this.session.sendStackGetCommand();
       if (stackFrames.length === 0) {
         return undefined;
       }
@@ -163,40 +167,84 @@ export class ExpressionEvaluator {
     return undefined;
   }
   public async evalIdentifier(node: IdentifierNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
-    const name = await this.nodeToString(node, stackFrame, maxDepth);
-    return this.evalVariableByName(name, stackFrame, maxDepth);
+    const name = this.nodeToString(node);
+
+    const result = await this.evalVariableByName(name, stackFrame, maxDepth);
+    return result;
   }
   public async evalPropertyAccessExpression(node: PropertyAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
-    const name = await this.nodeToString(node, stackFrame, maxDepth);
-    return this.evalVariableByName(name, stackFrame, maxDepth);
+    const object = await this.evalNode(node.object, stackFrame, maxDepth);
+    if (!(object instanceof dbgp.ObjectProperty)) {
+      return undefined;
+    }
+    const propertyName = this.nodeToString(node.property);
+    if (!propertyName) {
+      return undefined;
+    }
+
+    const child = await this.fetchChildProperty(object, propertyName, stackFrame);
+    return child;
   }
   public async evalElementAccessExpression(node: ElementAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
-    const name = await this.nodeToString(node, stackFrame, maxDepth);
-    return this.evalVariableByName(name, stackFrame, maxDepth);
+    const object = await this.evalNode(node.object, stackFrame, maxDepth);
+    if (!(object instanceof dbgp.ObjectProperty)) {
+      return undefined;
+    }
+    const evaluatedArguments = (await Promise.all(node.arguments.map(async(arg) => {
+      return this.evalNode(arg, stackFrame, maxDepth);
+    })));
+
+    let currentObject: dbgp.ObjectProperty = object;
+    for await (const arg of evaluatedArguments.slice(0, -1)) {
+      const child = await this.fetchChildProperty(currentObject, arg, stackFrame);
+      if (child instanceof dbgp.ObjectProperty) {
+        currentObject = child;
+        continue;
+      }
+      break;
+    }
+
+    const property = await this.fetchChildProperty(currentObject, evaluatedArguments[evaluatedArguments.length - 1], stackFrame);
+    return property;
   }
-  public async nodeToString(node: Node, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<string | undefined> {
+  public nodeToString(node: Node): string | undefined {
     if (typeof node === 'string') {
       return node;
     }
 
     switch (node.type) {
-      case 'propertyaccess': {
-        const object = await this.nodeToString(node.object, stackFrame, maxDepth);
-        const property = await this.nodeToString(node.property, stackFrame, maxDepth);
-        return `${String(object)}.${String(property)}`;
-      }
-      case 'elementaccess': {
-        const object = await this.nodeToString(node.object, stackFrame, maxDepth);
-        const args = (await Promise.all(node.arguments.map(async(arg) => this.nodeToString(arg)))).join(', ');
-        return `${String(object)}[${args}]`;
-      }
       case 'identifier':
         return `${node.start}${node.parts.join('')}`;
-      case 'string':
-        return `${node.startQuote}${node.value}${node.endQuote}`;
-      case 'number':
-        return `${node.value}`;
       default: break;
+    }
+    return undefined;
+  }
+  public async fetchChildProperty(object: dbgp.ObjectProperty, name: EvaluatedValue, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> {
+    if (!object.hasChildren) {
+      return undefined;
+    }
+    const _object = (await this.evalVariableByName(object.fullName, stackFrame, 1)) as dbgp.ObjectProperty;
+    const property = _object.children.find((child) => {
+      if (typeof name === 'string') {
+        return equalsIgnoreCase(child.name, name);
+      }
+      else if (typeof name === 'number') {
+        return equalsIgnoreCase(child.name, `[${name}]`);
+      }
+      else if (child instanceof dbgp.ObjectProperty && name instanceof dbgp.ObjectProperty) {
+        return child.address === name.address;
+      }
+      return false;
+    });
+
+    if (property instanceof dbgp.PrimitiveProperty) {
+      if (property.type === 'string') {
+        return property.value;
+      }
+      return Number(property.value);
+    }
+    if (property instanceof dbgp.ObjectProperty) {
+      return property;
     }
     return undefined;
   }
