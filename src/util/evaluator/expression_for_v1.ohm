@@ -82,5 +82,4 @@ Expression {
   decimalIntegerLiteral = digitWithoutZero digit*
   hexIntegerLiteral = "0x" hexDigit+
                     | "0X" hexDigit+
-
 }

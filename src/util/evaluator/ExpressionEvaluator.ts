@@ -65,7 +65,7 @@ export interface NumberNode extends NodeBase {
   value: number;
 }
 
-export type EvaluatedValue = string | number | boolean | undefined;
+export type EvaluatedValue = string | number | boolean | undefined | dbgp.ObjectProperty;
 export class EvaluatedNode {
   public readonly type: string;
   public readonly node: ohm.Node | ohm.Node[];
@@ -83,7 +83,7 @@ export class ExpressionEvaluator {
     this.session = session;
     this.parser = new ExpressionParser(session.ahkVersion);
   }
-  public async eval(expression: string): Promise<EvaluatedValue> {
+  public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const matchResult = this.parser.parse(expression);
     const node = toAST(matchResult, {
       AdditiveExpression_addition: { type: 'addition', left: 0, operator: 1, right: 2 },
@@ -97,10 +97,10 @@ export class ExpressionEvaluator {
       numericLiteral: { type: 'number', value: 0 },
     }) as Node;
 
-    const result = await this.evalNode(node);
+    const result = await this.evalNode(node, stackFrame, maxDepth);
     return result;
   }
-  public async evalNode(node: Node): Promise<EvaluatedValue> {
+  public async evalNode(node: Node, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     if (typeof node === 'string') {
       return node;
     }
@@ -110,18 +110,18 @@ export class ExpressionEvaluator {
       case 'subtraction':
       case 'multiplication':
       case 'division':
-        return this.evalBinaryExpression(node);
-      case 'identifier': return this.evalIdentifier(node);
-      case 'propertyaccess': return this.evalPropertyAccessExpression(node);
-      case 'elementaccess': return this.evalElementAccessExpression(node);
+        return this.evalBinaryExpression(node, stackFrame, maxDepth);
+      case 'identifier': return this.evalIdentifier(node, stackFrame, maxDepth);
+      case 'propertyaccess': return this.evalPropertyAccessExpression(node, stackFrame, maxDepth);
+      case 'elementaccess': return this.evalElementAccessExpression(node, stackFrame, maxDepth);
       default: break;
     }
     return undefined;
   }
-  public async evalBinaryExpression(node: BinaryNode): Promise<EvaluatedValue> {
-    const left = await this.evalNode(node.left);
+  public async evalBinaryExpression(node: BinaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const left = await this.evalNode(node.left, stackFrame, maxDepth);
     const operator = node.operator;
-    const right = await this.evalNode(node.right);
+    const right = await this.evalNode(node.right, stackFrame, maxDepth);
 
     switch (operator) {
       case '+': return Number(left) + Number(right);
@@ -132,44 +132,61 @@ export class ExpressionEvaluator {
     }
     return undefined;
   }
-  public async evalVariableByName(name: string | undefined): Promise<EvaluatedValue> {
+  public async evalVariableByName(name: string | undefined, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     if (!name) {
       return undefined;
     }
 
-    const property = await this.session.evaluate(name);
-    if (property instanceof dbgp.PrimitiveProperty) {
-      return property.value;
+    let _stackFrame = stackFrame;
+    if (!_stackFrame) {
+      const stackFrames = (await this.session.sendStackGetCommand()).stackFrames;
+      if (stackFrames.length === 0) {
+        return undefined;
+      }
+      _stackFrame = stackFrames[0];
     }
 
-    // Not supported for object
+    const { contexts } = await this.session.sendContextNamesCommand(_stackFrame);
+    for await (const context of contexts) {
+      const response = await this.session.sendPropertyGetCommand(context, name, maxDepth);
+      const property = response.properties[0] as dbgp.Property | undefined;
+      if (property instanceof dbgp.ObjectProperty) {
+        return property;
+      }
+      if (property instanceof dbgp.PrimitiveProperty) {
+        if (property.type === 'string') {
+          return property.value;
+        }
+        return Number(property.value);
+      }
+    }
     return undefined;
   }
-  public async evalIdentifier(node: IdentifierNode): Promise<EvaluatedValue> {
-    const name = await this.nodeToString(node);
-    return this.evalVariableByName(name);
+  public async evalIdentifier(node: IdentifierNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const name = await this.nodeToString(node, stackFrame, maxDepth);
+    return this.evalVariableByName(name, stackFrame, maxDepth);
   }
-  public async evalPropertyAccessExpression(node: PropertyAccessNode): Promise<EvaluatedValue> {
-    const name = await this.nodeToString(node);
-    return this.evalVariableByName(name);
+  public async evalPropertyAccessExpression(node: PropertyAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const name = await this.nodeToString(node, stackFrame, maxDepth);
+    return this.evalVariableByName(name, stackFrame, maxDepth);
   }
-  public async evalElementAccessExpression(node: ElementAccessNode): Promise<EvaluatedValue> {
-    const name = await this.nodeToString(node);
-    return this.evalVariableByName(name);
+  public async evalElementAccessExpression(node: ElementAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const name = await this.nodeToString(node, stackFrame, maxDepth);
+    return this.evalVariableByName(name, stackFrame, maxDepth);
   }
-  public async nodeToString(node: Node): Promise<string | undefined> {
+  public async nodeToString(node: Node, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<string | undefined> {
     if (typeof node === 'string') {
       return node;
     }
 
     switch (node.type) {
       case 'propertyaccess': {
-        const object = await this.nodeToString(node.object);
-        const property = await this.nodeToString(node.property);
+        const object = await this.nodeToString(node.object, stackFrame, maxDepth);
+        const property = await this.nodeToString(node.property, stackFrame, maxDepth);
         return `${String(object)}.${String(property)}`;
       }
       case 'elementaccess': {
-        const object = await this.nodeToString(node.object);
+        const object = await this.nodeToString(node.object, stackFrame, maxDepth);
         const args = (await Promise.all(node.arguments.map(async(arg) => this.nodeToString(arg)))).join(', ');
         return `${String(object)}[${args}]`;
       }

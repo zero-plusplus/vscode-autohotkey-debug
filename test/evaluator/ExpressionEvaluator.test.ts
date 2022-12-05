@@ -56,8 +56,8 @@ describe('ExpressionEvaluator for v1', (): void => {
     expect(await evaluator.eval('10 * (3 + (num - 123) - 30)')).toBe(-270);
     expect(await evaluator.eval('obj.key')).toBe('value');
     expect(await evaluator.eval('obj["key"]')).toBe('value');
-    expect(await evaluator.eval('arr[3]')).toBe('100');
-    expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe('100');
-    expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe('100');
+    expect(await evaluator.eval('arr[3]')).toBe(100);
+    expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
+    expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
   });
 });
