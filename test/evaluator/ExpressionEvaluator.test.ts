@@ -61,5 +61,7 @@ describe('ExpressionEvaluator for v1', (): void => {
     expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
     expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
     expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true);
+    expect(await evaluator.eval('CountOf(str)')).toBe(3);
+    expect(await evaluator.eval('CountOf(arr)')).toBe(3);
   });
 });

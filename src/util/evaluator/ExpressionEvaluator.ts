@@ -118,6 +118,53 @@ export const fetchProperty = async(session: dbgp.Session, name: string, stackFra
   }
   return undefined;
 };
+export const fetchPropertyChildren = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: EvaluatedValue): Promise<dbgp.Property[] | undefined> => {
+  if (!(object instanceof dbgp.ObjectProperty)) {
+    return undefined;
+  }
+
+  if (!object.hasChildren) {
+    return undefined;
+  }
+  const property = (await fetchProperty(session, object.fullName, stackFrame, 1));
+  if (property instanceof dbgp.ObjectProperty) {
+    return property.children;
+  }
+  return undefined;
+};
+export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, name: EvaluatedValue): Promise<EvaluatedValue> => {
+  if (!object.hasChildren) {
+    return undefined;
+  }
+  const children = await fetchPropertyChildren(session, stackFrame, object);
+  if (!children) {
+    return undefined;
+  }
+
+  const property = children.find((child) => {
+    if (typeof name === 'string') {
+      return equalsIgnoreCase(child.name, name);
+    }
+    else if (typeof name === 'number') {
+      return equalsIgnoreCase(child.name, `[${name}]`);
+    }
+    else if (child instanceof dbgp.ObjectProperty && name instanceof dbgp.ObjectProperty) {
+      return child.address === name.address;
+    }
+    return false;
+  });
+
+  if (property instanceof dbgp.PrimitiveProperty) {
+    if (property.type === 'string') {
+      return property.value;
+    }
+    return Number(property.value);
+  }
+  if (property instanceof dbgp.ObjectProperty) {
+    return property;
+  }
+  return undefined;
+};
 export class ExpressionEvaluator {
   private readonly session: dbgp.Session;
   private readonly parser: ExpressionParser;
@@ -202,7 +249,7 @@ export class ExpressionEvaluator {
       return undefined;
     }
 
-    const child = await this.fetchChildProperty(object, propertyName, stackFrame);
+    const child = await fetchPropertyChild(this.session, stackFrame, object, propertyName);
     return child;
   }
   public async evalElementAccessExpression(node: ElementAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
@@ -216,7 +263,7 @@ export class ExpressionEvaluator {
 
     let currentObject: dbgp.ObjectProperty = object;
     for await (const arg of evaluatedArguments.slice(0, -1)) {
-      const child = await this.fetchChildProperty(currentObject, arg, stackFrame);
+      const child = await fetchPropertyChild(this.session, stackFrame, currentObject, arg);
       if (child instanceof dbgp.ObjectProperty) {
         currentObject = child;
         continue;
@@ -224,7 +271,7 @@ export class ExpressionEvaluator {
       break;
     }
 
-    const property = await this.fetchChildProperty(currentObject, evaluatedArguments[evaluatedArguments.length - 1], stackFrame);
+    const property = await fetchPropertyChild(this.session, stackFrame, currentObject, evaluatedArguments[evaluatedArguments.length - 1]);
     return property;
   }
   public async evalCallExpression(node: CallNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
@@ -245,35 +292,6 @@ export class ExpressionEvaluator {
       case 'identifier':
         return `${node.start}${node.parts.join('')}`;
       default: break;
-    }
-    return undefined;
-  }
-  public async fetchChildProperty(object: dbgp.ObjectProperty, name: EvaluatedValue, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> {
-    if (!object.hasChildren) {
-      return undefined;
-    }
-    const _object = (await fetchProperty(this.session, object.fullName, stackFrame, 1)) as dbgp.ObjectProperty;
-    const property = _object.children.find((child) => {
-      if (typeof name === 'string') {
-        return equalsIgnoreCase(child.name, name);
-      }
-      else if (typeof name === 'number') {
-        return equalsIgnoreCase(child.name, `[${name}]`);
-      }
-      else if (child instanceof dbgp.ObjectProperty && name instanceof dbgp.ObjectProperty) {
-        return child.address === name.address;
-      }
-      return false;
-    });
-
-    if (property instanceof dbgp.PrimitiveProperty) {
-      if (property.type === 'string') {
-        return property.value;
-      }
-      return Number(property.value);
-    }
-    if (property instanceof dbgp.ObjectProperty) {
-      return property;
     }
     return undefined;
   }

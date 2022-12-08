@@ -1,6 +1,6 @@
 import * as dbgp from '../../src/dbgpSession';
 import { CaseInsensitiveMap } from '../../src/util/CaseInsensitiveMap';
-import { EvaluatedValue, fetchProperty } from '../../src/util/evaluator/ExpressionEvaluator';
+import { EvaluatedValue, fetchProperty, fetchPropertyChildren } from '../../src/util/evaluator/ExpressionEvaluator';
 
 export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, ...params: EvaluatedValue[]) => Promise<string | number | boolean | undefined>;
 export type LibraryFuncReturnValue = string | number | boolean | undefined;
@@ -29,3 +29,13 @@ const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass): 
 };
 library_for_v1.set('InstanceOf', instanceOf);
 library_for_v2.set('InstanceOf', instanceOf);
+
+const countOf: LibraryFunc = async(session, stackFrame, value) => {
+  if (value instanceof dbgp.ObjectProperty) {
+    const children = await fetchPropertyChildren(session, stackFrame, value);
+    return children?.length ?? 0;
+  }
+  return String(value).length;
+};
+library_for_v1.set('CountOf', countOf);
+library_for_v2.set('CountOf', countOf);
