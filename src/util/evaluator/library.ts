@@ -1,6 +1,6 @@
-import * as dbgp from '../../src/dbgpSession';
-import { CaseInsensitiveMap } from '../../src/util/CaseInsensitiveMap';
-import { EvaluatedValue, fetchProperty, fetchPropertyChildren } from '../../src/util/evaluator/ExpressionEvaluator';
+import * as dbgp from '../../dbgpSession';
+import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
+import { EvaluatedValue, fetchProperty, fetchPropertyChildren } from './ExpressionEvaluator';
 
 export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, ...params: EvaluatedValue[]) => Promise<string | number | boolean | undefined>;
 export type LibraryFuncReturnValue = string | number | boolean | undefined;
