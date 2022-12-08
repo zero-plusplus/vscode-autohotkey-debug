@@ -39,3 +39,9 @@ const countOf: LibraryFunc = async(session, stackFrame, value) => {
 };
 library_for_v1.set('CountOf', countOf);
 library_for_v2.set('CountOf', countOf);
+
+const isString: LibraryFunc = async(session, stackFrame, value) => {
+  return Promise.resolve(typeof value === 'string');
+};
+library_for_v1.set('IsString', isString);
+library_for_v2.set('IsString', isString);
