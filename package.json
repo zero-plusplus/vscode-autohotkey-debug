@@ -16,7 +16,7 @@
     "build": "ts-node task/build.ts",
     "watch": "ts-node task/watch.ts",
     "clean": "ts-node task/clean.ts",
-    "test": "npm run lint && mocha ./test/*.ts",
+    "test": "jest --runInBand --detectOpenHandles",
     "test:sandbox": "npm run package && ts-node task/sandbox.ts",
     "lint": "ts-node task/lint.ts",
     "package": "npm run clean && npm run lint && vsce package",
