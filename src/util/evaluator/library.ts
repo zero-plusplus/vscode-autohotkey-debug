@@ -53,3 +53,20 @@ const isString: LibraryFunc = async(session, stackFrame, value) => {
 };
 library_for_v1.set('IsString', isString);
 library_for_v2.set('IsString', isString);
+
+const isNumber: LibraryFunc = async(session, stackFrame, value) => {
+  return Promise.resolve(typeof value === 'number');
+};
+library_for_v1.set('IsNumber', isNumber);
+library_for_v2.set('IsNumber', isNumber);
+
+const isNumberLike: LibraryFunc = async(session, stackFrame, value) => {
+  switch (typeof value) {
+    case 'string': return isNumber(session, stackFrame, Number(value));
+    case 'number': return Promise.resolve(true);
+    default: break;
+  }
+  return Promise.resolve(false);
+};
+library_for_v1.set('IsNumberLike', isNumberLike);
+library_for_v2.set('IsNumberLike', isNumberLike);

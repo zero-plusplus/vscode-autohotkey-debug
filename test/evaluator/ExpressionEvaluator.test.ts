@@ -60,6 +60,9 @@ describe('ExpressionEvaluator for v1', (): void => {
     expect(await evaluator.eval('arr[3]')).toBe(100);
     expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
     expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
+  });
+
+  test('eval libraries', async(): Promise<void> => {
     expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true);
     expect(await evaluator.eval('CountOf(str)')).toBe(3);
     expect(await evaluator.eval('CountOf(arr)')).toBe(3);
@@ -70,5 +73,11 @@ describe('ExpressionEvaluator for v1', (): void => {
     expect(await evaluator.eval('IsString(str)')).toBe(true);
     expect(await evaluator.eval('IsString(num)')).toBe(false);
     expect(await evaluator.eval('IsString(arr)')).toBe(false);
+    expect(await evaluator.eval('IsNumber(num)')).toBe(true);
+    expect(await evaluator.eval('IsNumber(str)')).toBe(false);
+    expect(await evaluator.eval('IsNumber(arr)')).toBe(false);
+    expect(await evaluator.eval('IsNumberLike(num)')).toBe(true);
+    expect(await evaluator.eval('IsNumberLike(str)')).toBe(true);
+    expect(await evaluator.eval('IsNumberLike(arr)')).toBe(false);
   });
 });
