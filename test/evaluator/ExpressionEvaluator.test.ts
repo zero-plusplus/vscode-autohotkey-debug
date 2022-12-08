@@ -27,7 +27,7 @@ describe('ExpressionEvaluator for v1', (): void => {
   beforeAll(async() => {
     return new Promise<void>((resolve) => {
       const runtime = 'AutoHotkey.exe';
-      const program = path.resolve(sampleDir, '1.ahk');
+      const program = path.resolve(sampleDir, 'sample.ahk');
       process = debugAutoHotkey(program, runtime, port, hostname);
       server = net.createServer()
         .listen(port, hostname)
