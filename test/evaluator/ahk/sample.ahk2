@@ -1,5 +1,4 @@
 ﻿#SingleInstance
-#Persistent
 
 str := "abc"
 num_int := 123
@@ -11,10 +10,11 @@ num_hex_like := "0x123"
 num_scientific_notation := 1.0e4
 num_scientific_notation_like := "1.0e4"
 key := "key"
-obj := { key: "value", "3": "100" }
+obj := { key: "value" }
+mapObj := Map("key", "value", "3", "100")
 arr := [ 1, 10, 100 ]
 nestedObj := { a: { b: { obj: obj, arr: arr } } }
-instance := new T()
+instance := T()
 class T {
 }
 return
