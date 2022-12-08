@@ -2,6 +2,14 @@ import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { EvaluatedValue, fetchProperty, fetchPropertyChildren } from './ExpressionEvaluator';
 
+const toNumber = (value: any): number | undefined => {
+  const number = Number(value);
+  if (isNaN(number)) {
+    return undefined;
+  }
+  return number;
+};
+
 export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, ...params: EvaluatedValue[]) => Promise<string | number | boolean | undefined>;
 export type LibraryFuncReturnValue = string | number | boolean | undefined;
 
@@ -62,7 +70,7 @@ library_for_v2.set('IsNumber', isNumber);
 
 const isNumberLike: LibraryFunc = async(session, stackFrame, value) => {
   switch (typeof value) {
-    case 'string': return isNumber(session, stackFrame, Number(value));
+    case 'string': return isNumber(session, stackFrame, toNumber(value));
     case 'number': return Promise.resolve(true);
     default: break;
   }
