@@ -176,7 +176,7 @@ export class ExpressionEvaluator {
     this.library = 2.0 < session.ahkVersion.mejor
       ? library_for_v2
       : library_for_v1;
-    this.parser = new ExpressionParser(session.ahkVersion);
+    this.parser = new ExpressionParser();
   }
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const matchResult = this.parser.parse(expression);
