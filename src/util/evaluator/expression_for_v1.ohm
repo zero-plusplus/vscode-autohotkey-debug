@@ -6,7 +6,7 @@ Expression {
 
   PrimaryExpression
     = ParenthesizedExpression
-    | MemberExpression
+    | CallExpression
     | UnaryExpression
     | identifier
     | literal
@@ -25,8 +25,8 @@ Expression {
     | PostfixUnaryExpression
 
   PostfixUnaryExpression
-    = PrimaryExpression "++"
-    | PrimaryExpression "--"
+    = Expression "++"
+    | Expression "--"
 
   TernaryExpression
     = Expression "?" Expression ":" Expression
@@ -48,6 +48,7 @@ Expression {
     = MemberExpression "." ~space identifier -- propertyaccess
     | MemberExpression ~space "[" Arguments "]" -- elementaccess
     | PrimaryExpression
+  CallExpression = MemberExpression "(" Arguments ")"
 
   whitespace
     = space

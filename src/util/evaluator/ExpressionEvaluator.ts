@@ -2,7 +2,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
+import { LibraryFunc, library_for_v1, library_for_v2 } from '../../../test/evaluator/library';
 import * as dbgp from '../../dbgpSession';
+import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
 
@@ -11,6 +13,7 @@ export type Node =
  | BinaryNode
  | PropertyAccessNode
  | ElementAccessNode
+ | CallNode
  | StringNode
  | NumberNode
  | string;
@@ -55,6 +58,11 @@ export interface ElementAccessNode extends NodeBase {
   object: Node;
   arguments: Node[];
 }
+export interface CallNode extends NodeBase {
+  type: 'call';
+  caller: Node;
+  arguments: Node[];
+}
 export interface StringNode extends NodeBase {
   type: 'string';
   startQuote: string;
@@ -65,7 +73,10 @@ export interface NumberNode extends NodeBase {
   type: 'number';
   value: number;
 }
-
+export type Function = (...params: any[]) => string | number | undefined;
+export type Library = {
+  [key: string]: (...params: any[]) => string | number | undefined;
+};
 export type EvaluatedValue = string | number | boolean | undefined | dbgp.ObjectProperty;
 export class EvaluatedNode {
   public readonly type: string;
@@ -77,11 +88,45 @@ export class EvaluatedNode {
     this.value = value;
   }
 }
+export const fetchProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
+  if (!name) {
+    return undefined;
+  }
+
+  let _stackFrame = stackFrame;
+  if (!_stackFrame) {
+    const { stackFrames } = await session.sendStackGetCommand();
+    if (stackFrames.length === 0) {
+      return undefined;
+    }
+    _stackFrame = stackFrames[0];
+  }
+
+  const { contexts } = await session.sendContextNamesCommand(_stackFrame);
+  for await (const context of contexts) {
+    const response = await session.sendPropertyGetCommand(context, name, maxDepth);
+    const property = response.properties[0] as dbgp.Property | undefined;
+    if (property instanceof dbgp.ObjectProperty) {
+      return property;
+    }
+    if (property instanceof dbgp.PrimitiveProperty) {
+      if (property.type === 'string') {
+        return property.value;
+      }
+      return Number(property.value);
+    }
+  }
+  return undefined;
+};
 export class ExpressionEvaluator {
   private readonly session: dbgp.Session;
   private readonly parser: ExpressionParser;
+  private readonly library: CaseInsensitiveMap<string, LibraryFunc>;
   constructor(session: dbgp.Session) {
     this.session = session;
+    this.library = 2.0 < session.ahkVersion.mejor
+      ? library_for_v2
+      : library_for_v1;
     this.parser = new ExpressionParser(session.ahkVersion);
   }
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
@@ -93,6 +138,7 @@ export class ExpressionEvaluator {
       MultiplicativeExpression_division: { type: 'division', left: 0, operator: 1, right: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 2 },
+      CallExpression: { type: 'call', caller: 0, arguments: 2 },
       identifier: { type: 'identifier', start: 0, parts: 1 },
       stringLiteral: { type: 'string', startQuote: 0, value: 0, endQuote: 0 },
       numericLiteral: { type: 'number', value: 0 },
@@ -118,6 +164,7 @@ export class ExpressionEvaluator {
       case 'identifier': return this.evalIdentifier(node, stackFrame, maxDepth);
       case 'propertyaccess': return this.evalPropertyAccessExpression(node, stackFrame, maxDepth);
       case 'elementaccess': return this.evalElementAccessExpression(node, stackFrame, maxDepth);
+      case 'call': return this.evalCallExpression(node, stackFrame, maxDepth);
       default: break;
     }
     return undefined;
@@ -136,40 +183,13 @@ export class ExpressionEvaluator {
     }
     return undefined;
   }
-  public async evalVariableByName(name: string | undefined, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+  public async evalIdentifier(node: IdentifierNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const name = this.nodeToString(node);
     if (!name) {
       return undefined;
     }
 
-    let _stackFrame = stackFrame;
-    if (!_stackFrame) {
-      const { stackFrames } = await this.session.sendStackGetCommand();
-      if (stackFrames.length === 0) {
-        return undefined;
-      }
-      _stackFrame = stackFrames[0];
-    }
-
-    const { contexts } = await this.session.sendContextNamesCommand(_stackFrame);
-    for await (const context of contexts) {
-      const response = await this.session.sendPropertyGetCommand(context, name, maxDepth);
-      const property = response.properties[0] as dbgp.Property | undefined;
-      if (property instanceof dbgp.ObjectProperty) {
-        return property;
-      }
-      if (property instanceof dbgp.PrimitiveProperty) {
-        if (property.type === 'string') {
-          return property.value;
-        }
-        return Number(property.value);
-      }
-    }
-    return undefined;
-  }
-  public async evalIdentifier(node: IdentifierNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
-    const name = this.nodeToString(node);
-
-    const result = await this.evalVariableByName(name, stackFrame, maxDepth);
+    const result = await fetchProperty(this.session, name, stackFrame, maxDepth);
     return result;
   }
   public async evalPropertyAccessExpression(node: PropertyAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
@@ -207,6 +227,15 @@ export class ExpressionEvaluator {
     const property = await this.fetchChildProperty(currentObject, evaluatedArguments[evaluatedArguments.length - 1], stackFrame);
     return property;
   }
+  public async evalCallExpression(node: CallNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const libraryName = this.nodeToString(node.caller);
+    if (!libraryName) {
+      return undefined;
+    }
+    const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));
+    const result = await this.library.get(libraryName)?.(this.session, stackFrame, ...args);
+    return result;
+  }
   public nodeToString(node: Node): string | undefined {
     if (typeof node === 'string') {
       return node;
@@ -223,7 +252,7 @@ export class ExpressionEvaluator {
     if (!object.hasChildren) {
       return undefined;
     }
-    const _object = (await this.evalVariableByName(object.fullName, stackFrame, 1)) as dbgp.ObjectProperty;
+    const _object = (await fetchProperty(this.session, object.fullName, stackFrame, 1)) as dbgp.ObjectProperty;
     const property = _object.children.find((child) => {
       if (typeof name === 'string') {
         return equalsIgnoreCase(child.name, name);

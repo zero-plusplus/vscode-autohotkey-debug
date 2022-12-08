@@ -21,6 +21,7 @@ describe('ExpressionParser for v1', () => {
       'obj.member[3]',
       'arr[3]',
       'arr[3, 4]',
+      'func()',
     ];
     for (const testData of testDataList) {
       const result = parser.parse(testData);
