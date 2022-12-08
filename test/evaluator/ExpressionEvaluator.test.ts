@@ -63,6 +63,10 @@ describe('ExpressionEvaluator for v1', (): void => {
     expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true);
     expect(await evaluator.eval('CountOf(str)')).toBe(3);
     expect(await evaluator.eval('CountOf(arr)')).toBe(3);
+    expect(await evaluator.eval('IsSet(undefined)')).toBe(true);
+    expect(await evaluator.eval('IsSet(str)')).toBe(false);
+    expect(await evaluator.eval('IsUndefined(undefined)')).toBe(true);
+    expect(await evaluator.eval('IsUndefined(str)')).toBe(false);
     expect(await evaluator.eval('IsString(str)')).toBe(true);
     expect(await evaluator.eval('IsString(num)')).toBe(false);
     expect(await evaluator.eval('IsString(arr)')).toBe(false);

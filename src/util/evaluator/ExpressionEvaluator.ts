@@ -110,10 +110,12 @@ export const fetchProperty = async(session: dbgp.Session, name: string, stackFra
       return property;
     }
     if (property instanceof dbgp.PrimitiveProperty) {
-      if (property.type === 'string') {
-        return property.value;
+      switch (property.type) {
+        case 'string': return property.value;
+        case 'integer': return Number(property.value);
+        case 'float': return parseFloat(property.value);
+        default: break;
       }
-      return Number(property.value);
     }
   }
   return undefined;

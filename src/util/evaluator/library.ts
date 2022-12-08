@@ -40,6 +40,14 @@ const countOf: LibraryFunc = async(session, stackFrame, value) => {
 library_for_v1.set('CountOf', countOf);
 library_for_v2.set('CountOf', countOf);
 
+const isSet: LibraryFunc = async(session, stackFrame, value) => {
+  return Promise.resolve(typeof value === 'undefined');
+};
+library_for_v1.set('IsSet', isSet);
+library_for_v2.set('IsSet', isSet);
+library_for_v1.set('IsUndefined', isSet);
+library_for_v2.set('IsUndefined', isSet);
+
 const isString: LibraryFunc = async(session, stackFrame, value) => {
   return Promise.resolve(typeof value === 'string');
 };
