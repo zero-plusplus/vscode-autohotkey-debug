@@ -127,3 +127,12 @@ const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
 };
 library_for_v1.set('IsPrimitive', isPrimitive);
 library_for_v2.set('IsPrimitive', isPrimitive);
+
+const isObject: LibraryFunc = async(session, stackFrame, value) => {
+  if (value instanceof dbgp.ObjectProperty) {
+    return Promise.resolve(true);
+  }
+  return Promise.resolve(false);
+};
+library_for_v1.set('IsObject', isObject);
+library_for_v2.set('IsObject', isObject);
