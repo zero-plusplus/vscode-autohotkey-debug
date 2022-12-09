@@ -234,7 +234,6 @@ export class ExpressionEvaluator {
       UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_negative: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_not: { type: 'unary', operator: 0, expression: 1 },
-      UnaryExpression_not_keyword: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_address: { type: 'unary', operator: 0, expression: 1 },
       CallExpression: { type: 'call', caller: 0, arguments: 2 },
       identifier: { type: 'identifier', start: 0, parts: 1 },

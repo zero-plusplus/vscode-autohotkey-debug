@@ -16,7 +16,6 @@ Expression_for_v1 {
     = "+" ~space PrimaryExpression -- positive
     | "-" ~space PrimaryExpression -- negative
     | "!" ~space PrimaryExpression -- not
-    | caseInsensitive<"not"> space PrimaryExpression -- not_keyword
     | "&" ~(space | "&") PrimaryExpression -- address
     | PrefixUnaryExpression
 
