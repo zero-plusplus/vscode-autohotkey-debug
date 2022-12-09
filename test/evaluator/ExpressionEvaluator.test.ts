@@ -72,6 +72,12 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('arr[3]')).toBe(100);
     expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
     expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
+    expect(await evaluator.eval('!true')).toBe(false_ahk);
+    expect(await evaluator.eval('!false')).toBe(true_ahk);
+    expect(Number(await evaluator.eval('+num_int'))).toBe(123);
+    expect(Number(await evaluator.eval('-num_int'))).toBe(-123);
+    expect(Number(await evaluator.eval('&instance'))).toBeTruthy();
+    expect(async() => evaluator.eval('&undefined')).rejects.toThrow();
   });
 
   test('eval libraries', async(): Promise<void> => {

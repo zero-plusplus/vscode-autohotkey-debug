@@ -3,18 +3,21 @@ import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
 import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyChildren } from './ExpressionEvaluator';
 
-const toNumber = (value: any): number | '' => {
-  const number = Number(value);
-  if (isNaN(number)) {
-    return '';
-  }
-  return number;
-};
 export const getTrue = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
   return fetchGlobalProperty(session, 'true', stackFrame);
 };
 export const getFalse = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
   return fetchGlobalProperty(session, 'false', stackFrame);
+};
+export const toBoolean = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, value: EvaluatedValue): Promise<EvaluatedValue> => {
+  return value ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
+};
+export const toNumber = (value: any): number | '' => {
+  const number = Number(value);
+  if (isNaN(number)) {
+    return '';
+  }
+  return number;
 };
 export const getUndefined = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
   // To get undefined, it is necessary to specify a name that will never be covered

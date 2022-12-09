@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { LibraryFunc, library_for_v1, library_for_v2 } from './library';
+import { LibraryFunc, getFalse, getTrue, library_for_v1, library_for_v2, toBoolean, toNumber } from './library';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
@@ -11,6 +11,7 @@ import { ExpressionParser } from './ExpressionParser';
 export type Node =
  | IdentifierNode
  | BinaryNode
+ | UnaryNode
  | PropertyAccessNode
  | ElementAccessNode
  | CallNode
@@ -25,6 +26,11 @@ export type BinaryNode =
 
 export interface NodeBase {
   type: string;
+}
+export interface UnaryNode extends NodeBase {
+  type: 'unary';
+  operator: '+' | '-' | '&' | '!' | `${'n' | 'N'}${'o' | 'O'}${'t' | 'T'}`;
+  expression: Node;
 }
 export interface BinaryNodeBase extends NodeBase {
   left: Node;
@@ -88,17 +94,39 @@ export class EvaluatedNode {
     this.value = value;
   }
 }
-export const fetchGlobalProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
+export const getContexts = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<dbgp.Context[] | undefined> => {
   let _stackFrame = stackFrame;
   if (!_stackFrame) {
     const { stackFrames } = await session.sendStackGetCommand();
     if (stackFrames.length === 0) {
-      return '';
+      return undefined;
     }
     _stackFrame = stackFrames[0];
   }
   const { contexts } = await session.sendContextNamesCommand(_stackFrame);
-  const globalContext = contexts.find((context) => context.name === 'Global');
+  return contexts;
+};
+export const fetchPropertyAddress = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<number | ''> => {
+  const contexts = await getContexts(session, stackFrame);
+  if (!contexts) {
+    return '';
+  }
+
+  for await (const context of contexts) {
+    const response = await session.sendPropertyGetCommand(context, name, maxDepth);
+    const property = response.properties[0] as dbgp.Property | '';
+    if (property instanceof dbgp.PrimitiveProperty) {
+      return '';
+    }
+    else if (property instanceof dbgp.ObjectProperty) {
+      return property.address;
+    }
+  }
+  return '';
+};
+export const fetchGlobalProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
+  const contexts = await getContexts(session, stackFrame);
+  const globalContext = contexts?.find((context) => context.name === 'Global');
   if (!globalContext) {
     return '';
   }
@@ -114,16 +142,11 @@ export const fetchProperty = async(session: dbgp.Session, name: string, stackFra
     return '';
   }
 
-  let _stackFrame = stackFrame;
-  if (!_stackFrame) {
-    const { stackFrames } = await session.sendStackGetCommand();
-    if (stackFrames.length === 0) {
-      return '';
-    }
-    _stackFrame = stackFrames[0];
+  const contexts = await getContexts(session, stackFrame);
+  if (!contexts) {
+    return '';
   }
 
-  const { contexts } = await session.sendContextNamesCommand(_stackFrame);
   for await (const context of contexts) {
     const response = await session.sendPropertyGetCommand(context, name, maxDepth);
     const property = response.properties[0] as dbgp.Property | undefined;
@@ -208,6 +231,11 @@ export class ExpressionEvaluator {
       MultiplicativeExpression_division: { type: 'division', left: 0, operator: 1, right: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 2 },
+      UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
+      UnaryExpression_negative: { type: 'unary', operator: 0, expression: 1 },
+      UnaryExpression_not: { type: 'unary', operator: 0, expression: 1 },
+      UnaryExpression_not_keyword: { type: 'unary', operator: 0, expression: 1 },
+      UnaryExpression_address: { type: 'unary', operator: 0, expression: 1 },
       CallExpression: { type: 'call', caller: 0, arguments: 2 },
       identifier: { type: 'identifier', start: 0, parts: 1 },
       stringLiteral: { type: 'string', startQuote: 0, value: 0, endQuote: 0 },
@@ -235,6 +263,39 @@ export class ExpressionEvaluator {
       case 'propertyaccess': return this.evalPropertyAccessExpression(node, stackFrame, maxDepth);
       case 'elementaccess': return this.evalElementAccessExpression(node, stackFrame, maxDepth);
       case 'call': return this.evalCallExpression(node, stackFrame, maxDepth);
+      case 'unary': return this.evalUnaryExpression(node, stackFrame, maxDepth);
+      default: break;
+    }
+    return '';
+  }
+  public async evalUnaryExpression(node: UnaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    if (node.operator === '&') {
+      if (typeof node.expression !== 'string' && node.expression.type === 'identifier') {
+        const name = this.nodeToString(node.expression);
+        const address = await fetchPropertyAddress(this.session, name ?? '', stackFrame);
+        if (address) {
+          return address;
+        }
+        throw Error('Retrieving the address of a variable with a primitive value is not supported.');
+      }
+      const expressionResult = this.evalNode(node.expression);
+      if (expressionResult instanceof dbgp.ObjectProperty) {
+        return expressionResult.address;
+      }
+      throw Error('Retrieving the address of a variable with a primitive value is not supported.');
+    }
+    const expressionResult = await this.evalNode(node.expression);
+    if (equalsIgnoreCase(node.operator, 'not')) {
+      return (await toBoolean(this.session, stackFrame, expressionResult))
+        ? getFalse(this.session, stackFrame)
+        : getTrue(this.session, stackFrame);
+    }
+    switch (node.operator) {
+      case '!': return (await toBoolean(this.session, stackFrame, expressionResult))
+        ? getFalse(this.session, stackFrame)
+        : getTrue(this.session, stackFrame);
+      case '+': return toNumber(expressionResult);
+      case '-': return -toNumber(expressionResult);
       default: break;
     }
     return '';
