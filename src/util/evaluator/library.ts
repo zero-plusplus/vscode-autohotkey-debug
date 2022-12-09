@@ -9,6 +9,14 @@ const toNumber = (value: any): number | undefined => {
   }
   return number;
 };
+export const regexTest = (value: string, regexString: string): boolean => {
+  const _value = value.startsWith('[') && value.endsWith(']') ? value.slice(1, -1) : value;
+  const flagsMatch = regexString.match(/(?<flags>^([imsxADJUXPOSC]|`n|`r|`a)+)\)/u);
+  if (!flagsMatch?.groups?.flags) {
+    return RegExp(regexString, 'u').test(_value);
+  }
+  return RegExp(regexString.replace(`${flagsMatch.groups.flags})`, ''), `u${flagsMatch.groups.flags}`).test(_value);
+};
 
 export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, ...params: EvaluatedValue[]) => Promise<string | number | boolean | undefined>;
 export type LibraryFuncReturnValue = string | number | boolean | undefined;
@@ -242,3 +250,27 @@ library_for_v1.set('ObjHasKey', hasKey);
 library_for_v2.set('HasKey', hasKey);
 library_for_v2.set('HasOwnProp', hasKey);
 library_for_v2.set('ObjHasOwnProp', hasKey);
+
+const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => {
+  if (!(value instanceof dbgp.ObjectProperty)) {
+    return false;
+  }
+  if (typeof regexKey !== 'string') {
+    return false;
+  }
+
+  const children = await fetchPropertyChildren(session, stackFrame, value);
+  if (!children) {
+    return false;
+  }
+
+  for (const child of children) {
+    if (regexTest(child.name, regexKey)) {
+      return true;
+    }
+  }
+  return false;
+};
+library_for_v1.set('RegExHasKey', regexHasKey);
+library_for_v2.set('RegExHasKey', regexHasKey);
+library_for_v2.set('RegExHasOwnProp', regexHasKey);

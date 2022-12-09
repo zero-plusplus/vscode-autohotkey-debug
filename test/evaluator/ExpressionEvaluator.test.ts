@@ -231,6 +231,14 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
       expect(await evaluator.eval(`${name}(undefined)`)).toBe(false);
     }
   });
+  test('eval libraries (RegExHasKey)', async(): Promise<void> => {
+    expect(await evaluator.eval(`RegExHasKey(obj, "key")`)).toBe(true);
+    expect(await evaluator.eval(`RegExHasKey(obj, "i)Key")`)).toBe(true);
+    expect(await evaluator.eval(`RegExHasKey(obj, "k*")`)).toBe(true);
+    expect(await evaluator.eval(`RegExHasKey(arr, "1")`)).toBe(true);
+    expect(await evaluator.eval(`RegExHasKey(str_alpha, "a")`)).toBe(false);
+    expect(await evaluator.eval(`RegExHasKey(num_int, "b")`)).toBe(false);
+  });
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });
