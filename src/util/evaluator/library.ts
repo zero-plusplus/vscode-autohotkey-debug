@@ -3,10 +3,10 @@ import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
 import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyChildren } from './ExpressionEvaluator';
 
-const toNumber = (value: any): number | undefined => {
+const toNumber = (value: any): number | '' => {
   const number = Number(value);
   if (isNaN(number)) {
-    return undefined;
+    return '';
   }
   return number;
 };
@@ -15,6 +15,11 @@ export const getTrue = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame
 };
 export const getFalse = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
   return fetchGlobalProperty(session, 'false', stackFrame);
+};
+export const getUndefined = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
+  // To get undefined, it is necessary to specify a name that will never be covered
+  const name = 'D466D841_6E55_421C_9389_EFF0444115D9_B3F83A54_7903_4FDD_B5BF_BC92ADB651A6';
+  return fetchGlobalProperty(session, name, stackFrame);
 };
 export const regexTest = (value: string, regexString: string): boolean => {
   const _value = value.startsWith('[') && value.endsWith(']') ? value.slice(1, -1) : value;

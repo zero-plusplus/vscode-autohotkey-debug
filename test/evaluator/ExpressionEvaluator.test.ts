@@ -45,6 +45,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   let evaluator: ExpressionEvaluator;
   let true_ahk: EvaluatedValue;
   let false_ahk: EvaluatedValue;
+  // let undefined_ahk: EvaluatedValue;
 
   beforeAll(async() => {
     const data = await launchDebug('AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk'), port, hostname);
@@ -54,6 +55,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     evaluator = data.evaluator;
     true_ahk = await getTrue(session);
     false_ahk = await getFalse(session);
+    // undefined_ahk = await getUndefined(session);
   });
   afterAll(async() => {
     process.kill();
@@ -267,6 +269,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   let evaluator: ExpressionEvaluator;
   let true_ahk: EvaluatedValue;
   let false_ahk: EvaluatedValue;
+  // let undefined_ahk: EvaluatedValue;
 
   beforeAll(async() => {
     const data = await launchDebug('v2/AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk2'), port + 1, hostname);
@@ -276,6 +279,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     evaluator = data.evaluator;
     true_ahk = await getTrue(session);
     false_ahk = await getFalse(session);
+    // undefined_ahk = await getUndefined(session);
   });
   afterAll(async() => {
     process.kill();

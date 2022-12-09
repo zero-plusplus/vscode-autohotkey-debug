@@ -77,7 +77,7 @@ export type Function = (...params: any[]) => string | number | undefined;
 export type Library = {
   [key: string]: (...params: any[]) => string | number | undefined;
 };
-export type EvaluatedValue = string | number | undefined | dbgp.ObjectProperty;
+export type EvaluatedValue = string | number | dbgp.ObjectProperty;
 export class EvaluatedNode {
   public readonly type: string;
   public readonly node: ohm.Node | ohm.Node[];
@@ -93,32 +93,32 @@ export const fetchGlobalProperty = async(session: dbgp.Session, name: string, st
   if (!_stackFrame) {
     const { stackFrames } = await session.sendStackGetCommand();
     if (stackFrames.length === 0) {
-      return undefined;
+      return '';
     }
     _stackFrame = stackFrames[0];
   }
   const { contexts } = await session.sendContextNamesCommand(_stackFrame);
   const globalContext = contexts.find((context) => context.name === 'Global');
   if (!globalContext) {
-    return undefined;
+    return '';
   }
   const response = await session.sendPropertyGetCommand(globalContext, name, maxDepth);
-  const property = response.properties[0] as dbgp.Property | undefined;
+  const property = response.properties[0] as dbgp.Property | '';
   if (property instanceof dbgp.ObjectProperty) {
     return property;
   }
-  return undefined;
+  return '';
 };
 export const fetchProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
   if (!name) {
-    return undefined;
+    return '';
   }
 
   let _stackFrame = stackFrame;
   if (!_stackFrame) {
     const { stackFrames } = await session.sendStackGetCommand();
     if (stackFrames.length === 0) {
-      return undefined;
+      return '';
     }
     _stackFrame = stackFrames[0];
   }
@@ -139,7 +139,7 @@ export const fetchProperty = async(session: dbgp.Session, name: string, stackFra
       }
     }
   }
-  return undefined;
+  return '';
 };
 export const fetchPropertyChildren = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: EvaluatedValue): Promise<dbgp.Property[] | undefined> => {
   if (!(object instanceof dbgp.ObjectProperty)) {
@@ -157,11 +157,11 @@ export const fetchPropertyChildren = async(session: dbgp.Session, stackFrame: db
 };
 export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, name: EvaluatedValue): Promise<EvaluatedValue> => {
   if (!object.hasChildren) {
-    return undefined;
+    return '';
   }
   const children = await fetchPropertyChildren(session, stackFrame, object);
   if (!children) {
-    return undefined;
+    return '';
   }
 
   const property = children.find((child) => {
@@ -186,7 +186,7 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
   if (property instanceof dbgp.ObjectProperty) {
     return property;
   }
-  return undefined;
+  return '';
 };
 export class ExpressionEvaluator {
   private readonly session: dbgp.Session;
@@ -237,7 +237,7 @@ export class ExpressionEvaluator {
       case 'call': return this.evalCallExpression(node, stackFrame, maxDepth);
       default: break;
     }
-    return undefined;
+    return '';
   }
   public async evalBinaryExpression(node: BinaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const left = await this.evalNode(node.left, stackFrame, maxDepth);
@@ -251,12 +251,12 @@ export class ExpressionEvaluator {
       case '/': return Number(left) / Number(right);
       default: break;
     }
-    return undefined;
+    return '';
   }
   public async evalIdentifier(node: IdentifierNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const name = this.nodeToString(node);
     if (!name) {
-      return undefined;
+      return '';
     }
 
     const result = await fetchProperty(this.session, name, stackFrame, maxDepth);
@@ -265,11 +265,11 @@ export class ExpressionEvaluator {
   public async evalPropertyAccessExpression(node: PropertyAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const object = await this.evalNode(node.object, stackFrame, maxDepth);
     if (!(object instanceof dbgp.ObjectProperty)) {
-      return undefined;
+      return '';
     }
     const propertyName = this.nodeToString(node.property);
     if (!propertyName) {
-      return undefined;
+      return '';
     }
 
     const child = await fetchPropertyChild(this.session, stackFrame, object, propertyName);
@@ -278,7 +278,7 @@ export class ExpressionEvaluator {
   public async evalElementAccessExpression(node: ElementAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const object = await this.evalNode(node.object, stackFrame, maxDepth);
     if (!(object instanceof dbgp.ObjectProperty)) {
-      return undefined;
+      return '';
     }
     const evaluatedArguments = (await Promise.all(node.arguments.map(async(arg) => {
       return this.evalNode(arg, stackFrame, maxDepth);
@@ -300,11 +300,14 @@ export class ExpressionEvaluator {
   public async evalCallExpression(node: CallNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const libraryName = this.nodeToString(node.caller);
     if (!libraryName) {
-      return undefined;
+      return '';
     }
     const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));
-    const result = await this.library.get(libraryName)?.(this.session, stackFrame, ...args);
-    return result;
+    const library = this.library.get(libraryName);
+    if (library) {
+      return library(this.session, stackFrame, ...args);
+    }
+    return '';
   }
   public nodeToString(node: Node): string | undefined {
     if (typeof node === 'string') {
@@ -316,6 +319,6 @@ export class ExpressionEvaluator {
         return `${node.start}${node.parts.join('')}`;
       default: break;
     }
-    return undefined;
+    return '';
   }
 }
