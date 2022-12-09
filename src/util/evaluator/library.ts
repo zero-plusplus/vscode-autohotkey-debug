@@ -145,3 +145,12 @@ const isAlpha: LibraryFunc = async(session, stackFrame, value) => {
 };
 library_for_v1.set('IsAlpha', isAlpha);
 library_for_v2.set('IsAlpha', isAlpha);
+
+const isAlnum: LibraryFunc = async(session, stackFrame, value) => {
+  if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
+    return Promise.resolve(false);
+  }
+  return Promise.resolve((/^[a-zA-Z0-9]+$/u).test(value));
+};
+library_for_v1.set('IsAlnum', isAlnum);
+library_for_v2.set('IsAlnum', isAlnum);
