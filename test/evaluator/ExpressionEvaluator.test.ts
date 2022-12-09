@@ -110,6 +110,36 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('obj !== obj')).toBe(false_ahk);
   });
 
+  test('eval relational (<)', async(): Promise<void> => {
+    expect(await evaluator.eval('0 < 1')).toBe(true_ahk);
+    expect(await evaluator.eval('0 < num_int')).toBe(true_ahk);
+    expect(await evaluator.eval('0 < 0')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" < "ABC"')).toBe(false_ahk);
+  });
+
+  test('eval relational (<=)', async(): Promise<void> => {
+    expect(await evaluator.eval('0 <= 1')).toBe(true_ahk);
+    expect(await evaluator.eval('0 <= num_int')).toBe(true_ahk);
+    expect(await evaluator.eval('0 <= 0')).toBe(true_ahk);
+    expect(await evaluator.eval('"abc" <= "ABC"')).toBe(false_ahk);
+  });
+
+  test('eval relational (>)', async(): Promise<void> => {
+    expect(await evaluator.eval('1 > 0')).toBe(true_ahk);
+    expect(await evaluator.eval('num_int > 0')).toBe(true_ahk);
+    expect(await evaluator.eval('0 > 0')).toBe(false_ahk);
+    expect(await evaluator.eval('0 > num_int')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" > "ABC"')).toBe(false_ahk);
+  });
+
+  test('eval relational (>=)', async(): Promise<void> => {
+    expect(await evaluator.eval('1 >= 0')).toBe(true_ahk);
+    expect(await evaluator.eval('num_int >= 0')).toBe(true_ahk);
+    expect(await evaluator.eval('0 >= 0')).toBe(true_ahk);
+    expect(await evaluator.eval('0 >= num_int')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" >= "ABC"')).toBe(false_ahk);
+  });
+
   test('eval libraries', async(): Promise<void> => {
     expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true_ahk);
     expect(await evaluator.eval('CountOf(str_alpha)')).toBe(3);

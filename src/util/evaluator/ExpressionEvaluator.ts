@@ -238,6 +238,10 @@ export class ExpressionEvaluator {
       RelationalExpression_not_loose_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
       RelationalExpression_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
       RelationalExpression_not_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
+      RelationalExpression_lessthan: { type: 'binary', left: 0, operator: 1, right: 2 },
+      RelationalExpression_lessthan_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
+      RelationalExpression_greaterthan: { type: 'binary', left: 0, operator: 1, right: 2 },
+      RelationalExpression_greaterthan_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 2 },
       UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
@@ -318,6 +322,24 @@ export class ExpressionEvaluator {
       case '==': return equals(this.session, stackFrame, left, right, '0');
       case '!=': return negate(this.session, stackFrame, await equals(this.session, stackFrame, left, right, '1'));
       case '!==': return negate(this.session, stackFrame, await equals(this.session, stackFrame, left, right, '0'));
+      case '<':
+      case '<=':
+      case '>':
+      case '>=': {
+        const _left = Number(left);
+        const _right = Number(right);
+        if (Number.isNaN(_left) || Number.isNaN(_right)) {
+          return getFalse(this.session, stackFrame);
+        }
+        switch (operator) {
+          case '<': return _left < _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
+          case '<=': return _left <= _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
+          case '>': return _left > _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
+          case '>=': return _left >= _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
+          default: break;
+        }
+        break;
+      }
       default: break;
     }
     return '';

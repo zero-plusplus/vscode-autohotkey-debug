@@ -34,7 +34,11 @@ Expression_for_v1 {
   BinaryExpression
     = RelationalExpression
   RelationalExpression
-    = RelationalExpression "=" AdditiveExpression -- loose_equal
+    = RelationalExpression "<" AdditiveExpression -- lessthan
+    | RelationalExpression "<=" AdditiveExpression -- lessthan_equal
+    | RelationalExpression ">" AdditiveExpression -- greaterthan
+    | RelationalExpression ">=" AdditiveExpression -- greaterthan_equal
+    | RelationalExpression "=" AdditiveExpression -- loose_equal
     | RelationalExpression "==" AdditiveExpression -- equal
     | RelationalExpression "!=" AdditiveExpression -- not_loose_equal
     | RelationalExpression "!==" AdditiveExpression -- not_equal
@@ -83,7 +87,7 @@ Expression_for_v1 {
     = ~("\"" | "`" | lineTerminator) any
     | doubleEscapeSequence
 
-  numericLiteral = decimalLiteral | hexIntegerLiteral
+  numericLiteral = "0" | decimalLiteral | hexIntegerLiteral
   digitWithoutZero = "1".."9"
   decimalLiteral = decimalIntegerLiteral
   decimalIntegerLiteral = digitWithoutZero digit*

@@ -5,6 +5,7 @@ import { ExpressionParser } from '../../src/util/evaluator/ExpressionParser';
 describe('ExpressionParser', () => {
   const parser = new ExpressionParser();
   const testDataList = [
+    '0',
     '+1',
     '-1',
     '!1',
@@ -21,6 +22,10 @@ describe('ExpressionParser', () => {
     'arr[3]',
     'arr[3, 4]',
     'func()',
+    '1 < 2',
+    '1 <= 2',
+    '1 > 2',
+    '1 >= 2',
   ];
   test('parse', () => {
     for (const testData of testDataList) {
