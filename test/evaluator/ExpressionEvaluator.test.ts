@@ -140,6 +140,18 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('"abc" >= "ABC"')).toBe(false_ahk);
   });
 
+  test('eval logical (&&)', async(): Promise<void> => {
+    expect(await evaluator.eval('true && true')).toBe(true_ahk);
+    expect(await evaluator.eval('true && false')).toBe(false_ahk);
+    expect(await evaluator.eval('false && false')).toBe(false_ahk);
+  });
+
+  test('eval logical (||)', async(): Promise<void> => {
+    expect(await evaluator.eval('true || true')).toBe(true_ahk);
+    expect(await evaluator.eval('true || false')).toBe(true_ahk);
+    expect(await evaluator.eval('false || false')).toBe(false_ahk);
+  });
+
   test('eval libraries', async(): Promise<void> => {
     expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true_ahk);
     expect(await evaluator.eval('CountOf(str_alpha)')).toBe(3);

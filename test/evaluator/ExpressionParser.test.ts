@@ -26,6 +26,8 @@ describe('ExpressionParser', () => {
     '1 <= 2',
     '1 > 2',
     '1 >= 2',
+    'true && false',
+    'true || false',
   ];
   test('parse', () => {
     for (const testData of testDataList) {

@@ -242,6 +242,8 @@ export class ExpressionEvaluator {
       RelationalExpression_lessthan_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
       RelationalExpression_greaterthan: { type: 'binary', left: 0, operator: 1, right: 2 },
       RelationalExpression_greaterthan_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
+      LogicalExpression_and: { type: 'binary', left: 0, operator: 1, right: 2 },
+      LogicalExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 2 },
       UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
@@ -336,6 +338,17 @@ export class ExpressionEvaluator {
           case '<=': return _left <= _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
           case '>': return _left > _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
           case '>=': return _left >= _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
+          default: break;
+        }
+        break;
+      }
+      case '&&':
+      case '||': {
+        const _left = left === '0' ? false : left;
+        const _right = right === '0' ? false : right;
+        switch (operator) {
+          case '&&': return (_left && _right) ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
+          case '||': return (_left || _right) ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
           default: break;
         }
         break;
