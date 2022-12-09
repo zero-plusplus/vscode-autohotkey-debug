@@ -122,6 +122,13 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false);
     expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false);
   });
+  test('eval libraries (IsPrimitive)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsPrimitive(str)')).toBe(true);
+    expect(await evaluator.eval('IsPrimitive(num_int)')).toBe(true);
+    expect(await evaluator.eval('IsPrimitive(undefined)')).toBe(false);
+    expect(await evaluator.eval('IsPrimitive(obj)')).toBe(false);
+    expect(await evaluator.eval('IsPrimitive(arr)')).toBe(false);
+  });
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });
