@@ -181,3 +181,12 @@ const isLower: LibraryFunc = async(session, stackFrame, value) => {
 };
 library_for_v1.set('IsLower', isLower);
 library_for_v2.set('IsLower', isLower);
+
+const isTime: LibraryFunc = async(session, stackFrame, value) => {
+  if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
+    return Promise.resolve(false);
+  }
+  return Promise.resolve(!Number.isNaN(Date.parse(value)));
+};
+library_for_v1.set('IsTime', isTime);
+library_for_v2.set('IsTime', isTime);
