@@ -98,3 +98,23 @@ const isIntegerLike: LibraryFunc = async(session, stackFrame, value) => {
 };
 library_for_v1.set('IsIntegerLike', isIntegerLike);
 library_for_v2.set('IsIntegerLike', isIntegerLike);
+
+const isFloat: LibraryFunc = async(session, stackFrame, value) => {
+  if (!(await isNumber(session, stackFrame, value))) {
+    return false;
+  }
+  return Promise.resolve(typeof value === 'number' && (value % 1 !== 0));
+};
+library_for_v1.set('IsFloat', isFloat);
+library_for_v2.set('IsFloat', isFloat);
+
+const isFloatLike: LibraryFunc = async(session, stackFrame, value) => {
+  switch (typeof value) {
+    case 'string': return isFloat(session, stackFrame, toNumber(value));
+    case 'number': return isFloat(session, stackFrame, value);
+    default: break;
+  }
+  return Promise.resolve(false);
+};
+library_for_v1.set('IsFloatLike', isFloatLike);
+library_for_v2.set('IsFloatLike', isFloatLike);

@@ -107,6 +107,21 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('IsIntegerLike(num_float)')).toBe(false);
     expect(await evaluator.eval('IsIntegerLike(arr)')).toBe(false);
   });
+  test('eval libraries (IsFloat)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsFloat(num_float)')).toBe(false);
+    expect(await evaluator.eval('IsFloat(num_float_like)')).toBe(false);
+    expect(await evaluator.eval('IsFloat(num_int)')).toBe(false);
+    expect(await evaluator.eval('IsFloat(num_int_like)')).toBe(false);
+    expect(await evaluator.eval('IsFloat(str)')).toBe(false);
+    expect(await evaluator.eval('IsFloat(arr)')).toBe(false);
+  });
+  test('eval libraries (IsFloatLike)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsFloatLike(num_float)')).toBe(true);
+    expect(await evaluator.eval('IsFloatLike(num_float_like)')).toBe(true);
+    expect(await evaluator.eval('IsFloatLike(num_int)')).toBe(false);
+    expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false);
+    expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false);
+  });
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });
@@ -154,6 +169,21 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('IsIntegerLike(num_int_like)')).toBe(true);
     expect(await evaluator.eval('IsIntegerLike(num_float)')).toBe(false);
     expect(await evaluator.eval('IsIntegerLike(arr)')).toBe(false);
+  });
+  test('eval libraries (IsFloat)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsFloat(num_float)')).toBe(true);
+    expect(await evaluator.eval('IsFloat(num_float_like)')).toBe(false);
+    expect(await evaluator.eval('IsFloat(num_int)')).toBe(false);
+    expect(await evaluator.eval('IsFloat(num_int_like)')).toBe(false);
+    expect(await evaluator.eval('IsFloat(str)')).toBe(false);
+    expect(await evaluator.eval('IsFloat(arr)')).toBe(false);
+  });
+  test('eval libraries (IsFloatLike)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsFloatLike(num_float)')).toBe(true);
+    expect(await evaluator.eval('IsFloatLike(num_float_like)')).toBe(true);
+    expect(await evaluator.eval('IsFloatLike(num_int)')).toBe(false);
+    expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false);
+    expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false);
   });
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
