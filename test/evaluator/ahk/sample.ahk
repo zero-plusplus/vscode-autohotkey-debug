@@ -22,6 +22,10 @@ arr := [ 1, 10, 100 ]
 nestedObj := { a: { b: { obj: obj, arr: arr } } }
 instance := new T()
 class T {
+  static staticField := "static"
+  instanceField := "instance"
+  method() {
+  }
 }
 class T2 {
 }

@@ -1,6 +1,6 @@
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
-import { EvaluatedValue, fetchProperty, fetchPropertyChildren } from './ExpressionEvaluator';
+import { EvaluatedValue, fetchProperty, fetchPropertyChild, fetchPropertyChildren } from './ExpressionEvaluator';
 
 const toNumber = (value: any): number | undefined => {
   const number = Number(value);
@@ -228,3 +228,17 @@ const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
 };
 library_for_v1.set('IsClass', isClass);
 library_for_v2.set('IsClass', isClass);
+
+const hasKey: LibraryFunc = async(session, stackFrame, value, key) => {
+  if (!(value instanceof dbgp.ObjectProperty)) {
+    return false;
+  }
+
+  const child = await fetchPropertyChild(session, stackFrame, value, key);
+  return Boolean(child);
+};
+library_for_v1.set('HasKey', hasKey);
+library_for_v1.set('ObjHasKey', hasKey);
+library_for_v2.set('HasKey', hasKey);
+library_for_v2.set('HasOwnProp', hasKey);
+library_for_v2.set('ObjHasOwnProp', hasKey);
