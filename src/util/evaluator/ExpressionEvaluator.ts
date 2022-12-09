@@ -18,11 +18,6 @@ export type Node =
  | StringNode
  | NumberNode
  | string;
-export type BinaryNode =
- | AdditionNode
- | SubtractionNode
- | MultiplicationNode
- | DivisionNode;
 
 export interface NodeBase {
   type: string;
@@ -32,22 +27,11 @@ export interface UnaryNode extends NodeBase {
   operator: '+' | '-' | '&' | '!' | `${'n' | 'N'}${'o' | 'O'}${'t' | 'T'}`;
   expression: Node;
 }
-export interface BinaryNodeBase extends NodeBase {
+export interface BinaryNode extends NodeBase {
+  type: 'binary';
   left: Node;
   operator: Node;
   right: Node;
-}
-export interface AdditionNode extends BinaryNodeBase {
-  type: 'addition';
-}
-export interface SubtractionNode extends BinaryNodeBase {
-  type: 'subtraction';
-}
-export interface MultiplicationNode extends BinaryNodeBase {
-  type: 'multiplication';
-}
-export interface DivisionNode extends BinaryNodeBase {
-  type: 'division';
 }
 export interface IdentifierNode extends NodeBase {
   type: 'identifier';
@@ -94,6 +78,24 @@ export class EvaluatedNode {
     this.value = value;
   }
 }
+const equals = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, a: EvaluatedValue, b: EvaluatedValue, ignoreCase: EvaluatedValue): Promise<EvaluatedValue> => {
+  const _a = a instanceof dbgp.ObjectProperty ? a.address : a;
+  const _b = b instanceof dbgp.ObjectProperty ? b.address : b;
+  const _ignoreCase = !(ignoreCase === '0' || ignoreCase === '');
+  const result = (_ignoreCase ? equalsIgnoreCase(String(_a), String(_b)) : String(_a) === String(_b))
+    ? await getTrue(session, stackFrame)
+    : await getFalse(session, stackFrame);
+  return result;
+};
+const negate = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, value: EvaluatedValue): Promise<EvaluatedValue> => {
+  if (value === '0') {
+    return getTrue(session, stackFrame);
+  }
+  if (value === '') {
+    return getFalse(session, stackFrame);
+  }
+  return value ? getFalse(session, stackFrame) : getTrue(session, stackFrame);
+};
 export const getContexts = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<dbgp.Context[] | undefined> => {
   let _stackFrame = stackFrame;
   if (!_stackFrame) {
@@ -134,6 +136,9 @@ export const fetchGlobalProperty = async(session: dbgp.Session, name: string, st
   const property = response.properties[0] as dbgp.Property | '';
   if (property instanceof dbgp.ObjectProperty) {
     return property;
+  }
+  if (property instanceof dbgp.PrimitiveProperty) {
+    return property.value;
   }
   return '';
 };
@@ -225,10 +230,14 @@ export class ExpressionEvaluator {
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const matchResult = this.parser.parse(expression);
     const node = toAST(matchResult, {
-      AdditiveExpression_addition: { type: 'addition', left: 0, operator: 1, right: 2 },
-      AdditiveExpression_subtraction: { type: 'subtraction', left: 0, operator: 1, right: 2 },
-      MultiplicativeExpression_multiplication: { type: 'multiplication', left: 0, operator: 1, right: 2 },
-      MultiplicativeExpression_division: { type: 'division', left: 0, operator: 1, right: 2 },
+      AdditiveExpression_addition: { type: 'binary', left: 0, operator: 1, right: 2 },
+      AdditiveExpression_subtraction: { type: 'binary', left: 0, operator: 1, right: 2 },
+      MultiplicativeExpression_multiplication: { type: 'binary', left: 0, operator: 1, right: 2 },
+      MultiplicativeExpression_division: { type: 'binary', left: 0, operator: 1, right: 2 },
+      RelationalExpression_loose_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
+      RelationalExpression_not_loose_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
+      RelationalExpression_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
+      RelationalExpression_not_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 2 },
       UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
@@ -253,11 +262,7 @@ export class ExpressionEvaluator {
     }
 
     switch (node.type) {
-      case 'addition':
-      case 'subtraction':
-      case 'multiplication':
-      case 'division':
-        return this.evalBinaryExpression(node, stackFrame, maxDepth);
+      case 'binary': return this.evalBinaryExpression(node, stackFrame, maxDepth);
       case 'identifier': return this.evalIdentifier(node, stackFrame, maxDepth);
       case 'propertyaccess': return this.evalPropertyAccessExpression(node, stackFrame, maxDepth);
       case 'elementaccess': return this.evalElementAccessExpression(node, stackFrame, maxDepth);
@@ -283,16 +288,16 @@ export class ExpressionEvaluator {
       }
       throw Error('Retrieving the address of a variable with a primitive value is not supported.');
     }
+
     const expressionResult = await this.evalNode(node.expression);
     if (equalsIgnoreCase(node.operator, 'not')) {
       return (await toBoolean(this.session, stackFrame, expressionResult))
         ? getFalse(this.session, stackFrame)
         : getTrue(this.session, stackFrame);
     }
+
     switch (node.operator) {
-      case '!': return (await toBoolean(this.session, stackFrame, expressionResult))
-        ? getFalse(this.session, stackFrame)
-        : getTrue(this.session, stackFrame);
+      case '!': return negate(this.session, stackFrame, expressionResult);
       case '+': return toNumber(expressionResult);
       case '-': return -toNumber(expressionResult);
       default: break;
@@ -309,6 +314,10 @@ export class ExpressionEvaluator {
       case '-': return Number(left) - Number(right);
       case '*': return Number(left) * Number(right);
       case '/': return Number(left) / Number(right);
+      case '=': return equals(this.session, stackFrame, left, right, '1');
+      case '==': return equals(this.session, stackFrame, left, right, '0');
+      case '!=': return negate(this.session, stackFrame, await equals(this.session, stackFrame, left, right, '1'));
+      case '!==': return negate(this.session, stackFrame, await equals(this.session, stackFrame, left, right, '0'));
       default: break;
     }
     return '';

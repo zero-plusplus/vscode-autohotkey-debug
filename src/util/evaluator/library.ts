@@ -10,7 +10,14 @@ export const getFalse = async(session: dbgp.Session, stackFrame?: dbgp.StackFram
   return fetchGlobalProperty(session, 'false', stackFrame);
 };
 export const toBoolean = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, value: EvaluatedValue): Promise<EvaluatedValue> => {
-  return value ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
+  const _value = String(value);
+  if (_value === '0') {
+    return getFalse(session, stackFrame);
+  }
+  else if (_value === '') {
+    return getFalse(session, stackFrame);
+  }
+  return getTrue(session, stackFrame);
 };
 export const toNumber = (value: any): number | '' => {
   const number = Number(value);
@@ -71,7 +78,7 @@ library_for_v1.set('CountOf', countOf);
 library_for_v2.set('CountOf', countOf);
 
 const isSet: LibraryFunc = async(session, stackFrame, value) => {
-  return typeof value === 'undefined' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
+  return value === '' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsSet', isSet);
 library_for_v2.set('IsSet', isSet);
@@ -153,7 +160,7 @@ library_for_v1.set('IsHexLike', isHexLike);
 library_for_v2.set('IsHexLike', isHexLike);
 
 const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
-  if (value instanceof dbgp.ObjectProperty || typeof value === 'undefined') {
+  if (value instanceof dbgp.ObjectProperty || value === '0' || value === '') {
     return getFalse(session, stackFrame);
   }
   return getTrue(session, stackFrame);

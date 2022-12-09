@@ -32,7 +32,13 @@ Expression_for_v1 {
     = Expression "?" Expression ":" Expression
 
   BinaryExpression
-    = AdditiveExpression
+    = RelationalExpression
+  RelationalExpression
+    = RelationalExpression "=" AdditiveExpression -- loose_equal
+    | RelationalExpression "==" AdditiveExpression -- equal
+    | RelationalExpression "!=" AdditiveExpression -- not_loose_equal
+    | RelationalExpression "!==" AdditiveExpression -- not_equal
+    | AdditiveExpression
   AdditiveExpression
     = AdditiveExpression "+" MultiplicativeExpression -- addition
     | AdditiveExpression "-" MultiplicativeExpression -- subtraction

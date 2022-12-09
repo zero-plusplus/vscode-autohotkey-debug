@@ -80,6 +80,36 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(async() => evaluator.eval('&undefined')).rejects.toThrow();
   });
 
+  test('eval relational (=)', async(): Promise<void> => {
+    expect(await evaluator.eval('10 = 10')).toBe(true_ahk);
+    expect(await evaluator.eval('"abc" = "ABC"')).toBe(true_ahk);
+    expect(await evaluator.eval('obj = obj')).toBe(true_ahk);
+    expect(await evaluator.eval('"abc" = "ABCD"')).toBe(false_ahk);
+    expect(await evaluator.eval('instance = T')).toBe(false_ahk);
+  });
+
+  test('eval relational (!=)', async(): Promise<void> => {
+    expect(await evaluator.eval('"abc" != "ABCD"')).toBe(true_ahk);
+    expect(await evaluator.eval('instance != T')).toBe(true_ahk);
+    expect(await evaluator.eval('10 != 10')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" != "ABC"')).toBe(false_ahk);
+    expect(await evaluator.eval('obj != obj')).toBe(false_ahk);
+  });
+
+  test('eval relational (==)', async(): Promise<void> => {
+    expect(await evaluator.eval('10 == 10')).toBe(true_ahk);
+    expect(await evaluator.eval('obj == obj')).toBe(true_ahk);
+    expect(await evaluator.eval('"abc" == "ABC"')).toBe(false_ahk);
+    expect(await evaluator.eval('instance == T')).toBe(false_ahk);
+  });
+
+  test('eval relational (!==)', async(): Promise<void> => {
+    expect(await evaluator.eval('"abc" !== "ABC"')).toBe(true_ahk);
+    expect(await evaluator.eval('instance !== T')).toBe(true_ahk);
+    expect(await evaluator.eval('10 !== 10')).toBe(false_ahk);
+    expect(await evaluator.eval('obj !== obj')).toBe(false_ahk);
+  });
+
   test('eval libraries', async(): Promise<void> => {
     expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true_ahk);
     expect(await evaluator.eval('CountOf(str_alpha)')).toBe(3);
@@ -256,7 +286,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     for await (const name of [ 'Contains', 'Includes' ]) {
       expect(await evaluator.eval(`${name}(obj, "value")`)).toBe(true_ahk);
       expect(await evaluator.eval(`${name}(str_alpha, "a")`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(obj, "Value", true_ahk)`)).toBe(true_ahk);
+      expect(await evaluator.eval(`${name}(obj, "Value", true)`)).toBe(true_ahk);
       expect(await evaluator.eval(`${name}(str_alpha, "b", true)`)).toBe(true_ahk);
       expect(await evaluator.eval(`${name}(obj, "Value")`)).toBe(false_ahk);
       expect(await evaluator.eval(`${name}(str_alpha, "b")`)).toBe(false_ahk);
