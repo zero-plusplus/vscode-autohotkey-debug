@@ -77,7 +77,7 @@ export type Function = (...params: any[]) => string | number | undefined;
 export type Library = {
   [key: string]: (...params: any[]) => string | number | undefined;
 };
-export type EvaluatedValue = string | number | boolean | undefined | dbgp.ObjectProperty;
+export type EvaluatedValue = string | number | undefined | dbgp.ObjectProperty;
 export class EvaluatedNode {
   public readonly type: string;
   public readonly node: ohm.Node | ohm.Node[];
@@ -88,6 +88,27 @@ export class EvaluatedNode {
     this.value = value;
   }
 }
+export const fetchGlobalProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
+  let _stackFrame = stackFrame;
+  if (!_stackFrame) {
+    const { stackFrames } = await session.sendStackGetCommand();
+    if (stackFrames.length === 0) {
+      return undefined;
+    }
+    _stackFrame = stackFrames[0];
+  }
+  const { contexts } = await session.sendContextNamesCommand(_stackFrame);
+  const globalContext = contexts.find((context) => context.name === 'Global');
+  if (!globalContext) {
+    return undefined;
+  }
+  const response = await session.sendPropertyGetCommand(globalContext, name, maxDepth);
+  const property = response.properties[0] as dbgp.Property | undefined;
+  if (property instanceof dbgp.ObjectProperty) {
+    return property;
+  }
+  return undefined;
+};
 export const fetchProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
   if (!name) {
     return undefined;

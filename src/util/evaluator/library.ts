@@ -1,7 +1,7 @@
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
-import { EvaluatedValue, fetchProperty, fetchPropertyChild, fetchPropertyChildren } from './ExpressionEvaluator';
+import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyChildren } from './ExpressionEvaluator';
 
 const toNumber = (value: any): number | undefined => {
   const number = Number(value);
@@ -9,6 +9,12 @@ const toNumber = (value: any): number | undefined => {
     return undefined;
   }
   return number;
+};
+export const getTrue = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
+  return fetchGlobalProperty(session, 'true', stackFrame);
+};
+export const getFalse = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
+  return fetchGlobalProperty(session, 'false', stackFrame);
 };
 export const regexTest = (value: string, regexString: string): boolean => {
   const _value = value.startsWith('[') && value.endsWith(']') ? value.slice(1, -1) : value;
@@ -19,30 +25,29 @@ export const regexTest = (value: string, regexString: string): boolean => {
   return RegExp(regexString.replace(`${flagsMatch.groups.flags})`, ''), `u${flagsMatch.groups.flags}`).test(_value);
 };
 
-export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, ...params: EvaluatedValue[]) => Promise<string | number | boolean | undefined>;
-export type LibraryFuncReturnValue = string | number | boolean | undefined;
+export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, ...params: EvaluatedValue[]) => Promise<EvaluatedValue>;
 
 export const library_for_v1 = new CaseInsensitiveMap<string, LibraryFunc>();
 export const library_for_v2 = new CaseInsensitiveMap<string, LibraryFunc>();
 
-const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass): Promise<boolean> => {
+const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass) => {
   if (!(object instanceof dbgp.ObjectProperty)) {
-    return false;
+    return getFalse(session, stackFrame);
   }
   if (!(superClass instanceof dbgp.ObjectProperty)) {
-    return false;
+    return getFalse(session, stackFrame);
   }
 
   const baseClass = await fetchProperty(session, `${object.fullName}.base`, stackFrame);
   if (!(baseClass instanceof dbgp.ObjectProperty)) {
-    return false;
+    return getFalse(session, stackFrame);
   }
 
   if (baseClass.address === superClass.address) {
-    return true;
+    return getTrue(session, stackFrame);
   }
 
-  return Boolean(instanceOf(session, stackFrame, baseClass, superClass));
+  return instanceOf(session, stackFrame, baseClass, superClass);
 };
 library_for_v1.set('InstanceOf', instanceOf);
 library_for_v2.set('InstanceOf', instanceOf);
@@ -58,7 +63,7 @@ library_for_v1.set('CountOf', countOf);
 library_for_v2.set('CountOf', countOf);
 
 const isSet: LibraryFunc = async(session, stackFrame, value) => {
-  return Promise.resolve(typeof value === 'undefined');
+  return typeof value === 'undefined' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsSet', isSet);
 library_for_v2.set('IsSet', isSet);
@@ -66,13 +71,13 @@ library_for_v1.set('IsUndefined', isSet);
 library_for_v2.set('IsUndefined', isSet);
 
 const isString: LibraryFunc = async(session, stackFrame, value) => {
-  return Promise.resolve(typeof value === 'string');
+  return typeof value === 'string' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsString', isString);
 library_for_v2.set('IsString', isString);
 
 const isNumber: LibraryFunc = async(session, stackFrame, value) => {
-  return Promise.resolve(typeof value === 'number');
+  return typeof value === 'number' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsNumber', isNumber);
 library_for_v2.set('IsNumber', isNumber);
@@ -80,19 +85,19 @@ library_for_v2.set('IsNumber', isNumber);
 const isNumberLike: LibraryFunc = async(session, stackFrame, value) => {
   switch (typeof value) {
     case 'string': return isNumber(session, stackFrame, toNumber(value));
-    case 'number': return Promise.resolve(true);
+    case 'number': return getTrue(session, stackFrame);
     default: break;
   }
-  return Promise.resolve(false);
+  return getFalse(session, stackFrame);
 };
 library_for_v1.set('IsNumberLike', isNumberLike);
 library_for_v2.set('IsNumberLike', isNumberLike);
 
 const isInteger: LibraryFunc = async(session, stackFrame, value) => {
   if (!(await isNumber(session, stackFrame, value))) {
-    return false;
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve(Number.isInteger(value));
+  return Number.isInteger(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsInteger', isInteger);
 library_for_v2.set('IsInteger', isInteger);
@@ -103,16 +108,18 @@ const isIntegerLike: LibraryFunc = async(session, stackFrame, value) => {
     case 'number': return isInteger(session, stackFrame, value);
     default: break;
   }
-  return Promise.resolve(false);
+  return getFalse(session, stackFrame);
 };
 library_for_v1.set('IsIntegerLike', isIntegerLike);
 library_for_v2.set('IsIntegerLike', isIntegerLike);
 
 const isFloat: LibraryFunc = async(session, stackFrame, value) => {
   if (!(await isNumber(session, stackFrame, value))) {
-    return false;
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve(typeof value === 'number' && (value % 1 !== 0));
+  return typeof value === 'number' && (value % 1 !== 0)
+    ? getTrue(session, stackFrame)
+    : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsFloat', isFloat);
 library_for_v2.set('IsFloat', isFloat);
@@ -123,128 +130,128 @@ const isFloatLike: LibraryFunc = async(session, stackFrame, value) => {
     case 'number': return isFloat(session, stackFrame, value);
     default: break;
   }
-  return Promise.resolve(false);
+  return getFalse(session, stackFrame);
 };
 library_for_v1.set('IsFloatLike', isFloatLike);
 library_for_v2.set('IsFloatLike', isFloatLike);
 
 const isHexLike: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return Promise.resolve(false);
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve(((/^0x[0-9a-fA-F]+$/u).test(value)));
+  return (/^0x[0-9a-fA-F]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsHexLike', isHexLike);
 library_for_v2.set('IsHexLike', isHexLike);
 
 const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value === 'undefined') {
-    return Promise.resolve(false);
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve(true);
+  return getTrue(session, stackFrame);
 };
 library_for_v1.set('IsPrimitive', isPrimitive);
 library_for_v2.set('IsPrimitive', isPrimitive);
 
 const isObject: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty) {
-    return Promise.resolve(true);
+    return getTrue(session, stackFrame);
   }
-  return Promise.resolve(false);
+  return getFalse(session, stackFrame);
 };
 library_for_v1.set('IsObject', isObject);
 library_for_v2.set('IsObject', isObject);
 
 const isAlpha: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return Promise.resolve(false);
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve((/^[a-zA-Z]+$/u).test(value));
+  return (/^[a-zA-Z]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsAlpha', isAlpha);
 library_for_v2.set('IsAlpha', isAlpha);
 
 const isAlnum: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return Promise.resolve(false);
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve((/^[a-zA-Z0-9]+$/u).test(value));
+  return (/^[a-zA-Z0-9]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsAlnum', isAlnum);
 library_for_v2.set('IsAlnum', isAlnum);
 
 const isUpper: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return Promise.resolve(false);
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve((/^[A-Z]+$/u).test(value));
+  return (/^[A-Z]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsUpper', isUpper);
 library_for_v2.set('IsUpper', isUpper);
 
 const isLower: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return Promise.resolve(false);
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve((/^[a-z]+$/u).test(value));
+  return (/^[a-z]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsLower', isLower);
 library_for_v2.set('IsLower', isLower);
 
 const isTime: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return Promise.resolve(false);
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve(!Number.isNaN(Date.parse(value)));
+  return Number.isNaN(Date.parse(value)) ? getFalse(session, stackFrame) : getTrue(session, stackFrame);
 };
 library_for_v1.set('IsTime', isTime);
 library_for_v2.set('IsTime', isTime);
 
 const isSpace: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return Promise.resolve(false);
+    return getFalse(session, stackFrame);
   }
-  return Promise.resolve((/^\s+$/u).test(value));
+  return (/^\s+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsSpace', isSpace);
 library_for_v2.set('IsSpace', isSpace);
 
 const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
-    return false;
+    return getFalse(session, stackFrame);
   }
 
   const className = await fetchProperty(session, `${value.fullName}.__CLASS`, stackFrame);
   const superClassName = await fetchProperty(session, `${value.fullName}.base.__CLASS`, stackFrame);
   if (!className) {
-    return false;
+    return getFalse(session, stackFrame);
   }
   if (superClassName && className !== superClassName) {
-    return false;
+    return getFalse(session, stackFrame);
   }
 
   if (name) {
     if (typeof name === 'string') {
-      return className === name;
+      return className === name ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
     }
     if (name instanceof dbgp.ObjectProperty) {
       const _name = await fetchProperty(session, `${name.fullName}.__CLASS`, stackFrame);
-      return className === _name;
+      return className === _name ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
     }
-    return false;
+    return getFalse(session, stackFrame);
   }
-  return true;
+  return getTrue(session, stackFrame);
 };
 library_for_v1.set('IsClass', isClass);
 library_for_v2.set('IsClass', isClass);
 
 const hasKey: LibraryFunc = async(session, stackFrame, value, key) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
-    return false;
+    return getFalse(session, stackFrame);
   }
 
   const child = await fetchPropertyChild(session, stackFrame, value, key);
-  return Boolean(child);
+  return child ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('HasKey', hasKey);
 library_for_v1.set('ObjHasKey', hasKey);
@@ -254,23 +261,23 @@ library_for_v2.set('ObjHasOwnProp', hasKey);
 
 const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
-    return false;
+    return getFalse(session, stackFrame);
   }
   if (typeof regexKey !== 'string') {
-    return false;
+    return getFalse(session, stackFrame);
   }
 
   const children = await fetchPropertyChildren(session, stackFrame, value);
   if (!children) {
-    return false;
+    return getFalse(session, stackFrame);
   }
 
   for (const child of children) {
     if (regexTest(child.name, regexKey)) {
-      return true;
+      return getTrue(session, stackFrame);
     }
   }
-  return false;
+  return getFalse(session, stackFrame);
 };
 library_for_v1.set('RegExHasKey', regexHasKey);
 library_for_v2.set('RegExHasKey', regexHasKey);
@@ -278,21 +285,22 @@ library_for_v2.set('RegExHasOwnProp', regexHasKey);
 
 const contains: LibraryFunc = async(session, stackFrame, value, searchValue, ignoreCase) => {
   if (typeof searchValue !== 'string') {
-    return false;
+    return getFalse(session, stackFrame);
   }
 
   if (!(value instanceof dbgp.ObjectProperty)) {
     if (typeof value === 'undefined') {
-      return false;
+      return getFalse(session, stackFrame);
     }
-    return toNumber(ignoreCase) === 1
+    const result = toNumber(ignoreCase) === 1
       ? String(value).toLowerCase().includes(searchValue.toLowerCase())
       : String(value).includes(searchValue);
+    return result ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
   }
 
   const children = await fetchPropertyChildren(session, stackFrame, value);
   if (!children) {
-    return false;
+    return getFalse(session, stackFrame);
   }
 
   for (const child of children) {
@@ -301,11 +309,11 @@ const contains: LibraryFunc = async(session, stackFrame, value, searchValue, ign
         ? equalsIgnoreCase(child.value, searchValue)
         : child.value === searchValue;
       if (result) {
-        return true;
+        return getTrue(session, stackFrame);
       }
     }
   }
-  return false;
+  return getFalse(session, stackFrame);
 };
 library_for_v1.set('Contains', contains);
 library_for_v1.set('Includes', contains);
