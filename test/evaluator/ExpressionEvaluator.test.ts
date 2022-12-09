@@ -205,6 +205,18 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('IsSpace(obj)')).toBe(false);
     expect(await evaluator.eval('IsSpace(arr)')).toBe(false);
   });
+  test('eval libraries (IsClass)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsClass(T)')).toBe(true);
+    expect(await evaluator.eval('IsClass(T, "T")')).toBe(true);
+    expect(await evaluator.eval('IsClass(T, T)')).toBe(true);
+    expect(await evaluator.eval('IsClass(2, "T")')).toBe(false);
+    expect(await evaluator.eval('IsClass(instance)')).toBe(false);
+    expect(await evaluator.eval('IsClass(str_alpha)')).toBe(false);
+    expect(await evaluator.eval('IsClass(num_int)')).toBe(false);
+    expect(await evaluator.eval('IsClass(undefined)')).toBe(false);
+    expect(await evaluator.eval('IsClass(obj)')).toBe(false);
+    expect(await evaluator.eval('IsClass(arr)')).toBe(false);
+  });
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });

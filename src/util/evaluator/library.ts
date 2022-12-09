@@ -199,3 +199,32 @@ const isSpace: LibraryFunc = async(session, stackFrame, value) => {
 };
 library_for_v1.set('IsSpace', isSpace);
 library_for_v2.set('IsSpace', isSpace);
+
+const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
+  if (!(value instanceof dbgp.ObjectProperty)) {
+    return false;
+  }
+
+  const className = await fetchProperty(session, `${value.fullName}.__CLASS`, stackFrame);
+  const superClassName = await fetchProperty(session, `${value.fullName}.base.__CLASS`, stackFrame);
+  if (!className) {
+    return false;
+  }
+  if (superClassName && className !== superClassName) {
+    return false;
+  }
+
+  if (name) {
+    if (typeof name === 'string') {
+      return className === name;
+    }
+    if (name instanceof dbgp.ObjectProperty) {
+      const _name = await fetchProperty(session, `${name.fullName}.__CLASS`, stackFrame);
+      return className === _name;
+    }
+    return false;
+  }
+  return true;
+};
+library_for_v1.set('IsClass', isClass);
+library_for_v2.set('IsClass', isClass);

@@ -23,4 +23,6 @@ nestedObj := { a: { b: { obj: obj, arr: arr } } }
 instance := new T()
 class T {
 }
+class T2 {
+}
 return
