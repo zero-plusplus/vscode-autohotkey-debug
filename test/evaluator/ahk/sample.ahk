@@ -1,10 +1,11 @@
 ﻿#SingleInstance
 #Persistent
 
-str_alpha := "abc"
-str_alnum := "abc123"
+str_alpha := "aBc"
+str_alnum := "aBc123"
 str_not_alnum := "$$$"
 str_upper := "ABC"
+str_lower := "abc"
 num_int := 123
 num_int_like := "123"
 num_float := 123.456

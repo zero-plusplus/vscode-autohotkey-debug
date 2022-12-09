@@ -173,6 +173,17 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('IsUpper(obj)')).toBe(false);
     expect(await evaluator.eval('IsUpper(arr)')).toBe(false);
   });
+  test('eval libraries (IsLower)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsLower(str_lower)')).toBe(true);
+    expect(await evaluator.eval('IsLower(str_upper)')).toBe(false);
+    expect(await evaluator.eval('IsLower(str_alpha)')).toBe(false);
+    expect(await evaluator.eval('IsLower(str_alnum)')).toBe(false);
+    expect(await evaluator.eval('IsLower(str_not_alnum)')).toBe(false);
+    expect(await evaluator.eval('IsLower(num_int)')).toBe(false);
+    expect(await evaluator.eval('IsLower(undefined)')).toBe(false);
+    expect(await evaluator.eval('IsLower(obj)')).toBe(false);
+    expect(await evaluator.eval('IsLower(arr)')).toBe(false);
+  });
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });
