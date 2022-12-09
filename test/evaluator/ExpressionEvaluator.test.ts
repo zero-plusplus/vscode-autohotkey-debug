@@ -104,7 +104,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   test('eval libraries (IsIntegerLike)', async(): Promise<void> => {
     expect(await evaluator.eval('IsIntegerLike(num_int)')).toBe(true);
     expect(await evaluator.eval('IsIntegerLike(num_int_like)')).toBe(true);
-    expect(await evaluator.eval('IsInteger(num_float)')).toBe(false);
+    expect(await evaluator.eval('IsIntegerLike(num_float)')).toBe(false);
     expect(await evaluator.eval('IsIntegerLike(arr)')).toBe(false);
   });
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
@@ -152,6 +152,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   test('eval libraries (IsIntegerLike)', async(): Promise<void> => {
     expect(await evaluator.eval('IsIntegerLike(num_int)')).toBe(true);
     expect(await evaluator.eval('IsIntegerLike(num_int_like)')).toBe(true);
+    expect(await evaluator.eval('IsIntegerLike(num_float)')).toBe(false);
     expect(await evaluator.eval('IsIntegerLike(arr)')).toBe(false);
   });
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
