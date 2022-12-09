@@ -136,3 +136,12 @@ const isObject: LibraryFunc = async(session, stackFrame, value) => {
 };
 library_for_v1.set('IsObject', isObject);
 library_for_v2.set('IsObject', isObject);
+
+const isAlpha: LibraryFunc = async(session, stackFrame, value) => {
+  if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
+    return Promise.resolve(false);
+  }
+  return Promise.resolve((/^[a-zA-Z]+$/u).test(value));
+};
+library_for_v1.set('IsAlpha', isAlpha);
+library_for_v2.set('IsAlpha', isAlpha);
