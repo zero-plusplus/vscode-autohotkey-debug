@@ -239,6 +239,18 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`RegExHasKey(str_alpha, "a")`)).toBe(false);
     expect(await evaluator.eval(`RegExHasKey(num_int, "b")`)).toBe(false);
   });
+  test('eval libraries (Contains)', async(): Promise<void> => {
+    for await (const name of [ 'Contains', 'Includes' ]) {
+      expect(await evaluator.eval(`${name}(obj, "value")`)).toBe(true);
+      expect(await evaluator.eval(`${name}(str_alpha, "a")`)).toBe(true);
+      expect(await evaluator.eval(`${name}(obj, "Value", true)`)).toBe(true);
+      expect(await evaluator.eval(`${name}(str_alpha, "b", true)`)).toBe(true);
+      expect(await evaluator.eval(`${name}(obj, "Value")`)).toBe(false);
+      expect(await evaluator.eval(`${name}(str_alpha, "b")`)).toBe(false);
+      expect(await evaluator.eval(`${name}(str_alpha, "z")`)).toBe(false);
+      expect(await evaluator.eval(`${name}(undefined, "$")`)).toBe(false);
+    }
+  });
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });

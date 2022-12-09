@@ -1,5 +1,6 @@
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
+import { equalsIgnoreCase } from '../stringUtils';
 import { EvaluatedValue, fetchProperty, fetchPropertyChild, fetchPropertyChildren } from './ExpressionEvaluator';
 
 const toNumber = (value: any): number | undefined => {
@@ -274,3 +275,39 @@ const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => 
 library_for_v1.set('RegExHasKey', regexHasKey);
 library_for_v2.set('RegExHasKey', regexHasKey);
 library_for_v2.set('RegExHasOwnProp', regexHasKey);
+
+const contains: LibraryFunc = async(session, stackFrame, value, searchValue, ignoreCase) => {
+  if (typeof searchValue !== 'string') {
+    return false;
+  }
+
+  if (!(value instanceof dbgp.ObjectProperty)) {
+    if (typeof value === 'undefined') {
+      return false;
+    }
+    return toNumber(ignoreCase) === 1
+      ? String(value).toLowerCase().includes(searchValue.toLowerCase())
+      : String(value).includes(searchValue);
+  }
+
+  const children = await fetchPropertyChildren(session, stackFrame, value);
+  if (!children) {
+    return false;
+  }
+
+  for (const child of children) {
+    if (child instanceof dbgp.PrimitiveProperty) {
+      const result = toNumber(ignoreCase) === 1
+        ? equalsIgnoreCase(child.value, searchValue)
+        : child.value === searchValue;
+      if (result) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+library_for_v1.set('Contains', contains);
+library_for_v1.set('Includes', contains);
+library_for_v2.set('Contains', contains);
+library_for_v2.set('Includes', contains);
