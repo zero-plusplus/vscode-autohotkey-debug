@@ -122,6 +122,15 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false);
     expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false);
   });
+  test('eval libraries (IsHexLike)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsHexLike(num_hex_like)')).toBe(true);
+    expect(await evaluator.eval('IsHexLike(num_hex)')).toBe(false);
+    expect(await evaluator.eval('IsHexLike(num_float)')).toBe(false);
+    expect(await evaluator.eval('IsHexLike(num_float_like)')).toBe(false);
+    expect(await evaluator.eval('IsHexLike(num_int)')).toBe(false);
+    expect(await evaluator.eval('IsHexLike(num_int_like)')).toBe(false);
+    expect(await evaluator.eval('IsHexLike(arr)')).toBe(false);
+  });
   test('eval libraries (IsPrimitive)', async(): Promise<void> => {
     expect(await evaluator.eval('IsPrimitive(str_alpha)')).toBe(true);
     expect(await evaluator.eval('IsPrimitive(num_int)')).toBe(true);

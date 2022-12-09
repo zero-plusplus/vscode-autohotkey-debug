@@ -119,6 +119,15 @@ const isFloatLike: LibraryFunc = async(session, stackFrame, value) => {
 library_for_v1.set('IsFloatLike', isFloatLike);
 library_for_v2.set('IsFloatLike', isFloatLike);
 
+const isHexLike: LibraryFunc = async(session, stackFrame, value) => {
+  if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
+    return Promise.resolve(false);
+  }
+  return Promise.resolve(((/^0x[0-9a-fA-F]+$/u).test(value)));
+};
+library_for_v1.set('IsHexLike', isHexLike);
+library_for_v2.set('IsHexLike', isHexLike);
+
 const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value === 'undefined') {
     return Promise.resolve(false);
