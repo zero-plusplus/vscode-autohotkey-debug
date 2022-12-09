@@ -190,3 +190,12 @@ const isTime: LibraryFunc = async(session, stackFrame, value) => {
 };
 library_for_v1.set('IsTime', isTime);
 library_for_v2.set('IsTime', isTime);
+
+const isSpace: LibraryFunc = async(session, stackFrame, value) => {
+  if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
+    return Promise.resolve(false);
+  }
+  return Promise.resolve((/^\s+$/u).test(value));
+};
+library_for_v1.set('IsSpace', isSpace);
+library_for_v2.set('IsSpace', isSpace);

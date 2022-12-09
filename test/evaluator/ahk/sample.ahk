@@ -7,6 +7,7 @@ str_not_alnum := "$$$"
 str_upper := "ABC"
 str_lower := "abc"
 str_time := "01 Jan 1970 00:00:00 GMT"
+str_space := " "
 num_int := 123
 num_int_like := "123"
 num_float := 123.456
