@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { LibraryFunc, getFalse, getTrue, library_for_v1, library_for_v2, toBoolean, toNumber } from './library';
+import { LibraryFunc, ahkRegexMatch, getFalse, getTrue, library_for_v1, library_for_v2, toBoolean, toNumber } from './library';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
@@ -244,6 +244,7 @@ export class ExpressionEvaluator {
       RelationalExpression_greaterthan_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
       LogicalExpression_and: { type: 'binary', left: 0, operator: 1, right: 2 },
       LogicalExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
+      RegExMatchExpression_regex_match: { type: 'binary', left: 0, operator: 1, right: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 2 },
       UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
@@ -365,6 +366,12 @@ export class ExpressionEvaluator {
           default: break;
         }
         break;
+      }
+      case '~=': {
+        if (left instanceof dbgp.ObjectProperty || right instanceof dbgp.ObjectProperty) {
+          return getFalse(this.session, stackFrame);
+        }
+        return ahkRegexMatch(String(left), String(right));
       }
       default: break;
     }

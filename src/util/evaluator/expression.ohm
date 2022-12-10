@@ -46,6 +46,9 @@ Expression_for_v1 {
     | RelationalExpression "==" AdditiveExpression -- equal
     | RelationalExpression "!=" AdditiveExpression -- not_loose_equal
     | RelationalExpression "!==" AdditiveExpression -- not_equal
+    | RegExMatchExpression
+  RegExMatchExpression
+    = RegExMatchExpression "~=" AdditiveExpression -- regex_match
     | AdditiveExpression
   AdditiveExpression
     = AdditiveExpression "+" MultiplicativeExpression -- addition

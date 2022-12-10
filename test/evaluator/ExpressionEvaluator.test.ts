@@ -161,6 +161,12 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('false || false')).toBe(false_ahk);
   });
 
+  test('eval regex match (~=)', async(): Promise<void> => {
+    expect(await evaluator.eval('str_alpha ~= "i)ABC"')).toBe(1);
+    expect(await evaluator.eval('str_alpha ~= "B"')).toBe(2);
+    expect(await evaluator.eval('str_alpha ~= "i)z"')).toBe(0);
+  });
+
   test('eval libraries', async(): Promise<void> => {
     expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true_ahk);
     expect(await evaluator.eval('CountOf(str_alpha)')).toBe(3);

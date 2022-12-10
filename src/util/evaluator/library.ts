@@ -31,13 +31,14 @@ export const getUndefined = async(session: dbgp.Session, stackFrame?: dbgp.Stack
   const name = 'D466D841_6E55_421C_9389_EFF0444115D9_B3F83A54_7903_4FDD_B5BF_BC92ADB651A6';
   return fetchGlobalProperty(session, name, stackFrame);
 };
-export const regexTest = (value: string, regexString: string): boolean => {
+export const ahkRegexMatch = (value: string, regexString: string): number => {
   const _value = value.startsWith('[') && value.endsWith(']') ? value.slice(1, -1) : value;
   const flagsMatch = regexString.match(/(?<flags>^([imsxADJUXPOSC]|`n|`r|`a)+)\)/u);
   if (!flagsMatch?.groups?.flags) {
-    return RegExp(regexString, 'u').test(_value);
+    return (RegExp(regexString, 'u').exec(_value)?.index ?? -1) + 1;
   }
-  return RegExp(regexString.replace(`${flagsMatch.groups.flags})`, ''), `u${flagsMatch.groups.flags}`).test(_value);
+  const regexString_body = regexString.replace(`${flagsMatch.groups.flags})`, '');
+  return (RegExp(regexString_body, `${flagsMatch.groups.flags}`).exec(_value)?.index ?? -1) + 1;
 };
 
 export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, ...params: EvaluatedValue[]) => Promise<EvaluatedValue>;
@@ -288,7 +289,7 @@ const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => 
   }
 
   for (const child of children) {
-    if (regexTest(child.name, regexKey)) {
+    if (ahkRegexMatch(child.name, regexKey)) {
       return getTrue(session, stackFrame);
     }
   }
