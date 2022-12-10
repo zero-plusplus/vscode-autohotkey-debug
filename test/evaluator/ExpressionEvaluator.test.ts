@@ -13,7 +13,7 @@ export const debugAutoHotkey = (file: string, runtime?: string, port = 9000, hos
   if (!path.isAbsolute(_runtime)) {
     _runtime = path.join(`${String(process.env.PROGRAMFILES)}/AutoHotkey`, _runtime);
   }
-  return spawn(_runtime, [ `/Debug=${hostname}:${port}`, file ]);
+  return spawn(_runtime, [ `/Debug=${hostname}:${port}`, '/force', '/restart', file ]);
 };
 export const launchDebug = async(runtime: string, program: string, port: number, hostname: string): Promise<{ session: dbgp.Session; process: ChildProcess; server: net.Server; evaluator: ExpressionEvaluator }> => {
   return new Promise((resolve) => {
