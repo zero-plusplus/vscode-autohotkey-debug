@@ -151,11 +151,13 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('true && true')).toBe(true_ahk);
     expect(await evaluator.eval('true && false')).toBe(false_ahk);
     expect(await evaluator.eval('false && false')).toBe(false_ahk);
+    expect(await evaluator.eval('instance && false')).toBe(false_ahk);
   });
 
   test('eval logical (||)', async(): Promise<void> => {
     expect(await evaluator.eval('true || true')).toBe(true_ahk);
     expect(await evaluator.eval('true || false')).toBe(true_ahk);
+    expect(await evaluator.eval('instance || false')).toBe(true_ahk);
     expect(await evaluator.eval('false || false')).toBe(false_ahk);
   });
 
@@ -369,6 +371,20 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   afterAll(async() => {
     server.close();
     await closeSession(session, process);
+  });
+
+  test('eval logical (&&)', async(): Promise<void> => {
+    expect(await evaluator.eval('true && true')).toBe(true_ahk);
+    expect(await evaluator.eval('true && false')).toBe(false_ahk);
+    expect(await evaluator.eval('false && false')).toBe(false_ahk);
+    expect(await evaluator.eval('(instance && false).instanceField')).toBe('');
+  });
+
+  test('eval logical (||)', async(): Promise<void> => {
+    expect(await evaluator.eval('true || true')).toBe(true_ahk);
+    expect(await evaluator.eval('true || false')).toBe(true_ahk);
+    expect(await evaluator.eval('false || false')).toBe(false_ahk);
+    expect(await evaluator.eval('(instance || false).instanceField')).toBe('instance');
   });
 
   test('eval libraries (IsNumber)', async(): Promise<void> => {

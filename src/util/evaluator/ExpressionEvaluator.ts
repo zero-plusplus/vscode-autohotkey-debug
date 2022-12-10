@@ -347,8 +347,21 @@ export class ExpressionEvaluator {
         const _left = left === '0' ? false : left;
         const _right = right === '0' ? false : right;
         switch (operator) {
-          case '&&': return (_left && _right) ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
-          case '||': return (_left || _right) ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
+          case '&&': {
+            if (2.0 <= this.session.ahkVersion.mejor) {
+              if (_left) {
+                return right;
+              }
+              return left;
+            }
+            return (_left && _right) ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
+          }
+          case '||': {
+            if (2.0 <= this.session.ahkVersion.mejor) {
+              return (_left || _right) ? left : right;
+            }
+            return (_left || _right) ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
+          }
           default: break;
         }
         break;
