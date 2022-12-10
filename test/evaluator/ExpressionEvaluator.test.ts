@@ -5,7 +5,7 @@ import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../../src/dbgpSession';
 import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
-import { toFileUri } from '../../src/util/util';
+import { timeoutPromise, toFileUri } from '../../src/util/util';
 import { getFalse, getTrue } from '../../src/util/evaluator/library';
 
 export const debugAutoHotkey = (file: string, runtime?: string, port = 9000, hostname = 'localhost'): ChildProcess => {
@@ -34,6 +34,14 @@ export const launchDebug = async(runtime: string, program: string, port: number,
       });
   });
 };
+const closeSession = async(session: dbgp.Session, process: ChildProcess): Promise<void> => {
+  if (session.socketWritable) {
+    await timeoutPromise(session.sendStopCommand(), 500).catch(() => {
+      process.kill();
+    });
+  }
+  await session.close();
+};
 
 const sampleDir = path.resolve(__dirname, 'ahk');
 const port = 9003;
@@ -58,9 +66,8 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     // undefined_ahk = await getUndefined(session);
   });
   afterAll(async() => {
-    process.kill();
     server.close();
-    await session.close();
+    await closeSession(session, process);
   });
 
   test('eval', async(): Promise<void> => {
@@ -360,9 +367,8 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     // undefined_ahk = await getUndefined(session);
   });
   afterAll(async() => {
-    process.kill();
     server.close();
-    await session.close();
+    await closeSession(session, process);
   });
 
   test('eval libraries (IsNumber)', async(): Promise<void> => {
