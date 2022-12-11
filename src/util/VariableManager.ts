@@ -46,6 +46,11 @@ export const unescapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
     .replace(/`f/gu, '\f')
     .replace(/`a/gu, '\x07');
 };
+export const singleToDoubleString = (str: string): string => {
+  return str
+    .replace(/"/gu, '`"')
+    .replace(/`'/gu, `'`);
+};
 export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion): string => {
   const formatPrimitiveProperty = (property: dbgp.PrimitiveProperty): string => {
     if (property.type === 'string') {

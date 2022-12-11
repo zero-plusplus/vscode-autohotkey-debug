@@ -7,7 +7,7 @@ import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
-import { unescapeAhk } from '../VariableManager';
+import { singleToDoubleString, unescapeAhk } from '../VariableManager';
 
 export type Node =
  | IdentifierNode
@@ -267,6 +267,9 @@ export class ExpressionEvaluator {
     if (typeof node === 'string') {
       if (node.startsWith('"') && node.endsWith('"')) {
         return unescapeAhk(node.slice(1, -1), this.session.ahkVersion);
+      }
+      if (node.startsWith(`'`) && node.endsWith(`'`)) {
+        return unescapeAhk(singleToDoubleString(node.slice(1, -1)), this.session.ahkVersion);
       }
       return Number(node);
     }

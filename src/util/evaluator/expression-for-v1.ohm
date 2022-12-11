@@ -96,17 +96,11 @@ Expression_for_v1 {
 
   booleanLiteral = ("true" | "false")
 
-  stringLiteral
-    = "\"" doubleCharacter* "\""
-    | "'" singleCharacter* "'"
+  stringLiteral = "\"" doubleCharacter* "\""
   commonEscapeSequence = "``" | "`," | "`%" | "`;" | "`::" | "`r" | "`n" | "`b" | "`t" | "`v" | "`a" | "`f"
   doubleEscapeSequence = "\"\"" | commonEscapeSequence
-  singleEscapeSequence = "\\'" | commonEscapeSequence
   doubleCharacter
     = ~("\"" | "`" | lineTerminator) any
-    | doubleEscapeSequence
-  singleCharacter
-    = ~("'" | "`" | lineTerminator) any
     | doubleEscapeSequence
 
   numericLiteral = "0" | decimalLiteral | hexIntegerLiteral

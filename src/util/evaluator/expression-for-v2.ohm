@@ -1,3 +1,11 @@
 Expression_for_v2 <: Expression_for_v1 {
+  stringLiteral
+    := "\"" doubleCharacter* "\""
+     | "'" singleCharacter* "'"
   doubleEscapeSequence := "`\"" | commonEscapeSequence
+  singleEscapeSequence = "\\'" | commonEscapeSequence
+  singleCharacter
+    = ~("'" | "`" | lineTerminator) any
+    | doubleEscapeSequence
+
 }
