@@ -75,6 +75,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('str_alpha . str_alnum')).toBe('aBcaBc123');
     expect(await evaluator.eval('10 * 3 + (num_int - 123) - 30')).toBe(0);
     expect(await evaluator.eval('10 * (3 + (num_int - 123) - 30)')).toBe(-270);
+    expect(await evaluator.eval('3 ** 2')).toBe(9);
     expect(await evaluator.eval('obj + 3')).toBe('');
     expect(await evaluator.eval('obj.key')).toBe('value');
     expect(await evaluator.eval('obj["key"]')).toBe('value');
@@ -357,7 +358,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('eval priority', async(): Promise<void> => {
-    expect(await evaluator.eval(`1 + 2 * 3`)).toBe(7);
+    expect(await evaluator.eval(`1 + 2 * 3 ** 2`)).toBe(19);
     expect(await evaluator.eval(`1 < 0 + 2`)).toBe(true_ahk);
     expect(await evaluator.eval(`1 <= "abc" ~= "b"`)).toBe(true_ahk);
     expect(await evaluator.eval(`1 + 2 * 3 "a" "b" . "c"`)).toBe('7abc');

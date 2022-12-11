@@ -248,6 +248,7 @@ export class ExpressionEvaluator {
       AdditiveExpression_subtraction: { type: 'binary', left: 0, operator: 1, right: 2 },
       MultiplicativeExpression_multiplication: { type: 'binary', left: 0, operator: 1, right: 2 },
       MultiplicativeExpression_division: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ExponentiationExpression_power: { type: 'binary', left: 0, operator: 1, right: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 3 },
       UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
@@ -333,6 +334,7 @@ export class ExpressionEvaluator {
       case '+':
       case '-':
       case '*':
+      case '**':
       case '/': {
         const _left = Number(left);
         const _right = Number(right);
@@ -344,6 +346,7 @@ export class ExpressionEvaluator {
           case '+': return _left + _right;
           case '-': return _left - _right;
           case '*': return _left * _right;
+          case '**': return _left ** _right;
           case '/': return _left / _right;
           default: break;
         }

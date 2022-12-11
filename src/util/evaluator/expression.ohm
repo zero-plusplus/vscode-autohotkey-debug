@@ -61,9 +61,12 @@ Expression_for_v1 {
     | AdditiveExpression "-" MultiplicativeExpression -- subtraction
     | MultiplicativeExpression
   MultiplicativeExpression
-    = MultiplicativeExpression "*" MemberExpression -- multiplication
-    | MultiplicativeExpression "/" MemberExpression -- division
-    | MultiplicativeExpression "//" MemberExpression -- floor_division
+    = MultiplicativeExpression "*" MultiplicativeExpression -- multiplication
+    | MultiplicativeExpression "/" MultiplicativeExpression -- division
+    | MultiplicativeExpression "//" MultiplicativeExpression -- floor_division
+    | ExponentiationExpression
+  ExponentiationExpression
+    = ExponentiationExpression "**" MemberExpression -- power
     | MemberExpression
 
   Arguments = ListOf<Expression, ",">
