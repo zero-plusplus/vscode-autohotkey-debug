@@ -114,6 +114,27 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`%a%b%c%`)).toBe(await evaluator.eval('abc'));
   });
 
+  test('eval unary (+)', async(): Promise<void> => {
+    expect(await evaluator.eval(`+num_int`)).toBe(await evaluator.eval(`num_int`));
+    expect(await evaluator.eval(`+ num_int`)).toBe(await evaluator.eval(`num_int`));
+  });
+
+  test('eval unary (-)', async(): Promise<void> => {
+    expect(await evaluator.eval(`-num_int`)).toBe(await evaluator.eval(`-123`));
+    expect(await evaluator.eval(`- num_int`)).toBe(await evaluator.eval(`-123`));
+  });
+
+
+  test('eval unary (!)', async(): Promise<void> => {
+    expect(await evaluator.eval(`!num_int`)).toBe(false_ahk);
+    expect(await evaluator.eval(`! num_int`)).toBe(false_ahk);
+  });
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  test('eval unary (&)', async(): Promise<void> => {
+    expect(async() => evaluator.eval(`&num_int`)).rejects.toThrow();
+  });
+
   test('eval relational (=)', async(): Promise<void> => {
     expect(await evaluator.eval('10 = 10')).toBe(true_ahk);
     expect(await evaluator.eval('"abc" = "ABC"')).toBe(true_ahk);
@@ -459,7 +480,6 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`%'str'%`)).toBe('abc');
     expect(async() => evaluator.eval('% "str" %')).rejects.toThrow();
   });
-
 
   test('eval dereference propertyaccess', async(): Promise<void> => {
     expect(await evaluator.eval(`obj.%key%`)).toBe(await evaluator.eval('obj.key'));

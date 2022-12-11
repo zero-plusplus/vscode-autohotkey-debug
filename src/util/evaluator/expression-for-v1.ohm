@@ -16,10 +16,10 @@ Expression_for_v1 {
   DereferenceExpressions = (#(identifier) | DereferenceExpression)+
   DereferenceExpression = #("%" identifier "%")
   UnaryExpression
-    = "+" ~space PrimaryExpression -- positive
-    | "-" ~space PrimaryExpression -- negative
-    | "!" ~space PrimaryExpression -- not
-    | "&" ~(space | "&") PrimaryExpression -- address
+    = "+" PrimaryExpression -- positive
+    | "-" PrimaryExpression -- negative
+    | "!" PrimaryExpression -- not
+    | "&" ~"&" PrimaryExpression -- address
     | PrefixUnaryExpression
 
   PrefixUnaryExpression
