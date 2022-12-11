@@ -64,6 +64,11 @@ Expression_for_v1 {
     = BitwiseExpression "|" ~"|" AdditiveExpression -- or
     | BitwiseExpression "^" AdditiveExpression -- xor
     | BitwiseExpression "&" ~"&" AdditiveExpression -- and
+    | BitshiftExpression
+  BitshiftExpression
+    = BitshiftExpression "<<" AdditiveExpression -- left
+    | BitshiftExpression ">>" AdditiveExpression -- right
+    | BitshiftExpression ">>>" AdditiveExpression -- logical_right
     | AdditiveExpression
   AdditiveExpression
     = AdditiveExpression "+" MultiplicativeExpression -- addition

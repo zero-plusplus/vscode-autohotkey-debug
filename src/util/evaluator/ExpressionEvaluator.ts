@@ -267,6 +267,10 @@ export class ExpressionEvaluator {
       BitwiseExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
       BitwiseExpression_xor: { type: 'binary', left: 0, operator: 1, right: 2 },
       BitwiseExpression_and: { type: 'binary', left: 0, operator: 1, right: 2 },
+      BitshiftExpression_left: { type: 'binary', left: 0, operator: 1, right: 2 },
+      BitshiftExpression_right: { type: 'binary', left: 0, operator: 1, right: 2 },
+      BitshiftExpression_logical_left: { type: 'binary', left: 0, operator: 1, right: 2 },
+      BitshiftExpression_logical_right: { type: 'binary', left: 0, operator: 1, right: 2 },
       AdditiveExpression_concatenate: { type: 'binary', left: 0, operator: 1, right: 2 },
       AdditiveExpression_addition: { type: 'binary', left: 0, operator: 1, right: 2 },
       AdditiveExpression_subtraction: { type: 'binary', left: 0, operator: 1, right: 2 },
@@ -381,6 +385,9 @@ export class ExpressionEvaluator {
       case '|':
       case '^':
       case '&':
+      case '<<':
+      case '>>':
+      case '>>>':
       case '+':
       case '-':
       case '*':
@@ -399,6 +406,12 @@ export class ExpressionEvaluator {
           case '^': return _left ^ _right;
           // eslint-disable-next-line no-bitwise
           case '&': return _left & _right;
+          // eslint-disable-next-line no-bitwise
+          case '<<': return _left << _right;
+          // eslint-disable-next-line no-bitwise
+          case '>>': return _left >> _right;
+          // eslint-disable-next-line no-bitwise
+          case '>>>': return _left >>> _right;
           case '+': return _left + _right;
           case '-': return _left - _right;
           case '*': return _left * _right;
