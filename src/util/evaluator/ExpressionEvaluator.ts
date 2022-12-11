@@ -248,7 +248,7 @@ export class ExpressionEvaluator {
       LogicalExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
       RegExMatchExpression_regex_match: { type: 'binary', left: 0, operator: 1, right: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
-      MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 2 },
+      MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 3 },
       UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_negative: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_not: { type: 'unary', operator: 0, expression: 1 },
