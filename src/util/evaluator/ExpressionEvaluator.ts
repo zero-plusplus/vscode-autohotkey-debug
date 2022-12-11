@@ -258,6 +258,7 @@ export class ExpressionEvaluator {
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const matchResult = this.parser.parse(expression);
     const node = toAST(matchResult, {
+      Expression_comma_sequence: { type: 'binary', left: 0, operator: 1, right: 2 },
       LogicalExpression_and: { type: 'binary', left: 0, operator: 1, right: 2 },
       LogicalExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
       EqualityExpression_loose_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
@@ -395,6 +396,9 @@ export class ExpressionEvaluator {
     const right = await this.evalNode(node.right, stackFrame, maxDepth);
 
     switch (operator) {
+      case ',': {
+        return right;
+      }
       case ' ':
       case '\t':
       case '.': {

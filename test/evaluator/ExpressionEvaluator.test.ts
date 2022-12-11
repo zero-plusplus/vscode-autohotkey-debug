@@ -124,7 +124,6 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`- num_int`)).toBe(await evaluator.eval(`-123`));
   });
 
-
   test('eval unary (!)', async(): Promise<void> => {
     expect(await evaluator.eval(`!num_int`)).toBe(false_ahk);
     expect(await evaluator.eval(`! num_int`)).toBe(false_ahk);
@@ -245,6 +244,10 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('str_alpha ~= "i)ABC"')).toBe(1);
     expect(await evaluator.eval('str_alpha ~= "B"')).toBe(2);
     expect(await evaluator.eval('str_alpha ~= "i)z"')).toBe(0);
+  });
+
+  test('eval sequence', async(): Promise<void> => {
+    expect(await evaluator.eval(`1, 2, 3`)).toBe(3);
   });
 
   test('eval libraries', async(): Promise<void> => {
