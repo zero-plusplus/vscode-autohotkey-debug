@@ -92,6 +92,23 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(async() => evaluator.eval('&undefined')).rejects.toThrow();
   });
 
+  test('eval double string', async(): Promise<void> => {
+    expect(await evaluator.eval('"abc"')).toBe('abc');
+    expect(await evaluator.eval('""""')).toBe('"');
+    expect(await evaluator.eval('"``"')).toBe('`');
+    expect(await evaluator.eval('"`,"')).toBe(',');
+    expect(await evaluator.eval('"`%"')).toBe('%');
+    expect(await evaluator.eval('"`;"')).toBe(';');
+    expect(await evaluator.eval('"`::"')).toBe('::');
+    expect(await evaluator.eval('"`r"')).toBe('\r');
+    expect(await evaluator.eval('"`n"')).toBe('\n');
+    expect(await evaluator.eval('"`b"')).toBe('\b');
+    expect(await evaluator.eval('"`t"')).toBe('\t');
+    expect(await evaluator.eval('"`v"')).toBe('\v');
+    expect(await evaluator.eval('"`f"')).toBe('\f');
+    expect(await evaluator.eval('"`a"')).toBe('\x07');
+  });
+
   test('eval relational (=)', async(): Promise<void> => {
     expect(await evaluator.eval('10 = 10')).toBe(true_ahk);
     expect(await evaluator.eval('"abc" = "ABC"')).toBe(true_ahk);
@@ -398,6 +415,22 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   afterAll(async() => {
     server.close();
     await closeSession(session, process);
+  });
+
+  test('eval double string', async(): Promise<void> => {
+    expect(await evaluator.eval('"abc"')).toBe('abc');
+    expect(await evaluator.eval('"`""')).toBe('"');
+    expect(await evaluator.eval('"`,"')).toBe(',');
+    expect(await evaluator.eval('"`%"')).toBe('%');
+    expect(await evaluator.eval('"`;"')).toBe(';');
+    expect(await evaluator.eval('"`::"')).toBe('::');
+    expect(await evaluator.eval('"`r"')).toBe('\r');
+    expect(await evaluator.eval('"`n"')).toBe('\n');
+    expect(await evaluator.eval('"`b"')).toBe('\b');
+    expect(await evaluator.eval('"`t"')).toBe('\t');
+    expect(await evaluator.eval('"`v"')).toBe('\v');
+    expect(await evaluator.eval('"`f"')).toBe('\f');
+    expect(await evaluator.eval('"`a"')).toBe('\x07');
   });
 
   test('eval logical (&&)', async(): Promise<void> => {

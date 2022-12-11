@@ -7,6 +7,7 @@ import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
+import { unescapeAhk } from '../VariableManager';
 
 export type Node =
  | IdentifierNode
@@ -222,10 +223,10 @@ export class ExpressionEvaluator {
   private readonly library: CaseInsensitiveMap<string, LibraryFunc>;
   constructor(session: dbgp.Session) {
     this.session = session;
-    this.library = 2.0 < session.ahkVersion.mejor
+    this.library = 2.0 <= session.ahkVersion.mejor
       ? library_for_v2
       : library_for_v1;
-    this.parser = new ExpressionParser();
+    this.parser = new ExpressionParser(session.ahkVersion);
   }
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const matchResult = this.parser.parse(expression);
@@ -257,8 +258,6 @@ export class ExpressionEvaluator {
       UnaryExpression_address: { type: 'unary', operator: 0, expression: 1 },
       CallExpression: { type: 'call', caller: 0, arguments: 2 },
       identifier: { type: 'identifier', start: 0, parts: 1 },
-      stringLiteral: { type: 'string', startQuote: 0, value: 0, endQuote: 0 },
-      numericLiteral: { type: 'number', value: 0 },
     }) as Node;
 
     const result = await this.evalNode(node, stackFrame, maxDepth);
@@ -267,7 +266,7 @@ export class ExpressionEvaluator {
   public async evalNode(node: Node, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     if (typeof node === 'string') {
       if (node.startsWith('"') && node.endsWith('"')) {
-        return node.slice(1, -1);
+        return unescapeAhk(node.slice(1, -1), this.session.ahkVersion);
       }
       return Number(node);
     }

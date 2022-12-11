@@ -3,7 +3,7 @@ import * as assert from 'assert';
 import { ExpressionParser } from '../../src/util/evaluator/ExpressionParser';
 
 describe('ExpressionParser', () => {
-  const parser = new ExpressionParser();
+  const parser = new ExpressionParser('1.1.36.00');
   const testDataList = [
     '0',
     '+1',

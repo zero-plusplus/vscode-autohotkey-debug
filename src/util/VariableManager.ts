@@ -14,6 +14,11 @@ import { AhkDebugSession } from '../ahkDebug';
 export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
   return str
     .replace(/"/gu, ahkVersion?.mejor === 2 ? '`"' : '""')
+    .replace(/`/gu, '```')
+    .replace(/,/gu, '`,')
+    .replace(/%/gu, '`%')
+    .replace(/;/gu, '`;')
+    .replace(/::/gu, '`::')
     .replace(/\r\n/gu, '`r`n')
     .replace(/\n/gu, '`n')
     .replace(/\r/gu, '`r')
@@ -27,13 +32,19 @@ export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
 export const unescapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
   return str
     .replace(ahkVersion?.mejor === 2 ? /`"/gu : /""/gu, '"')
+    .replace(/``/gu, '`')
+    .replace(/`,/gu, ',')
+    .replace(/`%/gu, '%')
+    .replace(/`;/gu, ';')
+    .replace(/`::/gu, '::')
     .replace(/`r`n/gu, '\r\n')
     .replace(/`n/gu, '\n')
     .replace(/`r/gu, '\r')
     .replace(/`b/gu, '\b')
     .replace(/`t/gu, '\t')
     .replace(/`v/gu, '\v')
-    .replace(/`f/gu, '\f');
+    .replace(/`f/gu, '\f')
+    .replace(/`a/gu, '\x07');
 };
 export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion): string => {
   const formatPrimitiveProperty = (property: dbgp.PrimitiveProperty): string => {

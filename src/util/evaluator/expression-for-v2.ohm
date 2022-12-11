@@ -1,0 +1,3 @@
+Expression_for_v2 <: Expression_for_v1 {
+  doubleEscapeSequence := "`\"" | commonEscapeSequence
+}
