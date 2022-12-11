@@ -56,8 +56,13 @@ Expression_for_v1 {
     = RegExMatchExpression "~=" ConcatenateExpression -- regex_match
     | ConcatenateExpression
   ConcatenateExpression
-    = ConcatenateExpression #(whitespace) AdditiveExpression -- space
-    | ConcatenateExpression "." AdditiveExpression -- dot
+    = ConcatenateExpression #(whitespace) BitwiseExpression -- space
+    | ConcatenateExpression "." BitwiseExpression -- dot
+    | BitwiseExpression
+  BitwiseExpression
+    = BitwiseExpression "|" ~"|" AdditiveExpression -- or
+    | BitwiseExpression "^" AdditiveExpression -- xor
+    | BitwiseExpression "&" ~"&" AdditiveExpression -- and
     | AdditiveExpression
   AdditiveExpression
     = AdditiveExpression "+" MultiplicativeExpression -- addition

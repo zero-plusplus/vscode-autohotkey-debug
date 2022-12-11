@@ -264,6 +264,9 @@ export class ExpressionEvaluator {
       RegExMatchExpression_regex_match: { type: 'binary', left: 0, operator: 1, right: 2 },
       ConcatenateExpression_space: { type: 'binary', left: 0, operator: 1, right: 2 },
       ConcatenateExpression_dot: { type: 'binary', left: 0, operator: 1, right: 2 },
+      BitwiseExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
+      BitwiseExpression_xor: { type: 'binary', left: 0, operator: 1, right: 2 },
+      BitwiseExpression_and: { type: 'binary', left: 0, operator: 1, right: 2 },
       AdditiveExpression_concatenate: { type: 'binary', left: 0, operator: 1, right: 2 },
       AdditiveExpression_addition: { type: 'binary', left: 0, operator: 1, right: 2 },
       AdditiveExpression_subtraction: { type: 'binary', left: 0, operator: 1, right: 2 },
@@ -359,6 +362,9 @@ export class ExpressionEvaluator {
         const _right = String(right);
         return _left + _right;
       }
+      case '|':
+      case '^':
+      case '&':
       case '+':
       case '-':
       case '*':
@@ -371,6 +377,12 @@ export class ExpressionEvaluator {
         }
 
         switch (operator) {
+          // eslint-disable-next-line no-bitwise
+          case '|': return _left | _right;
+          // eslint-disable-next-line no-bitwise
+          case '^': return _left ^ _right;
+          // eslint-disable-next-line no-bitwise
+          case '&': return _left & _right;
           case '+': return _left + _right;
           case '-': return _left - _right;
           case '*': return _left * _right;

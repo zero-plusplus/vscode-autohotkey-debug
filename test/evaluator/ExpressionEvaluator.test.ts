@@ -135,6 +135,12 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(async() => evaluator.eval(`&num_int`)).rejects.toThrow();
   });
 
+  test('eval binary (|)', async(): Promise<void> => {
+    expect(await evaluator.eval('5 | 3')).toBe(7);
+    expect(await evaluator.eval('5 ^ 3')).toBe(6);
+    expect(await evaluator.eval('5 & 3')).toBe(1);
+  });
+
   test('eval relational (=)', async(): Promise<void> => {
     expect(await evaluator.eval('10 = 10')).toBe(true_ahk);
     expect(await evaluator.eval('"abc" = "ABC"')).toBe(true_ahk);
