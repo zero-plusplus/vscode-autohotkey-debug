@@ -329,10 +329,25 @@ export class ExpressionEvaluator {
         const _right = String(right);
         return _left + _right;
       }
-      case '+': return Number(left) + Number(right);
-      case '-': return Number(left) - Number(right);
-      case '*': return Number(left) * Number(right);
-      case '/': return Number(left) / Number(right);
+      case '+':
+      case '-':
+      case '*':
+      case '/': {
+        const _left = Number(left);
+        const _right = Number(right);
+        if (Number.isNaN(_left) || Number.isNaN(_right)) {
+          return '';
+        }
+
+        switch (operator) {
+          case '+': return _left + _right;
+          case '-': return _left - _right;
+          case '*': return _left * _right;
+          case '/': return _left / _right;
+          default: break;
+        }
+        return '';
+      }
       case '=': return equals(this.session, stackFrame, left, right, '1');
       case '==': return equals(this.session, stackFrame, left, right, '0');
       case '!=': return negate(this.session, stackFrame, await equals(this.session, stackFrame, left, right, '1'));
