@@ -460,6 +460,12 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(async() => evaluator.eval('% "str" %')).rejects.toThrow();
   });
 
+
+  test('eval dereference propertyaccess', async(): Promise<void> => {
+    expect(await evaluator.eval(`obj.%key%`)).toBe(await evaluator.eval('obj.key'));
+    expect(await evaluator.eval(`obj.%'k'%e%'y'%`)).toBe(await evaluator.eval('obj.key'));
+  });
+
   test('eval logical (&&)', async(): Promise<void> => {
     expect(await evaluator.eval('true && true')).toBe(true_ahk);
     expect(await evaluator.eval('true && false')).toBe(false_ahk);

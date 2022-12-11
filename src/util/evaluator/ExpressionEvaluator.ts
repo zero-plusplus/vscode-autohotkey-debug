@@ -16,6 +16,7 @@ export type Node =
  | DereferenceExpressionsNode
  | DereferenceExpressionNode
  | PropertyAccessNode
+ | DereferencePropertyAccessNode
  | ElementAccessNode
  | CallNode
  | StringNode
@@ -57,6 +58,11 @@ export interface PropertyAccessNode extends NodeBase {
   type: 'propertyaccess';
   object: Node;
   property: Node;
+}
+export interface DereferencePropertyAccessNode extends NodeBase {
+  type: 'dereference_propertyaccess';
+  object: Node;
+  property: DereferenceExpressionsNode;
 }
 export interface ElementAccessNode extends NodeBase {
   type: 'elementaccess';
@@ -267,6 +273,7 @@ export class ExpressionEvaluator {
       DereferenceExpressions: { type: 'dereference_expressions', dereferenceExpressions: 0 },
       DereferenceExpression: { type: 'dereference_expression', leftPercent: 0, expression: 1, rightPercent: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
+      MemberExpression_dereference_propertyaccess: { type: 'dereference_propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 3 },
       UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_negative: { type: 'unary', operator: 0, expression: 1 },
@@ -296,6 +303,7 @@ export class ExpressionEvaluator {
       case 'dereference_expressions': return this.evalDeferenceExpressions(node, stackFrame, maxDepth);
       case 'dereference_expression': return this.evalDeferenceExpression(node, stackFrame, maxDepth);
       case 'propertyaccess': return this.evalPropertyAccessExpression(node, stackFrame, maxDepth);
+      case 'dereference_propertyaccess': return this.evalDereferencePropertyAccessExpression(node, stackFrame, maxDepth);
       case 'elementaccess': return this.evalElementAccessExpression(node, stackFrame, maxDepth);
       case 'call': return this.evalCallExpression(node, stackFrame, maxDepth);
       case 'unary': return this.evalUnaryExpression(node, stackFrame, maxDepth);
@@ -462,6 +470,19 @@ export class ExpressionEvaluator {
       return '';
     }
     const propertyName = this.nodeToString(node.property);
+    if (!propertyName) {
+      return '';
+    }
+
+    const child = await fetchPropertyChild(this.session, stackFrame, object, propertyName);
+    return child;
+  }
+  public async evalDereferencePropertyAccessExpression(node: DereferencePropertyAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const object = await this.evalNode(node.object, stackFrame, maxDepth);
+    if (!(object instanceof dbgp.ObjectProperty)) {
+      return '';
+    }
+    const propertyName = await this.evalDeferenceExpressions(node.property, stackFrame, maxDepth);
     if (!propertyName) {
       return '';
     }

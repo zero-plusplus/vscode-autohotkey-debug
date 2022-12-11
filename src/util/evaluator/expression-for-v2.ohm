@@ -1,6 +1,12 @@
 Expression_for_v2 <: Expression_for_v1 {
   DereferenceExpression := #("%") Expression #("%")
 
+  MemberExpression
+    := MemberExpression "." #(identifier) -- propertyaccess
+     | MemberExpression "." DereferenceExpressions -- dereference_propertyaccess
+     | MemberExpression #(whitespace* "[") Arguments "]" -- elementaccess
+     | PrimaryExpression
+
   stringLiteral
     := "\"" doubleCharacter* "\""
      | "'" singleCharacter* "'"
