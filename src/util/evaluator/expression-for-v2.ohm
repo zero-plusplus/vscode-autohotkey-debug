@@ -1,4 +1,6 @@
 Expression_for_v2 <: Expression_for_v1 {
+  DereferenceExpression := #("%") Expression #("%")
+
   stringLiteral
     := "\"" doubleCharacter* "\""
      | "'" singleCharacter* "'"
@@ -7,5 +9,4 @@ Expression_for_v2 <: Expression_for_v1 {
   singleCharacter
     = ~("'" | "`" | lineTerminator) any
     | doubleEscapeSequence
-
 }

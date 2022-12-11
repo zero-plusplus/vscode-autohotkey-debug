@@ -109,6 +109,11 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('"`a"')).toBe('\x07');
   });
 
+  test('eval dereference', async(): Promise<void> => {
+    expect(await evaluator.eval(`%str_alpha%`)).toBe(await evaluator.eval('abc'));
+    expect(await evaluator.eval(`%a%b%c%`)).toBe(await evaluator.eval('abc'));
+  });
+
   test('eval relational (=)', async(): Promise<void> => {
     expect(await evaluator.eval('10 = 10')).toBe(true_ahk);
     expect(await evaluator.eval('"abc" = "ABC"')).toBe(true_ahk);
@@ -447,6 +452,12 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`'\`v'`)).toBe('\v');
     expect(await evaluator.eval(`'\`f'`)).toBe('\f');
     expect(await evaluator.eval(`'\`a'`)).toBe('\x07');
+  });
+
+  test('eval dereference', async(): Promise<void> => {
+    expect(await evaluator.eval(`%"str"%`)).toBe('abc');
+    expect(await evaluator.eval(`%'str'%`)).toBe('abc');
+    expect(async() => evaluator.eval('% "str" %')).rejects.toThrow();
   });
 
   test('eval logical (&&)', async(): Promise<void> => {

@@ -10,8 +10,11 @@ Expression_for_v1 {
     | UnaryExpression
     | identifier
     | literal
+    | DereferenceExpressions
 
   ParenthesizedExpression = "(" Expression ")"
+  DereferenceExpressions = (#(identifier) | DereferenceExpression)+
+  DereferenceExpression = #("%" identifier "%")
   UnaryExpression
     = "+" ~space PrimaryExpression -- positive
     | "-" ~space PrimaryExpression -- negative

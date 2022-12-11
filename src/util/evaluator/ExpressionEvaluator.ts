@@ -13,6 +13,8 @@ export type Node =
  | IdentifierNode
  | BinaryNode
  | UnaryNode
+ | DereferenceExpressionsNode
+ | DereferenceExpressionNode
  | PropertyAccessNode
  | ElementAccessNode
  | CallNode
@@ -39,6 +41,18 @@ export interface IdentifierNode extends NodeBase {
   start: string;
   parts: string[];
 }
+
+export interface DereferenceExpressionsNode extends NodeBase {
+  type: 'dereference_expressions';
+  dereferenceExpressions: Array<IdentifierNode | DereferenceExpressionNode>;
+}
+export interface DereferenceExpressionNode extends NodeBase {
+  type: 'dereference_expression';
+  leftPercent: '%';
+  expression: Node;
+  rightPercent: '%';
+}
+
 export interface PropertyAccessNode extends NodeBase {
   type: 'propertyaccess';
   object: Node;
@@ -250,6 +264,8 @@ export class ExpressionEvaluator {
       MultiplicativeExpression_multiplication: { type: 'binary', left: 0, operator: 1, right: 2 },
       MultiplicativeExpression_division: { type: 'binary', left: 0, operator: 1, right: 2 },
       ExponentiationExpression_power: { type: 'binary', left: 0, operator: 1, right: 2 },
+      DereferenceExpressions: { type: 'dereference_expressions', dereferenceExpressions: 0 },
+      DereferenceExpression: { type: 'dereference_expression', leftPercent: 0, expression: 1, rightPercent: 2 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 3 },
       UnaryExpression_positive: { type: 'unary', operator: 0, expression: 1 },
@@ -277,6 +293,8 @@ export class ExpressionEvaluator {
     switch (node.type) {
       case 'binary': return this.evalBinaryExpression(node, stackFrame, maxDepth);
       case 'identifier': return this.evalIdentifier(node, stackFrame, maxDepth);
+      case 'dereference_expressions': return this.evalDeferenceExpressions(node, stackFrame, maxDepth);
+      case 'dereference_expression': return this.evalDeferenceExpression(node, stackFrame, maxDepth);
       case 'propertyaccess': return this.evalPropertyAccessExpression(node, stackFrame, maxDepth);
       case 'elementaccess': return this.evalElementAccessExpression(node, stackFrame, maxDepth);
       case 'call': return this.evalCallExpression(node, stackFrame, maxDepth);
@@ -419,6 +437,24 @@ export class ExpressionEvaluator {
 
     const result = await fetchProperty(this.session, name, stackFrame, maxDepth);
     return result;
+  }
+  public async evalDeferenceExpressions(node: DereferenceExpressionsNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    let variableName = '';
+    for await (const childNode of node.dereferenceExpressions) {
+      variableName += childNode.type === 'identifier'
+        ? this.nodeToString(childNode)
+        : await this.evalDeferenceExpression(childNode, stackFrame, maxDepth);
+    }
+
+    const result = await fetchProperty(this.session, variableName, stackFrame, maxDepth);
+    return result;
+  }
+  public async evalDeferenceExpression(node: DereferenceExpressionNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const expression = await this.evalNode(node.expression, stackFrame, maxDepth);
+    if (expression instanceof dbgp.ObjectProperty) {
+      return '';
+    }
+    return String(expression);
   }
   public async evalPropertyAccessExpression(node: PropertyAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const object = await this.evalNode(node.object, stackFrame, maxDepth);
