@@ -355,6 +355,16 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
       expect(await evaluator.eval(`${name}(undefined, "$")`)).toBe(false_ahk);
     }
   });
+
+  test('eval priority', async(): Promise<void> => {
+    expect(await evaluator.eval(`1 + 2 * 3`)).toBe(7);
+    expect(await evaluator.eval(`1 < 0 + 2`)).toBe(true_ahk);
+    expect(await evaluator.eval(`1 <= "abc" ~= "b"`)).toBe(true_ahk);
+    expect(await evaluator.eval(`1 + 2 * 3 "a" "b" . "c"`)).toBe('7abc');
+    expect(await evaluator.eval(`"abc" ~= "b" == 2 && +7 - -7 == 14`)).toBe(true_ahk);
+    expect(await evaluator.eval(`!("abc" ~= "b" == 2 && +7 - -7 == 14)`)).toBe(false_ahk);
+  });
+
   test('eval not support', async(): Promise<void> => {
     expect(async() => evaluator.eval(`100 // 2`)).rejects.toThrow();
 
