@@ -13,6 +13,7 @@ export type Node =
  | IdentifierNode
  | BinaryNode
  | UnaryNode
+ | TernaryNode
  | DereferenceExpressionsNode
  | DereferenceExpressionNode
  | PropertyAccessNode
@@ -30,6 +31,12 @@ export interface UnaryNode extends NodeBase {
   type: 'unary';
   operator: '+' | '-' | '&' | '!' | '~' | '*';
   expression: Node;
+}
+export interface TernaryNode extends NodeBase {
+  type: 'ternary';
+  condition: Node;
+  whenTrue: Node;
+  whenFalse: Node;
 }
 export interface BinaryNode extends NodeBase {
   type: 'binary';
@@ -288,6 +295,7 @@ export class ExpressionEvaluator {
       UnaryExpression_address: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_bitwise_not: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_dereference: { type: 'unary', operator: 0, expression: 1 },
+      TernaryExpression: { type: 'ternary', condition: 0, whenTrue: 2, whenFalse: 4 },
       CallExpression: { type: 'call', caller: 0, arguments: 2 },
       identifier: { type: 'identifier', start: 0, parts: 1 },
     }) as Node;
@@ -316,6 +324,7 @@ export class ExpressionEvaluator {
       case 'elementaccess': return this.evalElementAccessExpression(node, stackFrame, maxDepth);
       case 'call': return this.evalCallExpression(node, stackFrame, maxDepth);
       case 'unary': return this.evalUnaryExpression(node, stackFrame, maxDepth);
+      case 'ternary': return this.evalTernaryExpression(node, stackFrame, maxDepth);
       default: break;
     }
     return '';
@@ -370,6 +379,15 @@ export class ExpressionEvaluator {
       default: break;
     }
     return '';
+  }
+  public async evalTernaryExpression(node: TernaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const conditionResult = await this.evalNode(node.condition, stackFrame, maxDepth);
+    if ((conditionResult === '0' || !conditionResult)) {
+      const result = await this.evalNode(node.whenFalse, stackFrame, maxDepth);
+      return result;
+    }
+    const result = await this.evalNode(node.whenTrue, stackFrame, maxDepth);
+    return result;
   }
   public async evalBinaryExpression(node: BinaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const left = await this.evalNode(node.left, stackFrame, maxDepth);

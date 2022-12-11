@@ -144,6 +144,11 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(async() => evaluator.eval(`*num_int`)).rejects.toThrow();
   });
 
+  test('eval ternary', async(): Promise<void> => {
+    expect(await evaluator.eval(`true ? 100 : 0`)).toBe(100);
+    expect(await evaluator.eval(`false ? 100 : 0`)).toBe(0);
+  });
+
   test('eval binary (|)', async(): Promise<void> => {
     expect(await evaluator.eval('5 | 3')).toBe(7);
     expect(await evaluator.eval('5 ^ 3')).toBe(6);
@@ -427,13 +432,15 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     }
   });
 
-  test('eval priority', async(): Promise<void> => {
+  test('eval precedence', async(): Promise<void> => {
     expect(await evaluator.eval(`1 + 2 * 3 ** 2`)).toBe(19);
     expect(await evaluator.eval(`1 < 0 + 2`)).toBe(true_ahk);
     expect(await evaluator.eval(`1 <= "abc" ~= "b"`)).toBe(true_ahk);
     expect(await evaluator.eval(`1 + 2 * 3 "a" "b" . "c"`)).toBe('7abc');
     expect(await evaluator.eval(`"abc" ~= "b" == 2 && +7 - -7 == 14`)).toBe(true_ahk);
     expect(await evaluator.eval(`!("abc" ~= "b" == 2 && +7 - -7 == 14)`)).toBe(false_ahk);
+    expect(await evaluator.eval(`false ? 100 : 5 + 5 == 10`)).toBe(true_ahk);
+    expect(await evaluator.eval(`(false ? 100 : 5 + 5) + 5`)).toBe(15);
   });
 
   test('eval not support', async(): Promise<void> => {
