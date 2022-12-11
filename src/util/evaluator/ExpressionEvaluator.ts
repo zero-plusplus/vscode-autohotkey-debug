@@ -28,7 +28,7 @@ export interface NodeBase {
 }
 export interface UnaryNode extends NodeBase {
   type: 'unary';
-  operator: '+' | '-' | '&' | '!' | '~';
+  operator: '+' | '-' | '&' | '!' | '~' | '*';
   expression: Node;
 }
 export interface BinaryNode extends NodeBase {
@@ -287,6 +287,7 @@ export class ExpressionEvaluator {
       UnaryExpression_not: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_address: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_bitwise_not: { type: 'unary', operator: 0, expression: 1 },
+      UnaryExpression_dereference: { type: 'unary', operator: 0, expression: 1 },
       CallExpression: { type: 'call', caller: 0, arguments: 2 },
       identifier: { type: 'identifier', start: 0, parts: 1 },
     }) as Node;
@@ -320,6 +321,10 @@ export class ExpressionEvaluator {
     return '';
   }
   public async evalUnaryExpression(node: UnaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    if (node.operator === '*') {
+      throw Error('The `*` operator such as `*Expression` are not supported.');
+    }
+
     if (node.operator === '&') {
       if (typeof node.expression !== 'string' && node.expression.type === 'identifier') {
         const name = this.nodeToString(node.expression);
