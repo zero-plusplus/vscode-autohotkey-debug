@@ -130,6 +130,10 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`! num_int`)).toBe(false_ahk);
   });
 
+  test('eval unary (~)', async(): Promise<void> => {
+    expect(await evaluator.eval(`~ 123`)).toBe(-124);
+  });
+
   // eslint-disable-next-line @typescript-eslint/require-await
   test('eval unary (&)', async(): Promise<void> => {
     expect(async() => evaluator.eval(`&num_int`)).rejects.toThrow();

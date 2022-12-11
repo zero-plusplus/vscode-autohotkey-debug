@@ -20,6 +20,7 @@ Expression_for_v1 {
     | "-" PrimaryExpression -- negative
     | "!" PrimaryExpression -- not
     | "&" ~"&" PrimaryExpression -- address
+    | "~" PrimaryExpression -- bitwise_not
     | PrefixUnaryExpression
 
   PrefixUnaryExpression

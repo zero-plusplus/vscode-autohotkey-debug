@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { LibraryFunc, ahkRegexMatch, getFalse, getTrue, library_for_v1, library_for_v2, toBoolean, toNumber } from './library';
+import { LibraryFunc, ahkRegexMatch, getFalse, getTrue, library_for_v1, library_for_v2, toBoolean } from './library';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
@@ -28,7 +28,7 @@ export interface NodeBase {
 }
 export interface UnaryNode extends NodeBase {
   type: 'unary';
-  operator: '+' | '-' | '&' | '!' | `${'n' | 'N'}${'o' | 'O'}${'t' | 'T'}`;
+  operator: '+' | '-' | '&' | '!' | '~';
   expression: Node;
 }
 export interface BinaryNode extends NodeBase {
@@ -282,6 +282,7 @@ export class ExpressionEvaluator {
       UnaryExpression_negative: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_not: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_address: { type: 'unary', operator: 0, expression: 1 },
+      UnaryExpression_bitwise_not: { type: 'unary', operator: 0, expression: 1 },
       CallExpression: { type: 'call', caller: 0, arguments: 2 },
       identifier: { type: 'identifier', start: 0, parts: 1 },
     }) as Node;
@@ -340,8 +341,23 @@ export class ExpressionEvaluator {
 
     switch (node.operator) {
       case '!': return negate(this.session, stackFrame, expressionResult);
-      case '+': return toNumber(expressionResult);
-      case '-': return -toNumber(expressionResult);
+      case '+':
+      case '-':
+      case '~': {
+        const _expressionResult = Number(expressionResult);
+        if (Number.isNaN(_expressionResult)) {
+          return '';
+        }
+
+        switch (node.operator) {
+          case '+': return _expressionResult;
+          case '-': return -_expressionResult;
+          // eslint-disable-next-line no-bitwise
+          case '~': return ~_expressionResult;
+          default: break;
+        }
+        return '';
+      }
       default: break;
     }
     return '';
