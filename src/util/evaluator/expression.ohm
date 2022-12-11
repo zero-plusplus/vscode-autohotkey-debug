@@ -61,6 +61,7 @@ Expression_for_v1 {
   MultiplicativeExpression
     = MultiplicativeExpression "*" MemberExpression -- multiplication
     | MultiplicativeExpression "/" MemberExpression -- division
+    | MultiplicativeExpression "//" MemberExpression -- floor_division
     | MemberExpression
 
   Arguments = ListOf<Expression, ",">

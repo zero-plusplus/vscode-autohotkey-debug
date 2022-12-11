@@ -400,6 +400,7 @@ export class ExpressionEvaluator {
         }
         return ahkRegexMatch(String(left), String(right));
       }
+      case '//': throw Error(`The ${operator} operator is not supported.`);
       default: break;
     }
     return '';

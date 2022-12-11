@@ -355,6 +355,12 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
       expect(await evaluator.eval(`${name}(undefined, "$")`)).toBe(false_ahk);
     }
   });
+  test('eval not support', async(): Promise<void> => {
+    expect(async() => evaluator.eval(`100 // 2`)).rejects.toThrow();
+
+    return Promise.resolve();
+  });
+
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });
