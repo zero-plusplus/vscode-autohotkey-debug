@@ -71,6 +71,8 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('eval', async(): Promise<void> => {
+    expect(await evaluator.eval('str_alpha str_alnum')).toBe('aBcaBc123');
+    expect(await evaluator.eval('str_alpha . str_alnum')).toBe('aBcaBc123');
     expect(await evaluator.eval('10 * 3 + (num_int - 123) - 30')).toBe(0);
     expect(await evaluator.eval('10 * (3 + (num_int - 123) - 30)')).toBe(-270);
     expect(await evaluator.eval('obj.key')).toBe('value');

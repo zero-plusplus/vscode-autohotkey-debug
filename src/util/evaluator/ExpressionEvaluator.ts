@@ -230,6 +230,8 @@ export class ExpressionEvaluator {
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const matchResult = this.parser.parse(expression);
     const node = toAST(matchResult, {
+      ConcatenateExpression_concatenate: { type: 'binary', left: 0, operator: 1, right: 2 },
+      AdditiveExpression_concatenate: { type: 'binary', left: 0, operator: 1, right: 2 },
       AdditiveExpression_addition: { type: 'binary', left: 0, operator: 1, right: 2 },
       AdditiveExpression_subtraction: { type: 'binary', left: 0, operator: 1, right: 2 },
       MultiplicativeExpression_multiplication: { type: 'binary', left: 0, operator: 1, right: 2 },
@@ -317,6 +319,16 @@ export class ExpressionEvaluator {
     const right = await this.evalNode(node.right, stackFrame, maxDepth);
 
     switch (operator) {
+      case ' ':
+      case '\t':
+      case '.': {
+        if (left instanceof dbgp.ObjectProperty || right instanceof dbgp.ObjectProperty) {
+          return '';
+        }
+        const _left = String(left);
+        const _right = String(right);
+        return _left + _right;
+      }
       case '+': return Number(left) + Number(right);
       case '-': return Number(left) - Number(right);
       case '*': return Number(left) * Number(right);

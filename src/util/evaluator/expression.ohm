@@ -32,7 +32,10 @@ Expression_for_v1 {
     = Expression "?" Expression ":" Expression
 
   BinaryExpression
-    = LogicalExpression
+    = ConcatenateExpression
+  ConcatenateExpression
+    = ConcatenateExpression #(whitespace) LogicalExpression -- concatenate
+    | LogicalExpression
   LogicalExpression
     = LogicalExpression "&&" RelationalExpression -- and
     | LogicalExpression "||" RelationalExpression -- or
@@ -53,6 +56,7 @@ Expression_for_v1 {
   AdditiveExpression
     = AdditiveExpression "+" MultiplicativeExpression -- addition
     | AdditiveExpression "-" MultiplicativeExpression -- subtraction
+    | AdditiveExpression "." MultiplicativeExpression -- concatenate
     | MultiplicativeExpression
   MultiplicativeExpression
     = MultiplicativeExpression "*" MemberExpression -- multiplication
@@ -62,14 +66,12 @@ Expression_for_v1 {
   Arguments = ListOf<Expression, ",">
 
   MemberExpression
-    = MemberExpression "." ~space identifier -- propertyaccess
+    = MemberExpression "." #(identifier) -- propertyaccess
     | MemberExpression ~space "[" Arguments "]" -- elementaccess
     | PrimaryExpression
   CallExpression = MemberExpression "(" Arguments ")"
 
-  whitespace
-    = space
-    | lineTerminator
+  whitespace = " " | "\t"
   lineTerminator
     = "\r\n"
     | "\n"
