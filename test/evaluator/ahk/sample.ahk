@@ -23,8 +23,12 @@ num_scientific_notation_like := "1.0e4"
 key := "key"
 obj := { key: "value", "3": "100" }
 arr := [ 1, 10, 100 ]
-nestedObj := { a: { b: { obj: obj, arr: arr } } }
+nestedObj := { a: { b: { key: "value", obj: obj, arr: arr } } }
 instance := new T()
+
+num_prefix_unary := 0
+num_postfix_unary := 0
+
 class T {
   static staticField := "static"
   instanceField := "instance"

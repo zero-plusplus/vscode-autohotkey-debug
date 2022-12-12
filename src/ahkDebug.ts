@@ -724,7 +724,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('setVariableRequest');
-    let typeName: string, data: string;
+    let typeName: dbgp.PropertyType, data: string;
     const parsed = this.ahkParser.Primitive.parse(args.value);
     if ('value' in parsed) {
       const primitive = parsed.value.value;

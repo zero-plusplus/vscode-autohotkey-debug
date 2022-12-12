@@ -2,98 +2,107 @@ Expression_for_v1 {
   Expression
     = Expression "," LogicalExpression -- comma_sequence
     | ExpressionWithoutSequence
+
   ExpressionWithoutSequence
     = TernaryExpression
-    | BinaryExpression
-    | MemberExpression
-
-  PrimaryExpression
-    = ParenthesizedExpression
-    | CallExpression
-    | UnaryExpression
-    | identifier
-    | literal
-    | DereferenceExpressions
-
-  ParenthesizedExpression = "(" Expression ")"
-  DereferenceExpressions = (#(identifier) | DereferenceExpression)+
-  DereferenceExpression = #("%" identifier "%")
-  UnaryExpression
-    = "+" PrimaryExpression -- positive
-    | "-" PrimaryExpression -- negative
-    | "!" PrimaryExpression -- not
-    | "&" ~"&" PrimaryExpression -- address
-    | "~" PrimaryExpression -- bitwise_not
-    | "*" PrimaryExpression -- dereference
-    | PrefixUnaryExpression
-
-  PrefixUnaryExpression
-    = "++" PrimaryExpression -- increment
-    | "--" PrimaryExpression -- decrement
-    | PostfixUnaryExpression
-
-  PostfixUnaryExpression
-    = Expression "++"
-    | Expression "--"
 
   TernaryExpression
-    = Expression "?" Expression ":" Expression
+    = Expression "?" Expression ":" Expression -- ternary
+    | LogicalExpression
 
   BinaryExpression
     = LogicalExpression
+
   LogicalExpression
-    = LogicalExpression "||" EqualityExpression -- or
-    | LogicalExpression "&&" EqualityExpression -- and
+    = LogicalExpression "&&" EqualityExpression -- and
+    | LogicalExpression "||" EqualityExpression -- or
     | EqualityExpression
+
   EqualityExpression
     = EqualityExpression "=" RelationalExpression -- loose_equal
     | EqualityExpression "==" RelationalExpression -- equal
     | EqualityExpression "!=" RelationalExpression -- not_loose_equal
     | EqualityExpression "!==" RelationalExpression -- not_equal
     | RelationalExpression
+
   RelationalExpression
     = RelationalExpression "<" RegExMatchExpression -- lessthan
     | RelationalExpression "<=" RegExMatchExpression -- lessthan_equal
     | RelationalExpression ">" RegExMatchExpression -- greaterthan
     | RelationalExpression ">=" RegExMatchExpression -- greaterthan_equal
     | RegExMatchExpression
+
   RegExMatchExpression
     = RegExMatchExpression "~=" ConcatenateExpression -- regex_match
     | ConcatenateExpression
+
   ConcatenateExpression
     = ConcatenateExpression #(whitespace) BitwiseExpression -- space
     | ConcatenateExpression "." BitwiseExpression -- dot
     | BitwiseExpression
+
   BitwiseExpression
     = BitwiseExpression "|" ~"|" AdditiveExpression -- or
     | BitwiseExpression "^" AdditiveExpression -- xor
     | BitwiseExpression "&" ~"&" AdditiveExpression -- and
     | BitshiftExpression
+
   BitshiftExpression
     = BitshiftExpression "<<" AdditiveExpression -- left
     | BitshiftExpression ">>" AdditiveExpression -- right
     | BitshiftExpression ">>>" AdditiveExpression -- logical_right
     | AdditiveExpression
+
   AdditiveExpression
     = AdditiveExpression "+" MultiplicativeExpression -- addition
     | AdditiveExpression "-" MultiplicativeExpression -- subtraction
     | MultiplicativeExpression
+
   MultiplicativeExpression
     = MultiplicativeExpression "*" MultiplicativeExpression -- multiplication
     | MultiplicativeExpression "/" MultiplicativeExpression -- division
     | MultiplicativeExpression "//" MultiplicativeExpression -- floor_division
     | ExponentiationExpression
+
   ExponentiationExpression
     = ExponentiationExpression "**" MemberExpression -- power
-    | MemberExpression
+    | UnaryExpression
 
+  UnaryExpression
+    = "++" UnaryExpression -- increment
+    | "--" UnaryExpression -- decrement
+    | "+" UnaryExpression -- positive
+    | "-" UnaryExpression -- negative
+    | "!" UnaryExpression -- not
+    | "&" ~"&" UnaryExpression -- address
+    | "~" UnaryExpression -- bitwise_not
+    | "*" UnaryExpression -- dereference
+    | PostfixUnaryExpression
+
+  PostfixUnaryExpression
+    = CallExpression "++" -- increment
+    | CallExpression "--" -- decrement
+    | CallExpression
+
+  CallExpression
+    = CallExpression "(" Arguments ")" -- call
+    | MemberExpression
   Arguments = ListOf<ExpressionWithoutSequence, ",">
 
   MemberExpression
     = MemberExpression "." #(identifier) -- propertyaccess
     | MemberExpression #(whitespace* "[") Arguments "]" -- elementaccess
     | PrimaryExpression
-  CallExpression = MemberExpression "(" Arguments ")"
+
+  PrimaryExpression
+    = identifier
+    | literal
+    | DereferenceExpressions
+    | ParenthesizedExpression
+
+  ParenthesizedExpression = "(" Expression ")"
+  DereferenceExpressions = (#(identifier) | DereferenceExpression)+
+  DereferenceExpression = #("%" identifier "%")
 
   whitespace = " " | "\t"
   lineTerminator
@@ -105,14 +114,8 @@ Expression_for_v1 {
   identifierPart = identifierStart | digit
 
   literal
-    = thisLiteral
-    | stringLiteral
+    = stringLiteral
     | numericLiteral
-    | booleanLiteral
-
-  thisLiteral = "this"
-
-  booleanLiteral = ("true" | "false")
 
   stringLiteral = "\"" doubleCharacter* "\""
   commonEscapeSequence = "``" | "`," | "`%" | "`;" | "`::" | "`r" | "`n" | "`b" | "`t" | "`v" | "`a" | "`f"

@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { LibraryFunc, ahkRegexMatch, getFalse, getTrue, library_for_v1, library_for_v2, toBoolean } from './library';
+import { LibraryFunc, ahkRegexMatch, getFalse, getTrue, library_for_v1, library_for_v2 } from './library';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
@@ -13,6 +13,8 @@ export type Node =
  | IdentifierNode
  | BinaryNode
  | UnaryNode
+ | PrefixUnaryNode
+ | PostfixUnaryNode
  | TernaryNode
  | DereferenceExpressionsNode
  | DereferenceExpressionNode
@@ -23,7 +25,6 @@ export type Node =
  | StringNode
  | NumberNode
  | string;
-
 export interface NodeBase {
   type: string;
 }
@@ -31,6 +32,16 @@ export interface UnaryNode extends NodeBase {
   type: 'unary';
   operator: '+' | '-' | '&' | '!' | '~' | '*';
   expression: Node;
+}
+export interface PrefixUnaryNode extends NodeBase {
+  type: 'prefix_unary';
+  operator: '++' | '--';
+  expression: Node;
+}
+export interface PostfixUnaryNode extends NodeBase {
+  type: 'postfix_unary';
+  expression: Node;
+  operator: '++' | '--';
 }
 export interface TernaryNode extends NodeBase {
   type: 'ternary';
@@ -244,6 +255,39 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
   }
   return '';
 };
+export const overwriteProperty = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, nameOrObject: string | dbgp.ObjectProperty, value: string | number): Promise<void> => {
+  const contexts = await getContexts(session, stackFrame);
+  if (!contexts || contexts.length === 0) {
+    return;
+  }
+
+  const fullName = typeof nameOrObject === 'string' ? nameOrObject : nameOrObject.fullName;
+  const data = String(value);
+  let typeName: dbgp.PropertyType = 'string';
+  if (typeof value === 'number') {
+    typeName = data.includes('.') ? 'float' : 'integer';
+  }
+
+  for await (const context of contexts) {
+    const response = await session.sendPropertyGetCommand(context, fullName);
+    const property = response.properties[0] as dbgp.Property | undefined;
+    if (!property) {
+      continue;
+    }
+
+    const result = await session.sendPropertySetCommand({
+      context,
+      data,
+      typeName,
+      fullName,
+    });
+    if (result.success) {
+      return;
+    }
+    throw Error(`Some error occurred when rewriting ${typeName === 'string' ? `"${data}"` : data} to ${fullName}`);
+  }
+};
+
 export class ExpressionEvaluator {
   private readonly session: dbgp.Session;
   private readonly parser: ExpressionParser;
@@ -296,8 +340,13 @@ export class ExpressionEvaluator {
       UnaryExpression_address: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_bitwise_not: { type: 'unary', operator: 0, expression: 1 },
       UnaryExpression_dereference: { type: 'unary', operator: 0, expression: 1 },
-      TernaryExpression: { type: 'ternary', condition: 0, whenTrue: 2, whenFalse: 4 },
-      CallExpression: { type: 'call', caller: 0, arguments: 2 },
+      UnaryExpression_increment: { type: 'prefix_unary', operator: 0, expression: 1 },
+      UnaryExpression_decrement: { type: 'prefix_unary', operator: 0, expression: 1 },
+      PostfixUnaryExpression_increment: { type: 'postfix_unary', expression: 0, operator: 1 },
+      PostfixUnaryExpression_decrement: { type: 'postfix_unary', expression: 0, operator: 1 },
+      TernaryExpression_ternary: { type: 'ternary', condition: 0, whenTrue: 2, whenFalse: 4 },
+      CallExpression_call: { type: 'call', caller: 0, arguments: 2 },
+      booleanLiteral: { type: 'identifier', start: 0, parts: 1 },
       identifier: { type: 'identifier', start: 0, parts: 1 },
     }) as Node;
 
@@ -325,6 +374,8 @@ export class ExpressionEvaluator {
       case 'elementaccess': return this.evalElementAccessExpression(node, stackFrame, maxDepth);
       case 'call': return this.evalCallExpression(node, stackFrame, maxDepth);
       case 'unary': return this.evalUnaryExpression(node, stackFrame, maxDepth);
+      case 'prefix_unary': return this.evalPrefixUnaryExpression(node, stackFrame, maxDepth);
+      case 'postfix_unary': return this.evalPostfixUnaryExpression(node, stackFrame, maxDepth);
       case 'ternary': return this.evalTernaryExpression(node, stackFrame, maxDepth);
       default: break;
     }
@@ -352,11 +403,6 @@ export class ExpressionEvaluator {
     }
 
     const expressionResult = await this.evalNode(node.expression);
-    if (equalsIgnoreCase(node.operator, 'not')) {
-      return (await toBoolean(this.session, stackFrame, expressionResult))
-        ? getFalse(this.session, stackFrame)
-        : getTrue(this.session, stackFrame);
-    }
 
     switch (node.operator) {
       case '!': return negate(this.session, stackFrame, expressionResult);
@@ -380,6 +426,64 @@ export class ExpressionEvaluator {
       default: break;
     }
     return '';
+  }
+  public async evalPrefixUnaryExpression(node: PrefixUnaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    if (typeof node.expression === 'string') {
+      return '';
+    }
+
+    let fullName = '';
+    if (node.expression.type === 'identifier') {
+      fullName = this.nodeToString(node.expression) ?? '';
+      if (!fullName) {
+        return '';
+      }
+    }
+    else {
+      const property = await this.evalNode(node.expression);
+      if (!(property instanceof dbgp.ObjectProperty)) {
+        return '';
+      }
+      fullName = property.fullName;
+    }
+
+    const value = await fetchProperty(this.session, fullName, stackFrame, maxDepth);
+    if (typeof value !== 'number') {
+      return '';
+    }
+
+    await overwriteProperty(this.session, stackFrame, fullName, node.operator === '++' ? value + 1 : value - 1);
+
+    const result = await fetchProperty(this.session, fullName, stackFrame, maxDepth);
+    return result;
+  }
+  public async evalPostfixUnaryExpression(node: PostfixUnaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    if (typeof node.expression === 'string') {
+      return '';
+    }
+
+    let fullName = '';
+    if (node.expression.type === 'identifier') {
+      fullName = this.nodeToString(node.expression) ?? '';
+      if (!fullName) {
+        return '';
+      }
+    }
+    else {
+      const property = await this.evalNode(node.expression);
+      if (!(property instanceof dbgp.ObjectProperty)) {
+        return '';
+      }
+      fullName = property.fullName;
+    }
+
+    const result = await fetchProperty(this.session, fullName, stackFrame, maxDepth);
+    if (typeof result !== 'number') {
+      return '';
+    }
+
+    await overwriteProperty(this.session, stackFrame, fullName, node.operator === '++' ? result + 1 : result - 1);
+    return result;
   }
   public async evalTernaryExpression(node: TernaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const conditionResult = await this.evalNode(node.condition, stackFrame, maxDepth);
@@ -443,7 +547,10 @@ export class ExpressionEvaluator {
           case '-': return _left - _right;
           case '*': return _left * _right;
           case '**': return _left ** _right;
-          case '/': return _left / _right;
+          case '/': {
+            const result = _left / _right;
+            return isFinite(result) ? result : '';
+          }
           default: break;
         }
         return '';

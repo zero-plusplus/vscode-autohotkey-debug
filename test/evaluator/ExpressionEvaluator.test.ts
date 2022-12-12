@@ -70,29 +70,245 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     await closeSession(session, process);
   });
 
-  test('eval', async(): Promise<void> => {
-    expect(await evaluator.eval('str_alpha str_alnum')).toBe('aBcaBc123');
-    expect(await evaluator.eval('str_alpha . str_alnum')).toBe('aBcaBc123');
-    expect(await evaluator.eval('10 * 3 + (num_int - 123) - 30')).toBe(0);
-    expect(await evaluator.eval('10 * (3 + (num_int - 123) - 30)')).toBe(-270);
-    expect(await evaluator.eval('3 ** 2')).toBe(9);
-    expect(await evaluator.eval('obj + 3')).toBe('');
-    expect(await evaluator.eval('obj.key')).toBe('value');
-    expect(await evaluator.eval('obj["key"]')).toBe('value');
-    expect(await evaluator.eval('obj ["key"]')).toBe('value');
-    expect(await evaluator.eval('obj[key]')).toBe('value');
-    expect(await evaluator.eval('arr[3]')).toBe(100);
-    expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
-    expect(await evaluator.eval('nestedObj.a.b.arr[3]')).toBe(100);
-    expect(await evaluator.eval('!true')).toBe(false_ahk);
-    expect(await evaluator.eval('!false')).toBe(true_ahk);
-    expect(Number(await evaluator.eval('+num_int'))).toBe(123);
-    expect(Number(await evaluator.eval('-num_int'))).toBe(-123);
-    expect(Number(await evaluator.eval('&instance'))).toBeTruthy();
-    expect(async() => evaluator.eval('&undefined')).rejects.toThrow();
+  test('Expression_comma_sequence', async(): Promise<void> => {
+    expect(await evaluator.eval(`1, 2, 3`)).toBe(3);
   });
 
-  test('eval double string', async(): Promise<void> => {
+  test('TernaryExpression_ternary', async(): Promise<void> => {
+    expect(await evaluator.eval(`true ? 100 : 0`)).toBe(100);
+    expect(await evaluator.eval(`false ? 100 : 0`)).toBe(0);
+  });
+
+  test('LogicalExpression_or', async(): Promise<void> => {
+    expect(await evaluator.eval('true || true')).toBe(true_ahk);
+    expect(await evaluator.eval('true || false')).toBe(true_ahk);
+    expect(await evaluator.eval('instance || false')).toBe(true_ahk);
+    expect(await evaluator.eval('false || false')).toBe(false_ahk);
+  });
+
+  test('LogicalExpression_and', async(): Promise<void> => {
+    expect(await evaluator.eval('true && true')).toBe(true_ahk);
+    expect(await evaluator.eval('true && false')).toBe(false_ahk);
+    expect(await evaluator.eval('false && false')).toBe(false_ahk);
+    expect(await evaluator.eval('instance && false')).toBe(false_ahk);
+  });
+
+  test('EqualityExpression_loose_equal', async(): Promise<void> => {
+    expect(await evaluator.eval('10 = 10')).toBe(true_ahk);
+    expect(await evaluator.eval('"abc" = "ABC"')).toBe(true_ahk);
+    expect(await evaluator.eval('obj = obj')).toBe(true_ahk);
+    expect(await evaluator.eval('"abc" = "ABCD"')).toBe(false_ahk);
+    expect(await evaluator.eval('instance = T')).toBe(false_ahk);
+  });
+
+  test('EqualityExpression_equal', async(): Promise<void> => {
+    expect(await evaluator.eval('10 == 10')).toBe(true_ahk);
+    expect(await evaluator.eval('obj == obj')).toBe(true_ahk);
+    expect(await evaluator.eval('"abc" == "ABC"')).toBe(false_ahk);
+    expect(await evaluator.eval('instance == T')).toBe(false_ahk);
+  });
+
+  test('EqualityExpression_not_loose_equal', async(): Promise<void> => {
+    expect(await evaluator.eval('"abc" != "ABCD"')).toBe(true_ahk);
+    expect(await evaluator.eval('instance != T')).toBe(true_ahk);
+    expect(await evaluator.eval('10 != 10')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" != "ABC"')).toBe(false_ahk);
+    expect(await evaluator.eval('obj != obj')).toBe(false_ahk);
+  });
+
+  test('EqualityExpression_not_equal', async(): Promise<void> => {
+    expect(await evaluator.eval('"abc" !== "ABC"')).toBe(true_ahk);
+    expect(await evaluator.eval('instance !== T')).toBe(true_ahk);
+    expect(await evaluator.eval('10 !== 10')).toBe(false_ahk);
+    expect(await evaluator.eval('obj !== obj')).toBe(false_ahk);
+  });
+
+  test('RelationalExpression_lessthan', async(): Promise<void> => {
+    expect(await evaluator.eval('0 < 1')).toBe(true_ahk);
+    expect(await evaluator.eval('0 < num_int')).toBe(true_ahk);
+    expect(await evaluator.eval('0 < 0')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" < "ABC"')).toBe(false_ahk);
+  });
+
+  test('RelationalExpression_lessthan_equal', async(): Promise<void> => {
+    expect(await evaluator.eval('0 <= 1')).toBe(true_ahk);
+    expect(await evaluator.eval('0 <= num_int')).toBe(true_ahk);
+    expect(await evaluator.eval('0 <= 0')).toBe(true_ahk);
+    expect(await evaluator.eval('"abc" <= "ABC"')).toBe(false_ahk);
+  });
+
+  test('RelationalExpression_greaterthan', async(): Promise<void> => {
+    expect(await evaluator.eval('1 > 0')).toBe(true_ahk);
+    expect(await evaluator.eval('num_int > 0')).toBe(true_ahk);
+    expect(await evaluator.eval('0 > 0')).toBe(false_ahk);
+    expect(await evaluator.eval('0 > num_int')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" > "ABC"')).toBe(false_ahk);
+  });
+
+  test('RelationalExpression_greaterthan_equal', async(): Promise<void> => {
+    expect(await evaluator.eval('1 >= 0')).toBe(true_ahk);
+    expect(await evaluator.eval('num_int >= 0')).toBe(true_ahk);
+    expect(await evaluator.eval('0 >= 0')).toBe(true_ahk);
+    expect(await evaluator.eval('0 >= num_int')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" >= "ABC"')).toBe(false_ahk);
+  });
+
+  test('RegExMatchExpression_regex_match', async(): Promise<void> => {
+    expect(await evaluator.eval('str_alpha ~= "i)ABC"')).toBe(1);
+    expect(await evaluator.eval('str_alpha ~= "B"')).toBe(2);
+    expect(await evaluator.eval('str_alpha ~= "i)z"')).toBe(0);
+  });
+
+  test('ConcatenateExpression_space', async(): Promise<void> => {
+    expect(await evaluator.eval('str_alpha str_alnum')).toBe('aBcaBc123');
+  });
+
+  test('ConcatenateExpression_dot', async(): Promise<void> => {
+    expect(await evaluator.eval('str_alpha . str_alnum')).toBe('aBcaBc123');
+  });
+
+
+  test('BitwiseExpression_or', async(): Promise<void> => {
+    expect(await evaluator.eval('5 | 3')).toBe(7);
+  });
+
+  test('BitwiseExpression_xor', async(): Promise<void> => {
+    expect(await evaluator.eval('5 ^ 3')).toBe(6);
+  });
+
+  test('BitwiseExpression_and', async(): Promise<void> => {
+    expect(await evaluator.eval('5 & 3')).toBe(1);
+  });
+
+  test('BitshiftExpression_left', async(): Promise<void> => {
+    expect(await evaluator.eval('5 << 2')).toBe(20);
+  });
+
+  test('BitshiftExpression_right', async(): Promise<void> => {
+    expect(await evaluator.eval('5 >> 2')).toBe(1);
+  });
+
+  test('BitshiftExpression_logical_right', async(): Promise<void> => {
+    expect(await evaluator.eval('5 >>> 2')).toBe(1);
+  });
+
+  test('AdditiveExpression_addition', async(): Promise<void> => {
+    expect(await evaluator.eval('1 + 1')).toBe(2);
+    expect(await evaluator.eval('num_int + 2')).toBe(125);
+    expect(await evaluator.eval('obj + 3')).toBe('');
+  });
+
+  test('AdditiveExpression_subtraction', async(): Promise<void> => {
+    expect(await evaluator.eval('1 - 1')).toBe(0);
+    expect(await evaluator.eval('num_int - 123')).toBe(0);
+  });
+
+  test('MultiplicativeExpression_multiplication', async(): Promise<void> => {
+    expect(await evaluator.eval('3 ** 2')).toBe(9);
+  });
+
+  test('ExponentiationExpression_power', async(): Promise<void> => {
+    expect(await evaluator.eval('3 * 3')).toBe(9);
+    expect(await evaluator.eval('num_int * 0')).toBe(0);
+  });
+
+  test('MultiplicativeExpression_division', async(): Promise<void> => {
+    expect(await evaluator.eval('3 / 3')).toBe(1);
+    expect(await evaluator.eval('num_int / 0')).toBe('');
+  });
+
+  test('UnaryExpression_increment', async(): Promise<void> => {
+    expect(await evaluator.eval(`++num_prefix_unary`)).toBe(1);
+    expect(await evaluator.eval(`num_prefix_unary`)).toBe(1);
+  });
+
+  test('UnaryExpression_decrement', async(): Promise<void> => {
+    expect(await evaluator.eval(`--num_prefix_unary`)).toBe(0);
+    expect(await evaluator.eval(`num_prefix_unary`)).toBe(0);
+  });
+
+  test('UnaryExpression_positive', async(): Promise<void> => {
+    expect(await evaluator.eval(`+num_int`)).toBe(await evaluator.eval(`num_int`));
+    expect(await evaluator.eval(`+ num_int`)).toBe(await evaluator.eval(`num_int`));
+  });
+
+  test('UnaryExpression_negative', async(): Promise<void> => {
+    expect(await evaluator.eval(`-num_int`)).toBe(await evaluator.eval(`-123`));
+    expect(await evaluator.eval(`- num_int`)).toBe(await evaluator.eval(`-123`));
+  });
+
+  test('UnaryExpression_not', async(): Promise<void> => {
+    expect(await evaluator.eval(`!true`)).toBe(false_ahk);
+    expect(await evaluator.eval(`!num_int`)).toBe(false_ahk);
+    expect(await evaluator.eval(`! num_int`)).toBe(false_ahk);
+  });
+
+  test('UnaryExpression_address', async(): Promise<void> => {
+    expect(await evaluator.eval(`~123`)).toBe(-124);
+    expect(await evaluator.eval(`~ 123`)).toBe(-124);
+  });
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  test('UnaryExpression_bitwise_not', async(): Promise<void> => {
+    expect(async() => evaluator.eval(`&num_int`)).rejects.toThrow();
+  });
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  test('UnaryExpression_dereference', async(): Promise<void> => {
+    expect(async() => evaluator.eval(`*num_int`)).rejects.toThrow();
+  });
+
+  test('PostfixUnaryExpression_increment', async(): Promise<void> => {
+    expect(await evaluator.eval(`num_postfix_unary++`)).toBe(0);
+    expect(await evaluator.eval(`num_postfix_unary`)).toBe(1);
+  });
+
+  test('PostfixUnaryExpression_decrement', async(): Promise<void> => {
+    expect(await evaluator.eval(`num_postfix_unary--`)).toBe(1);
+    expect(await evaluator.eval(`num_postfix_unary`)).toBe(0);
+  });
+
+  test('CallExpression_call', async(): Promise<void> => {
+    expect(await evaluator.eval('IsString(str_alpha)')).toBe(true_ahk);
+    expect(await evaluator.eval(`Contains(obj, "value")`)).toBe(true_ahk);
+  });
+
+  test('MemberExpression_propertyaccess', async(): Promise<void> => {
+    expect(await evaluator.eval('obj.key')).toBe('value');
+    expect(await evaluator.eval('nestedObj.a.b.key')).toBe('value');
+  });
+
+  test('MemberExpression_elementaccess', async(): Promise<void> => {
+    expect(await evaluator.eval('obj["key"]')).toBe('value');
+    expect(await evaluator.eval('obj[key]')).toBe('value');
+    expect(await evaluator.eval('nestedObj["a"]["b"][key]')).toBe('value');
+    expect(await evaluator.eval('nestedObj["a", "b", key]')).toBe('value');
+  });
+
+  test('MemberExpression_propertyaccess / MemberExpression_elementaccess', async(): Promise<void> => {
+    expect(await evaluator.eval('nestedObj.a.b[key]')).toBe('value');
+  });
+
+  test('DereferenceExpressions', async(): Promise<void> => {
+    expect(await evaluator.eval(`%str_alpha%`)).toBe(await evaluator.eval('abc'));
+    expect(await evaluator.eval(`%a%b%c%`)).toBe(await evaluator.eval('abc'));
+  });
+
+  test('ParenthesizedExpression', async(): Promise<void> => {
+    expect(await evaluator.eval(`(1 + 2) * 3`)).toBe(9);
+    // expect(await evaluator.eval(`true || true && false`)).toBe(true_ahk);
+    expect(await evaluator.eval(`(true || true) && false`)).toBe(false_ahk);
+  });
+
+  test('identifier', async(): Promise<void> => {
+    expect(await evaluator.eval('num_int')).toBe(123);
+    expect(await evaluator.eval('true')).toBe(true_ahk);
+    expect(await evaluator.eval('TrUe')).toBe(true_ahk);
+    expect(await evaluator.eval('false')).toBe(false_ahk);
+    expect(await evaluator.eval('fAlsE')).toBe(false_ahk);
+  });
+
+  test('stringLiteral', async(): Promise<void> => {
     expect(await evaluator.eval('"abc"')).toBe('abc');
     expect(await evaluator.eval('""""')).toBe('"');
     expect(await evaluator.eval('"``"')).toBe('`');
@@ -109,145 +325,8 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('"`a"')).toBe('\x07');
   });
 
-  test('eval dereference', async(): Promise<void> => {
-    expect(await evaluator.eval(`%str_alpha%`)).toBe(await evaluator.eval('abc'));
-    expect(await evaluator.eval(`%a%b%c%`)).toBe(await evaluator.eval('abc'));
-  });
-
-  test('eval unary (+)', async(): Promise<void> => {
-    expect(await evaluator.eval(`+num_int`)).toBe(await evaluator.eval(`num_int`));
-    expect(await evaluator.eval(`+ num_int`)).toBe(await evaluator.eval(`num_int`));
-  });
-
-  test('eval unary (-)', async(): Promise<void> => {
-    expect(await evaluator.eval(`-num_int`)).toBe(await evaluator.eval(`-123`));
-    expect(await evaluator.eval(`- num_int`)).toBe(await evaluator.eval(`-123`));
-  });
-
-  test('eval unary (!)', async(): Promise<void> => {
-    expect(await evaluator.eval(`!num_int`)).toBe(false_ahk);
-    expect(await evaluator.eval(`! num_int`)).toBe(false_ahk);
-  });
-
-  test('eval unary (~)', async(): Promise<void> => {
-    expect(await evaluator.eval(`~ 123`)).toBe(-124);
-  });
-
-  // eslint-disable-next-line @typescript-eslint/require-await
-  test('eval unary (&)', async(): Promise<void> => {
-    expect(async() => evaluator.eval(`&num_int`)).rejects.toThrow();
-  });
-
-  // eslint-disable-next-line @typescript-eslint/require-await
-  test('eval unary (*)', async(): Promise<void> => {
-    expect(async() => evaluator.eval(`*num_int`)).rejects.toThrow();
-  });
-
-  test('eval ternary', async(): Promise<void> => {
-    expect(await evaluator.eval(`true ? 100 : 0`)).toBe(100);
-    expect(await evaluator.eval(`false ? 100 : 0`)).toBe(0);
-  });
-
-  test('eval binary (|)', async(): Promise<void> => {
-    expect(await evaluator.eval('5 | 3')).toBe(7);
-    expect(await evaluator.eval('5 ^ 3')).toBe(6);
-    expect(await evaluator.eval('5 & 3')).toBe(1);
-  });
-
-  test('eval binary (<<)', async(): Promise<void> => {
-    expect(await evaluator.eval('5 << 2')).toBe(20);
-  });
-
-  test('eval binary (>>)', async(): Promise<void> => {
-    expect(await evaluator.eval('5 >> 2')).toBe(1);
-  });
-
-  test('eval binary (>>>)', async(): Promise<void> => {
-    expect(await evaluator.eval('5 >>> 2')).toBe(1);
-  });
-
-  test('eval relational (=)', async(): Promise<void> => {
-    expect(await evaluator.eval('10 = 10')).toBe(true_ahk);
-    expect(await evaluator.eval('"abc" = "ABC"')).toBe(true_ahk);
-    expect(await evaluator.eval('obj = obj')).toBe(true_ahk);
-    expect(await evaluator.eval('"abc" = "ABCD"')).toBe(false_ahk);
-    expect(await evaluator.eval('instance = T')).toBe(false_ahk);
-  });
-
-  test('eval relational (!=)', async(): Promise<void> => {
-    expect(await evaluator.eval('"abc" != "ABCD"')).toBe(true_ahk);
-    expect(await evaluator.eval('instance != T')).toBe(true_ahk);
-    expect(await evaluator.eval('10 != 10')).toBe(false_ahk);
-    expect(await evaluator.eval('"abc" != "ABC"')).toBe(false_ahk);
-    expect(await evaluator.eval('obj != obj')).toBe(false_ahk);
-  });
-
-  test('eval relational (==)', async(): Promise<void> => {
-    expect(await evaluator.eval('10 == 10')).toBe(true_ahk);
-    expect(await evaluator.eval('obj == obj')).toBe(true_ahk);
-    expect(await evaluator.eval('"abc" == "ABC"')).toBe(false_ahk);
-    expect(await evaluator.eval('instance == T')).toBe(false_ahk);
-  });
-
-  test('eval relational (!==)', async(): Promise<void> => {
-    expect(await evaluator.eval('"abc" !== "ABC"')).toBe(true_ahk);
-    expect(await evaluator.eval('instance !== T')).toBe(true_ahk);
-    expect(await evaluator.eval('10 !== 10')).toBe(false_ahk);
-    expect(await evaluator.eval('obj !== obj')).toBe(false_ahk);
-  });
-
-  test('eval relational (<)', async(): Promise<void> => {
-    expect(await evaluator.eval('0 < 1')).toBe(true_ahk);
-    expect(await evaluator.eval('0 < num_int')).toBe(true_ahk);
-    expect(await evaluator.eval('0 < 0')).toBe(false_ahk);
-    expect(await evaluator.eval('"abc" < "ABC"')).toBe(false_ahk);
-  });
-
-  test('eval relational (<=)', async(): Promise<void> => {
-    expect(await evaluator.eval('0 <= 1')).toBe(true_ahk);
-    expect(await evaluator.eval('0 <= num_int')).toBe(true_ahk);
-    expect(await evaluator.eval('0 <= 0')).toBe(true_ahk);
-    expect(await evaluator.eval('"abc" <= "ABC"')).toBe(false_ahk);
-  });
-
-  test('eval relational (>)', async(): Promise<void> => {
-    expect(await evaluator.eval('1 > 0')).toBe(true_ahk);
-    expect(await evaluator.eval('num_int > 0')).toBe(true_ahk);
-    expect(await evaluator.eval('0 > 0')).toBe(false_ahk);
-    expect(await evaluator.eval('0 > num_int')).toBe(false_ahk);
-    expect(await evaluator.eval('"abc" > "ABC"')).toBe(false_ahk);
-  });
-
-  test('eval relational (>=)', async(): Promise<void> => {
-    expect(await evaluator.eval('1 >= 0')).toBe(true_ahk);
-    expect(await evaluator.eval('num_int >= 0')).toBe(true_ahk);
-    expect(await evaluator.eval('0 >= 0')).toBe(true_ahk);
-    expect(await evaluator.eval('0 >= num_int')).toBe(false_ahk);
-    expect(await evaluator.eval('"abc" >= "ABC"')).toBe(false_ahk);
-  });
-
-  test('eval logical (&&)', async(): Promise<void> => {
-    expect(await evaluator.eval('true && true')).toBe(true_ahk);
-    expect(await evaluator.eval('true && false')).toBe(false_ahk);
-    expect(await evaluator.eval('false && false')).toBe(false_ahk);
-    expect(await evaluator.eval('instance && false')).toBe(false_ahk);
-  });
-
-  test('eval logical (||)', async(): Promise<void> => {
-    expect(await evaluator.eval('true || true')).toBe(true_ahk);
-    expect(await evaluator.eval('true || false')).toBe(true_ahk);
-    expect(await evaluator.eval('instance || false')).toBe(true_ahk);
-    expect(await evaluator.eval('false || false')).toBe(false_ahk);
-  });
-
-  test('eval regex match (~=)', async(): Promise<void> => {
-    expect(await evaluator.eval('str_alpha ~= "i)ABC"')).toBe(1);
-    expect(await evaluator.eval('str_alpha ~= "B"')).toBe(2);
-    expect(await evaluator.eval('str_alpha ~= "i)z"')).toBe(0);
-  });
-
-  test('eval sequence', async(): Promise<void> => {
-    expect(await evaluator.eval(`1, 2, 3`)).toBe(3);
+  test('numericLiteral', async(): Promise<void> => {
+    expect(await evaluator.eval('123')).toBe(123);
   });
 
   test('eval libraries', async(): Promise<void> => {
@@ -436,7 +515,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('eval precedence', async(): Promise<void> => {
-    expect(await evaluator.eval(`1 + 2 * 3 ** 2`)).toBe(19);
+    expect(await evaluator.eval(`1 + (2 + 3) * 4 ** 5`)).toBe(5121);
     expect(await evaluator.eval(`1 < 0 + 2`)).toBe(true_ahk);
     expect(await evaluator.eval(`1 <= "abc" ~= "b"`)).toBe(true_ahk);
     expect(await evaluator.eval(`1 + 2 * 3 "a" "b" . "c"`)).toBe('7abc');
