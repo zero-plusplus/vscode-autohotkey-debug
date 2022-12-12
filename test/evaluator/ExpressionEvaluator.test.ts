@@ -79,14 +79,14 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`false ? 100 : 0`)).toBe(0);
   });
 
-  test('LogicalExpression_or', async(): Promise<void> => {
+  test('LogicalOrExpression_or', async(): Promise<void> => {
     expect(await evaluator.eval('true || true')).toBe(true_ahk);
     expect(await evaluator.eval('true || false')).toBe(true_ahk);
     expect(await evaluator.eval('instance || false')).toBe(true_ahk);
     expect(await evaluator.eval('false || false')).toBe(false_ahk);
   });
 
-  test('LogicalExpression_and', async(): Promise<void> => {
+  test('LogicalAndExpression_and', async(): Promise<void> => {
     expect(await evaluator.eval('true && true')).toBe(true_ahk);
     expect(await evaluator.eval('true && false')).toBe(false_ahk);
     expect(await evaluator.eval('false && false')).toBe(false_ahk);
@@ -296,7 +296,8 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
   test('ParenthesizedExpression', async(): Promise<void> => {
     expect(await evaluator.eval(`(1 + 2) * 3`)).toBe(9);
-    // expect(await evaluator.eval(`true || true && false`)).toBe(true_ahk);
+    expect(await evaluator.eval(`true && false || true`)).toBe(true_ahk);
+    expect(await evaluator.eval(`true || true && false`)).toBe(true_ahk);
     expect(await evaluator.eval(`(true || true) && false`)).toBe(false_ahk);
   });
 

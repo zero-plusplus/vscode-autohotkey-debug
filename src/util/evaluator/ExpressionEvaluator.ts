@@ -303,8 +303,8 @@ export class ExpressionEvaluator {
     const matchResult = this.parser.parse(expression);
     const node = toAST(matchResult, {
       Expression_comma_sequence: { type: 'binary', left: 0, operator: 1, right: 2 },
-      LogicalExpression_and: { type: 'binary', left: 0, operator: 1, right: 2 },
-      LogicalExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
+      LogicalOrExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
+      LogicalAndExpression_and: { type: 'binary', left: 0, operator: 1, right: 2 },
       EqualityExpression_loose_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
       EqualityExpression_not_loose_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
       EqualityExpression_equal: { type: 'binary', left: 0, operator: 1, right: 2 },

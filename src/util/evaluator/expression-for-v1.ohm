@@ -1,6 +1,6 @@
 Expression_for_v1 {
   Expression
-    = Expression "," LogicalExpression -- comma_sequence
+    = Expression "," ExpressionWithoutSequence -- comma_sequence
     | ExpressionWithoutSequence
 
   ExpressionWithoutSequence
@@ -8,14 +8,14 @@ Expression_for_v1 {
 
   TernaryExpression
     = Expression "?" Expression ":" Expression -- ternary
-    | LogicalExpression
+    | LogicalOrExpression
 
-  BinaryExpression
-    = LogicalExpression
+  LogicalOrExpression
+    = LogicalOrExpression "||" LogicalAndExpression -- or
+    | LogicalAndExpression
 
-  LogicalExpression
-    = LogicalExpression "&&" EqualityExpression -- and
-    | LogicalExpression "||" EqualityExpression -- or
+  LogicalAndExpression
+    = LogicalAndExpression "&&" EqualityExpression -- and
     | EqualityExpression
 
   EqualityExpression
@@ -42,9 +42,9 @@ Expression_for_v1 {
     | BitwiseExpression
 
   BitwiseExpression
-    = BitwiseExpression "|" ~"|" AdditiveExpression -- or
-    | BitwiseExpression "^" AdditiveExpression -- xor
-    | BitwiseExpression "&" ~"&" AdditiveExpression -- and
+    = BitwiseExpression "|" ~"|" BitshiftExpression -- or
+    | BitwiseExpression "^" BitshiftExpression -- xor
+    | BitwiseExpression "&" ~"&" BitshiftExpression -- and
     | BitshiftExpression
 
   BitshiftExpression
