@@ -1,3 +1,5 @@
+import { promises as fs } from 'fs';
+import glob from 'fast-glob';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
@@ -279,6 +281,69 @@ const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
 };
 library_for_v1.set('IsClass', isClass);
 library_for_v2.set('IsClass', isClass);
+
+const isFile: LibraryFunc = async(session, stackFrame, filePath) => {
+  if (typeof filePath !== 'string') {
+    return getFalse(session, stackFrame);
+  }
+
+  try {
+    const stat = await fs.stat(filePath);
+    if (stat.isFile()) {
+      return await getTrue(session, stackFrame);
+    }
+  }
+  catch (e: unknown) {
+  }
+  return getFalse(session, stackFrame);
+};
+library_for_v1.set('IsFile', isFile);
+library_for_v2.set('IsFile', isFile);
+
+const isDirectory: LibraryFunc = async(session, stackFrame, filePath) => {
+  if (typeof filePath !== 'string') {
+    return getFalse(session, stackFrame);
+  }
+
+  try {
+    const stat = await fs.stat(filePath);
+    if (stat.isDirectory()) {
+      return await getTrue(session, stackFrame);
+    }
+  }
+  catch (e: unknown) {
+  }
+  return getFalse(session, stackFrame);
+};
+library_for_v1.set('IsDirectory', isDirectory);
+library_for_v1.set('IsDir', isDirectory);
+library_for_v2.set('IsDirectory', isDirectory);
+library_for_v2.set('IsDir', isDirectory);
+
+const isPath: LibraryFunc = async(session, stackFrame, filePath) => {
+  const result = await isFile(session, stackFrame, filePath);
+  if (result === await getFalse(session, stackFrame)) {
+    return isDirectory(session, stackFrame, filePath);
+  }
+  return result;
+};
+library_for_v1.set('IsPath', isPath);
+library_for_v2.set('IsPath', isPath);
+
+const isGlob: LibraryFunc = async(session, stackFrame, filePattern) => {
+  if (typeof filePattern !== 'string') {
+    return getFalse(session, stackFrame);
+  }
+
+  const _filePattern = filePattern.replaceAll('\\', '/');
+  const fileList = await glob(_filePattern, { });
+  if (0 < fileList.length) {
+    return getTrue(session, stackFrame);
+  }
+  return getFalse(session, stackFrame);
+};
+library_for_v1.set('IsGlob', isGlob);
+library_for_v2.set('IsGlob', isGlob);
 
 const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
