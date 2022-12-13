@@ -28,6 +28,8 @@ instance := new T()
 
 num_prefix_unary := 0
 num_postfix_unary := 0
+str_reassign := ""
+num_reassign := 0
 
 class T {
   static staticField := "static"

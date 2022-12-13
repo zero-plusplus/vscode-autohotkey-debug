@@ -79,6 +79,69 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`foo`)).toBe('abc');
   });
 
+  test('ReAssignmentExpression_addition', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 3`);
+    expect(await evaluator.eval(`num_reassign += 1`)).toBe(4);
+  });
+
+  test('ReAssignmentExpression_subtraction', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 3`);
+    expect(await evaluator.eval(`num_reassign -= 1`)).toBe(2);
+  });
+
+  test('ReAssignmentExpression_multiplication', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 3`);
+    expect(await evaluator.eval(`num_reassign *= 3`)).toBe(9);
+  });
+
+  test('ReAssignmentExpression_division', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 3`);
+    expect(await evaluator.eval(`num_reassign /= 3`)).toBe(1);
+
+    await evaluator.eval(`num_reassign := 0`);
+    expect(await evaluator.eval(`num_reassign /= 0`)).toBe('');
+  });
+
+  test('ReAssignmentExpression_floor_division', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 3`);
+    expect(async() => evaluator.eval(`num_reassign //= 3`)).rejects.toThrow();
+  });
+
+  test('ReAssignmentExpression_concatenate', async(): Promise<void> => {
+    await evaluator.eval(`str_reassign := "abc"`);
+    expect(await evaluator.eval(`str_reassign .= "def"`)).toBe('abcdef');
+  });
+
+  test('ReAssignmentExpression_bitwise_or', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 5`);
+    expect(await evaluator.eval('num_reassign |= 3')).toBe(7);
+  });
+
+  test('ReAssignmentExpression_bitwise_xor', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 5`);
+    expect(await evaluator.eval('num_reassign ^= 3')).toBe(6);
+  });
+
+  test('ReAssignmentExpression_bitwise_and', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 5`);
+    expect(await evaluator.eval('num_reassign &= 3')).toBe(1);
+  });
+
+  test('ReAssignmentExpression_bitshift_left', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 5`);
+    expect(await evaluator.eval('num_reassign <<= 2')).toBe(20);
+  });
+
+  test('ReAssignmentExpression_bitshift_right', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 5`);
+    expect(await evaluator.eval('num_reassign >>= 2')).toBe(1);
+  });
+
+  test('ReAssignmentExpression_bitshift_logical_right', async(): Promise<void> => {
+    await evaluator.eval(`num_reassign := 5`);
+    expect(await evaluator.eval('num_reassign >>>= 2')).toBe(1);
+  });
+
   test('TernaryExpression_ternary', async(): Promise<void> => {
     expect(await evaluator.eval(`true ? 100 : 0`)).toBe(100);
     expect(await evaluator.eval(`false ? 100 : 0`)).toBe(0);
@@ -171,7 +234,6 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   test('ConcatenateExpression_dot', async(): Promise<void> => {
     expect(await evaluator.eval('str_alpha . str_alnum')).toBe('aBcaBc123');
   });
-
 
   test('BitwiseExpression_or', async(): Promise<void> => {
     expect(await evaluator.eval('5 | 3')).toBe(7);

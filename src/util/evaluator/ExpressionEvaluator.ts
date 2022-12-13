@@ -683,7 +683,33 @@ export class ExpressionEvaluator {
         }
         return ahkRegexMatch(String(left), String(right));
       }
-      case '//': throw Error(`The ${operator} operator is not supported.`);
+      case '//':
+      case '//=': throw Error(`The ${operator} operator is not supported.`);
+      case '+=':
+      case '-=':
+      case '*=':
+      case '/=':
+      case '.=':
+      case '|=':
+      case '^=':
+      case '&=':
+      case '<<=':
+      case '>>=':
+      case '>>>=': {
+        const binaryNode: BinaryNode = {
+          type: 'binary',
+          left: node.left,
+          operator: operator.replace(/[=]$/u, ''),
+          right: node.right,
+        };
+        const assignmentNode: AssignmentNode = {
+          type: 'assign',
+          left: node.left,
+          operator: ':=',
+          right: binaryNode,
+        };
+        return this.evalAssignmentExpression(assignmentNode, stackFrame, maxDepth);
+      }
       default: break;
     }
     return '';
