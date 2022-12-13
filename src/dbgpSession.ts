@@ -331,11 +331,13 @@ export class ContinuationResponse extends Response {
     this.status = status;
   }
 }
+
+export type ContextName = 'Local' | 'Global' | 'Static';
 export class Context {
   public id: number;
-  public name: string;
+  public name: ContextName;
   public stackFrame: StackFrame;
-  constructor(id: number, name: string, stackFrame: StackFrame) {
+  constructor(id: number, name: ContextName, stackFrame: StackFrame) {
     this.id = id;
     this.name = name;
     this.stackFrame = stackFrame;
@@ -348,7 +350,7 @@ export class ContextNamesResponse extends Response {
 
     if (response.context) {
       response.context.forEach(({ attributes: { id, name } }) => {
-        this.contexts.push(new Context(parseInt(id, 10), name, stackFrame));
+        this.contexts.push(new Context(parseInt(id, 10), name as ContextName, stackFrame));
       });
     }
   }

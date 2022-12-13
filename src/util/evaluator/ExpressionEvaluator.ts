@@ -135,6 +135,9 @@ const negate = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefi
   }
   return value ? getFalse(session, stackFrame) : getTrue(session, stackFrame);
 };
+export const getFullName = (nameOrObject: string | dbgp.ObjectProperty): string => {
+  return typeof nameOrObject === 'string' ? nameOrObject : nameOrObject.fullName;
+};
 export const getContexts = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<dbgp.Context[] | undefined> => {
   let _stackFrame = stackFrame;
   if (!_stackFrame) {
@@ -146,6 +149,21 @@ export const getContexts = async(session: dbgp.Session, stackFrame?: dbgp.StackF
   }
   const { contexts } = await session.sendContextNamesCommand(_stackFrame);
   return contexts;
+};
+export const existsProperty = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, nameOrObject: string | dbgp.ObjectProperty): Promise<dbgp.Context | undefined> => {
+  const fullName = getFullName(nameOrObject);
+  const contexts = await getContexts(session, stackFrame);
+  if (!contexts) {
+    return undefined;
+  }
+  for await (const context of contexts) {
+    const response = await session.sendPropertyGetCommand(context, fullName, 1);
+    const property = response.properties[0] as dbgp.Property | '';
+    if (property) {
+      return context;
+    }
+  }
+  return undefined;
 };
 export const fetchPropertyAddress = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<number | ''> => {
   const contexts = await getContexts(session, stackFrame);
@@ -255,37 +273,51 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
   }
   return '';
 };
-export const overwriteProperty = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, nameOrObject: string | dbgp.ObjectProperty, value: string | number): Promise<void> => {
+export const setProperty = async(session: dbgp.Session, context: dbgp.Context, nameOrObject: string | dbgp.ObjectProperty, value: string | number): Promise<boolean> => {
+  const fullName = getFullName(nameOrObject);
+  const data = String(value);
+
+  let typeName: dbgp.PropertyType = 'string';
+  if (typeof value === 'number') {
+    typeName = data.includes('.') ? 'string' : 'integer';
+    if (2.0 <= session.ahkVersion.mejor) {
+      typeName = data.includes('.') ? 'float' : 'integer';
+    }
+  }
+
+  const result = await session.sendPropertySetCommand({
+    context,
+    data,
+    typeName,
+    fullName,
+  });
+  if (result.success) {
+    return true;
+  }
+  throw Error(`Some error occurred when rewriting ${typeName === 'string' ? `"${data}"` : data} to ${fullName}`);
+};
+export const simulateSetProperty = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, nameOrObject: string | dbgp.ObjectProperty, value: string | number): Promise<void> => {
   const contexts = await getContexts(session, stackFrame);
   if (!contexts || contexts.length === 0) {
     return;
   }
 
-  const fullName = typeof nameOrObject === 'string' ? nameOrObject : nameOrObject.fullName;
-  const data = String(value);
-  let typeName: dbgp.PropertyType = 'string';
-  if (typeof value === 'number') {
-    typeName = data.includes('.') ? 'float' : 'integer';
-  }
-
-  for await (const context of contexts) {
-    const response = await session.sendPropertyGetCommand(context, fullName);
-    const property = response.properties[0] as dbgp.Property | undefined;
-    if (!property) {
-      continue;
-    }
-
-    const result = await session.sendPropertySetCommand({
-      context,
-      data,
-      typeName,
-      fullName,
-    });
-    if (result.success) {
+  const inFunction = contexts[0].stackFrame.name.endsWith('()');
+  if (inFunction) {
+    const localContext = contexts.find((context) => context.name === 'Local');
+    if (!localContext) {
       return;
     }
-    throw Error(`Some error occurred when rewriting ${typeName === 'string' ? `"${data}"` : data} to ${fullName}`);
+
+    await setProperty(session, localContext, nameOrObject, value);
+    return;
   }
+
+  const globalContext = contexts.find((context) => context.name === 'Global');
+  if (!globalContext) {
+    return;
+  }
+  await setProperty(session, globalContext, nameOrObject, value);
 };
 
 export class ExpressionEvaluator {
@@ -452,7 +484,7 @@ export class ExpressionEvaluator {
       return '';
     }
 
-    await overwriteProperty(this.session, stackFrame, fullName, node.operator === '++' ? value + 1 : value - 1);
+    await simulateSetProperty(this.session, stackFrame, fullName, node.operator === '++' ? value + 1 : value - 1);
 
     const result = await fetchProperty(this.session, fullName, stackFrame, maxDepth);
     return result;
@@ -482,7 +514,7 @@ export class ExpressionEvaluator {
       return '';
     }
 
-    await overwriteProperty(this.session, stackFrame, fullName, node.operator === '++' ? result + 1 : result - 1);
+    await simulateSetProperty(this.session, stackFrame, fullName, node.operator === '++' ? result + 1 : result - 1);
     return result;
   }
   public async evalTernaryExpression(node: TernaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
