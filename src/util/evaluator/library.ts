@@ -46,6 +46,25 @@ export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | 
 export const library_for_v1 = new CaseInsensitiveMap<string, LibraryFunc>();
 export const library_for_v2 = new CaseInsensitiveMap<string, LibraryFunc>();
 
+
+// #region Built-in like functions
+// https://www.autohotkey.com/docs/lib/Object.htm#HasKey
+const hasKey: LibraryFunc = async(session, stackFrame, value, key) => {
+  if (!(value instanceof dbgp.ObjectProperty)) {
+    return getFalse(session, stackFrame);
+  }
+
+  const child = await fetchPropertyChild(session, stackFrame, value, key);
+  return child ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
+};
+library_for_v1.set('HasKey', hasKey);
+library_for_v1.set('ObjHasKey', hasKey);
+library_for_v2.set('HasKey', hasKey);
+library_for_v2.set('HasOwnProp', hasKey);
+library_for_v2.set('ObjHasOwnProp', hasKey);
+// #endregion
+
+// #region original functions
 const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass) => {
   if (!(object instanceof dbgp.ObjectProperty)) {
     return getFalse(session, stackFrame);
@@ -261,20 +280,6 @@ const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
 library_for_v1.set('IsClass', isClass);
 library_for_v2.set('IsClass', isClass);
 
-const hasKey: LibraryFunc = async(session, stackFrame, value, key) => {
-  if (!(value instanceof dbgp.ObjectProperty)) {
-    return getFalse(session, stackFrame);
-  }
-
-  const child = await fetchPropertyChild(session, stackFrame, value, key);
-  return child ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-};
-library_for_v1.set('HasKey', hasKey);
-library_for_v1.set('ObjHasKey', hasKey);
-library_for_v2.set('HasKey', hasKey);
-library_for_v2.set('HasOwnProp', hasKey);
-library_for_v2.set('ObjHasOwnProp', hasKey);
-
 const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
     return getFalse(session, stackFrame);
@@ -335,3 +340,4 @@ library_for_v1.set('Contains', contains);
 library_for_v1.set('Includes', contains);
 library_for_v2.set('Contains', contains);
 library_for_v2.set('Includes', contains);
+// #endregion
