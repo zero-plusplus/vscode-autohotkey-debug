@@ -11,6 +11,7 @@ import { singleToDoubleString, unescapeAhk } from '../VariableManager';
 
 export type Node =
  | IdentifierNode
+ | AssignmentNode
  | BinaryNode
  | UnaryNode
  | PrefixUnaryNode
@@ -48,6 +49,13 @@ export interface TernaryNode extends NodeBase {
   condition: Node;
   whenTrue: Node;
   whenFalse: Node;
+}
+export interface AssignmentNode extends NodeBase {
+  type: 'assign';
+  scope?: IdentifierNode;
+  operator: ':=';
+  left: Node;
+  right: Node;
 }
 export interface BinaryNode extends NodeBase {
   type: 'binary';
@@ -335,6 +343,19 @@ export class ExpressionEvaluator {
     const matchResult = this.parser.parse(expression);
     const node = toAST(matchResult, {
       Expression_comma_sequence: { type: 'binary', left: 0, operator: 1, right: 2 },
+      AssignmentExpression_assign: { type: 'assign', scope: 0, left: 2, operator: 3, right: 4 },
+      ReAssignmentExpression_addition: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_subtraction: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_multiplication: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_division: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_floor_division: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_concatenate: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_bitwise_or: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_bitwise_xor: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_bitwise_and: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_bitshift_left: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_bitshift_right: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ReAssignmentExpression_bitshift_logical_right: { type: 'binary', left: 0, operator: 1, right: 2 },
       LogicalOrExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
       LogicalAndExpression_and: { type: 'binary', left: 0, operator: 1, right: 2 },
       EqualityExpression_loose_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
@@ -397,6 +418,7 @@ export class ExpressionEvaluator {
     }
 
     switch (node.type) {
+      case 'assign': return this.evalAssignmentExpression(node, stackFrame, maxDepth);
       case 'binary': return this.evalBinaryExpression(node, stackFrame, maxDepth);
       case 'identifier': return this.evalIdentifier(node, stackFrame, maxDepth);
       case 'dereference_expressions': return this.evalDeferenceExpressions(node, stackFrame, maxDepth);
@@ -413,6 +435,28 @@ export class ExpressionEvaluator {
     }
     return '';
   }
+  public async evalAssignmentExpression(node: AssignmentNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    const scope = this.nodeToString(node.scope ?? '').toLowerCase();
+    const left = this.nodeToString(node.left);
+    const right = await this.evalNode(node.right);
+
+    if (right instanceof dbgp.ObjectProperty) {
+      return right;
+    }
+
+    if (scope === '') {
+      await simulateSetProperty(this.session, stackFrame, left, right);
+      return right;
+    }
+
+    const contexts = await getContexts(this.session, stackFrame);
+    const context = contexts?.find((context) => equalsIgnoreCase(context.name, scope));
+    if (!context) {
+      return right;
+    }
+    await setProperty(this.session, context, left, right);
+    return right;
+  }
   public async evalUnaryExpression(node: UnaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     if (node.operator === '*') {
       throw Error('The `*` operator such as `*Expression` are not supported.');
@@ -421,7 +465,7 @@ export class ExpressionEvaluator {
     if (node.operator === '&') {
       if (typeof node.expression !== 'string' && node.expression.type === 'identifier') {
         const name = this.nodeToString(node.expression);
-        const address = await fetchPropertyAddress(this.session, name ?? '', stackFrame);
+        const address = await fetchPropertyAddress(this.session, name, stackFrame);
         if (address) {
           return address;
         }
@@ -466,7 +510,7 @@ export class ExpressionEvaluator {
 
     let fullName = '';
     if (node.expression.type === 'identifier') {
-      fullName = this.nodeToString(node.expression) ?? '';
+      fullName = this.nodeToString(node.expression);
       if (!fullName) {
         return '';
       }
@@ -496,7 +540,7 @@ export class ExpressionEvaluator {
 
     let fullName = '';
     if (node.expression.type === 'identifier') {
-      fullName = this.nodeToString(node.expression) ?? '';
+      fullName = this.nodeToString(node.expression);
       if (!fullName) {
         return '';
       }
@@ -656,9 +700,16 @@ export class ExpressionEvaluator {
   public async evalDeferenceExpressions(node: DereferenceExpressionsNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     let variableName = '';
     for await (const childNode of node.dereferenceExpressions) {
-      variableName += childNode.type === 'identifier'
-        ? this.nodeToString(childNode)
-        : await this.evalDeferenceExpression(childNode, stackFrame, maxDepth);
+      if (childNode.type === 'identifier') {
+        variableName += this.nodeToString(childNode);
+        continue;
+      }
+
+      const evaluated = await this.evalDeferenceExpression(childNode, stackFrame, maxDepth);
+      if (evaluated instanceof dbgp.ObjectProperty) {
+        continue;
+      }
+      variableName += evaluated;
     }
 
     const result = await fetchProperty(this.session, variableName, stackFrame, maxDepth);
@@ -731,7 +782,7 @@ export class ExpressionEvaluator {
     }
     return '';
   }
-  public nodeToString(node: Node): string | undefined {
+  public nodeToString(node: Node): string {
     if (typeof node === 'string') {
       return node;
     }
@@ -739,6 +790,11 @@ export class ExpressionEvaluator {
     switch (node.type) {
       case 'identifier':
         return `${node.start}${node.parts.join('')}`;
+      case 'propertyaccess': {
+        const property = this.nodeToString(node.property);
+        const object = this.nodeToString(node.object);
+        return `${property}.${object}`;
+      }
       default: break;
     }
     return '';

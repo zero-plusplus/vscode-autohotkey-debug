@@ -74,6 +74,11 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`1, 2, 3`)).toBe(3);
   });
 
+  test('AssignmentExpression_assign', async(): Promise<void> => {
+    expect(await evaluator.eval(`foo := "abc"`)).toBe('abc');
+    expect(await evaluator.eval(`foo`)).toBe('abc');
+  });
+
   test('TernaryExpression_ternary', async(): Promise<void> => {
     expect(await evaluator.eval(`true ? 100 : 0`)).toBe(100);
     expect(await evaluator.eval(`false ? 100 : 0`)).toBe(0);

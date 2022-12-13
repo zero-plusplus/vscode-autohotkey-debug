@@ -4,10 +4,29 @@ Expression_for_v1 {
     | ExpressionWithoutSequence
 
   ExpressionWithoutSequence
-    = TernaryExpression
+    = AssignmentExpression
+
+  AssignmentExpression
+    = (identifier space)? AssignmentExpression ":=" ReAssignmentExpression -- assign
+    | ReAssignmentExpression
+
+  ReAssignmentExpression
+    = ReAssignmentExpression "+=" TernaryExpression -- addition
+    | ReAssignmentExpression "-=" TernaryExpression -- subtraction
+    | ReAssignmentExpression "*=" TernaryExpression -- multiplication
+    | ReAssignmentExpression "/=" TernaryExpression -- division
+    | ReAssignmentExpression "//=" TernaryExpression -- floor_division
+    | ReAssignmentExpression ".=" TernaryExpression -- concatenate
+    | ReAssignmentExpression "|=" TernaryExpression -- bitwise_or
+    | ReAssignmentExpression "^=" TernaryExpression -- bitwise_xor
+    | ReAssignmentExpression "&=" TernaryExpression -- bitwise_and
+    | ReAssignmentExpression "<<=" TernaryExpression -- bitshift_left
+    | ReAssignmentExpression ">>=" TernaryExpression -- bitshift_right
+    | ReAssignmentExpression ">>>=" TernaryExpression -- bitshift_logical_right
+    | TernaryExpression
 
   TernaryExpression
-    = Expression "?" Expression ":" Expression -- ternary
+    = TernaryExpression "?" LogicalOrExpression ":" LogicalOrExpression -- ternary
     | LogicalOrExpression
 
   LogicalOrExpression
