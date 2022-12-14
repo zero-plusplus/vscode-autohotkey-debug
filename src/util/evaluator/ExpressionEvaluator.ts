@@ -52,9 +52,8 @@ export interface TernaryNode extends NodeBase {
 }
 export interface AssignmentNode extends NodeBase {
   type: 'assign';
-  scope?: IdentifierNode;
-  operator: ':=';
   left: Node;
+  operator: ':=';
   right: Node;
 }
 export interface BinaryNode extends NodeBase {
@@ -343,7 +342,7 @@ export class ExpressionEvaluator {
     const matchResult = this.parser.parse(expression);
     const node = toAST(matchResult, {
       Expression_comma_sequence: { type: 'binary', left: 0, operator: 1, right: 2 },
-      AssignmentExpression_assign: { type: 'assign', scope: 0, left: 2, operator: 3, right: 4 },
+      AssignmentExpression_assign: { type: 'assign', left: 0, operator: 1, right: 2 },
       ReAssignmentExpression_addition: { type: 'binary', left: 0, operator: 1, right: 2 },
       ReAssignmentExpression_subtraction: { type: 'binary', left: 0, operator: 1, right: 2 },
       ReAssignmentExpression_multiplication: { type: 'binary', left: 0, operator: 1, right: 2 },
@@ -436,26 +435,41 @@ export class ExpressionEvaluator {
     return '';
   }
   public async evalAssignmentExpression(node: AssignmentNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
-    const scope = this.nodeToString(node.scope ?? '').toLowerCase();
-    const left = this.nodeToString(node.left);
-    const right = await this.evalNode(node.right);
+    if (typeof node.left === 'string') {
+      return node.left;
+    }
+    if (!(node.left.type === 'identifier' || node.left.type === 'propertyaccess' || node.left.type === 'elementaccess' || node.left.type === 'binary')) {
+      return this.evalNode(node.left);
+    }
 
-    if (right instanceof dbgp.ObjectProperty) {
-      return right;
+    let scope = '';
+    let left: Node = node.left;
+    if (left.type === 'binary') {
+      if (left.operator === ' ' || left.operator === '\t') {
+        scope = this.nodeToString(left.left);
+        left = left.right;
+      }
+    }
+
+    const name = this.nodeToString(left);
+    const value = await this.evalNode(node.right);
+
+    if (value instanceof dbgp.ObjectProperty) {
+      return value;
     }
 
     if (scope === '') {
-      await simulateSetProperty(this.session, stackFrame, left, right);
-      return right;
+      await simulateSetProperty(this.session, stackFrame, name, value);
+      return value;
     }
 
     const contexts = await getContexts(this.session, stackFrame);
     const context = contexts?.find((context) => equalsIgnoreCase(context.name, scope));
     if (!context) {
-      return right;
+      return value;
     }
-    await setProperty(this.session, context, left, right);
-    return right;
+    await setProperty(this.session, context, name, value);
+    return value;
   }
   public async evalUnaryExpression(node: UnaryNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     if (node.operator === '*') {

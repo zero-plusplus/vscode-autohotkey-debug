@@ -77,6 +77,9 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   test('AssignmentExpression_assign', async(): Promise<void> => {
     expect(await evaluator.eval(`foo := "abc"`)).toBe('abc');
     expect(await evaluator.eval(`foo`)).toBe('abc');
+
+    expect(await evaluator.eval(`global foo := "bbb"`)).toBe('bbb');
+    expect(await evaluator.eval(`foo`)).toBe('bbb');
   });
 
   test('ReAssignmentExpression_addition', async(): Promise<void> => {
@@ -395,12 +398,6 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
   test('numericLiteral', async(): Promise<void> => {
     expect(await evaluator.eval('123')).toBe(123);
-  });
-
-  test('eval libraries', async(): Promise<void> => {
-    expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true_ahk);
-    expect(await evaluator.eval('CountOf(str_alpha)')).toBe(3);
-    expect(await evaluator.eval('CountOf(arr)')).toBe(3);
   });
 
   test('eval libraries (IsSet)', async(): Promise<void> => {
