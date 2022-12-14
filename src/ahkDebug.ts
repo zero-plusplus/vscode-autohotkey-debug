@@ -831,50 +831,22 @@ export class AhkDebugSession extends LoggingDebugSession {
           throw Error('Error: Cannot evaluate code without a session');
         }
 
-        const metaVariableParsed = this.ahkParser.MetaVariable.parse(propertyName);
-        if (metaVariableParsed.status) {
-          const metaVariableName = metaVariableParsed.value.value;
-          const metaVariableMap = this.metaVaribalesByFrameId.get(args.frameId);
-          const metaVariable = metaVariableMap?.createMetaVariable(metaVariableName);
-          if (!metaVariable) {
-            throw Error('not available');
-          }
-
-          if (metaVariable.hasChildren) {
-            response.body = {
-              result: metaVariable.name,
-              type: 'metavariable',
-              variablesReference: metaVariable.variablesReference,
-            };
-          }
-          else {
-            response.body = {
-              result: metaVariable.value,
-              type: 'metavariable',
-              variablesReference: 0,
-            };
-          }
-          this.sendResponse(response);
-
-          return;
-        }
-
         const stackFrame = this.variableManager!.getStackFrame(args.frameId);
         if (!stackFrame) {
           throw Error('Error: Could not get stack frame');
         }
 
         const value = await this.evaluator.eval(propertyName, stackFrame.dbgpStackFrame);
-        if (!value) {
+        if (typeof value === 'undefined') {
           if (args.context === 'hover' && (await this.session!.fetchAllPropertyNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
             response.body = {
               result: 'Not initialized',
               type: 'undefined',
               variablesReference: -1,
             };
-            this.sendResponse(response);
-            return;
           }
+          this.sendResponse(response);
+          return;
         }
 
         if (value instanceof dbgp.ObjectProperty) {
@@ -886,25 +858,48 @@ export class AhkDebugSession extends LoggingDebugSession {
             indexedVariables: variable.indexedVariables,
             namedVariables: variable.namedVariables,
           };
+
+          this.sendResponse(response);
+          return;
         }
-        else {
-          let type = 'string';
-          if (Number.isNaN(Number(value))) {
-            if (String(value).includes('.')) {
-              type = 2.0 <= this.session!.ahkVersion.mejor ? 'float' : 'integer';
-            }
-            else {
-              type = 'integer';
-            }
+
+        if (value instanceof MetaVariable) {
+          if (value.hasChildren) {
+            await value.loadChildren(1);
+
+            response.body = {
+              result: value.name,
+              type: 'metavariable',
+              variablesReference: value.variablesReference,
+            };
+            this.sendResponse(response);
+            return;
           }
 
           response.body = {
-            result: typeof value === 'string' ? `"${value}"` : String(value),
-            type,
+            result: value.value,
+            type: 'metavariable',
             variablesReference: 0,
           };
+          this.sendResponse(response);
+          return;
         }
 
+        let type = 'string';
+        if (Number.isNaN(Number(value))) {
+          if (String(value).includes('.')) {
+            type = 2.0 <= this.session!.ahkVersion.mejor ? 'float' : 'integer';
+          }
+          else {
+            type = 'integer';
+          }
+        }
+
+        response.body = {
+          result: typeof value === 'string' ? `"${value}"` : String(value),
+          type,
+          variablesReference: 0,
+        };
         this.sendResponse(response);
       }
       catch (error: unknown) {

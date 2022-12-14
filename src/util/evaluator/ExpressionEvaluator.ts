@@ -7,7 +7,7 @@ import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
-import { MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';
+import { MetaVariable, MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';
 
 export type Node =
  | IdentifierNode
@@ -113,7 +113,7 @@ export type Function = (...params: any[]) => string | number | undefined;
 export type Library = {
   [key: string]: (...params: any[]) => string | number | undefined;
 };
-export type EvaluatedValue = string | number | dbgp.ObjectProperty;
+export type EvaluatedValue = undefined | string | number | dbgp.ObjectProperty | MetaVariable;
 export class EvaluatedNode {
   public readonly type: string;
   public readonly node: ohm.Node | ohm.Node[];
@@ -202,6 +202,9 @@ export const fetchGlobalProperty = async(session: dbgp.Session, name: string, st
     return property;
   }
   if (property instanceof dbgp.PrimitiveProperty) {
+    if (property.type === 'undefined') {
+      return undefined;
+    }
     return property.value;
   }
   return '';
@@ -224,6 +227,7 @@ export const fetchProperty = async(session: dbgp.Session, name: string, stackFra
     }
     if (property instanceof dbgp.PrimitiveProperty) {
       switch (property.type) {
+        case 'undefined': return undefined;
         case 'string': return property.value;
         case 'integer': return Number(property.value);
         case 'float': return parseFloat(property.value);
@@ -385,6 +389,9 @@ export class ExpressionEvaluator {
       ExponentiationExpression_power: { type: 'binary', left: 0, operator: 1, right: 2 },
       DereferenceExpressions: { type: 'dereference_expressions', dereferenceExpressions: 0 },
       DereferenceExpression: { type: 'dereference_expression', leftPercent: 0, expression: 1, rightPercent: 2 },
+      CallExpression_call: { type: 'call', caller: 0, arguments: 2 },
+      CallExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
+      CallExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 3 },
       MemberExpression_propertyaccess: { type: 'propertyaccess', object: 0, property: 2 },
       MemberExpression_dereference_propertyaccess: { type: 'dereference_propertyaccess', object: 0, property: 2 },
       MemberExpression_elementaccess: { type: 'elementaccess', object: 0, arguments: 3 },
@@ -399,7 +406,6 @@ export class ExpressionEvaluator {
       PostfixUnaryExpression_increment: { type: 'postfix_unary', expression: 0, operator: 1 },
       PostfixUnaryExpression_decrement: { type: 'postfix_unary', expression: 0, operator: 1 },
       TernaryExpression_ternary: { type: 'ternary', condition: 0, whenTrue: 2, whenFalse: 4 },
-      CallExpression_call: { type: 'call', caller: 0, arguments: 2 },
       booleanLiteral: { type: 'identifier', start: 0, parts: 1 },
       identifier: { type: 'identifier', start: 0, parts: 1 },
     }) as Node;
@@ -457,6 +463,9 @@ export class ExpressionEvaluator {
     const value = await this.evalNode(node.right);
 
     if (value instanceof dbgp.ObjectProperty) {
+      return value;
+    }
+    else if (!(typeof value === 'string' || typeof value === 'number')) {
       return value;
     }
 
@@ -766,16 +775,35 @@ export class ExpressionEvaluator {
   }
   public async evalPropertyAccessExpression(node: PropertyAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const object = await this.evalNode(node.object, stackFrame, maxDepth);
-    if (!(object instanceof dbgp.ObjectProperty)) {
-      return '';
-    }
-    const propertyName = this.nodeToString(node.property);
-    if (!propertyName) {
-      return '';
-    }
+    if (object instanceof dbgp.ObjectProperty) {
+      const propertyName = this.nodeToString(node.property);
+      if (!propertyName) {
+        return '';
+      }
 
-    const child = await fetchPropertyChild(this.session, stackFrame, object, propertyName);
-    return child;
+      const child = await fetchPropertyChild(this.session, stackFrame, object, propertyName);
+      return child;
+    }
+    else if (object instanceof MetaVariable) {
+      if (!object.hasChildren) {
+        return '';
+      }
+
+      await object.loadChildren(1);
+      const name = this.nodeToString(node.property);
+      const child = object.children?.find((child) => equalsIgnoreCase(child.name, name) || equalsIgnoreCase(child.name, `[${name}]`));
+      if (child instanceof MetaVariable) {
+        if (typeof child.rawValue === 'string' || typeof child.rawValue === 'number') {
+          return child.rawValue;
+        }
+        return child;
+      }
+      else if (child) {
+        return new MetaVariable(name, child);
+      }
+      return '';
+    }
+    return '';
   }
   public async evalDereferencePropertyAccessExpression(node: DereferencePropertyAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const object = await this.evalNode(node.object, stackFrame, maxDepth);
@@ -792,25 +820,45 @@ export class ExpressionEvaluator {
   }
   public async evalElementAccessExpression(node: ElementAccessNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const object = await this.evalNode(node.object, stackFrame, maxDepth);
-    if (!(object instanceof dbgp.ObjectProperty)) {
-      return '';
-    }
-    const evaluatedArguments = (await Promise.all(node.arguments.map(async(arg) => {
-      return this.evalNode(arg, stackFrame, maxDepth);
-    })));
+    if (object instanceof dbgp.ObjectProperty) {
+      const evaluatedArguments = (await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg, stackFrame, maxDepth))));
 
-    let currentObject: dbgp.ObjectProperty = object;
-    for await (const arg of evaluatedArguments.slice(0, -1)) {
-      const child = await fetchPropertyChild(this.session, stackFrame, currentObject, arg);
-      if (child instanceof dbgp.ObjectProperty) {
-        currentObject = child;
-        continue;
+      let current: dbgp.ObjectProperty = object;
+      for await (const arg of evaluatedArguments.slice(0, -1)) {
+        const child = await fetchPropertyChild(this.session, stackFrame, current, arg);
+        if (child instanceof dbgp.ObjectProperty) {
+          current = child;
+          continue;
+        }
+        break;
       }
-      break;
+
+      const property = await fetchPropertyChild(this.session, stackFrame, current, evaluatedArguments[evaluatedArguments.length - 1]);
+      return property;
+    }
+    else if (object instanceof MetaVariable) {
+      const evaluatedArguments = (await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg, stackFrame, maxDepth))));
+      let current = object;
+      for await (const arg of evaluatedArguments) {
+        if (!current.hasChildren) {
+          return '';
+        }
+        if (!(typeof arg === 'string' || typeof arg === 'number')) {
+          return '';
+        }
+
+        await current.loadChildren(1);
+        const child = current.children?.find((child) => equalsIgnoreCase(child.name, String(arg)) || equalsIgnoreCase(child.name, `[${String(arg)}]`));
+        if (!(child instanceof MetaVariable)) {
+          return '';
+        }
+
+        current = child;
+      }
+      return current;
     }
 
-    const property = await fetchPropertyChild(this.session, stackFrame, currentObject, evaluatedArguments[evaluatedArguments.length - 1]);
-    return property;
+    return '';
   }
   public async evalCallExpression(node: CallNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const libraryName = this.nodeToString(node.caller);
@@ -825,10 +873,13 @@ export class ExpressionEvaluator {
       const value = metaVariableValue instanceof Promise
         ? await metaVariableValue
         : metaVariableValue;
+      if (typeof value === 'undefined') {
+        return undefined;
+      }
       if (typeof value === 'string' || typeof value === 'number') {
         return value;
       }
-      return '';
+      return new MetaVariable(metaVariableName, value);
     }
     else if (library) {
       const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));

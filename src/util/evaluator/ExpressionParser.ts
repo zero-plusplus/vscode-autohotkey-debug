@@ -104,12 +104,14 @@ const grammar_v1 = `
       | PostfixUnaryExpression
 
     PostfixUnaryExpression
-      = CallExpression "++" -- increment
-      | CallExpression "--" -- decrement
+      = PostfixUnaryExpression "++" -- increment
+      | PostfixUnaryExpression "--" -- decrement
       | CallExpression
 
     CallExpression
-      = CallExpression "(" Arguments ")" -- call
+      = CallExpression "." #(identifier)  -- propertyaccess
+      | CallExpression #(whitespace* "[") Arguments "]" -- elementaccess
+      | CallExpression "(" Arguments ")" -- call
       | MemberExpression
     Arguments = ListOf<ExpressionWithoutSequence, ",">
 

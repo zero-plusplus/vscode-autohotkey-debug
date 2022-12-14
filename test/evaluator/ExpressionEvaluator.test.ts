@@ -7,6 +7,7 @@ import * as dbgp from '../../src/dbgpSession';
 import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
 import { timeoutPromise, toFileUri } from '../../src/util/util';
 import { getFalse, getTrue } from '../../src/util/evaluator/library';
+import { MetaVariableValueMap } from '../../src/util/VariableManager';
 
 export const debugAutoHotkey = (file: string, runtime?: string, port = 9000, hostname = 'localhost'): ChildProcess => {
   let _runtime = runtime ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey/AutoHotkey.exe`;
@@ -15,7 +16,7 @@ export const debugAutoHotkey = (file: string, runtime?: string, port = 9000, hos
   }
   return spawn(_runtime, [ `/Debug=${hostname}:${port}`, '/force', '/restart', file ]);
 };
-export const launchDebug = async(runtime: string, program: string, port: number, hostname: string): Promise<{ session: dbgp.Session; process: ChildProcess; server: net.Server; evaluator: ExpressionEvaluator }> => {
+export const launchDebug = async(runtime: string, program: string, port: number, hostname: string): Promise<{ session: dbgp.Session; process: ChildProcess; server: net.Server }> => {
   return new Promise((resolve) => {
     const process = debugAutoHotkey(program, runtime, port, hostname);
     const server = net.createServer()
@@ -28,8 +29,7 @@ export const launchDebug = async(runtime: string, program: string, port: number,
             const lines = source.split('\r\n').length;
             session.sendBreakpointSetCommand(toFileUri(program), lines);
             session.sendRunCommand();
-            const evaluator = new ExpressionEvaluator(session);
-            resolve({ session, process, server, evaluator });
+            resolve({ session, process, server });
           });
       });
   });
@@ -60,7 +60,11 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     process = data.process;
     server = data.server;
     session = data.session;
-    evaluator = data.evaluator;
+
+    const metaVariables = new MetaVariableValueMap();
+    metaVariables.set('hitCount', 1);
+    metaVariables.set('callstack', [ { name: 'A' }, { name: 'B' } ]);
+    evaluator = new ExpressionEvaluator(session, metaVariables);
     true_ahk = await getTrue(session);
     false_ahk = await getFalse(session);
     // undefined_ahk = await getUndefined(session);
@@ -400,10 +404,17 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('123')).toBe(123);
   });
 
+
+  test('eval libraries (GetMeta)', async(): Promise<void> => {
+    expect(await evaluator.eval('GetMeta("hitCount")')).toBe(1);
+    expect(await evaluator.eval('GetMeta("callstack")[0].name')).toBe('A');
+  });
+
   test('eval libraries (IsSet)', async(): Promise<void> => {
     for await (const name of [ 'IsSet', 'IsUndefined' ]) {
       expect(await evaluator.eval(`${name}(undefined)`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(str_alpha)`)).toBe(false_ahk);
+      expect(await evaluator.eval(`${name}(null)`)).toBe(false_ahk);
+      expect(await evaluator.eval(`${name}(GetMeta(""))`)).toBe(true_ahk);
     }
   });
 
@@ -655,7 +666,11 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     process = data.process;
     server = data.server;
     session = data.session;
-    evaluator = data.evaluator;
+
+    const metaVariables = new MetaVariableValueMap();
+    metaVariables.set('hitCount', 1);
+    metaVariables.set('callstack', [ { name: 'A' }, { name: 'B' } ]);
+    evaluator = new ExpressionEvaluator(session, metaVariables);
     true_ahk = await getTrue(session);
     false_ahk = await getFalse(session);
     // undefined_ahk = await getUndefined(session);

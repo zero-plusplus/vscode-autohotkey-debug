@@ -5,6 +5,7 @@ abc := "abc"
 a := "a"
 c := "c"
 
+null := ""
 str_alpha := "aBc"
 str_alnum := "aBc123"
 str_not_alnum := "$$$"

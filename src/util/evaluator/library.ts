@@ -100,7 +100,7 @@ library_for_v1.set('CountOf', countOf);
 library_for_v2.set('CountOf', countOf);
 
 const isSet: LibraryFunc = async(session, stackFrame, value) => {
-  return value === '' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
+  return typeof value === 'undefined' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
 library_for_v1.set('IsSet', isSet);
 library_for_v2.set('IsSet', isSet);
@@ -182,7 +182,7 @@ library_for_v1.set('IsHexLike', isHexLike);
 library_for_v2.set('IsHexLike', isHexLike);
 
 const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
-  if (value instanceof dbgp.ObjectProperty || value === '0' || value === '') {
+  if (value instanceof dbgp.ObjectProperty || !(typeof value === 'string' || typeof value === 'number')) {
     return getFalse(session, stackFrame);
   }
   return getTrue(session, stackFrame);
