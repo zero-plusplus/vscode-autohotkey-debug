@@ -188,8 +188,8 @@ export class ExpressionParser {
       ? this.createGrammer(grammar_v2, grammar_v1)
       : this.createGrammer(grammar_v1);
   }
-  public parse(text: string): ohm.MatchResult {
-    return this.grammar.match(text);
+  public parse(text: string, startRule?: string): ohm.MatchResult {
+    return this.grammar.match(text, startRule);
   }
   private createGrammer(grammarText: string, extendsGrammarText?: string): ohm.Grammar {
     let extendsGrammar: ohm.Namespace | undefined;

@@ -544,6 +544,11 @@ export class MetaVariableValueMap extends CaseInsensitiveMap<string, MetaVariabl
     }
     return new MetaVariable(name, value);
   }
+  public setAll(map: MetaVariableValueMap): void {
+    for (const [ key, value ] of map.entries()) {
+      this.set(key, value);
+    }
+  }
   // public get(key: string): MetaVariableValue | LazyMetaVariableValue | undefined {
   //   return super.get(key);
   // }

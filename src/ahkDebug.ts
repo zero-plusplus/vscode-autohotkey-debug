@@ -28,7 +28,6 @@ import {
   LineBreakpoints,
 } from './util/BreakpointManager';
 import { Parser, createParser } from './util/ConditionParser';
-import { ConditionalEvaluator } from './util/ConditionEvaluator';
 import { toFixed } from './util/numberUtils';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
@@ -41,6 +40,7 @@ import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValu
 import { AhkConfigurationProvider, CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 import { SymbolFinder } from './util/SymbolFinder';
+import { ExpressionEvaluator } from './util/evaluator/ExpressionEvaluator';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -121,10 +121,10 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | MetaVariable | undefined)>();
   private breakpointManager?: BreakpointManager;
   private readonly registeredFunctionBreakpoints: Breakpoint[] = [];
-  private conditionalEvaluator!: ConditionalEvaluator;
+  private evaluator!: ExpressionEvaluator;
   private prevStackFrames?: StackFrames;
   private currentStackFrames?: StackFrames;
-  private currentMetaVariableMap?: MetaVariableValueMap;
+  private readonly currentMetaVariableMap = new MetaVariableValueMap();
   private stackFramesWhenStepOut?: StackFrames;
   private stackFramesWhenStepOver?: StackFrames;
   private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
@@ -482,7 +482,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariableMap = undefined;
+    this.currentMetaVariableMap.clear();
     this.pauseRequested = false;
     this.isPaused = false;
 
@@ -497,7 +497,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariableMap = undefined;
+    this.currentMetaVariableMap.clear();
     this.pauseRequested = false;
     this.isPaused = false;
 
@@ -512,7 +512,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariableMap = undefined;
+    this.currentMetaVariableMap.clear();
     this.pauseRequested = false;
     this.isPaused = false;
 
@@ -527,7 +527,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariableMap = undefined;
+    this.currentMetaVariableMap.clear();
     this.pauseRequested = false;
     this.isPaused = false;
 
@@ -564,7 +564,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    this.currentMetaVariableMap = undefined;
+    this.currentMetaVariableMap.clear();
     const result = await this.session!.sendContinuationCommand('break');
     this.checkContinuationStatus(result);
   }
@@ -608,7 +608,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     const categories = await this.variableManager!.createCategories(args.frameId);
-    this.currentMetaVariableMap = this.metaVaribalesByFrameId.get(args.frameId);
+    const metaVaribalesByFrameId = this.metaVaribalesByFrameId.get(args.frameId);
+    this.currentMetaVariableMap.clear();
+    if (metaVaribalesByFrameId) {
+      this.currentMetaVariableMap.setAll(metaVaribalesByFrameId);
+    }
     response.body = {
       scopes: categories.map((scope) => ({
         name: scope.name,
@@ -855,17 +859,13 @@ export class AhkDebugSession extends LoggingDebugSession {
           return;
         }
 
-        const propertyNameParsed = this.ahkParser.PropertyName.parse(propertyName);
-        if (!propertyNameParsed.status) {
-          throw Error('Error: Only the property name or meta variable is supported. e.g. `variable`,` object.field`, `array[1]`, `map["spaced key"]`, `prop.<base>`, `{hitCount}`');
-        }
         const stackFrame = this.variableManager!.getStackFrame(args.frameId);
         if (!stackFrame) {
           throw Error('Error: Could not get stack frame');
         }
 
-        const property = await this.session!.evaluate(propertyName, stackFrame.dbgpStackFrame);
-        if (!property) {
+        const value = await this.evaluator.eval(propertyName, stackFrame.dbgpStackFrame);
+        if (!value) {
           if (args.context === 'hover' && (await this.session!.fetchAllPropertyNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
             response.body = {
               result: 'Not initialized',
@@ -875,17 +875,36 @@ export class AhkDebugSession extends LoggingDebugSession {
             this.sendResponse(response);
             return;
           }
-          throw Error('not available');
         }
 
-        const variable = new Variable(this.session!, property);
-        response.body = {
-          result: formatProperty(property, this.session?.ahkVersion),
-          type: property.type,
-          variablesReference: variable.variablesReference,
-          indexedVariables: variable.indexedVariables,
-          namedVariables: variable.namedVariables,
-        };
+        if (value instanceof dbgp.ObjectProperty) {
+          const variable = new Variable(this.session!, value);
+          response.body = {
+            result: formatProperty(value, this.session?.ahkVersion),
+            type: value.type,
+            variablesReference: variable.variablesReference,
+            indexedVariables: variable.indexedVariables,
+            namedVariables: variable.namedVariables,
+          };
+        }
+        else {
+          let type = 'string';
+          if (Number.isNaN(Number(value))) {
+            if (String(value).includes('.')) {
+              type = 2.0 <= this.session!.ahkVersion.mejor ? 'float' : 'integer';
+            }
+            else {
+              type = 'integer';
+            }
+          }
+
+          response.body = {
+            result: typeof value === 'string' ? `"${value}"` : String(value),
+            type,
+            variablesReference: 0,
+          };
+        }
+
         this.sendResponse(response);
       }
       catch (error: unknown) {
@@ -1122,7 +1141,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       await this.sendStoppedEvent('pause');
       return;
     }
-    this.currentMetaVariableMap = this.createMetaVariables(response);
+    const metaVariables = this.createMetaVariables(response);
+    this.currentMetaVariableMap.clear();
+    this.currentMetaVariableMap.setAll(metaVariables);
     const { source, line, name } = this.currentStackFrames[0];
 
     // Exception Breakpoint
@@ -1206,7 +1227,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.checkContinuationStatus(result);
   }
   private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints: LineBreakpoints | null): Promise<void> {
-    if (!this.currentMetaVariableMap || this.currentStackFrames?.isIdleMode) {
+    if (this.currentStackFrames?.isIdleMode) {
       throw Error(`This message shouldn't appear.`);
     }
 
@@ -1412,29 +1433,20 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.isPaused = true;
     this.autoExecuting = false;
 
-    if (this.currentMetaVariableMap) {
-      await this.displayPerfTips(this.currentMetaVariableMap);
-    }
+    await this.displayPerfTips(this.currentMetaVariableMap);
     this.sendEvent(new StoppedEvent(stopReason, this.session!.id));
   }
   private createMetaVariables(response: dbgp.ContinuationResponse): MetaVariableValueMap {
+    const elapsedTime_ns = parseFloat(String(this.currentMetaVariableMap.get('elapsedTime_ns') ?? '0')) + response.elapsedTime.ns;
+    const elapsedTime_ms = parseFloat(String(this.currentMetaVariableMap.get('elapsedTime_ms') ?? '0')) + response.elapsedTime.ms;
+    const elapsedTime_s = parseFloat(String(this.currentMetaVariableMap.get('elapsedTime_s') ?? '0')) + response.elapsedTime.s;
+
     const metaVariables = new MetaVariableValueMap();
     metaVariables.set('now', now());
     metaVariables.set('hitCount', -1);
-
-    if (this.currentMetaVariableMap) {
-      const elapsedTime_ns = parseFloat(String(this.currentMetaVariableMap.get('elapsedTime_ns'))!) + response.elapsedTime.ns;
-      const elapsedTime_ms = parseFloat(String(this.currentMetaVariableMap.get('elapsedTime_ms')!)) + response.elapsedTime.ms;
-      const elapsedTime_s = parseFloat(String(this.currentMetaVariableMap.get('elapsedTime_s')!)) + response.elapsedTime.s;
-      metaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
-      metaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
-      metaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
-    }
-    else {
-      metaVariables.set('elapsedTime_ns', toFixed(response.elapsedTime.ns, 3));
-      metaVariables.set('elapsedTime_ms', toFixed(response.elapsedTime.ms, 3));
-      metaVariables.set('elapsedTime_s', toFixed(response.elapsedTime.s, 3));
-    }
+    metaVariables.set('elapsedTime_ns', toFixed(elapsedTime_ns, 3));
+    metaVariables.set('elapsedTime_ms', toFixed(elapsedTime_ms, 3));
+    metaVariables.set('elapsedTime_s', toFixed(elapsedTime_s, 3));
 
     const { id: frameId, name: thisCallstack } = this.currentStackFrames![0];
     metaVariables.set('thisCallstack', thisCallstack);
@@ -1488,22 +1500,18 @@ export class AhkDebugSession extends LoggingDebugSession {
     return metaVariables;
   }
   private async evaluateCondition(breakpoint: Breakpoint): Promise<boolean> {
-    if (!this.currentMetaVariableMap) {
-      throw Error(`This message shouldn't appear.`);
-    }
-
     if (!(breakpoint.condition || breakpoint.hitCondition)) {
       return true;
     }
 
     try {
       const { condition, hitCondition, hitCount } = breakpoint;
-      const metaVariable = new MetaVariableValueMap(this.currentMetaVariableMap.entries());
-      metaVariable.set('hitCount', hitCount);
+      this.currentMetaVariableMap.set('hitCount', hitCount);
 
       let conditionResult = false, hitConditionResult = false;
       if (condition) {
-        conditionResult = await this.conditionalEvaluator.eval(condition, metaVariable);
+        const rawResult = await this.evaluator.eval(condition);
+        conditionResult = !(!rawResult || rawResult === '0');
       }
       if (hitCondition) {
         const match = hitCondition.match(/^\s*(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)\s*$/u);
@@ -1551,10 +1559,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     return false;
   }
   private async printLogMessage(breakpoint: Breakpoint, logCategory?: LogCategory): Promise<void> {
-    if (!this.currentMetaVariableMap) {
-      throw Error(`This message shouldn't appear.`);
-    }
-
     const { logMessage, logGroup = undefined, hitCount } = breakpoint;
     const metaVariables = new MetaVariableValueMap(this.currentMetaVariableMap.entries());
     metaVariables.set('hitCount', hitCount);
@@ -1639,7 +1643,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       const { variableName, variableNameDepth, metaVariableName, metaVariableNameDepth } = match.groups;
       if (metaVariableName) {
-        const metaVariable = metaVariables?.createMetaVariable(metaVariableName);
+        const metaVariable = metaVariables.createMetaVariable(metaVariableName);
         if (isPrimitive(metaVariable?.rawValue)) {
           message += metaVariable!.rawValue;
         }
@@ -1786,7 +1790,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
                 completionItemProvider.session = this.session;
                 this.ahkParser = createParser(this.session.ahkVersion);
-                this.conditionalEvaluator = new ConditionalEvaluator(this.session);
+                this.evaluator = new ExpressionEvaluator(this.session, this.currentMetaVariableMap);
                 if (this.config.useFunctionBreakpoint) {
                   this.symbolFinder = new SymbolFinder(this.session.ahkVersion);
                 }

@@ -7,7 +7,7 @@ import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
-import { singleToDoubleString, unescapeAhk } from '../VariableManager';
+import { MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';
 
 export type Node =
  | IdentifierNode
@@ -329,10 +329,12 @@ export const simulateSetProperty = async(session: dbgp.Session, stackFrame: dbgp
 
 export class ExpressionEvaluator {
   private readonly session: dbgp.Session;
+  private readonly metaVariableMap: MetaVariableValueMap;
   private readonly parser: ExpressionParser;
   private readonly library: CaseInsensitiveMap<string, LibraryFunc>;
-  constructor(session: dbgp.Session) {
+  constructor(session: dbgp.Session, metaVariableMap?: MetaVariableValueMap) {
     this.session = session;
+    this.metaVariableMap = metaVariableMap ?? new MetaVariableValueMap();
     this.library = 2.0 <= session.ahkVersion.mejor
       ? library_for_v2
       : library_for_v1;
@@ -815,15 +817,33 @@ export class ExpressionEvaluator {
     if (!libraryName) {
       return '';
     }
-    const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));
+
     const library = this.library.get(libraryName);
-    if (library) {
+    if (equalsIgnoreCase(libraryName, 'GetMeta') && 0 < node.arguments.length) {
+      const metaVariableName = this.nodeToString(node.arguments[0]);
+      const metaVariableValue = this.metaVariableMap.get(metaVariableName);
+      const value = metaVariableValue instanceof Promise
+        ? await metaVariableValue
+        : metaVariableValue;
+      if (typeof value === 'string' || typeof value === 'number') {
+        return value;
+      }
+      return '';
+    }
+    else if (library) {
+      const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));
       return library(this.session, stackFrame, ...args);
     }
     return '';
   }
   public nodeToString(node: Node): string {
     if (typeof node === 'string') {
+      if (node.startsWith('"') && node.endsWith('"')) {
+        return unescapeAhk(node.slice(1, -1), this.session.ahkVersion);
+      }
+      if (node.startsWith(`'`) && node.endsWith(`'`)) {
+        return unescapeAhk(singleToDoubleString(node.slice(1, -1)), this.session.ahkVersion);
+      }
       return node;
     }
 
