@@ -9,9 +9,9 @@ describe('Debug session test', () => {
   let session: dbgp.Session;
   beforeAll(function(done) {
     serverSocket = net.connect(9000, 'localhost');
-    session = new dbgp.Session(serverSocket);
     server = net.createServer((_socket) => {
       socket = _socket;
+      session = new dbgp.Session(socket);
       done();
     }).listen(9000, 'localhost');
   });

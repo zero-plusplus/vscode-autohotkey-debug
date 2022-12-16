@@ -158,8 +158,8 @@ export class StackDepthResponse extends Response {
     this.depth = parseInt(response.attributes.depth, 10);
   }
 }
-type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll';
-type PropertyType = 'undefined' | 'string' | 'integer' | 'float' | 'object';
+export type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll';
+export type PropertyType = 'undefined' | 'string' | 'integer' | 'float' | 'object';
 export abstract class Property {
   public context: Context;
   public facet: PropertyFacet;
@@ -331,11 +331,13 @@ export class ContinuationResponse extends Response {
     this.status = status;
   }
 }
+
+export type ContextName = 'Local' | 'Global' | 'Static';
 export class Context {
   public id: number;
-  public name: string;
+  public name: ContextName;
   public stackFrame: StackFrame;
-  constructor(id: number, name: string, stackFrame: StackFrame) {
+  constructor(id: number, name: ContextName, stackFrame: StackFrame) {
     this.id = id;
     this.name = name;
     this.stackFrame = stackFrame;
@@ -348,7 +350,7 @@ export class ContextNamesResponse extends Response {
 
     if (response.context) {
       response.context.forEach(({ attributes: { id, name } }) => {
-        this.contexts.push(new Context(parseInt(id, 10), name, stackFrame));
+        this.contexts.push(new Context(parseInt(id, 10), name as ContextName, stackFrame));
       });
     }
   }
@@ -614,7 +616,7 @@ export class Session extends EventEmitter {
     } as ContinuationElapsedTime;
     return new ContinuationResponse(response, elapsedTime);
   }
-  public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: string; data: string }): Promise<PropertySetResponse> {
+  public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: PropertyType; data: string }): Promise<PropertySetResponse> {
     return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName} -t ${property.typeName}`, property.data));
   }
   public async sendRunCommand(): Promise<ContinuationResponse> {

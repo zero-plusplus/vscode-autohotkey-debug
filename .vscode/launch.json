@@ -19,23 +19,7 @@
       "preLaunchTask": "subtask:watch",
       "skipFiles": [
           "<node_internals>/**",
-          "**",
-          "!${workspaceFolder}/**"
       ],
-    },
-    {
-      "name": "Extension Test without lint",
-      "type": "extensionHost",
-      "request": "launch",
-      "runtimeExecutable": "${execPath}",
-      "args": [
-        "--extensionDevelopmentPath=${workspaceFolder}",
-        "${workspaceFolder}/demo"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/build/**/*.js"
-      ],
-      "preLaunchTask": "subtask:build:without-lint",
     },
     {
         "name": "Gulp Test:build",
