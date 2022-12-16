@@ -62,7 +62,7 @@ const grammar_v1 = `
 
     ConcatenateExpression
       = ConcatenateExpression #(whitespace) BitwiseExpression -- space
-      | ConcatenateExpression "." BitwiseExpression -- dot
+      | ConcatenateExpression #(&space) "." #(&space) BitwiseExpression -- dot
       | BitwiseExpression
 
     BitwiseExpression
@@ -191,7 +191,8 @@ export class ExpressionParser {
       : this.createGrammer(grammar_v1);
   }
   public parse(text: string, startRule?: string): ohm.MatchResult {
-    return this.grammar.match(text, startRule);
+    const result = this.grammar.match(text, startRule);
+    return result;
   }
   private createGrammer(grammarText: string, extendsGrammarText?: string): ohm.Grammar {
     let extendsGrammar: ohm.Namespace | undefined;

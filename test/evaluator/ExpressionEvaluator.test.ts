@@ -240,6 +240,9 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
   test('ConcatenateExpression_dot', async(): Promise<void> => {
     expect(await evaluator.eval('str_alpha . str_alnum')).toBe('aBcaBc123');
+    expect(await evaluator.eval('str_alpha  .  str_alnum')).toBe('aBcaBc123');
+    expect(async() => evaluator.eval(`str_alpha .1`)).rejects.toThrow();
+    expect(async() => evaluator.eval(`str_alpha. 1`)).rejects.toThrow();
   });
 
   test('BitwiseExpression_or', async(): Promise<void> => {

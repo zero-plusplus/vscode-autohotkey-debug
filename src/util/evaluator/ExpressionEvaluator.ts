@@ -373,7 +373,7 @@ export class ExpressionEvaluator {
       RelationalExpression_greaterthan_equal: { type: 'binary', left: 0, operator: 1, right: 2 },
       RegExMatchExpression_regex_match: { type: 'binary', left: 0, operator: 1, right: 2 },
       ConcatenateExpression_space: { type: 'binary', left: 0, operator: 1, right: 2 },
-      ConcatenateExpression_dot: { type: 'binary', left: 0, operator: 1, right: 2 },
+      ConcatenateExpression_dot: { type: 'binary', left: 0, operator: 2, right: 4 },
       BitwiseExpression_or: { type: 'binary', left: 0, operator: 1, right: 2 },
       BitwiseExpression_xor: { type: 'binary', left: 0, operator: 1, right: 2 },
       BitwiseExpression_and: { type: 'binary', left: 0, operator: 1, right: 2 },
