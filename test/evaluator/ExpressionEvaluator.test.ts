@@ -407,6 +407,11 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('123')).toBe(123);
   });
 
+  test('eval libraries (GetVar)', async(): Promise<void> => {
+    expect(await evaluator.eval('GetVar("str_alpha")')).toBe(await evaluator.eval('str_alpha'));
+    expect(await evaluator.eval('GetVar("<exception>")')).toBe('');
+    expect(await evaluator.eval('GetVar("instance.<base>")')).toBeTruthy();
+  });
 
   test('eval libraries (GetMeta)', async(): Promise<void> => {
     expect(await evaluator.eval('GetMeta("hitCount")')).toBe(1);
