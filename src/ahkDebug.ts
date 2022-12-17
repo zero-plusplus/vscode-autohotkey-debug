@@ -380,15 +380,15 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments, request?: DebugProtocol.Request): Promise<void> {
-    const exception = (await this.session!.evaluate('<exception>')) as dbgp.ObjectProperty | undefined;
-    if (!exception) {
+    const exception = (await this.evaluator.eval('GetVar("<exception>")')) as dbgp.ObjectProperty | undefined;
+    if (typeof exception === 'undefined') {
       this.sendResponse(response);
       return;
     }
 
-    const classNameProperty = await this.session!.evaluate('<exception>.__CLASS');
+    const classNameProperty = exception.children.find((child) => equalsIgnoreCase(child.name, '__CLASS'));
     const exceptionId = classNameProperty instanceof dbgp.PrimitiveProperty ? classNameProperty.value : '<exception>';
-    const messageProperty = await this.session!.evaluate('<exception>.Message');
+    const messageProperty = exception.children.find((child) => equalsIgnoreCase(child.name, 'Message'));
 
     response.body = {
       exceptionId: messageProperty instanceof dbgp.PrimitiveProperty && messageProperty.value !== ''

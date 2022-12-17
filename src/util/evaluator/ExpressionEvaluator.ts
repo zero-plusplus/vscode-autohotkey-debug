@@ -905,6 +905,10 @@ export class ExpressionEvaluator {
         }
 
         const property = response.properties[0];
+        if (property.type === 'undefined') {
+          continue;
+        }
+
         if (property instanceof dbgp.PrimitiveProperty) {
           return property.value;
         }
@@ -913,7 +917,7 @@ export class ExpressionEvaluator {
         }
       }
 
-      return '';
+      return undefined;
     }
     else if (library) {
       const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));
