@@ -9,16 +9,19 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 
 
 ## Update
-* `1.12.0` - 2022-xx-xx
+* `2.0.0` - 2023-xx-xx
     * Added: [#31](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/31) Add Function breakpoint
     * Added: [#213](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/213) Add pseudo-variable `${ahk:suppressErrorDialog}` valid only for `runtimeArgs`, `runtimeArgs_v1`, `runtimeArgs_v2` and `skipFiles` in launch.json
     * Added: [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
     * Added: [#248](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/248) Add pseudo-variable `${ahk:pinnedFile}` valid only for `program`, `openFileOnExit` and `skipFiles` in launch.json
     * Added: [#257](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/257) Add Exception Breakpoint
     * Changed: [#60](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/60) Change to suppress error dialogs if runtime supports them
+    * Changed: [#116](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/116) Enhanced conditional breakpoint
     * Changed: [#225](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/225) Remove escape process of output text in debug directives
     * Changed: [#238](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/238) Change breakpoint directive to break regardless of output
     * Changed: [#239](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/239) Raise the supported vscode version from `1.49.0` to `1.63.0` for using the pre-release
+    * Changed: [#261](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/261) Support the expression in watch expression
+    * Changed: [#269](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/269) Support the expression evaluate in debug console
     * Fixed: [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
     * Fixed: [#212](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/212) Some errors were not detected and raw error messages were output. This caused `useAutoJumpToError` to not work in some cases
     * Fixed: [#215](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/215) The list of running AutoHotkey processes displayed before attaching does not display correctly when it contains multibyte strings

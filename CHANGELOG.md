@@ -14,7 +14,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.12.0] - 2022-xx-xx
+## [2.0.0] - 2023-xx-xx
 ### Added
 * [#31](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/31) Add Function breakpoint
 * [#213](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/213) Add pseudo-variable `${ahk:suppressErrorDialog}` valid only for `runtimeArgs`, `runtimeArgs_v1`, `runtimeArgs_v2` and `skipFiles` in launch.json
@@ -24,9 +24,12 @@ Also want to check the development status, check the [commit history](https://gi
 
 ### Changed
 * [#60](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/60) Change to suppress error dialogs if runtime supports them
+* [#116](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/116) Enhanced conditional breakpoint
 * [#225](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/225) Remove escape process of output text in debug directives
 * [#238](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/238) Change breakpoint directive to break regardless of output
 * [#239](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/239) Raise the supported vscode version from `1.49.0` to `1.63.0` for using the pre-release
+* [#261](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/261) Support the expression in watch expression
+* [#269](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/269) Support the expression evaluate in debug console
 
 ### Fixed
 * [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
@@ -476,7 +479,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
-[1.12.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.11.0..v1.12.0
+[2.0.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.11.0..v2.0.0
 [1.11.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.2..v1.11.0
 [1.10.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.1..v1.10.2
 [1.10.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.0..v1.10.1
