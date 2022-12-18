@@ -386,6 +386,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
+    await this.trySuppressAutoHotkeyDialog();
     const classNameProperty = exception.children.find((child) => equalsIgnoreCase(child.name, '__CLASS'));
     const exceptionId = classNameProperty instanceof dbgp.PrimitiveProperty ? classNameProperty.value : '<exception>';
     const messageProperty = exception.children.find((child) => equalsIgnoreCase(child.name, 'Message'));
@@ -965,6 +966,17 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     return Promise.resolve(this.loadedSources);
+  }
+  private async trySuppressAutoHotkeyDialog(): Promise<void> {
+    if (!this.session) {
+      return;
+    }
+
+    try {
+      await this.session.sendExceptionSetCommand();
+    }
+    catch (e: unknown) {
+    }
   }
   private async registerDebugDirective(): Promise<void> {
     if (!this.config.useDebugDirective) {
