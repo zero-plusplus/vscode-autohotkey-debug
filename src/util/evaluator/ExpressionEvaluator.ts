@@ -157,6 +157,35 @@ export const getContexts = async(session: dbgp.Session, stackFrame?: dbgp.StackF
   const { contexts } = await session.sendContextNamesCommand(_stackFrame);
   return contexts;
 };
+export const getType = (value: EvaluatedValue): dbgp.PropertyType => {
+  if (typeof value === 'string') {
+    return 'string';
+  }
+
+  if (typeof value === 'number') {
+    if (String(value).includes('.')) {
+      return 'float';
+    }
+    return 'integer';
+  }
+
+  if (value instanceof dbgp.ObjectProperty) {
+    return 'object';
+  }
+
+  if (value instanceof MetaVariable) {
+    if (typeof value === 'string') {
+      return 'string';
+    }
+
+    return getType(value.value);
+  }
+
+  if (typeof value !== 'undefined') {
+    return 'object';
+  }
+  return 'undefined';
+};
 export const existsProperty = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, nameOrObject: string | dbgp.ObjectProperty): Promise<dbgp.Context | undefined> => {
   const fullName = getFullName(nameOrObject);
   const contexts = await getContexts(session, stackFrame);
@@ -330,7 +359,16 @@ export const simulateSetProperty = async(session: dbgp.Session, stackFrame: dbgp
   }
   await setProperty(session, globalContext, nameOrObject, value);
 };
+export class ParseError extends Error {
+  public readonly message: string;
+  public readonly shortMessage: string;
+  constructor(matchResult: ohm.MatchResult) {
+    super();
 
+    this.message = matchResult.message ?? '';
+    this.shortMessage = matchResult.shortMessage ?? '';
+  }
+}
 export class ExpressionEvaluator {
   private readonly session: dbgp.Session;
   private readonly metaVariableMap: MetaVariableValueMap;
@@ -346,6 +384,10 @@ export class ExpressionEvaluator {
   }
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const matchResult = this.parser.parse(expression);
+    if (!matchResult.succeeded()) {
+      throw new ParseError(matchResult);
+    }
+
     const node = toAST(matchResult, {
       Expression_comma_sequence: { type: 'binary', left: 0, operator: 1, right: 2 },
       AssignmentExpression_assign: { type: 'assign', left: 0, operator: 1, right: 2 },

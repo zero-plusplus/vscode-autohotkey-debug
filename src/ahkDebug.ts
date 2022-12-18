@@ -27,7 +27,6 @@ import {
   BreakpointManager,
   LineBreakpoints,
 } from './util/BreakpointManager';
-import { Parser, createParser } from './util/ConditionParser';
 import { toFixed } from './util/numberUtils';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
@@ -40,7 +39,7 @@ import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValu
 import { AhkConfigurationProvider, CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 import { SymbolFinder } from './util/SymbolFinder';
-import { ExpressionEvaluator } from './util/evaluator/ExpressionEvaluator';
+import { ExpressionEvaluator, ParseError, getType } from './util/evaluator/ExpressionEvaluator';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -115,7 +114,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   private server?: net.Server;
   private ahkProcess?: AutoHotkeyProcess;
-  private ahkParser!: Parser;
   private readonly metaVaribalesByFrameId = new Map<number, MetaVariableValueMap>();
   private variableManager?: VariableManager;
   private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | MetaVariable | undefined)>();
@@ -729,60 +727,34 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('setVariableRequest');
-    let typeName: dbgp.PropertyType, data: string;
-    const parsed = this.ahkParser.Primitive.parse(args.value);
-    if ('value' in parsed) {
-      const primitive = parsed.value.value;
-
-      typeName = 'string';
-      data = `${String(primitive.value)}`;
-      if (primitive.type === 'Number') {
-        const number = primitive.value;
-        if (number.type === 'Integer') {
-          typeName = 'integer';
-          data = String(number.value);
-        }
-        else if (number.type === 'Hex') {
-          typeName = 'integer';
-          data = String(parseInt(number.value, 16));
-        }
-        else if (2 <= this.session!.ahkVersion.mejor && number.type === 'Scientific') {
-          typeName = 'float';
-          data = `${String(parseFloat(number.value))}.0`;
-        }
-        else {
-          if (2 <= this.session!.ahkVersion.mejor) {
-            typeName = 'float';
-          }
-          data = String(number.value);
-        }
-      }
-    }
-    else if (args.value === '') {
-      typeName = 'undefined';
-      data = `Not initialized`;
-    }
-    else {
-      this.sendErrorResponse(response, {
-        id: args.variablesReference,
-        format: 'Only primitive values are supported. e.g. "string", 123, 0x123, 1.0e+5, true',
-      } as DebugProtocol.Message);
-      return;
-    }
-
-    let fullName = args.name;
-    let context: dbgp.Context;
-    const objectVariable = this.variableManager!.getObjectVariable(args.variablesReference);
-    if (objectVariable) {
-      const name = args.name.startsWith('[') ? args.name : `.${args.name}`;
-      fullName = `${objectVariable.fullName}${name}`;
-      context = objectVariable.context;
-    }
-    else {
-      context = this.variableManager!.getCategory(args.variablesReference)!.context;
-    }
 
     try {
+      let fullName = args.name;
+      let context: dbgp.Context;
+      const objectVariable = this.variableManager!.getObjectVariable(args.variablesReference);
+      if (objectVariable) {
+        const name = args.name.startsWith('[') ? args.name : `.${args.name}`;
+        fullName = `${objectVariable.fullName}${name}`;
+        context = objectVariable.context;
+      }
+      else {
+        context = this.variableManager!.getCategory(args.variablesReference)!.context;
+      }
+
+      let data = await this.evaluator.eval(args.value);
+      const typeName = getType(data);
+      if (!data) {
+        data = 'Not initialized';
+      }
+      else if (typeof data === 'object') {
+        this.sendErrorResponse(response, {
+          id: args.variablesReference,
+          format: 'Only primitive values are supported. e.g. "string", 123, 0x123, 1.0e+5, true',
+        } as DebugProtocol.Message);
+        return;
+      }
+      data = String(data);
+
       const dbgpResponse = await this.session!.sendPropertySetCommand({
         context,
         fullName,
@@ -806,9 +778,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
     }
     catch (error: unknown) {
+      let message = error instanceof Error ? error.message : '';
+      if (error instanceof ParseError) {
+        message = `Failed to parse value. Only primitive values are supported. e.g. "string", 123, 0x123, 1.0e+5, true`;
+      }
+
       this.sendErrorResponse(response, {
         id: args.variablesReference,
-        format: 'Command execution failed. This message is not normally displayed.',
+        format: message,
       } as DebugProtocol.Message);
     }
   }
@@ -886,19 +863,9 @@ export class AhkDebugSession extends LoggingDebugSession {
           return;
         }
 
-        let type = 'string';
-        if (Number.isNaN(Number(value))) {
-          if (String(value).includes('.')) {
-            type = 2.0 <= this.session!.ahkVersion.mejor ? 'float' : 'integer';
-          }
-          else {
-            type = 'integer';
-          }
-        }
-
         response.body = {
           result: typeof value === 'string' ? `"${value}"` : String(value),
-          type,
+          type: getType(value),
           variablesReference: 0,
         };
         this.sendResponse(response);
@@ -1796,7 +1763,6 @@ export class AhkDebugSession extends LoggingDebugSession {
 
                 completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
                 completionItemProvider.session = this.session;
-                this.ahkParser = createParser(this.session.ahkVersion);
                 this.evaluator = new ExpressionEvaluator(this.session, this.currentMetaVariableMap);
                 if (this.config.useFunctionBreakpoint) {
                   this.symbolFinder = new SymbolFinder(this.session.ahkVersion);
