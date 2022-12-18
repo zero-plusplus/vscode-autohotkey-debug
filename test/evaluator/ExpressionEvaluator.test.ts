@@ -409,7 +409,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
   test('eval libraries (GetVar)', async(): Promise<void> => {
     expect(await evaluator.eval('GetVar("str_alpha")')).toBe(await evaluator.eval('str_alpha'));
-    expect(await evaluator.eval('GetVar("<exception>")')).toBe('');
+    expect(await evaluator.eval('GetVar("<exception>")')).toBe(undefined);
     expect(await evaluator.eval('GetVar("instance.<base>")')).toBeTruthy();
   });
 
