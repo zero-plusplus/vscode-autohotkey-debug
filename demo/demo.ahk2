@@ -1,4 +1,5 @@
-﻿#SingleInstance Force
+#Warn All, StdOut
+#SingleInstance Force
 ; #Include <Util>
 #Include "%A_LineFile%/../lib/Util.ahk"
 

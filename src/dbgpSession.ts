@@ -619,6 +619,9 @@ export class Session extends EventEmitter {
   public async sendPropertySetCommand(property: { context: Context; fullName: string; typeName: PropertyType; data: string }): Promise<PropertySetResponse> {
     return new PropertySetResponse(await this.sendCommand('property_set', `-c ${property.context.id} -d ${property.context.stackFrame.level} -n ${property.fullName} -t ${property.typeName}`, property.data));
   }
+  public async sendExceptionSetCommand(): Promise<PropertySetResponse> {
+    return new PropertySetResponse(await this.sendCommand('property_set', `-n <exception>`, ''));
+  }
   public async sendRunCommand(): Promise<ContinuationResponse> {
     return this.sendContinuationCommand('run');
   }

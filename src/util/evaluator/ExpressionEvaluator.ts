@@ -881,6 +881,44 @@ export class ExpressionEvaluator {
       }
       return new MetaVariable(metaVariableName, value);
     }
+    if (equalsIgnoreCase(libraryName, 'GetVar') && 0 < node.arguments.length) {
+      const contexts = await getContexts(this.session, stackFrame);
+      if (!contexts) {
+        return '';
+      }
+
+      const name = this.nodeToString(node.arguments[0]);
+      const maxDepth = 2 <= node.arguments.length
+        ? this.nodeToString(node.arguments[1])
+        : undefined;
+      if (typeof name !== 'string') {
+        return '';
+      }
+      if (!(typeof maxDepth === 'number' || typeof maxDepth === 'undefined')) {
+        return '';
+      }
+
+      for await (const context of contexts) {
+        const response = await this.session.sendPropertyGetCommand(context, name, maxDepth);
+        if (response.properties.length === 0) {
+          continue;
+        }
+
+        const property = response.properties[0];
+        if (property.type === 'undefined') {
+          continue;
+        }
+
+        if (property instanceof dbgp.PrimitiveProperty) {
+          return property.value;
+        }
+        if (property instanceof dbgp.ObjectProperty) {
+          return property;
+        }
+      }
+
+      return undefined;
+    }
     else if (library) {
       const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));
       return library(this.session, stackFrame, ...args);
