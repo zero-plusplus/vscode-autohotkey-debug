@@ -33,7 +33,7 @@ import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
-import { isPrimitive, now, timeoutPromise, toFileUri } from './util/util';
+import { now, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
 import { AhkConfigurationProvider, CategoryData } from './extension';
@@ -1538,7 +1538,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     metaVariables.set('hitCount', hitCount);
 
     try {
-      const evalucatedMessages = await this.evaluateLog(logMessage, metaVariables, breakpoint);
+      const evalucatedMessages = await this.evaluateLog(logMessage, { file: breakpoint.filePath, line: breakpoint.line });
       const stringMessages = evalucatedMessages.filter((message) => typeof message === 'string' || typeof message === 'number') as string[];
       const objectMessages = evalucatedMessages.filter((message) => typeof message === 'object') as Array<Scope | Category | Categories | Variable>;
       if (objectMessages.length === 0) {
@@ -1579,105 +1579,84 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendAnnounce(fixedMessage, 'stderr');
     this.sendTerminateEvent();
   }
-  private async evaluateLog(format: string, metaVariables = this.currentMetaVariableMap, logpoint?: Breakpoint): Promise<MetaVariableValue[]> {
-    const unescapeLogMessage = (string: string): string => {
-      return string.replace(/\\([{}])/gu, '$1');
-    };
-
-    const variableRegex = /(?<!\\)\{\{(?<metaVariableName>[^\r\n:}]+)(:(?<metaVariableNameDepth>\d+))?\}\}|(?<!\\)\{(?<variableName>[^\r\n:}]+)(:(?<variableNameDepth>\d+))?\}/gu;
-    if (format.search(variableRegex) === -1) {
-      return [ unescapeLogMessage(format) ];
-    }
-
-    const timeout_ms = 30 * 1000;
-    const timeout = (): void => {
-      this.isTimeout = true;
-
-      // If the message is output in disconnectRequest, it may not be displayed, so output it here
-      this.sendAnnounce('Debugging stopped for the following reasons: Timeout occurred in communication with the debugger when the following log was output', 'stderr');
-      this.sendAnnounce(`[${logpoint!.filePath}:${logpoint!.unverifiedLine ?? logpoint!.line}] ${logpoint!.logMessage.trimEnd()}`, 'stderr');
-      this.sendAnnounce('[HINT] Timeout occurred due to outputting the object to the debug console. It seems that a large number is specified for `depth`; it is recommended to keep it around 10 for AutoHotkey v1 and 3~5 for v2.', 'stderr');
-      this.sendTerminateEvent();
-      throw Error('Timeout in communication with the debugger when outputting the log');
-    };
-
+  private async evaluateLog(format: string, source: { file: string; line: number }): Promise<MetaVariableValue[]> {
     const results: MetaVariableValue[] = [];
-    let message = '', currentIndex = 0;
-    for await (const match of format.matchAll(variableRegex)) {
-      if (typeof match.index === 'undefined') {
-        break;
-      }
-      if (typeof match.groups === 'undefined') {
-        break;
-      }
 
-      if (currentIndex < match.index) {
-        message += format.slice(currentIndex, match.index);
-      }
+    let current = '';
+    try {
+      let blockCount = 0;
+      for (let i = 0; i < format.length; i++) {
+        const char = format.charAt(i);
 
-      const { variableName, variableNameDepth, metaVariableName, metaVariableNameDepth } = match.groups;
-      if (metaVariableName) {
-        const metaVariable = metaVariables.createMetaVariable(metaVariableName);
-        if (isPrimitive(metaVariable?.rawValue)) {
-          message += metaVariable!.rawValue;
-        }
-        else if (metaVariable) {
-          const _metaVariable = (metaVariable instanceof Promise ? await metaVariable : metaVariable) as MetaVariable;
-          if ('loadChildren' in _metaVariable) {
-            const maxDepth = metaVariableNameDepth ? parseInt(metaVariableNameDepth, 10) : 1;
-            await timeoutPromise(_metaVariable.loadChildren(logpoint ? maxDepth : 1), timeout_ms).catch(timeout);
-            results.push(_metaVariable);
-          }
-        }
-        else {
-          message += match[0];
-        }
-      }
-      else {
-        const maxDepth = variableNameDepth ? parseInt(variableNameDepth, 10) : 1;
+        if (0 < blockCount) {
+          if (char === '}') {
+            blockCount--;
+            if (blockCount === 0) {
+              const timeout_ms = 30 * 1000;
+              if (current === '') {
+                results.push('{}');
+                continue;
+              }
+              // eslint-disable-next-line no-await-in-loop
+              const value = await timeoutPromise(this.evaluator.eval(current), timeout_ms).catch((error: unknown) => {
+                if (error instanceof dbgp.DbgpCriticalError) {
+                  this.criticalError(error);
+                  return;
+                }
 
-        const property = await timeoutPromise(this.session!.evaluate(variableName, undefined, logpoint ? maxDepth : 1), timeout_ms).catch((error: unknown) => {
-          if (error instanceof dbgp.DbgpCriticalError) {
-            this.criticalError(error);
-            return;
-          }
-          timeout();
-        });
-        if (property) {
-          if (property instanceof dbgp.ObjectProperty) {
-            if (message !== '') {
-              results.push(unescapeLogMessage(message));
-              message = '';
+                // If the message is output in disconnectRequest, it may not be displayed, so output it here
+                this.isTimeout = true;
+                this.sendAnnounce('Debugging stopped for the following reasons: Timeout occurred in communication with the debugger when the following log was output', 'stderr');
+                this.sendAnnounce(`[${source.file}:${source.line}] ${format}`, 'stderr');
+                this.sendTerminateEvent();
+              });
+
+              if (value instanceof dbgp.ObjectProperty) {
+                results.push(new Variable(this.session!, value));
+              }
+              else if (typeof value !== 'undefined') {
+                results.push(value);
+              }
+              current = '';
             }
+            continue;
+          }
 
-            results.push(new Variable(this.session!, property));
-          }
-          else if (property instanceof dbgp.PrimitiveProperty) {
-            message += property.value;
-          }
+          current += char;
+          continue;
         }
-        else {
-          message += match[0];
+
+        if (char === '\\') {
+          current += format.slice(i, i + 1);
+          continue;
         }
+
+        if (char === '{') {
+          blockCount++;
+          if (current) {
+            results.push(current);
+            current = '';
+          }
+          continue;
+        }
+
+        current += char;
       }
 
-      currentIndex = match[0].length + match.index;
-    }
-
-    if (currentIndex < format.length) {
-      message += format.slice(currentIndex);
-    }
-    results.push(unescapeLogMessage(message));
-
-    // When output an object, it automatically breaks a line. Therefore, if the end is a newline code, remove it.
-    if (1 < results.length) {
-      const last = results[results.length - 1];
-      const prevLast = results[results.length - 2];
-      if (-1 < String(last).search(/^(\r\n|\r|\n)$/u) && typeof prevLast !== 'string') {
-        results.pop();
+      if (current) {
+        results.push(current);
       }
     }
-
+    catch (e: unknown) {
+      const messageHead = `Log Error at ${source.file}:${source.line}`;
+      if (e instanceof ParseError) {
+        const messageBody = e.message.split(/\r\n|\n/u).slice(1).join('\n');
+        this.sendAnnounce(`${messageHead}\n${messageBody}`, 'stderr');
+      }
+      else if (e instanceof Error) {
+        this.sendAnnounce(`${messageHead}\n${e.message}`, 'stderr');
+      }
+    }
     return results;
   }
   private async displayPerfTips(metaVariableMap: MetaVariableValueMap): Promise<void> {
@@ -1689,8 +1668,15 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     try {
+      const { source, line } = this.currentStackFrames[0];
+      const document = await vscode.workspace.openTextDocument(source.path);
+      let line_0base = line - 1;
+      if (line_0base === document.lineCount) {
+        line_0base--; // I don't know about the details, but if the script stops at the end of the file and it's not a blank line, then line_0base will be the value of `document.lineCount + 1`, so we'll compensate for that
+      }
+
       const { format } = this.config.usePerfTips;
-      const message = (await this.evaluateLog(format, metaVariableMap)).reduce((prev: string, current) => {
+      const message = (await this.evaluateLog(format, { file: source.path, line: line_0base })).reduce((prev: string, current) => {
         if (typeof current === 'string') {
           return prev + current;
         }
@@ -1705,13 +1691,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         },
       });
       this.perfTipsDecorationTypes.push(decorationType);
-
-      const { source, line } = this.currentStackFrames[0];
-      const document = await vscode.workspace.openTextDocument(source.path);
-      let line_0base = line - 1;
-      if (line_0base === document.lineCount) {
-        line_0base--; // I don't know about the details, but if the script stops at the end of the file and it's not a blank line, then line_0base will be the value of `document.lineCount + 1`, so we'll compensate for that
-      }
 
       const textLine = document.lineAt(line_0base);
       const startPosition = textLine.range.end;
