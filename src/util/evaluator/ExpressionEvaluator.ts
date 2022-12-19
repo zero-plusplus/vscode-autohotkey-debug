@@ -931,12 +931,12 @@ export class ExpressionEvaluator {
 
       const name = this.nodeToString(node.arguments[0]);
       const maxDepth = 2 <= node.arguments.length
-        ? this.nodeToString(node.arguments[1])
-        : undefined;
+        ? Number(node.arguments[1])
+        : 1;
       if (typeof name !== 'string') {
         return '';
       }
-      if (!(typeof maxDepth === 'number' || typeof maxDepth === 'undefined')) {
+      if (Number.isNaN(maxDepth)) {
         return '';
       }
 

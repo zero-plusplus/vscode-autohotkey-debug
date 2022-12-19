@@ -488,7 +488,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
       const defaultUsePerfTips = {
         fontColor: 'gray',
         fontStyle: 'italic',
-        format: '{{elapsedTime_s}}s elapsed',
+        format: '{GetMeta("elapsedTime_s")}s elapsed',
       };
 
       if (config.usePerfTips === true) {
