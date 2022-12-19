@@ -405,6 +405,10 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
   test('numericLiteral', async(): Promise<void> => {
     expect(await evaluator.eval('123')).toBe(123);
+    expect(await evaluator.eval('123.456')).toBe('123.456');
+    expect(await evaluator.eval('0x123')).toBe(291);
+    expect(await evaluator.eval('1.0e4')).toBe('1.0e4');
+    expect(await evaluator.eval('(1.0e4 + 1) . ""')).toBe('10001');
   });
 
   test('eval libraries (GetVar)', async(): Promise<void> => {
@@ -718,6 +722,14 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`'\`v'`)).toBe('\v');
     expect(await evaluator.eval(`'\`f'`)).toBe('\f');
     expect(await evaluator.eval(`'\`a'`)).toBe('\x07');
+  });
+
+  test('numericLiteral', async(): Promise<void> => {
+    expect(await evaluator.eval('123')).toBe(123);
+    expect(await evaluator.eval('123.456')).toBe(123.456);
+    expect(await evaluator.eval('0x123')).toBe(291);
+    expect(await evaluator.eval('1.0e4')).toStrictEqual(10000);
+    expect(await evaluator.eval('(1.0e4 + 1) . ""')).toBe('10001');
   });
 
   test('eval dereference', async(): Promise<void> => {

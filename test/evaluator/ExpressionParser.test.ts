@@ -6,6 +6,11 @@ describe('ExpressionParser', () => {
   const parser = new ExpressionParser('1.1.36.00');
   const testDataList = [
     '0',
+    '1.0',
+    '1.0e4',
+    '1.0e+4',
+    '1.0e-4',
+    '0x123',
     '+1',
     '-1',
     '!1',

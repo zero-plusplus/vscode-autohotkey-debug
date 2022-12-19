@@ -150,12 +150,18 @@ const grammar_v1 = `
       = ~("\\"" | "\`" | lineTerminator) any
       | doubleEscapeSequence
 
-    numericLiteral = "0" | decimalLiteral | hexIntegerLiteral
+    numericLiteral
+      = hexIntegerLiteral
+      | scientificNotationLiteral
+      | floatLiteral
+      | integerLiteral
     digitWithoutZero = "1".."9"
-    decimalLiteral = decimalIntegerLiteral
-    decimalIntegerLiteral = digitWithoutZero digit*
-    hexIntegerLiteral = "0x" hexDigit+
-                      | "0X" hexDigit+
+    integerLiteral
+      = digitWithoutZero digit* -- non_zero
+      | "0" -- zero
+    floatLiteral = integerLiteral "." digit* -- float
+    scientificNotationLiteral = floatLiteral ("e" | "E") ("+" | "-")? digit+ -- scientific_notation
+    hexIntegerLiteral = "0" ("x" | "X") hexDigit+
   }
 `;
 

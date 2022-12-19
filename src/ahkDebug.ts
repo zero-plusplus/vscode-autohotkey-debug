@@ -39,7 +39,7 @@ import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValu
 import { AhkConfigurationProvider, CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 import { SymbolFinder } from './util/SymbolFinder';
-import { ExpressionEvaluator, ParseError, getType } from './util/evaluator/ExpressionEvaluator';
+import { ExpressionEvaluator, ParseError, toType } from './util/evaluator/ExpressionEvaluator';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -742,7 +742,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       let data = await this.evaluator.eval(args.value);
-      const typeName = getType(data);
+      const typeName = toType(this.session!.ahkVersion, data);
       if (!data) {
         data = 'Not initialized';
       }
@@ -865,7 +865,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         response.body = {
           result: typeof value === 'string' ? `"${value}"` : String(value),
-          type: getType(value),
+          type: toType(this.session!.ahkVersion, value),
           variablesReference: 0,
         };
         this.sendResponse(response);

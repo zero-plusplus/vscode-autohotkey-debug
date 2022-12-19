@@ -8,6 +8,8 @@ import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
 import { MetaVariable, MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { isNumberLike, isPrimitive } from '../util';
 
 export type Node =
  | IdentifierNode
@@ -157,16 +159,18 @@ export const getContexts = async(session: dbgp.Session, stackFrame?: dbgp.StackF
   const { contexts } = await session.sendContextNamesCommand(_stackFrame);
   return contexts;
 };
-export const getType = (value: EvaluatedValue): dbgp.PropertyType => {
-  if (typeof value === 'string') {
-    return 'string';
-  }
-
-  if (typeof value === 'number') {
-    if (String(value).includes('.')) {
-      return 'float';
+export const toType = (version: AhkVersion, value: EvaluatedValue): dbgp.PropertyType => {
+  if (isNumberLike(value)) {
+    if ((/^0x/iu).test(String(value))) {
+      return 'integer';
+    }
+    if (String(value).includes('.') || (/[eE]/u).test(String(value))) {
+      return 2.0 <= version.mejor ? 'float' : 'string';
     }
     return 'integer';
+  }
+  else if (typeof value === 'string') {
+    return 'string';
   }
 
   if (value instanceof dbgp.ObjectProperty) {
@@ -178,13 +182,31 @@ export const getType = (value: EvaluatedValue): dbgp.PropertyType => {
       return 'string';
     }
 
-    return getType(value.value);
+    if (isPrimitive(value.value)) {
+      return toType(version, value.value);
+    }
+    return 'object';
   }
 
   if (typeof value !== 'undefined') {
     return 'object';
   }
   return 'undefined';
+};
+export const toAutohotkeyNumber = (version: AhkVersion, value: EvaluatedValue): string | number => {
+  if (isNumberLike(value)) {
+    if ((/^0x/iu).test(String(value))) {
+      return Number(value);
+    }
+    else if ((/[eE]/u).test(String(value))) {
+      return 2.0 <= version.mejor ? Number(value) : String(value);
+    }
+    else if (String(value).includes('.')) {
+      return 2.0 <= version.mejor ? Number(value) : String(value);
+    }
+    return Number(value);
+  }
+  return '';
 };
 export const existsProperty = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, nameOrObject: string | dbgp.ObjectProperty): Promise<dbgp.Context | undefined> => {
   const fullName = getFullName(nameOrObject);
@@ -463,7 +485,7 @@ export class ExpressionEvaluator {
       if (node.startsWith(`'`) && node.endsWith(`'`)) {
         return unescapeAhk(singleToDoubleString(node.slice(1, -1)), this.session.ahkVersion);
       }
-      return Number(node);
+      return toAutohotkeyNumber(this.session.ahkVersion, node);
     }
 
     switch (node.type) {
