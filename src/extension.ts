@@ -170,12 +170,6 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
       cancelReason: undefined,
     });
 
-    // Deprecated. I''ll get rid of it eventually
-    if (config.type === 'ahk') {
-      vscode.window.showErrorMessage('As of version 1.3.7, the `type` of launch.json has been changed from `ahk` to ` It has been changed to `autohotkey`. Please edit launch.json now. If you do not edit it, you will not be able to debug it in the future.');
-      config.type = 'autohotkey';
-    }
-
     if (config.openFileOnExit === '${file}' && !vscode.window.activeTextEditor) {
       config.openFileOnExit = undefined;
     }
