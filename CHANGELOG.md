@@ -17,7 +17,6 @@ Also want to check the development status, check the [commit history](https://gi
 ## [2.0.0] - 2023-xx-xx
 ### Added
 * [#31](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/31) Add Function breakpoint
-* [#213](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/213) Add pseudo-variable `${ahk:suppressErrorDialog}` valid only for `runtimeArgs`, `runtimeArgs_v1`, `runtimeArgs_v2` and `skipFiles` in launch.json
 * [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
 * [#248](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/248) Add pseudo-variable `${ahk:pinnedFile}` valid only for `program`, `openFileOnExit` and `skipFiles` in launch.json
 * [#257](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/257) Add Exception Breakpoint

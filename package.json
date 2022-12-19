@@ -209,8 +209,7 @@
                       "/CP65001",
                       "/ErrorStdOut",
                       "/ErrorStdOut=UTF-8",
-                      "/include",
-                      "/include ${ahk:suppressErrorDialog}"
+                      "/include"
                     ]
                   }
                 ],
@@ -223,11 +222,6 @@
                   [
                     "/CP65001",
                     "/ErrorStdOut=UTF-8"
-                  ],
-                  [
-                    "/CP65001",
-                    "/ErrorStdOut=UTF-8",
-                    "/include ${ahk:suppressErrorDialog}"
                   ]
                 ],
                 "default": [
@@ -247,8 +241,7 @@
                     "/CP65001",
                     "/ErrorStdOut",
                     "/ErrorStdOut=UTF-8",
-                    "/include",
-                    "/include ${ahk:suppressErrorDialog}"
+                    "/include"
                   ]
                 },
                 "description": "This is the \"runtimeArgs\" when the extension is \".ahk\". If \"runtimeArgs\" is set, it takes precedence.",
@@ -260,11 +253,6 @@
                   [
                     "/CP65001",
                     "/ErrorStdOut=UTF-8"
-                  ],
-                  [
-                    "/CP65001",
-                    "/ErrorStdOut=UTF-8",
-                    "/include ${ahk:suppressErrorDialog}"
                   ]
                 ],
                 "default": [
@@ -282,8 +270,7 @@
                     "/CP65001",
                     "/ErrorStdOut",
                     "/ErrorStdOut=UTF-8",
-                    "/include",
-                    "/include ${ahk:suppressErrorDialog}"
+                    "/include"
                   ]
                 },
                 "description": "This is the \"runtimeArgs\" when the extension is \".ahk2\" or \".ah2\". If \"runtimeArgs\" is set, it takes precedence.",
@@ -295,11 +282,6 @@
                   [
                     "/CP65001",
                     "/ErrorStdOut=UTF-8"
-                  ],
-                  [
-                    "/CP65001",
-                    "/ErrorStdOut=UTF-8",
-                    "/include ${ahk:suppressErrorDialog}"
                   ]
                 ],
                 "default": [
@@ -543,10 +525,7 @@
               "skipFiles": {
                 "type": "array",
                 "items": {
-                  "type": "string",
-                  "examples": [
-                    "${ahk:suppressErrorDialog}"
-                  ]
+                  "type": "string"
                 },
                 "description": "Array of file paths to skip when executing steps. The path corresponds to glob."
               },
@@ -1121,8 +1100,7 @@
               "program": "^\"\\${file}\"",
               "runtimeArgs": [
                 "/CP65001",
-                "/ErrorStdOut=UTF-8",
-                "/include ${ahk:suppressErrorDialog}"
+                "/ErrorStdOut=UTF-8"
               ],
               "args": [],
               "port": "9002-9010",
@@ -1133,9 +1111,6 @@
               "useOutputDebug": {
                 "useTrailingLinebreak": true
               },
-              "skipFiles": [
-                "${ahk:suppressErrorDialog}"
-              ],
               "openFileOnExit": "${file}",
               "variableCategories": "recommend"
             }

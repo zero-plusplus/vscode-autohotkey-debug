@@ -182,19 +182,6 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
     return config;
   }
   public async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration> {
-    const libraryPseudoVariableName = '${ahk:suppressErrorDialog}';
-    let ahkVersion: AhkVersion | undefined;
-    const getExternalLibraryPath = (): string => {
-      if (!ahkVersion) {
-        ahkVersion = getAhkVersion(config.runtime, { env: config.env });
-        if (!ahkVersion) {
-          throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);
-        }
-      }
-      return ahkVersion.mejor === 2.0
-        ? path.resolve(__dirname, '..', 'script', 'SuppressErrorDialog.ahk2')
-        : path.resolve(__dirname, '..', 'script', 'SuppressErrorDialog.ahk');
-    };
     const replaceToPinnedFilePath = (value: string): string => {
       if (semver.gte(vscode.version, '1.67.0')) {
         if (value === '${ahk:pinnedFile}') {
@@ -258,7 +245,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         return;
       }
       else if (typeof config.runtimeArgs === 'undefined') {
-        ahkVersion = getAhkVersion(config.runtime, { env: config.env });
+        const ahkVersion = getAhkVersion(config.runtime, { env: config.env });
         if (!ahkVersion) {
           throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);
         }
@@ -285,20 +272,6 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
 
       if (!Array.isArray(config.runtimeArgs)) {
         throw Error('`runtimeArgs` must be a array.');
-      }
-
-      if (config.runtimeArgs.some((arg) => String(arg).match('/include'))) {
-        config.runtimeArgs = config.runtimeArgs.flatMap((arg) => {
-          const _arg = String(arg);
-          if (_arg.toLowerCase().includes(libraryPseudoVariableName.toLowerCase())) {
-            const libPath = getExternalLibraryPath();
-            if (_arg.toLowerCase().includes('/include')) {
-              return [ '/include', libPath ];
-            }
-            return [ libPath ];
-          }
-          return [ _arg ];
-        });
       }
     })();
 
@@ -567,11 +540,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
       if (!Array.isArray(config.skipFiles)) {
         throw Error('`skipFiles` must be a array of string.');
       }
-      if (config.skipFiles.includes(libraryPseudoVariableName)) {
-        config.skipFiles = config.skipFiles.map((file) => {
-          return String(file).replace(libraryPseudoVariableName, getExternalLibraryPath());
-        });
-      }
+
       const skipFiles = config.skipFiles
         .map((filePath) => replaceToPinnedFilePath(filePath))
         .map((filePath) => normalizeToUnix(String(filePath)));
