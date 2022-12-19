@@ -1626,8 +1626,9 @@ export class AhkDebugSession extends LoggingDebugSession {
           continue;
         }
 
-        if (char === '\\') {
-          current += format.slice(i, i + 1);
+        if (char === '\\' && [ '{' ].includes(format.charAt(i + 1))) {
+          current += format.slice(i + 1, i + 2);
+          i++;
           continue;
         }
 
