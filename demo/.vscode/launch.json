@@ -30,6 +30,30 @@
             "variableCategories": "recommend"
         },
         {
+            "name": "pinnedFile Test",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${command:vscode-autohotkey-debug.variables.pinnedFile}",
+            "openFileOnExit": "${command:vscode-autohotkey-debug.variables.pinnedFile}",
+            "extends": "AutoHotkey Debug"
+        },
+        {
+            "name": "leftmostFile Test",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${command:vscode-autohotkey-debug.variables.leftmostFile}",
+            "openFileOnExit": "${command:vscode-autohotkey-debug.variables.leftmostFile}",
+            "extends": "AutoHotkey Debug"
+        },
+        {
+            "name": "rightmostFile Test",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${command:vscode-autohotkey-debug.variables.rightmostFile}",
+            "openFileOnExit": "${command:vscode-autohotkey-debug.variables.rightmostFile}",
+            "extends": "AutoHotkey Debug"
+        },
+        {
             "name": "VariableCategories Test",
             "type": "autohotkey",
             "request": "launch",
