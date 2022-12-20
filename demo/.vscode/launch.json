@@ -30,12 +30,12 @@
             "variableCategories": "recommend"
         },
         {
-            "name": "${ahk:pinnedFile} Test",
+            "name": "${ahk.pinnedFile} Test",
             "type": "autohotkey",
             "request": "launch",
-            "program": "${ahk:pinnedFile}",
-            "openFileOnExit": "${ahk:pinnedFile}",
-            // "skipFiles": [ "${ahk:pinnedFile}" ],
+            "program": "${ahk.pinnedFile}",
+            "openFileOnExit": "${ahk.pinnedFile}",
+            // "skipFiles": [ "${ahk.pinnedFile}" ],
             "extends": "AutoHotkey Debug"
         },
         {

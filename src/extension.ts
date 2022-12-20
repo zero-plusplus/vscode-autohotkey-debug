@@ -178,13 +178,13 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
   public async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration> {
     const replaceToPinnedFilePath = (value: string): string => {
       if (semver.gte(vscode.version, '1.67.0')) {
-        if (value === '${ahk:pinnedFile}') {
+        if (value === '${ahk.pinnedFile}') {
           const tabGroups: any = (vscode.window as any).tabGroups;
           const tab = tabGroups.all.flatMap((tabGroup: any) => tabGroup.tabs as unknown[]).find((tab) => tab.isPinned as boolean);
           if (tab?.input?.uri) {
             return URI.parse(tab.input.uri).fsPath;
           }
-          throw Error('`${ahk:pinnedFile}` was specified in `program`, but the pinned tab does not exist.');
+          throw Error('`${ahk.pinnedFile}` was specified in `program`, but the pinned tab does not exist.');
         }
       }
       return value;

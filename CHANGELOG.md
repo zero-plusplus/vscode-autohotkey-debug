@@ -18,7 +18,7 @@ Also want to check the development status, check the [commit history](https://gi
 ### Added
 * [#31](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/31) Add Function breakpoint
 * [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
-* [#248](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/248) Add pseudo-variable `${ahk:pinnedFile}` valid only for `program`, `openFileOnExit` and `skipFiles` in launch.json
+* [#248](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/248) Add pseudo-variable `${ahk.pinnedFile}` valid only for `program`, `openFileOnExit` and `skipFiles` in launch.json
 * [#257](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/257) Add Exception Breakpoint
 
 ### Changed
