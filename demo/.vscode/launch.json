@@ -38,6 +38,14 @@
             "extends": "AutoHotkey Debug"
         },
         {
+            "name": "leftmostFile Test",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${command:vscode-autohotkey-debug.variables.leftmostFile}",
+            "openFileOnExit": "${command:vscode-autohotkey-debug.variables.leftmostFile}",
+            "extends": "AutoHotkey Debug"
+        },
+        {
             "name": "VariableCategories Test",
             "type": "autohotkey",
             "request": "launch",

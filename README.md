@@ -14,6 +14,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
     * Added: [#257](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/257) Add Exception Breakpoint
     * Added: [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.pinnedFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
+    * Added: [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.leftmostFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
     * Changed: [#60](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/60) Change to suppress error dialogs if runtime supports them
     * Changed: [#116](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/116) Enhanced conditional breakpoint
     * Changed: [#225](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/225) Remove escape process of output text in debug directives
