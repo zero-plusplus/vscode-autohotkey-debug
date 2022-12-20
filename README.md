@@ -12,7 +12,6 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 * `2.0.0` - 2023-xx-xx
     * Added: [#31](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/31) Add Function breakpoint
     * Added: [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
-    * Added: [#248](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/248) Add pseudo-variable `${ahk.pinnedFile}` valid only for `program`, `openFileOnExit` and `skipFiles` in launch.json
     * Added: [#257](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/257) Add Exception Breakpoint
     * Changed: [#60](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/60) Change to suppress error dialogs if runtime supports them
     * Changed: [#116](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/116) Enhanced conditional breakpoint

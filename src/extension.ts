@@ -2,8 +2,6 @@
 import { existsSync } from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { URI } from 'vscode-uri';
-import * as semver from 'semver';
 import { defaults, groupBy, isString, range } from 'lodash';
 import isPortTaken from 'is-port-taken';
 import { getAhkVersion } from './util/getAhkVersion';
@@ -176,20 +174,6 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
     return config;
   }
   public async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration> {
-    const replaceToPinnedFilePath = (value: string): string => {
-      if (semver.gte(vscode.version, '1.67.0')) {
-        if (value === '${ahk.pinnedFile}') {
-          const tabGroups: any = (vscode.window as any).tabGroups;
-          const tab = tabGroups.all.flatMap((tabGroup: any) => tabGroup.tabs as unknown[]).find((tab) => tab.isPinned as boolean);
-          if (tab?.input?.uri) {
-            return URI.parse(tab.input.uri).fsPath;
-          }
-          throw Error('`${ahk.pinnedFile}` was specified in `program`, but the pinned tab does not exist.');
-        }
-      }
-      return value;
-    };
-
     // init request
     ((): void => {
       if (config.request === 'launch') {
@@ -340,8 +324,6 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
 
     // init program
     await (async(): Promise<void> => {
-      config.program = replaceToPinnedFilePath(config.program);
-
       if (config.request === 'attach') {
         const scriptPathList = getRunningAhkScriptList(config.runtime);
         if (scriptPathList.length === 0) {
@@ -426,7 +408,6 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
 
     // init openFileOnExit
     ((): void => {
-      config.openFileOnExit = replaceToPinnedFilePath(config.openFileOnExit);
       if (typeof config.openFileOnExit === 'undefined') {
         return;
       }
@@ -535,9 +516,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         throw Error('`skipFiles` must be a array of string.');
       }
 
-      const skipFiles = config.skipFiles
-        .map((filePath) => replaceToPinnedFilePath(filePath))
-        .map((filePath) => normalizeToUnix(String(filePath)));
+      const skipFiles = config.skipFiles.map((filePath) => normalizeToUnix(String(filePath)));
       config.skipFiles = await glob(skipFiles, { onlyFiles: true, unique: true });
     })();
 
