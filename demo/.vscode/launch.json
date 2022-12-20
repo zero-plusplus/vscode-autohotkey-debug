@@ -46,6 +46,14 @@
             "extends": "AutoHotkey Debug"
         },
         {
+            "name": "rightmostFile Test",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${command:vscode-autohotkey-debug.variables.rightmostFile}",
+            "openFileOnExit": "${command:vscode-autohotkey-debug.variables.rightmostFile}",
+            "extends": "AutoHotkey Debug"
+        },
+        {
             "name": "VariableCategories Test",
             "type": "autohotkey",
             "request": "launch",

@@ -117,4 +117,22 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
     }
     throw Error('`vscode-autohotkey-debug.variables.leftmostFile` can be used with vscode v1.67.0 or higher.');
   }));
+  context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.rightmostFile', (): string => {
+    if (semver.gte(vscode.version, '1.67.0')) {
+      const tabGroups: any = (vscode.window as any).tabGroups;
+      if (tabGroups.all.length === 0) {
+        throw Error('File not found.');
+      }
+      const tab = tabGroups.all[tabGroups.all.length - 1];
+      if (tab.tabs.length === 0) {
+        throw Error('File not found.');
+      }
+      const leftmostTab = tab.tabs[tab.tabs.length - 1];
+      if (leftmostTab.input?.uri) {
+        return URI.parse(leftmostTab.input.uri).fsPath;
+      }
+      throw Error('File not found.');
+    }
+    throw Error('`vscode-autohotkey-debug.variables.rightmostFile` can be used with vscode v1.67.0 or higher.');
+  }));
 };
