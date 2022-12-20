@@ -30,6 +30,14 @@
             "variableCategories": "recommend"
         },
         {
+            "name": "pinnedFile Test",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${command:vscode-autohotkey-debug.variables.pinnedFile}",
+            "openFileOnExit": "${command:vscode-autohotkey-debug.variables.pinnedFile}",
+            "extends": "AutoHotkey Debug"
+        },
+        {
             "name": "VariableCategories Test",
             "type": "autohotkey",
             "request": "launch",

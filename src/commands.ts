@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as semver from 'semver';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { URI } from 'vscode-uri';
 import { unescapeAhk } from './util/VariableManager';
@@ -84,5 +85,18 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables-view.copyAsScientificNotation', async(param: VariableContextMenuParam): Promise<void> => {
     const scientificNotation = convertToScientificNotation(param);
     await vscode.env.clipboard.writeText(scientificNotation);
+  }));
+
+  // Command variables
+  context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.pinnedFile', (): string => {
+    if (semver.gte(vscode.version, '1.67.0')) {
+      const tabGroups: any = (vscode.window as any).tabGroups;
+      const tab = tabGroups.all.flatMap((tabGroup: any) => tabGroup.tabs as unknown[]).find((tab) => tab.isPinned as boolean);
+      if (tab?.input?.uri) {
+        return URI.parse(tab.input.uri).fsPath;
+      }
+      throw Error('Pinned file not found.');
+    }
+    throw Error('`vscode-autohotkey-debug.variables.pinnedFile` can be used with vscode v1.67.0 or higher.');
   }));
 };

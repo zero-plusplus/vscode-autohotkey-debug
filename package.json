@@ -89,6 +89,10 @@
       {
         "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
         "title": "Copy as Scientific Notation"
+      },
+      {
+        "command": "vscode-autohotkey-debug.variables.pinnedFile",
+        "title": "Returns the path to the first pinned file found"
       }
     ],
     "menus": {
@@ -123,6 +127,10 @@
         },
         {
           "command": "vscode-autohotkey-debug.variables-view.copyAsScientificNotation",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.variables.pinnedFile",
           "when": "false"
         }
       ],
