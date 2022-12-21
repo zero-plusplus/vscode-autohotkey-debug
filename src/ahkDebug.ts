@@ -109,6 +109,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly configProvider: AhkConfigurationProvider;
   private symbolFinder?: sym.SymbolFinder;
   private callableSymbols: sym.NamedNodeBase[] | undefined;
+  private decorationDisposable?: vscode.Disposable;
   private get isClosedSession(): boolean {
     return this.session!.socketClosed || this.isTerminateRequested;
   }
@@ -176,6 +177,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('disconnectRequest');
+
+    this.decorationDisposable?.dispose();
     this.clearPerfTipsDecorations();
 
     if (this.session?.socketWritable) {
@@ -468,6 +471,14 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
     await this.registerDebugDirective();
+    this.decorationDisposable = vscode.window.registerFileDecorationProvider({
+      provideFileDecoration: (uri, token) => {
+        if (equalsIgnoreCase(uri.fsPath, this.config.program)) {
+          return new vscode.FileDecoration('🐞', 'Debugging');
+        }
+        return undefined;
+      },
+    });
 
     const result = this.config.stopOnEntry
       ? await this.session!.sendContinuationCommand('step_into')
