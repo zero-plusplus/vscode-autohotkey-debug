@@ -208,6 +208,12 @@ export const toAutohotkeyNumber = (version: AhkVersion, value: EvaluatedValue): 
   }
   return '';
 };
+export const toJavaScriptBoolean = (result: EvaluatedValue): boolean => {
+  if (result === '0') {
+    return false;
+  }
+  return Boolean(result);
+};
 export const existsProperty = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, nameOrObject: string | dbgp.ObjectProperty): Promise<dbgp.Context | undefined> => {
   const fullName = getFullName(nameOrObject);
   const contexts = await getContexts(session, stackFrame);

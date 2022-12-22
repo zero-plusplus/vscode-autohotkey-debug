@@ -102,14 +102,14 @@ export class BreakpointManager {
     const key = this.createKey(fileUri, line);
     return this.breakpointsMap.has(key);
   }
-  public getLineBreakpoints(fileUri: string, line: number): LineBreakpoints | null {
+  public getLineBreakpoints(fileUri: string, line: number): LineBreakpoints | undefined {
     const key = this.createKey(fileUri, line);
     for (const [ targetKey, lineBreakpoints ] of this.breakpointsMap) {
       if (equalsIgnoreCase(key, targetKey)) {
         return lineBreakpoints;
       }
     }
-    return null;
+    return undefined;
   }
   public async registerBreakpoint(fileUriOrBreakpoint: string | Breakpoint, line: number, advancedData?: BreakpointAdvancedData): Promise<Breakpoint> {
     let fileUri: string, unverifiedLine: number, _advancedData: BreakpointAdvancedData | undefined;

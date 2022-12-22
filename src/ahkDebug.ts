@@ -39,7 +39,7 @@ import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValu
 import { AhkConfigurationProvider, CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 import { SymbolFinder } from './util/SymbolFinder';
-import { ExpressionEvaluator, ParseError, toType } from './util/evaluator/ExpressionEvaluator';
+import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from './util/evaluator/ExpressionEvaluator';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -90,7 +90,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
-type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause' | 'exception';
+type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause' | 'exception' | 'error';
 export const serializePromise = async(promises: Array<Promise<void>>): Promise<void> => {
   await promises.reduce(async(prev, current): Promise<void> => {
     return prev.then(async() => current);
@@ -109,6 +109,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly configProvider: AhkConfigurationProvider;
   private symbolFinder?: sym.SymbolFinder;
   private callableSymbols: sym.NamedNodeBase[] | undefined;
+  private exceptionArgs?: DebugProtocol.SetExceptionBreakpointsArguments;
   private get isClosedSession(): boolean {
     return this.session!.socketClosed || this.isTerminateRequested;
   }
@@ -158,12 +159,22 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     const config = this.configProvider.config!;
     if (config.useExceptionBreakpoint) {
-      // response.body.supportsExceptionOptions = true;
+      response.body.supportsExceptionOptions = true;
+      response.body.supportsExceptionFilterOptions = true;
       response.body.supportsExceptionInfoRequest = true;
       response.body.exceptionBreakpointFilters = [
         {
-          filter: 'Exceptions',
-          label: 'Exception Breakpoint',
+          filter: 'caught-exceptions',
+          label: 'Caught Exceptions',
+          conditionDescription: '',
+          supportsCondition: true,
+          default: false,
+        },
+        {
+          filter: 'uncaught-exceptions',
+          label: 'Uncaught Breakpoint',
+          conditionDescription: '',
+          supportsCondition: false,
           default: false,
         },
       ];
@@ -373,7 +384,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     });
   }
   protected async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    const state = args.filters[0] === 'Exceptions' && this.config.useExceptionBreakpoint;
+    this.exceptionArgs = args;
+
+    const state = (this.exceptionArgs.filterOptions ?? []).some((filter) => filter.filterId.endsWith('exceptions'));
     await this.session!.sendExceptionBreakpointCommand(state);
     this.sendResponse(response);
   }
@@ -1075,9 +1088,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     return errorMessage.replace(/^(.+)\s\((\d+)\)\s:/gmu, `$1:$2 :`);
   }
-  private async findMatchedBreakpoint(lineBreakpoints: LineBreakpoints | null): Promise<Breakpoint | null> {
+  private async findMatchedBreakpoint(lineBreakpoints?: LineBreakpoints): Promise<Breakpoint | undefined> {
     if (!lineBreakpoints) {
-      return null;
+      return undefined;
     }
 
     for await (const breakpoint of lineBreakpoints) {
@@ -1092,7 +1105,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       return breakpoint;
     }
-    return null;
+    return undefined;
   }
   private async checkContinuationStatus(response: dbgp.ContinuationResponse): Promise<void> {
     this.traceLogger.log('checkContinuationStatus');
@@ -1121,8 +1134,38 @@ export class AhkDebugSession extends LoggingDebugSession {
     const { source, line, name } = this.currentStackFrames[0];
 
     // Exception Breakpoint
-    if (response.exitReason === 'error') {
-      await this.sendStoppedEvent('exception');
+    if (response.exitReason === 'error' || response.exitReason === 'exception') {
+      const evaluateCondition = async(condition?: string): Promise<boolean> => {
+        if (typeof condition === 'undefined' || condition === '') {
+          return false;
+        }
+        const rawResult = await this.evaluator.eval(condition);
+        return toJavaScriptBoolean(rawResult);
+      };
+
+      const caughtExceptions = this.exceptionArgs?.filterOptions?.find((filter) => filter.filterId === 'caught-exceptions');
+      if (response.exitReason === 'exception' && caughtExceptions) {
+        const matchCondition = (caughtExceptions.condition ?? '') === '' || await evaluateCondition(caughtExceptions.condition);
+        if (matchCondition) {
+          await this.sendStoppedEvent('exception');
+          return;
+        }
+      }
+
+      const uncaughtExceptions = this.exceptionArgs?.filterOptions?.find((filter) => filter.filterId === 'uncaught-exceptions');
+      if (response.exitReason === 'error' && uncaughtExceptions) {
+        await this.sendStoppedEvent('error');
+        return;
+      }
+
+      if (response.commandName.includes('step')) {
+        await this.processStepExecution(response.commandName as dbgp.StepCommandName);
+        return;
+      }
+
+      this.autoExecuting = true;
+      const result = await this.session!.sendRunCommand();
+      await this.checkContinuationStatus(result);
       return;
     }
 
@@ -1200,7 +1243,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     const result = await this.session!.sendRunCommand();
     await this.checkContinuationStatus(result);
   }
-  private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints: LineBreakpoints | null): Promise<void> {
+  private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints?: LineBreakpoints): Promise<void> {
+    const thrownException = typeof lineBreakpoints === 'undefined';
+
     if (this.currentStackFrames?.isIdleMode) {
       throw Error(`This message shouldn't appear.`);
     }
@@ -1240,6 +1285,9 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     // step_into is always stop
     if (stepType === 'step_into') {
+      if (thrownException) {
+        await this.session!.sendContinuationCommand('step_into');
+      }
       await this.sendStoppedEvent(stopReason);
       return;
     }
@@ -1247,7 +1295,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const executeByUser = !this.stackFramesWhenStepOut && !this.stackFramesWhenStepOver;
     if (executeByUser) {
       // Normal step
-      if (!lineBreakpoints) {
+      if (!thrownException) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
@@ -1337,7 +1385,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const result = await this.session!.sendContinuationCommand('step_out');
     await this.checkContinuationStatus(result);
   }
-  private async processActionpoint(lineBreakpoints: LineBreakpoints | null): Promise<void> {
+  private async processActionpoint(lineBreakpoints?: LineBreakpoints): Promise<void> {
     if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
       throw Error(`This message shouldn't appear.`);
     }
@@ -1485,7 +1533,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       let conditionResult = false, hitConditionResult = false;
       if (condition) {
         const rawResult = await this.evaluator.eval(condition);
-        conditionResult = !(!rawResult || rawResult === '0');
+        conditionResult = toJavaScriptBoolean(rawResult);
       }
       if (hitCondition) {
         const match = hitCondition.match(/^\s*(?<operator><=|<|>=|>|==|=|%)?\s*(?<number>\d+)\s*$/u);

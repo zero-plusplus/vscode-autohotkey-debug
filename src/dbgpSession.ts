@@ -297,7 +297,7 @@ export class PropertySetResponse extends Response {
   }
 }
 export type ContinuationStatus = 'starting' | 'break' | 'running' | 'stopped';
-export type ContinuationExitReason = 'ok' | 'error';
+export type ContinuationExitReason = 'ok' | 'error' | 'exception';
 export type ContinuationStopReason = 'step' | 'breakpoint' | 'pause';
 export interface ContinuationElapsedTime {
   ns: number;
