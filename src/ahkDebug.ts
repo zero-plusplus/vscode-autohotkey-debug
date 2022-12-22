@@ -109,6 +109,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly configProvider: AhkConfigurationProvider;
   private symbolFinder?: sym.SymbolFinder;
   private callableSymbols: sym.NamedNodeBase[] | undefined;
+  private exceptionArgs?: DebugProtocol.SetExceptionBreakpointsArguments;
   private get isClosedSession(): boolean {
     return this.session!.socketClosed || this.isTerminateRequested;
   }
@@ -162,8 +163,13 @@ export class AhkDebugSession extends LoggingDebugSession {
       response.body.supportsExceptionInfoRequest = true;
       response.body.exceptionBreakpointFilters = [
         {
-          filter: 'Exceptions',
-          label: 'Exception Breakpoint',
+          filter: 'caught-exceptions',
+          label: 'Caught Exceptions',
+          default: false,
+        },
+        {
+          filter: 'uncaught-exceptions',
+          label: 'Uncaught Breakpoint',
           default: false,
         },
       ];
@@ -373,7 +379,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     });
   }
   protected async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    const state = args.filters[0] === 'Exceptions' && this.config.useExceptionBreakpoint;
+    this.exceptionArgs = args;
+
+    const state = this.exceptionArgs.filters.some((filter) => filter.endsWith('exceptions'));
     await this.session!.sendExceptionBreakpointCommand(state);
     this.sendResponse(response);
   }
@@ -1121,9 +1129,15 @@ export class AhkDebugSession extends LoggingDebugSession {
     const { source, line, name } = this.currentStackFrames[0];
 
     // Exception Breakpoint
-    if (response.exitReason === 'error') {
-      await this.sendStoppedEvent('exception');
-      return;
+    if (response.exitReason === 'error' || response.exitReason === 'exception') {
+      const caughtExceptions = this.exceptionArgs?.filters.some((filter) => filter === 'caught-exceptions');
+      if (response.exitReason === 'exception' && caughtExceptions) {
+        await this.sendStoppedEvent('exception');
+      }
+      const uncaughtExceptions = this.exceptionArgs?.filters.some((filter) => filter === 'uncaught-exceptions');
+      if (response.exitReason === 'error' && uncaughtExceptions) {
+        await this.sendStoppedEvent('exception');
+      }
     }
 
     const lineBreakpoints = this.breakpointManager!.getLineBreakpoints(source.path, line);
