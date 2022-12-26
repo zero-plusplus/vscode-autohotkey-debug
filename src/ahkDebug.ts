@@ -102,6 +102,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   public session?: dbgp.Session;
   public config!: LaunchRequestArguments;
   private readonly traceLogger: TraceLogger;
+  private errorCounter = 0;
   private autoExecuting = false;
   private pauseRequested = false;
   private isPaused = false;
@@ -150,6 +151,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportsConditionalBreakpoints: true,
       supportsConfigurationDoneRequest: true,
       supportsEvaluateForHovers: true,
+      supportsSetExpression: true,
       supportsHitConditionalBreakpoints: true,
       supportsLoadedSourcesRequest: true,
       supportsLogPoints: true,
@@ -277,7 +279,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-      this.sendErrorResponse(response, { id: 2, format: errorMessage });
+      this.sendErrorResponse(response, { id: this.errorCounter++, format: errorMessage });
       this.sendTerminateEvent();
       return;
     }
@@ -741,8 +743,12 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('setVariableRequest');
 
+    if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
+      throw Error('Could not retrieve stack frame.');
+    }
+
+    let fullName = args.name;
     try {
-      let fullName = args.name;
       let context: dbgp.Context;
       const objectVariable = this.variableManager!.getObjectVariable(args.variablesReference);
       if (objectVariable) {
@@ -754,69 +760,56 @@ export class AhkDebugSession extends LoggingDebugSession {
         context = this.variableManager!.getCategory(args.variablesReference)!.context;
       }
 
-      let data = await this.evaluator.eval(args.value);
-      const typeName = toType(this.session!.ahkVersion, data);
-      if (!data) {
-        data = 'Not initialized';
-      }
-      else if (typeof data === 'object') {
-        this.sendErrorResponse(response, {
-          id: args.variablesReference,
-          format: 'Only primitive values are supported. e.g. "string", 123, 0x123, 1.0e+5, true',
-        } as DebugProtocol.Message);
-        return;
-      }
-      data = String(data);
-
-      const dbgpResponse = await this.session!.sendPropertySetCommand({
-        context,
-        fullName,
-        typeName,
-        data,
-      });
-      if (!dbgpResponse.success) {
-        this.sendErrorResponse(response, {
-          id: args.variablesReference,
-          format: 'Rewriting failed. Probably read-only.',
-        } as DebugProtocol.Message);
-        return;
+      if (args.value === '') {
+        throw Error('Empty value cannot be set.');
       }
 
-      const { properties } = await this.session!.sendPropertyGetCommand(context, fullName);
-      response.body = {
-        type: typeName,
-        variablesReference: 0,
-        value: formatProperty(properties[0], this.session?.ahkVersion),
-      };
+      const result = await this.setVariable(fullName, args.value, context);
+      if (typeof result === 'undefined') {
+        response.body = {
+          value: 'Not initialized',
+          type: 'undefined',
+        };
+      }
+      else {
+        response.body = result;
+      }
       this.sendResponse(response);
     }
-    catch (error: unknown) {
-      let message = error instanceof Error ? error.message : '';
-      if (error instanceof ParseError) {
-        message = `Failed to parse value. Only primitive values are supported. e.g. "string", 123, 0x123, 1.0e+5, true`;
+    catch (e: unknown) {
+      if (e instanceof dbgp.DbgpCriticalError) {
+        const message = `A critical error occurred evaluating the value to be written to \`${args.value}\` in watch expression.`;
+        this.criticalError(message);
       }
-
-      this.sendErrorResponse(response, {
-        id: args.variablesReference,
-        format: message,
-      } as DebugProtocol.Message);
+      else if (e instanceof ParseError) {
+        const message = `Failed to parse the value to be written to \`${fullName}\`.`;
+        this.sendErrorResponse(response, {
+          id: this.errorCounter++,
+          format: message,
+        } as DebugProtocol.Message);
+      }
+      else if (e instanceof Error) {
+        const title = `Failed to write variable \`${fullName}\``;
+        this.sendErrorResponse(response, {
+          id: this.errorCounter++,
+          format: `${title}. ${e.message}`,
+        } as DebugProtocol.Message);
+      }
     }
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
     return asyncLock.acquire('evaluateRequest', async() => {
       this.traceLogger.log('evaluateRequest');
 
-      if (args.context === 'variables') {
-        this.sendResponse(response);
-        return;
-      }
-
       if (this.isClosedSession) {
         this.sendResponse(response);
         return;
       }
+      else if (args.context === 'variables' || args.context === 'clipboard') {
+        this.sendResponse(response);
+        return;
+      }
 
-      const propertyName = args.context === 'hover' ? args.expression.replace(/^&/u, '') : args.expression;
       try {
         if (!args.frameId) {
           throw Error('Error: Cannot evaluate code without a session');
@@ -827,9 +820,9 @@ export class AhkDebugSession extends LoggingDebugSession {
           throw Error('Error: Could not get stack frame');
         }
 
-        const value = await this.evaluator.eval(propertyName, stackFrame.dbgpStackFrame);
+        const value = await this.evaluator.eval(args.expression, stackFrame.dbgpStackFrame);
         if (typeof value === 'undefined') {
-          if (args.context === 'hover' && (await this.session!.fetchAllPropertyNames()).find((name) => equalsIgnoreCase(name, propertyName))) {
+          if (args.context === 'hover') {
             response.body = {
               result: 'Not initialized',
               type: 'undefined',
@@ -883,17 +876,48 @@ export class AhkDebugSession extends LoggingDebugSession {
         };
         this.sendResponse(response);
       }
-      catch (error: unknown) {
-        if (error instanceof dbgp.DbgpCriticalError) {
-          this.criticalError(error);
-          return;
+      catch (e: unknown) {
+        if (e instanceof dbgp.DbgpCriticalError) {
+          this.criticalError(e.message);
         }
+        else if (e instanceof Error) {
+          this.sendErrorResponse(response, {
+            id: this.errorCounter++,
+            format: e.message,
+          });
+        }
+      }
+    });
+  }
+  protected async setExpressionRequest(response: DebugProtocol.SetExpressionResponse, args: DebugProtocol.SetExpressionArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+    return asyncLock.acquire('evaluateRequest', async() => {
+      if (!args.frameId) {
+        return;
+      }
 
-        if (args.context !== 'hover') {
-          const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-          response.body = { result: errorMessage, variablesReference: 0 };
-        }
+      const stackFrame = this.variableManager!.getStackFrame(args.frameId);
+      if (!stackFrame) {
+        throw Error('Error: Could not get stack frame');
+      }
+
+      try {
+        const result = await this.setVariable(args.expression, args.value, stackFrame.dbgpStackFrame);
+        response.body = result;
         this.sendResponse(response);
+      }
+      catch (e: unknown) {
+        if (e instanceof dbgp.DbgpCriticalError) {
+          const message = `A critical error occurred evaluating the value to be written to \`${args.expression}\` in watch expression.`;
+          this.criticalError(message);
+        }
+        else if (e instanceof ParseError) {
+          const message = `Failed to parse the value to be written to \`${args.expression}\` in watch expression.`;
+          vscode.window.showErrorMessage(message);
+        }
+        else if (e instanceof Error) {
+          const message = `Failed to write \`${args.expression}\` in watch expression. ${e.message}`;
+          vscode.window.showErrorMessage(message);
+        }
       }
     });
   }
@@ -1405,6 +1429,35 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
   }
+  private async setVariable(variable: string, expression: string, contextOrStackFrame: dbgp.Context | dbgp.StackFrame): Promise<DebugProtocol.SetVariableResponse['body'] & DebugProtocol.SetExpressionResponse['body'] & DebugProtocol.EvaluateResponse['body']> {
+    if (this.isClosedSession) {
+      throw Error('Debug session is closed.');
+    }
+
+    const stackFrame = contextOrStackFrame instanceof dbgp.Context ? contextOrStackFrame.stackFrame : contextOrStackFrame;
+    let value = await this.evaluator.eval(expression, stackFrame);
+    if (typeof value === 'undefined') {
+      value = '';
+    }
+    else if (value instanceof dbgp.ObjectProperty) {
+      throw Error('Writing of objects is not supported.');
+    }
+    else if (value instanceof MetaVariable) {
+      if (typeof value.value === 'object') {
+        throw Error('Writing of objects is not supported.');
+      }
+      value = value.value;
+    }
+
+    value = typeof value === 'string' ? `"${value}"` : String(value);
+    await this.evaluator.eval(`${variable} := ${value}`, stackFrame);
+    return {
+      result: variable,
+      value,
+      type: toType(this.session!.ahkVersion, value),
+      variablesReference: 0,
+    };
+  }
   private sendAnnounce(message: string, category: 'stdout' | 'stderr' | 'console' = 'console', level?: AnnounceLevel): void {
     const announceLevelOrder = [ false, 'error', true, 'detail' ];
     if (this.config.useAnnounce === false) {
@@ -1572,9 +1625,9 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       return matchCondition;
     }
-    catch (error: unknown) {
-      if (error instanceof dbgp.DbgpCriticalError) {
-        this.criticalError(error);
+    catch (e: unknown) {
+      if (e instanceof dbgp.DbgpCriticalError) {
+        this.criticalError(e.message);
       }
     }
 
@@ -1615,15 +1668,15 @@ export class AhkDebugSession extends LoggingDebugSession {
       event.body.variablesReference = variablesReference;
       this.sendEvent(event);
     }
-    catch (error: unknown) {
-      if (error instanceof dbgp.DbgpCriticalError) {
-        this.criticalError(error);
+    catch (e: unknown) {
+      if (e instanceof dbgp.DbgpCriticalError) {
+        this.criticalError(e.message);
       }
     }
   }
-  private criticalError(error: Error): void {
+  private criticalError(message: string): void {
     this.raisedCriticalError = true;
-    const fixedMessage = this.fixPathOfRuntimeError(error.message);
+    const fixedMessage = this.fixPathOfRuntimeError(message);
     this.sendAnnounce(fixedMessage, 'stderr');
     this.sendTerminateEvent();
   }
@@ -1646,9 +1699,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                 continue;
               }
               // eslint-disable-next-line no-await-in-loop
-              const value = await timeoutPromise(this.evaluator.eval(current), timeout_ms).catch((error: unknown) => {
-                if (error instanceof dbgp.DbgpCriticalError) {
-                  this.criticalError(error);
+              const value = await timeoutPromise(this.evaluator.eval(current), timeout_ms).catch((e: unknown) => {
+                if (e instanceof dbgp.DbgpCriticalError) {
+                  this.criticalError(e.message);
                   return;
                 }
 
@@ -1752,9 +1805,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
       editor.setDecorations(decorationType, [ decoration ]);
     }
-    catch (error: unknown) {
-      if (error instanceof dbgp.DbgpCriticalError) {
-        this.criticalError(error);
+    catch (e: unknown) {
+      if (e instanceof dbgp.DbgpCriticalError) {
+        this.criticalError(e.message);
       }
     }
   }
