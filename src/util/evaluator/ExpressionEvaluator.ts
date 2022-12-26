@@ -310,11 +310,11 @@ export const fetchPropertyChildren = async(session: dbgp.Session, stackFrame: db
 };
 export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, name: EvaluatedValue): Promise<EvaluatedValue> => {
   if (!object.hasChildren) {
-    return '';
+    return undefined;
   }
   const children = await fetchPropertyChildren(session, stackFrame, object);
   if (!children) {
-    return '';
+    return undefined;
   }
 
   const property = children.find((child) => {
@@ -339,7 +339,23 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
   if (property instanceof dbgp.ObjectProperty) {
     return property;
   }
-  return '';
+  return undefined;
+};
+export const fetchInheritedProperty = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, key: string): Promise<EvaluatedValue | undefined> => {
+  const child = await fetchPropertyChild(session, stackFrame, object, key);
+  if (typeof child !== 'undefined') {
+    return child;
+  }
+
+  const baseProperty = await fetchProperty(session, `${object.fullName}.<base>`, stackFrame);
+  if (baseProperty instanceof dbgp.ObjectProperty) {
+    const property = await fetchProperty(session, `${baseProperty.fullName}.${key}`, stackFrame);
+    if (property) {
+      return property;
+    }
+    return fetchInheritedProperty(session, stackFrame, baseProperty, key);
+  }
+  return undefined;
 };
 export const setProperty = async(session: dbgp.Session, context: dbgp.Context, nameOrObject: string | dbgp.ObjectProperty, value: string | number): Promise<boolean> => {
   const fullName = getFullName(nameOrObject);
@@ -861,7 +877,7 @@ export class ExpressionEvaluator {
         return '';
       }
 
-      const child = await fetchPropertyChild(this.session, stackFrame, object, propertyName);
+      const child = await fetchInheritedProperty(this.session, stackFrame, object, propertyName);
       return child;
     }
     else if (object instanceof MetaVariable) {
