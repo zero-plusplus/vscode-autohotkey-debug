@@ -417,9 +417,9 @@ export class Variable implements DebugProtocol.Variable {
   }
   public async loadChildren(): Promise<void> {
     if (!this.isLoadedChildren) {
-      const reloadedProperty = await this.session.safeFetchProperty(this.context, this.fullName, 1);
-      if (reloadedProperty) {
-        this._property = reloadedProperty;
+      const { properties } = await this.session.sendPropertyGetCommand(this.context, this.fullName, 1);
+      if (0 < properties.length) {
+        this._property = properties[0];
         this._isLoadedChildren = true;
       }
     }
@@ -666,13 +666,6 @@ export class VariableManager {
       return stackFrame;
     }
     return undefined;
-  }
-  public async evaluate(name: string, stackFrame?: dbgp.StackFrame): Promise<Variable | undefined> {
-    const property = await this.session.evaluate(name, stackFrame);
-    if (!property) {
-      return undefined;
-    }
-    return new Variable(this.session, property);
   }
   private async createDefaultScopes(frameId: number): Promise<Categories> {
     const stackFrame = this.getStackFrame(frameId) ?? (await this.createStackFrames())[0];

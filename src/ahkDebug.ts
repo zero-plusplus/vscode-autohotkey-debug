@@ -1842,9 +1842,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                   });
                 }
 
-                completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
-                completionItemProvider.session = this.session;
                 this.evaluator = new ExpressionEvaluator(this.session, this.currentMetaVariableMap);
+                completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
+                completionItemProvider.evaluator = this.evaluator;
                 if (this.config.useFunctionBreakpoint) {
                   this.symbolFinder = new SymbolFinder(this.session.ahkVersion);
                 }

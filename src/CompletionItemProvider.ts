@@ -2,12 +2,14 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { count } from 'underscore.string';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
+import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
+import { ExpressionEvaluator, fetchInheritedProperties, getContexts } from './util/evaluator/ExpressionEvaluator';
 import { lastIndexOf } from './util/stringUtils';
 import { splitVariablePath } from './util/util';
 
 export interface CompletionItemProvider extends vscode.CompletionItemProvider {
   useIntelliSenseInDebugging: boolean;
-  session: dbgp.Session | null;
+  evaluator?: ExpressionEvaluator;
 }
 
 const createKind = (property: dbgp.Property): vscode.CompletionItemKind => {
@@ -143,18 +145,56 @@ export const findWord = (ahkVersion: AhkVersion, document: vscode.TextDocument, 
   }
   return result.reverse().join('');
 };
+export const fetchAllProperties = async(session: dbgp.Session): Promise<dbgp.Property[]> => {
+  const contexts = await getContexts(session);
+  if (!contexts) {
+    return [];
+  }
+
+  const propertyMap = new CaseInsensitiveMap<string, dbgp.Property>();
+  for await (const context of contexts) {
+    const { properties } = await session.sendContextGetCommand(context);
+    properties.forEach((property) => {
+      if (propertyMap.has(property.fullName)) {
+        return;
+      }
+      propertyMap.set(property.fullName, property);
+    });
+  }
+  return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
+};
+export const fetchSuggestItems = async(evaluator: ExpressionEvaluator, word: string): Promise<dbgp.Property[]> => {
+  const operatorRegExp = 2.0 <= evaluator.session.ahkVersion.mejor
+    ? /(?<operator>(?<=\w)\[\s*("|')?|(?<=\w|\])\.)$/u
+    : /(?<operator>(?<=\w)\[\s*(")?|(?<=\w|\])\.)$/u;
+  const match = word.match(operatorRegExp);
+  if (!match?.groups?.operator) {
+    return fetchAllProperties(evaluator.session);
+  }
+  const operator = match.groups.operator.replace(/\s/gu, '') as '[' | '["' | `['` | '.';
+  if (operator === '[') {
+    return fetchAllProperties(evaluator.session);
+  }
+  const expression = word.replace(operatorRegExp, '');
+  const result = await evaluator.eval(expression);
+  if (result instanceof dbgp.ObjectProperty) {
+    return fetchInheritedProperties(evaluator.session, undefined, result);
+  }
+  return fetchAllProperties(evaluator.session);
+};
+
 export const completionItemProvider = {
   useIntelliSenseInDebugging: true,
-  session: null,
+  evaluator: undefined,
   async provideCompletionItems(document, position, token, context) {
     if (!this.useIntelliSenseInDebugging) {
       return [];
     }
-    if (!this.session) {
+    if (!this.evaluator) {
       return [];
     }
-    else if (this.session.socketClosed) {
-      this.session = null;
+    else if (this.evaluator.session.socketClosed) {
+      this.evaluator = undefined;
       return [];
     }
 
@@ -164,12 +204,12 @@ export const completionItemProvider = {
     };
     // #endregion util
 
-    const word = findWord(this.session.ahkVersion, document, position);
-    const lastWordPathPart = splitVariablePath(this.session.ahkVersion, word).pop() ?? '';
+    const word = findWord(this.evaluator.session.ahkVersion, document, position);
+    const lastWordPathPart = splitVariablePath(this.evaluator.session.ahkVersion, word).pop() ?? '';
     const isBracketNotation = lastWordPathPart.startsWith('[');
     const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
 
-    const properties = await this.session.fetchSuggestList(word);
+    const properties = await fetchSuggestItems(this.evaluator, word);
     const fixedProperties = properties.filter((property) => {
       if (property.name === '<enum>') {
         return false;
@@ -201,7 +241,7 @@ export const completionItemProvider = {
           return str.replace(/""/gu, '`"');
         };
         const fixLabel = (label: string): string => {
-          if (2 <= this.session!.ahkVersion.mejor) {
+          if (2 <= this.evaluator!.session.ahkVersion.mejor) {
             const fixedLabel = label.replace(/^\[("|')?/u, '').replace(/("|')?\]$/u, '');
             return fixQuote(fixedLabel);
           }

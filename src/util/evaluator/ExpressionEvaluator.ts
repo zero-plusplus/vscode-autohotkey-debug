@@ -10,6 +10,7 @@ import { ExpressionParser } from './ExpressionParser';
 import { MetaVariable, MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isNumberLike, isPrimitive } from '../util';
+import { uniqBy } from 'lodash';
 
 export type Node =
  | IdentifierNode
@@ -214,21 +215,6 @@ export const toJavaScriptBoolean = (result: EvaluatedValue): boolean => {
   }
   return Boolean(result);
 };
-export const existsProperty = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, nameOrObject: string | dbgp.ObjectProperty): Promise<dbgp.Context | undefined> => {
-  const fullName = getFullName(nameOrObject);
-  const contexts = await getContexts(session, stackFrame);
-  if (!contexts) {
-    return undefined;
-  }
-  for await (const context of contexts) {
-    const response = await session.sendPropertyGetCommand(context, fullName, 1);
-    const property = response.properties[0] as dbgp.Property | '';
-    if (property) {
-      return context;
-    }
-  }
-  return undefined;
-};
 export const fetchPropertyAddress = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<number | ''> => {
   const contexts = await getContexts(session, stackFrame);
   if (!contexts) {
@@ -266,33 +252,40 @@ export const fetchGlobalProperty = async(session: dbgp.Session, name: string, st
   }
   return '';
 };
-export const fetchProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
+export const fetchPropertyByContext = async(session: dbgp.Session, context: dbgp.Context, name: string, maxDepth = 1): Promise<EvaluatedValue> => {
   if (!name) {
-    return '';
+    return undefined;
   }
 
+  const response = await session.sendPropertyGetCommand(context, name, maxDepth);
+  const property = response.properties[0] as dbgp.Property | undefined;
+  if (property instanceof dbgp.ObjectProperty) {
+    return property;
+  }
+  if (property instanceof dbgp.PrimitiveProperty) {
+    switch (property.type) {
+      case 'undefined': return undefined;
+      case 'string': return property.value;
+      case 'integer': return Number(property.value);
+      case 'float': return parseFloat(property.value);
+      default: break;
+    }
+  }
+  return undefined;
+};
+export const fetchProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
   const contexts = await getContexts(session, stackFrame);
   if (!contexts) {
-    return '';
+    return undefined;
   }
 
   for await (const context of contexts) {
-    const response = await session.sendPropertyGetCommand(context, name, maxDepth);
-    const property = response.properties[0] as dbgp.Property | undefined;
-    if (property instanceof dbgp.ObjectProperty) {
-      return property;
-    }
-    if (property instanceof dbgp.PrimitiveProperty) {
-      switch (property.type) {
-        case 'undefined': return undefined;
-        case 'string': return property.value;
-        case 'integer': return Number(property.value);
-        case 'float': return parseFloat(property.value);
-        default: break;
-      }
+    const value = await fetchPropertyByContext(session, context, name, maxDepth);
+    if (typeof value !== 'undefined') {
+      return value;
     }
   }
-  return '';
+  return undefined;
 };
 export const fetchPropertyChildren = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: EvaluatedValue): Promise<dbgp.Property[] | undefined> => {
   if (!(object instanceof dbgp.ObjectProperty)) {
@@ -356,6 +349,15 @@ export const fetchInheritedProperty = async(session: dbgp.Session, stackFrame: d
     return fetchInheritedProperty(session, stackFrame, baseProperty, key);
   }
   return undefined;
+};
+export const fetchInheritedProperties = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty): Promise<dbgp.Property[]> => {
+  const children = await fetchPropertyChildren(session, stackFrame, object) ?? [];
+  const base = await fetchProperty(session, `${object.fullName}.<base>`, stackFrame);
+  if (base instanceof dbgp.ObjectProperty) {
+    const nestedChildren = (await fetchInheritedProperties(session, stackFrame, base));
+    children.push(...nestedChildren);
+  }
+  return uniqBy(children, (property) => property.name.replace(/^<|>$/gu, '').toLocaleLowerCase());
 };
 export const setProperty = async(session: dbgp.Session, context: dbgp.Context, nameOrObject: string | dbgp.ObjectProperty, value: string | number): Promise<boolean> => {
   const fullName = getFullName(nameOrObject);
@@ -425,7 +427,7 @@ export class ParseError extends Error {
   }
 }
 export class ExpressionEvaluator {
-  private readonly session: dbgp.Session;
+  public readonly session: dbgp.Session;
   private readonly metaVariableMap: MetaVariableValueMap;
   private readonly parser: ExpressionParser;
   private readonly library: CaseInsensitiveMap<string, LibraryFunc>;
@@ -557,7 +559,7 @@ export class ExpressionEvaluator {
     }
 
     const name = await this.nodeToString(left);
-    const value = await this.evalNode(node.right);
+    const value = await this.evalNode(node.right, stackFrame, maxDepth);
     if (value instanceof dbgp.ObjectProperty) {
       return value;
     }
@@ -586,20 +588,20 @@ export class ExpressionEvaluator {
     if (node.operator === '&') {
       if (typeof node.expression !== 'string' && node.expression.type === 'identifier') {
         const name = await this.nodeToString(node.expression);
-        const address = await fetchPropertyAddress(this.session, name, stackFrame);
+        const address = await fetchPropertyAddress(this.session, name, stackFrame, maxDepth);
         if (address) {
           return address;
         }
         throw Error('Retrieving the address of a variable with a primitive value is not supported.');
       }
-      const expressionResult = this.evalNode(node.expression);
+      const expressionResult = this.evalNode(node.expression, stackFrame, maxDepth);
       if (expressionResult instanceof dbgp.ObjectProperty) {
         return expressionResult.address;
       }
       throw Error('Retrieving the address of a variable with a primitive value is not supported.');
     }
 
-    const expressionResult = await this.evalNode(node.expression);
+    const expressionResult = await this.evalNode(node.expression, stackFrame, maxDepth);
 
     switch (node.operator) {
       case '!': return negate(this.session, stackFrame, expressionResult);
@@ -637,7 +639,7 @@ export class ExpressionEvaluator {
       }
     }
     else {
-      const property = await this.evalNode(node.expression);
+      const property = await this.evalNode(node.expression, stackFrame, maxDepth);
       if (!(property instanceof dbgp.ObjectProperty)) {
         return '';
       }

@@ -4,10 +4,9 @@ import { Socket } from 'net';
 import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import convertHrTime from 'convert-hrtime';
-import { uniq, uniqBy } from 'lodash';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { isNumberLike, joinVariablePathArray, splitVariablePath, toFileUri } from './util/util';
+import { joinVariablePathArray, splitVariablePath, toFileUri } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
 import { isComObject, unescapeAhk } from './util/VariableManager';
@@ -690,67 +689,6 @@ export class Session extends EventEmitter {
   public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
   }
-  public async existsProperty(context: Context, name: string): Promise<boolean> {
-    const splitedVariablePathList = splitVariablePath(this.ahkVersion, this.normalizeVariablePath(name));
-
-    for await (const [ i ] of Object.entries(splitedVariablePathList.slice(0, -1))) {
-      const index = Number(i);
-      const currentName = joinVariablePathArray(splitedVariablePathList.slice(0, index + 1));
-      const property = await this.safeFetchProperty(context, currentName, 1);
-      if (!property) {
-        return false;
-      }
-
-      const lastLoop = splitedVariablePathList.length - 1 <= index;
-      if (!lastLoop && property instanceof PrimitiveProperty) {
-        return false;
-      }
-
-      if (property instanceof ObjectProperty) {
-        let childName = splitedVariablePathList[index + 1];
-        const isIndex = (/^\[\d+\]$/u).test(childName);
-        if (!isIndex && childName.startsWith('[')) {
-          childName = childName.replace(/^\["?((?:""|[^"])*)"?\]$/u, '$1');
-        }
-
-        const containsChild = property.children.some((child) => equalsIgnoreCase(child.name, childName));
-        if (containsChild) {
-          continue;
-        }
-        const inherited = await this.fetchInheritedProperty(context, property.fullName, childName);
-        if (inherited) {
-          continue;
-        }
-        return false;
-      }
-    }
-    return true;
-  }
-  public normalizeVariablePath(variablePath: string): string {
-    const normalizedPathList: string[] = [];
-    for (const part of splitVariablePath(this.ahkVersion, variablePath)) {
-      let normalizedPath = part;
-      if (2 <= this.ahkVersion.mejor && part.startsWith(`['`) && normalizedPath.endsWith(`']`)) {
-        normalizedPath = part.replace(/^\['/u, '["').replace(/'\]$/u, '"]').replace(/`'/u, `'`).replace(/(?<!^\[)"(?!\]$)/u, '`"');
-      }
-      normalizedPathList.push(normalizedPath);
-    }
-    return joinVariablePathArray(normalizedPathList);
-  }
-  public async fetchAllPropertyNames(): Promise<string[]> {
-    const { stackFrames } = await this.sendStackGetCommand();
-    if (stackFrames.length === 0) {
-      return [];
-    }
-
-    const variableNames: string[] = [];
-    const { contexts } = await this.sendContextNamesCommand(stackFrames[0]);
-    for await (const context of contexts) {
-      const { properties } = await this.sendContextGetCommand(context);
-      variableNames.push(...properties.map((property) => property.name));
-    }
-    return uniq(variableNames);
-  }
   public async fetchProperty(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> {
     const { properties } = await this.sendPropertyGetCommand(context, name, maxDepth);
     const property = properties[0];
@@ -826,148 +764,6 @@ export class Session extends EventEmitter {
       return property.children.find((child) => child.name === '<base>' && equalsIgnoreCase(child.name, `<${propertyName}>`));
     }
     return undefined;
-  }
-  public async fetchInheritedProperty(context: Context, parentName: string, key: string): Promise<Property | undefined> {
-    const baseProperty = await this.fetchProperty(context, `${parentName}.<base>`);
-    if (!(baseProperty && baseProperty instanceof ObjectProperty)) {
-      return undefined;
-    }
-    const property = await this.safeFetchProperty(context, `${baseProperty.fullName}.${key}`);
-    if (property) {
-      return property;
-    }
-    return this.fetchInheritedProperty(context, baseProperty.fullName, key);
-  }
-  public async evaluate(name: string, stackFrame?: StackFrame, maxDepth = 1): Promise<Property | undefined> {
-    let _stackFrame: StackFrame;
-    if (stackFrame) {
-      _stackFrame = stackFrame;
-    }
-    else {
-      const stackFrames = (await this.sendStackGetCommand()).stackFrames;
-      if (stackFrames.length === 0) {
-        return undefined;
-      }
-      _stackFrame = stackFrames[0];
-    }
-
-    const resolvedName = (await this.resolveVariablePath(name, stackFrame));
-    const { contexts } = await this.sendContextNamesCommand(_stackFrame);
-    for await (const context of contexts) {
-      if (!(await this.existsProperty(context, resolvedName))) {
-        continue;
-      }
-
-      const property = await this.safeFetchProperty(context, resolvedName, maxDepth);
-      if (property) {
-        return property;
-      }
-
-      const variablePathArray = splitVariablePath(this.ahkVersion, resolvedName);
-      if (variablePathArray.length < 2) {
-        continue;
-      }
-      const shortName = variablePathArray.pop()!;
-
-      // Common to v1 and v2, do not search for inherited properties when using bracket notation
-      if (shortName.startsWith('[')) {
-        continue;
-      }
-
-      const parentName = joinVariablePathArray(variablePathArray);
-      const inheritedProperty = await this.fetchInheritedProperty(context, parentName, shortName);
-      if (inheritedProperty) {
-        return inheritedProperty;
-      }
-    }
-    return undefined;
-  }
-  public async resolveVariablePath(variablePath: string, stackFrame?: StackFrame): Promise<string> {
-    const resolvedVariablePathArray: string[] = [];
-    const splitedVariablePathList = splitVariablePath(this.ahkVersion, variablePath);
-    for await (const pathPart of splitedVariablePathList) {
-      let resolvedPathPart = this.normalizeVariablePath(pathPart);
-
-      const isBracketNotationWithVariable = (2 <= this.ahkVersion.mejor ? /^\[(?!"|')/u : /^\[(?!")/u).test(pathPart);
-      if (isBracketNotationWithVariable) {
-        const _variablePath = pathPart.slice(1, -1);
-        if (isNumberLike(_variablePath)) {
-          resolvedVariablePathArray.push(pathPart);
-          continue;
-        }
-
-        const property = await this.evaluate(_variablePath, stackFrame);
-        if (property instanceof PrimitiveProperty) {
-          const escapedValue = property.value.replace(/"/gu, 2 <= this.ahkVersion.mejor ? '`"' : '""');
-          resolvedPathPart = isNumberLike(escapedValue) ? `[${escapedValue}]` : `["${escapedValue}"]`;
-        }
-        else if (property instanceof ObjectProperty) {
-          resolvedPathPart = `[Object(${property.address})]`;
-        }
-      }
-      resolvedVariablePathArray.push(resolvedPathPart);
-    }
-    return joinVariablePathArray(resolvedVariablePathArray);
-  }
-  public async fetchSuggestList(variablePath: string): Promise<Property[]> {
-    const fixedVariablePath = variablePath.replace(/<|>/gu, '');
-
-    // #region util
-    const getInheritedChildren = async(property: ObjectProperty): Promise<Property[]> => {
-      const children = [ ...property.children ];
-      const base = await this.evaluate(`${property.fullName}.<base>`);
-      if (base instanceof ObjectProperty) {
-        const nestedChildren = (await getInheritedChildren(base)).filter((property) => property.name !== '<base>');
-        children.push(...nestedChildren);
-      }
-      // return children;
-      return uniqBy(children, (property) => property.name.replace(/^<|>$/gu, '').toLocaleLowerCase());
-    };
-    const getChildren = async(variablePath: string): Promise<Property[] | undefined> => {
-      const property = await this.evaluate(variablePath);
-      if (property instanceof ObjectProperty) {
-        return getInheritedChildren(property);
-      }
-      return undefined;
-    };
-    // #endregion util
-
-    if ((/(\[|\])\s*$/u).test(fixedVariablePath)) {
-      return this.fetchAllProperties();
-    }
-
-    // e.g. `object..field`
-    const isMultipleDot = (/\.{2,}$/u).test(fixedVariablePath);
-    if (isMultipleDot) {
-      return [];
-    }
-
-    const propertyPathArray = splitVariablePath(this.ahkVersion, fixedVariablePath);
-    if (propertyPathArray.length === 0 || propertyPathArray.length === 1) {
-      return this.fetchAllProperties();
-    }
-
-    const propertyName = propertyPathArray[propertyPathArray.length - 1];
-    const parentVariablePath = joinVariablePathArray(propertyPathArray.slice(0, -1));
-
-    const isBracketNotation = propertyName.startsWith('[');
-    if (isBracketNotation && 2 <= this.ahkVersion.mejor) {
-      const openQuoteRegExp = /(?<!\[|`)("|')\s*$/u;
-      if (openQuoteRegExp.test(propertyName)) {
-        return this.fetchAllProperties();
-      }
-      const closeQuoteRegExp = /(?<!\[)("|')\s*(\])?$\s*$/u;
-      if (closeQuoteRegExp.test(propertyName)) {
-        return this.fetchAllProperties();
-      }
-
-      const fixedVariablePath = parentVariablePath;
-      return (await getChildren(fixedVariablePath) ?? []).filter((child) => {
-        return child.name.startsWith('[');
-      });
-    }
-
-    return await getChildren(parentVariablePath) ?? [];
   }
   public async close(): Promise<void> {
     this.removeAllListeners();
