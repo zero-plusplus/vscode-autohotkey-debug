@@ -13,6 +13,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#31](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/31) Add Function breakpoint
     * Added: [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
     * Added: [#257](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/257) Add Exception Breakpoint
+    * Added: [#264](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/264) Add `vscode-autohotkey-debug.commands.runToEndOfFunction` vscode command
     * Added: [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.pinnedFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
     * Added: [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.leftmostFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
     * Added: [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.rightmostFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)

@@ -32,6 +32,11 @@ const showValue = async(text: string): Promise<void> => {
   const doc = await vscode.workspace.openTextDocument(uri); // calls back into the provider
   await vscode.window.showTextDocument(doc, { preview: true });
 };
+
+export let enableRunToEndOfFunction = false;
+export const setEnableRunToEndOfFunction = (state: boolean): void => {
+  enableRunToEndOfFunction = state;
+};
 export const registerCommands = (context: vscode.ExtensionContext): void => {
   context.subscriptions.push(vscode.workspace.registerTextDocumentContentProvider('valuepreview', new class implements vscode.TextDocumentContentProvider {
     public readonly onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
@@ -134,5 +139,9 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
       throw Error('File not found.');
     }
     throw Error('`vscode-autohotkey-debug.variables.rightmostFile` can be used with vscode v1.67.0 or higher.');
+  }));
+  context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.commands.runToEndOfFunction', (): void => {
+    enableRunToEndOfFunction = true;
+    vscode.commands.executeCommand('workbench.action.debug.stepOut');
   }));
 };
