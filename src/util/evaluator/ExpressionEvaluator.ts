@@ -408,6 +408,12 @@ export const simulateSetProperty = async(session: dbgp.Session, stackFrame: dbgp
 export class ParseError extends Error {
   public readonly message: string;
   public readonly shortMessage: string;
+  constructor(matchResult: ohm.MatchResult) {
+    super();
+
+    this.message = matchResult.message ?? '';
+    this.shortMessage = matchResult.shortMessage ?? '';
+  }
   public get expected(): string {
     const message = this.message.split('\n')[3] ?? '';
     const match = message.match(/(?<=Expected\s)(?<expected>.+)$/ui);
@@ -418,12 +424,6 @@ export class ParseError extends Error {
       .replace(/(?<!\\)"/gu, '`')
       .replace(/\\"/gu, '"');
     return `Expected ${expected}`;
-  }
-  constructor(matchResult: ohm.MatchResult) {
-    super();
-
-    this.message = matchResult.message ?? '';
-    this.shortMessage = matchResult.shortMessage ?? '';
   }
 }
 export class ExpressionEvaluator {

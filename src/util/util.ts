@@ -3,7 +3,7 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { statSync } from 'fs';
 import { URI } from 'vscode-uri';
 
-export const isDirectory = (dirPath): boolean => {
+export const isDirectory = (dirPath: string): boolean => {
   try {
     return statSync(dirPath).isDirectory();
   }
@@ -36,7 +36,7 @@ export const isIntegerLike = (value: any): boolean => {
   if (isFloatLike(value)) {
     return false;
   }
-  return !isNaN(Number(value)) && Number.isInteger(parseFloat(value));
+  return !isNaN(Number(value)) && Number.isInteger(parseFloat(String(value)));
 };
 export const toArray = <T>(value: any): T[] => {
   return (Array.isArray(value) ? value : [ value ]) as T[];

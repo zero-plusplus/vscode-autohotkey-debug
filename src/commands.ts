@@ -95,9 +95,13 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
   // Command variables
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.pinnedFile', (): string => {
     if (semver.gte(vscode.version, '1.67.0')) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const tabGroups: any = (vscode.window as any).tabGroups;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const tab = tabGroups.all.flatMap((tabGroup: any) => tabGroup.tabs as unknown[]).find((tab) => tab.isPinned as boolean);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (tab?.input?.uri) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         return URI.parse(tab.input.uri).fsPath;
       }
       throw Error('Pinned file not found.');
@@ -106,16 +110,23 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
   }));
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.leftmostFile', (): string => {
     if (semver.gte(vscode.version, '1.67.0')) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const tabGroups: any = (vscode.window as any).tabGroups;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (tabGroups.all.length === 0) {
         throw Error('File not found.');
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const tab = tabGroups.all[0];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (tab.tabs.length === 0) {
         throw Error('File not found.');
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const leftmostTab = tab.tabs[0];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (leftmostTab.input?.uri) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         return URI.parse(leftmostTab.input.uri).fsPath;
       }
       throw Error('File not found.');
@@ -124,16 +135,23 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
   }));
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.rightmostFile', (): string => {
     if (semver.gte(vscode.version, '1.67.0')) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const tabGroups: any = (vscode.window as any).tabGroups;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (tabGroups.all.length === 0) {
         throw Error('File not found.');
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const tab = tabGroups.all[tabGroups.all.length - 1];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (tab.tabs.length === 0) {
         throw Error('File not found.');
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const leftmostTab = tab.tabs[tab.tabs.length - 1];
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (leftmostTab.input?.uri) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         return URI.parse(leftmostTab.input.uri).fsPath;
       }
       throw Error('File not found.');

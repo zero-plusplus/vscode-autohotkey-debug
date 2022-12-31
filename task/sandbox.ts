@@ -6,7 +6,7 @@ import { isDirectory } from '../src/util/util';
 
 (async(): Promise<void> => {
   const rootDir = path.resolve(__dirname, '..');
-  const packageJson = JSON.parse(await fs.readFile(`${rootDir}/package.json`, 'utf-8'));
+  const packageJson = JSON.parse(await fs.readFile(`${rootDir}/package.json`, 'utf-8')) as { name: string; version: string };
   const packageName = String(packageJson.name);
   const packageVersion = String(packageJson.version);
   const tempDir = path.resolve(`${String(process.env.USERPROFILE)}/AppData/Local/Temp`);

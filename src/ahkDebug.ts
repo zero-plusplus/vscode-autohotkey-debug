@@ -112,9 +112,6 @@ export class AhkDebugSession extends LoggingDebugSession {
   private symbolFinder?: sym.SymbolFinder;
   private callableSymbols: sym.NamedNodeBase[] | undefined;
   private exceptionArgs?: DebugProtocol.SetExceptionBreakpointsArguments;
-  private get isClosedSession(): boolean {
-    return this.session!.socketClosed || this.isTerminateRequested;
-  }
   private server?: net.Server;
   private ahkProcess?: AutoHotkeyProcess;
   private readonly metaVaribalesByFrameId = new Map<number, MetaVariableValueMap>();
@@ -141,11 +138,15 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.configProvider = provider;
     this.traceLogger = new TraceLogger((e): void => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       this.sendEvent(e);
     });
     this.setDebuggerColumnsStartAt1(true);
     this.setDebuggerLinesStartAt1(true);
     this.setDebuggerPathFormat('uri');
+  }
+  private get isClosedSession(): boolean {
+    return this.session!.socketClosed || this.isTerminateRequested;
   }
   protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
     response.body = {

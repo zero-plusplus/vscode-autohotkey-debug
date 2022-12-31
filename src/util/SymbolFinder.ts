@@ -270,7 +270,7 @@ export class SymbolFinder {
   public parseIncludeNode(context: ParserContext, includeLine: string, includePath: string): void {
     const resolvedIncludePath = this.resolver.resolve(includePath, {
       A_LineFile: context.sourceFile,
-    });
+    }) ?? '';
     const newContext = this.createContext(resolvedIncludePath, context);
     this.parse(newContext);
 
@@ -462,7 +462,7 @@ export class SymbolFinder {
       }).join('\r\n');
     });
   }
-  public createContext(sourceFile, prevContext?: ParserContext): ParserContext {
+  public createContext(sourceFile: string, prevContext?: ParserContext): ParserContext {
     const rootSource = readFileSync(sourceFile, 'utf-8');
     const context: ParserContext = {
       ...prevContext,

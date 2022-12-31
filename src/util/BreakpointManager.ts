@@ -34,12 +34,6 @@ export class Breakpoint implements BreakpointAdvancedData {
   public unverifiedLine?: number;
   public unverifiedColumn?: number;
   public action?: () => Promise<void>;
-  public get filePath(): string {
-    return URI.parse(this.fileUri).fsPath;
-  }
-  public get hasCondition(): boolean {
-    return Boolean(this.condition || this.hitCondition);
-  }
   constructor(dbgpBreakpoint: dbgp.Breakpoint, advancedData?: BreakpointAdvancedData) {
     this.id = dbgpBreakpoint.id;
     this.fileUri = dbgpBreakpoint.fileUri;
@@ -59,6 +53,12 @@ export class Breakpoint implements BreakpointAdvancedData {
     if (advancedData?.shouldBreak) {
       this.shouldBreak = advancedData.shouldBreak;
     }
+  }
+  public get filePath(): string {
+    return URI.parse(this.fileUri).fsPath;
+  }
+  public get hasCondition(): boolean {
+    return Boolean(this.condition || this.hitCondition);
   }
 }
 export class LineBreakpoints extends Array<Breakpoint> {

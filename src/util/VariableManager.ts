@@ -188,6 +188,14 @@ export class Category implements Scope {
   public readonly variablesReference: number;
   public readonly expensive: boolean;
   public children?: Variable[];
+  constructor(scopes: Scope[], categoryData: CategoryData, allCategoriesData: CategoryData[], expensive = false) {
+    this.variablesReference = handles.create(this);
+    this.expensive = expensive;
+    this.scopes = scopes;
+    this.categoryData = categoryData;
+    this.categoryMatcher = this.createCategoryMatcher(categoryData.matchers);
+    this.allCategoriesData = allCategoriesData;
+  }
   public get context(): dbgp.Context {
     return this.scopes[0].context;
   }
@@ -196,14 +204,6 @@ export class Category implements Scope {
   }
   public get name(): string {
     return this.categoryData.label;
-  }
-  constructor(scopes: Scope[], categoryData: CategoryData, allCategoriesData: CategoryData[], expensive = false) {
-    this.variablesReference = handles.create(this);
-    this.expensive = expensive;
-    this.scopes = scopes;
-    this.categoryData = categoryData;
-    this.categoryMatcher = this.createCategoryMatcher(categoryData.matchers);
-    this.allCategoriesData = allCategoriesData;
   }
   public create(value: Variable | Scope | Category): number {
     return handles.create(value);
@@ -357,17 +357,34 @@ export class VariableGroup extends Array<Scope | Category | Categories | Variabl
 export class Variable implements DebugProtocol.Variable {
   public readonly hasChildren: boolean;
   public _isLoadedChildren: boolean;
-  public get isLoadedChildren(): boolean {
-    return this._isLoadedChildren;
-  }
   public readonly session: dbgp.Session;
   public readonly name: string;
-  public get value(): string {
-    return formatProperty(this.property, this.session.ahkVersion);
-  }
   public readonly variablesReference: number;
   public readonly __vscodeVariableMenuContext: 'string' | 'number' | 'object';
   public readonly type?: string;
+  public _property: dbgp.Property;
+  constructor(session: dbgp.Session, property: dbgp.Property) {
+    this.hasChildren = property instanceof dbgp.ObjectProperty;
+    this._isLoadedChildren = property instanceof dbgp.ObjectProperty && 0 < property.children.length;
+
+    this.session = session;
+    this._property = property;
+    this.name = property.name;
+    this.variablesReference = this.hasChildren ? handles.create(this) : 0;
+    this.type = property.type;
+    if (property instanceof dbgp.PrimitiveProperty) {
+      this.__vscodeVariableMenuContext = isNumberLike(property.value) ? 'number' : 'string';
+    }
+    else {
+      this.__vscodeVariableMenuContext = 'object';
+    }
+  }
+  public get isLoadedChildren(): boolean {
+    return this._isLoadedChildren;
+  }
+  public get value(): string {
+    return formatProperty(this.property, this.session.ahkVersion);
+  }
   public get indexedVariables(): number | undefined {
     if (this.property instanceof dbgp.ObjectProperty && this.property.isArray && 100 < this.property.maxIndex!) {
       return this.property.maxIndex;
@@ -380,7 +397,6 @@ export class Variable implements DebugProtocol.Variable {
   public get isArray(): boolean {
     return this.property instanceof dbgp.ObjectProperty ? this.property.isArray : false;
   }
-  public _property: dbgp.Property;
   public get property(): dbgp.Property {
     return this._property;
   }
@@ -398,22 +414,6 @@ export class Variable implements DebugProtocol.Variable {
   }
   public get children(): dbgp.Property[] | undefined {
     return this.property instanceof dbgp.ObjectProperty ? this.property.children : undefined;
-  }
-  constructor(session: dbgp.Session, property: dbgp.Property) {
-    this.hasChildren = property instanceof dbgp.ObjectProperty;
-    this._isLoadedChildren = property instanceof dbgp.ObjectProperty && 0 < property.children.length;
-
-    this.session = session;
-    this._property = property;
-    this.name = property.name;
-    this.variablesReference = this.hasChildren ? handles.create(this) : 0;
-    this.type = property.type;
-    if (property instanceof dbgp.PrimitiveProperty) {
-      this.__vscodeVariableMenuContext = isNumberLike(property.value) ? 'number' : 'string';
-    }
-    else {
-      this.__vscodeVariableMenuContext = 'object';
-    }
   }
   public async loadChildren(): Promise<void> {
     if (!this.isLoadedChildren) {
@@ -474,6 +474,14 @@ export class MetaVariable implements DebugProtocol.Variable {
   public readonly name: string;
   public readonly type = 'metavariable';
   public readonly variablesReference: number;
+  public rawValue: MetaVariableValue | LazyMetaVariableValue;
+  public loadedPromiseValue?: MetaVariableValue;
+  public children?: Array<Variable | MetaVariable | DebugProtocol.Variable>;
+  constructor(name: string, value: MetaVariableValue | LazyMetaVariableValue) {
+    this.name = name;
+    this.rawValue = value;
+    this.variablesReference = isPrimitive(value) ? 0 : handles.create(this);
+  }
   public get indexedVariables(): number | undefined {
     if (this.rawValue instanceof Variable) {
       return this.rawValue.indexedVariables;
@@ -486,9 +494,6 @@ export class MetaVariable implements DebugProtocol.Variable {
     }
     return undefined;
   }
-  public rawValue: MetaVariableValue | LazyMetaVariableValue;
-  public loadedPromiseValue?: MetaVariableValue;
-  public children?: Array<Variable | MetaVariable | DebugProtocol.Variable>;
   public get value(): string {
     const value = this.loadedPromiseValue ?? this.rawValue;
     if (isPrimitive(value)) {
@@ -504,11 +509,6 @@ export class MetaVariable implements DebugProtocol.Variable {
   }
   public get hasChildren(): boolean {
     return !isPrimitive(this.loadedPromiseValue ?? this.rawValue);
-  }
-  constructor(name: string, value: MetaVariableValue | LazyMetaVariableValue) {
-    this.name = name;
-    this.rawValue = value;
-    this.variablesReference = isPrimitive(value) ? 0 : handles.create(this);
   }
   public async loadChildren(maxDepth?: number): Promise<Array<Variable | MetaVariable | DebugProtocol.Variable>> {
     this.children = await this.createChildren(maxDepth);
@@ -532,6 +532,7 @@ export class MetaVariable implements DebugProtocol.Variable {
       if (value instanceof MetaVariable) {
         return value;
       }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       return new MetaVariable(key, value);
     });
   }

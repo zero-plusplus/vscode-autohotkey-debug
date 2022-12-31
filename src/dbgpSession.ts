@@ -94,7 +94,7 @@ const errorMssages = {
 export class DbgpError extends Error {
   public code: number;
   constructor(code: string) {
-    const message = errorMssages[code];
+    const message = String(errorMssages[code]);
     super(message);
 
     this.name = 'DbgpError';
@@ -166,16 +166,6 @@ export abstract class Property {
   public name: string;
   public type: PropertyType;
   public size: number;
-  public get isIndexKey(): boolean {
-    return this.index !== null;
-  }
-  public get index(): number | null {
-    const match = this.name.match(/\[(?<index>\d+)\]/u);
-    if (match?.groups?.index) {
-      return parseInt(match.groups.index, 10);
-    }
-    return null;
-  }
   constructor(propertyNode: XmlNode, context: Context) {
     const { facet, fullname, name, type, size } = propertyNode.attributes;
 
@@ -185,6 +175,16 @@ export abstract class Property {
     this.name = name;
     this.type = type as PropertyType;
     this.size = parseInt(size, 10);
+  }
+  public get isIndexKey(): boolean {
+    return this.index !== null;
+  }
+  public get index(): number | null {
+    const match = this.name.match(/\[(?<index>\d+)\]/u);
+    if (match?.groups?.index) {
+      return parseInt(match.groups.index, 10);
+    }
+    return null;
   }
   public static from(propertyNode: XmlNode, context: Context): Property {
     if (propertyNode.attributes.type === 'object') {
@@ -201,21 +201,6 @@ export class ObjectProperty extends Property {
   public address: number;
   public page: number;
   public pageSize: number;
-  public get maxIndex(): number | undefined {
-    for (let reverseIndex = this.children.length - 1; 0 <= reverseIndex; reverseIndex--) {
-      const property = this.children[reverseIndex];
-      const index = property.index;
-      if (index) {
-        return index;
-      }
-    }
-
-    const isEmptyArrayInV2 = this.className === 'Array';
-    if (isEmptyArrayInV2) {
-      return 0;
-    }
-    return undefined;
-  }
   constructor(propertyNode: XmlNode, context: Context) {
     super(propertyNode, context);
     const { classname, address, page, pagesize, children } = propertyNode.attributes;
@@ -249,6 +234,21 @@ export class ObjectProperty extends Property {
         }
       }
     }
+  }
+  public get maxIndex(): number | undefined {
+    for (let reverseIndex = this.children.length - 1; 0 <= reverseIndex; reverseIndex--) {
+      const property = this.children[reverseIndex];
+      const index = property.index;
+      if (index) {
+        return index;
+      }
+    }
+
+    const isEmptyArrayInV2 = this.className === 'Array';
+    if (isEmptyArrayInV2) {
+      return 0;
+    }
+    return undefined;
   }
 }
 export class PrimitiveProperty extends Property {
@@ -445,7 +445,7 @@ export class BreakpointListResponse extends Response {
 
     if (response.breakpoint) {
       const breakpoints = Array.isArray(response.breakpoint) ? response.breakpoint : [ response.breakpoint ];
-      breakpoints.forEach((breakpoint) => {
+      breakpoints.forEach((breakpoint: XmlNode) => {
         this.breakpoints.push(new Breakpoint(breakpoint));
       });
     }
@@ -489,20 +489,11 @@ export class Session extends EventEmitter {
   public readonly DEFAULT_MAX_DEPTH = 1;
   public readonly id: number = 1;
   private _ahkVersion!: AhkVersion;
-  public get ahkVersion(): AhkVersion {
-    return this._ahkVersion;
-  }
   private readonly socket: Socket;
   private readonly logger?: TraceLogger;
   private readonly pendingCommands = new Map<number, Command>();
   private transactionCounter = 1;
   private insufficientData: Buffer = Buffer.from('');
-  public get socketWritable(): boolean {
-    return this.socket.writable;
-  }
-  public get socketClosed(): boolean {
-    return !this.socket.writable;
-  }
   constructor(socket: Socket, logger?: TraceLogger) {
     super();
 
@@ -548,6 +539,15 @@ export class Session extends EventEmitter {
         }
       }
     });
+  }
+  public get ahkVersion(): AhkVersion {
+    return this._ahkVersion;
+  }
+  public get socketWritable(): boolean {
+    return this.socket.writable;
+  }
+  public get socketClosed(): boolean {
+    return !this.socket.writable;
   }
   public async sendCommand(commandName: CommandName, args?: string, data?: string): Promise<XmlNode> {
     return new Promise<XmlNode>((resolve, reject) => {
@@ -826,6 +826,7 @@ export class Session extends EventEmitter {
       // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171
       // If it contains a newline, it should be escaped in an AutoHotkey-like manner.
       const xml_str = data.toString().replace(/\r\n/gu, '`r`n').replace(/\n/gu, '`n');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const response = parser.parse(xml_str, {
         attributeNamePrefix: '',
         attrNodeName: 'attributes',
