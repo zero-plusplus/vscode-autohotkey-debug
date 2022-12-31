@@ -841,13 +841,11 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const value = await this.evaluator.eval(args.expression, stackFrame.dbgpStackFrame);
         if (typeof value === 'undefined') {
-          if (args.context === 'hover') {
-            response.body = {
-              result: 'Not initialized',
-              type: 'undefined',
-              variablesReference: -1,
-            };
-          }
+          response.body = {
+            result: 'Not initialized',
+            type: 'undefined',
+            variablesReference: -1,
+          };
           this.sendResponse(response);
           return;
         }
