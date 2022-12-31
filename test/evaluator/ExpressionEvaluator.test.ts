@@ -75,7 +75,18 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('Expression_comma_sequence', async(): Promise<void> => {
-    expect(await evaluator.eval(`1, 2, 3`)).toBe(3);
+    expect(await evaluator.eval(`123, b`)).toBe('1111011');
+    expect(await evaluator.eval(`123, d`)).toBe(123);
+    expect(await evaluator.eval(`0x123, d`)).toBe(291);
+    expect(await evaluator.eval(`123, o`)).toBe('173');
+    expect(await evaluator.eval(`123, x`)).toBe('0x7b');
+    expect(await evaluator.eval(`123, h`)).toBe('0x7b');
+    expect(await evaluator.eval(`123, X`)).toBe('0x7B');
+    expect(await evaluator.eval(`123, H`)).toBe('0x7B');
+    expect(await evaluator.eval(`123, xb`)).toBe('7b');
+    expect(await evaluator.eval(`123, hb`)).toBe('7b');
+    expect(await evaluator.eval(`123, Xb`)).toBe('7B');
+    expect(await evaluator.eval(`123, Hb`)).toBe('7B');
   });
 
   test('AssignmentExpression_assign', async(): Promise<void> => {

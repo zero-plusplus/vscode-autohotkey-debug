@@ -405,4 +405,45 @@ library_for_v1.set('Contains', contains);
 library_for_v1.set('Includes', contains);
 library_for_v2.set('Contains', contains);
 library_for_v2.set('Includes', contains);
+
+const toBinary: LibraryFunc = async(session, stackFrame, value) => {
+  const decimal = parseInt(String(value), 10);
+  if (isNaN(decimal)) {
+    return '';
+  }
+  return Promise.resolve(decimal.toString(2));
+};
+library_for_v1.set('ToBinary', toBinary);
+library_for_v2.set('ToBinary', toBinary);
+
+const toDecimal: LibraryFunc = async(session, stackFrame, value) => {
+  const decimal = parseInt(String(value), 10);
+  if (isNaN(decimal)) {
+    return '';
+  }
+  return Promise.resolve(decimal);
+};
+library_for_v1.set('ToDecimal', toDecimal);
+library_for_v2.set('ToDecimal', toDecimal);
+
+const toOctal: LibraryFunc = async(session, stackFrame, value) => {
+  const decimal = parseInt(String(value), 10);
+  if (isNaN(decimal)) {
+    return '';
+  }
+  return Promise.resolve(decimal.toString(8));
+};
+
+library_for_v1.set('ToOctal', toOctal);
+library_for_v2.set('ToOctal', toOctal);
+
+const toHex: LibraryFunc = async(session, stackFrame, value, upper = 0) => {
+  const decimal = parseInt(String(value), 10);
+  if (isNaN(decimal)) {
+    return '';
+  }
+  return Promise.resolve(upper ? `0x${decimal.toString(16).toUpperCase()}` : `0x${decimal.toString(16)}`);
+};
+library_for_v1.set('ToHex', toHex);
+library_for_v2.set('ToHex', toHex);
 // #endregion
