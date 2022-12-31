@@ -11,9 +11,9 @@ export interface BreakpointAdvancedData {
   hitCondition?: string;
   logMessage?: string;
   logGroup?: BreakpointLogGroup;
-  shouldBreak: boolean;
+  shouldBreak?: boolean;
   hidden?: boolean;
-  hitCount: number;
+  hitCount?: number;
   unverifiedLine?: number;
   unverifiedColumn?: number;
   action?: () => Promise<void>;
@@ -157,6 +157,23 @@ export class BreakpointManager {
       this.breakpointsMap.set(key, registeredLineBreakpoints);
     }
     return settedBreakpoint;
+  }
+  public async unregisterBreakpoint(breakpoint: Breakpoint): Promise<void> {
+    const lineBreakpoints = this.getLineBreakpoints(breakpoint.fileUri, breakpoint.line);
+    if (!lineBreakpoints || lineBreakpoints.length === 0) {
+      return;
+    }
+
+    const newLineBreakpoints = new LineBreakpoints(...lineBreakpoints.filter((lineBreakpoint) => breakpoint.id !== lineBreakpoint.id));
+    const key = this.createKey(breakpoint.fileUri, breakpoint.line);
+
+    try {
+      await this.session.sendBreakpointRemoveCommand(breakpoint.id);
+      this.breakpointsMap.delete(key);
+      this.breakpointsMap.set(key, newLineBreakpoints);
+    }
+    catch {
+    }
   }
   public async unregisterLineBreakpoints(fileUri: string, line: number): Promise<void> {
     const breakpoints = this.getLineBreakpoints(fileUri, line);

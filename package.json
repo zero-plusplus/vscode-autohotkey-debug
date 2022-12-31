@@ -101,6 +101,10 @@
       {
         "command": "vscode-autohotkey-debug.variables.rightmostFile",
         "title": "Returns the path of the last file found in the last tab group"
+      },
+      {
+        "command": "vscode-autohotkey-debug.commands.runToEndOfFunction",
+        "title": "Break at end of function"
       }
     ],
     "menus": {
@@ -147,6 +151,10 @@
         },
         {
           "command": "vscode-autohotkey-debug.variables.rightmostFile",
+          "when": "false"
+        },
+        {
+          "command": "vscode-autohotkey-debug.commands.runToEndOfFunction",
           "when": "false"
         }
       ],

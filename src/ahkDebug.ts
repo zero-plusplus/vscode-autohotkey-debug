@@ -40,6 +40,7 @@ import { AhkConfigurationProvider, CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 import { SymbolFinder } from './util/SymbolFinder';
 import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from './util/evaluator/ExpressionEvaluator';
+import { enableRunToEndOfFunction, setEnableRunToEndOfFunction } from './commands';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -427,9 +428,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           return typeof breakpoint === 'string' ? { name: breakpoint } : breakpoint;
         }));
       }
-      this.callableSymbols = this.symbolFinder!
-        .find(this.config.program)
-        .filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as sym.NamedNodeBase[];
+      this.callableSymbols = this.initCallableSymbols();
     }
 
     for await (const breakpoint of breakpoints) {
@@ -541,12 +540,31 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
+    let runToEndOfFunctionBreakpoint: Breakpoint | undefined;
+    if (enableRunToEndOfFunction) {
+      this.callableSymbols = this.initCallableSymbols();
+      const filePath = this.currentStackFrames?.[0].source.path;
+      const funcName = this.currentStackFrames?.[0].name;
+      if (filePath && funcName?.includes('()')) {
+        const symbol = this.callableSymbols.find((symbol) => funcName.match(new RegExp(`^${symbol.fullname}()`, 'iu')));
+        if (symbol?.location.endIndex) {
+          const fileUri = toFileUri(filePath);
+          const line = sym.getLine(symbol, symbol.location.endIndex);
+          runToEndOfFunctionBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, { group: 'runToEndOfFunction' });
+        }
+      }
+    }
+
     this.currentMetaVariableMap.clear();
     this.pauseRequested = false;
     this.isPaused = false;
 
     this.clearPerfTipsDecorations();
     const result = await this.session!.sendContinuationCommand('step_out');
+    if (runToEndOfFunctionBreakpoint) {
+      await this.breakpointManager!.unregisterBreakpoint(runToEndOfFunctionBreakpoint);
+      setEnableRunToEndOfFunction(false);
+    }
     this.checkContinuationStatus(result);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
@@ -956,6 +974,15 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     response.body = { sources };
     this.sendResponse(response);
+  }
+  private initCallableSymbols(): sym.NamedNodeBase[] {
+    if (this.callableSymbols) {
+      return this.callableSymbols;
+    }
+    this.callableSymbols = this.symbolFinder!
+      .find(this.config.program)
+      .filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as sym.NamedNodeBase[];
+    return this.callableSymbols;
   }
   private async getAllLoadedSourcePath(): Promise<string[]> {
     if (0 < this.loadedSources.length) {
