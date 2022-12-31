@@ -700,7 +700,55 @@ export class ExpressionEvaluator {
 
     switch (operator) {
       case ',': {
-        return right;
+        if (!(typeof node.right === 'object' && node.right.type === 'identifier')) {
+          return left;
+        }
+
+        const specifier = await this.nodeToString(node.right);
+        switch (specifier) {
+          case 'b': {
+            const toBinary = this.library.get('toBinary')!;
+            return toBinary(this.session, stackFrame, left);
+          }
+          case 'd': {
+            const toDecimal = this.library.get('ToDecimal')!;
+            return toDecimal(this.session, stackFrame, left);
+          }
+          case 'o': {
+            const toOctal = this.library.get('ToOctal')!;
+            return toOctal(this.session, stackFrame, left);
+          }
+          case 'x':
+          case 'h': {
+            const toHex = this.library.get('ToHex')!;
+            return toHex(this.session, stackFrame, left);
+          }
+          case 'X':
+          case 'H': {
+            const toHex = this.library.get('ToHex')!;
+            return toHex(this.session, stackFrame, left, 1);
+          }
+          case 'xb':
+          case 'hb': {
+            const toHex = this.library.get('ToHex')!;
+            const result = await toHex(this.session, stackFrame, left);
+            if (result === '') {
+              return '';
+            }
+            return String(result).slice(2);
+          }
+          case 'Xb':
+          case 'Hb': {
+            const toHex = this.library.get('ToHex')!;
+            const result = await toHex(this.session, stackFrame, left, 1);
+            if (result === '') {
+              return '';
+            }
+            return String(result).slice(2);
+          }
+          default: break;
+        }
+        return '';
       }
       case ' ':
       case '\t':
