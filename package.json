@@ -1159,7 +1159,6 @@
     "fast-glob": "^3.2.7",
     "fast-xml-parser": "^3.16.0",
     "he": "^1.2.0",
-    "is-port-taken": "^0.0.3",
     "lazy-promise": "^4.0.0",
     "lodash": "^4.17.20",
     "matcher": "^4.0.0",
@@ -1170,6 +1169,7 @@
     "read-dir-deep": "^7.0.1",
     "regex-parser": "^2.2.11",
     "semver": "^7.3.7",
+    "tcp-port-used": "^1.0.2",
     "underscore.string": "^3.3.5",
     "vscode-uri": "^2.1.2",
     "wildcard-match": "^5.1.2"
@@ -1186,6 +1186,7 @@
     "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
     "@types/normalize-path": "^3.0.0",
+    "@types/tcp-port-used": "^1.0.1",
     "@types/underscore": "^1.9.4",
     "@types/underscore.string": "^0.0.38",
     "@types/vscode": "^1.63.0",

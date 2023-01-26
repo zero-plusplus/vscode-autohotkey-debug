@@ -6,7 +6,7 @@ import { existsSync } from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { defaults, groupBy, isString, range } from 'lodash';
-import isPortTaken from 'is-port-taken';
+import tcpPortUsed from 'tcp-port-used';
 import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider, findWord } from './CompletionItemProvider';
 import { AhkDebugSession, LaunchRequestArguments } from './ahkDebug';
@@ -308,7 +308,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
       })();
 
       for await (const port of portRange.range) {
-        const portUsed = await isPortTaken(port, config.hostname);
+        const portUsed = await tcpPortUsed.check(port, config.hostname);
         if (!portUsed) {
           config.port = port;
           return;

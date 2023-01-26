@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { statSync } from 'fs';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
+import { range } from 'lodash';
+import tcpPortUsed from 'tcp-port-used';
 import { URI } from 'vscode-uri';
 
 export const isDirectory = (dirPath: string): boolean => {
@@ -179,4 +181,14 @@ export const toFileUri = (file: string): string => {
   }
 
   return URI.file(file).toString();
+};
+
+export const getUnusedPort = async(hostname: string, start: number, end: number): Promise<number> => {
+  for await (const port of range(start, end)) {
+    const portUsed = await tcpPortUsed.check(port, hostname);
+    if (!portUsed) {
+      return port;
+    }
+  }
+  throw Error(`All ports in the specified range (${start}-${end}) are in use.`);
 };
