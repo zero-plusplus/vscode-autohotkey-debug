@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+import * as path from 'path';
+import { promises as fs, readFileSync, statSync } from 'fs';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { statSync } from 'fs';
+import { range } from 'lodash';
+import tcpPortUsed from 'tcp-port-used';
 import { URI } from 'vscode-uri';
+import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 
 export const isDirectory = (dirPath: string): boolean => {
   try {
@@ -179,4 +183,36 @@ export const toFileUri = (file: string): string => {
   }
 
   return URI.file(file).toString();
+};
+
+export const getUnusedPort = async(hostname: string, start: number, end: number): Promise<number> => {
+  for await (const port of range(start, end)) {
+    const portUsed = await tcpPortUsed.check(port, hostname);
+    if (!portUsed) {
+      return port;
+    }
+  }
+  throw Error(`All ports in the specified range (${start}-${end}) are in use.`);
+};
+
+const fileCache = new CaseInsensitiveMap<string, string>();
+export const readFileCache = async(filePath: string): Promise<string> => {
+  const _filePath = path.resolve(filePath);
+  if (fileCache.has(_filePath)) {
+    return fileCache.get(_filePath)!;
+  }
+
+  const source = await fs.readFile(_filePath, 'utf-8');
+  fileCache.set(_filePath, source);
+  return source;
+};
+export const readFileCacheSync = (filePath: string): string => {
+  const _filePath = path.resolve(filePath);
+  if (fileCache.has(_filePath)) {
+    return fileCache.get(_filePath)!;
+  }
+
+  const source = readFileSync(_filePath, 'utf-8');
+  fileCache.set(_filePath, source);
+  return source;
 };

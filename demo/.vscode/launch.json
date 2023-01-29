@@ -26,7 +26,6 @@
             },
             "useExceptionBreakpoint": true,
             "useAnnounce": "detail",
-            "useFunctionBreakpoint": true,
             "variableCategories": "recommend"
         },
         {
@@ -145,6 +144,72 @@
                 },
             ],
             "useAnnounce": "detail",
+        },
+        {
+            "name": "setHiddenBreakpoints Test",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${file}",
+            "useExceptionBreakpoint": true,
+            "setHiddenBreakpoints": [
+                {
+                    "label": "Stop On Entry",
+                    "breakpoints": [
+                        {
+                            "target": "${file}",
+                            "line": 1,
+                        }
+                    ],
+                },
+                {
+                    "label": "Stop On Exit",
+                    "breakpoints": [
+                        {
+                            "target": "${file}",
+                            "line": -1,
+                        }
+                    ],
+                },
+                {
+                    "label": "Stop On Entry/Exit",
+                    "breakpoints": [
+                        {
+                            "target": "${file}",
+                            "line": [ 1, -1 ],
+                        }
+                    ],
+                },
+                {
+                    "label": "Function Trace",
+                    "breakpoints": [
+                        {
+                            "target": "*",
+                            "line": 1,
+                            "log": "{A_ThisFunc} start"
+                        },
+                        {
+                            "target": "*",
+                            "line": -1,
+                            "log": "{A_ThisFunc} end",
+                        },
+                    ]
+                },
+                {
+                    "label": "Global Variable Trace",
+                    "breakpoints": [
+                        {
+                            "target": "${workspaceFolder}/*.*",
+                            "line": {
+                                "pattern": "^\\s*(global)\\s+(?<var>[a-zA-Z0-9@#$]+)\\s*(?=:=)",
+                                "select": "all",
+                                "ignoreCase": true,
+                                "offset": 1,
+                            },
+                            "log": "{GetMeta(\"$1\")} {GetMeta(\"$var\")} := \"{GetVar(GetMeta(\"$var\"))}\"",
+                        },
+                    ]
+                }
+            ],
         },
         {
             "name": "AutoHotkey Debug (UIA)",

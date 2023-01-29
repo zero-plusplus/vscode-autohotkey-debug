@@ -5,7 +5,7 @@ import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../../src/dbgpSession';
 import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
-import { timeoutPromise, toFileUri } from '../../src/util/util';
+import { getUnusedPort, timeoutPromise, toFileUri } from '../../src/util/util';
 import { getFalse, getTrue } from '../../src/util/evaluator/library';
 import { MetaVariableValueMap } from '../../src/util/VariableManager';
 
@@ -44,8 +44,8 @@ const closeSession = async(session: dbgp.Session, process: ChildProcess): Promis
 };
 
 const sampleDir = path.resolve(__dirname, 'ahk');
-const port = 9003;
 const hostname = '127.0.0.1';
+const getPort = async(): Promise<number> => getUnusedPort(hostname, 9000, 9030);
 describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   let process: ChildProcess;
   let server: net.Server;
@@ -56,7 +56,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   // let undefined_ahk: EvaluatedValue;
 
   beforeAll(async() => {
-    const data = await launchDebug('AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk'), port, hostname);
+    const data = await launchDebug('AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk'), await getPort(), hostname);
     process = data.process;
     server = data.server;
     session = data.session;
@@ -685,7 +685,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   // let undefined_ahk: EvaluatedValue;
 
   beforeAll(async() => {
-    const data = await launchDebug('v2/AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk2'), port + 1, hostname);
+    const data = await launchDebug('v2/AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk2'), await getPort(), hostname);
     process = data.process;
     server = data.server;
     session = data.session;

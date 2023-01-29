@@ -1,19 +1,24 @@
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../src/dbgpSession';
 import * as net from 'net';
+import { getUnusedPort } from '../src/util/util';
 
+const hostname = 'localhost';
 describe('Debug session test', () => {
   let socket: net.Socket;
   let serverSocket: net.Socket;
   let server: net.Server;
   let session: dbgp.Session;
-  beforeAll(function(done) {
-    serverSocket = net.connect(9000, 'localhost');
-    server = net.createServer((_socket) => {
-      socket = _socket;
-      session = new dbgp.Session(socket);
-      done();
-    }).listen(9000, 'localhost');
+  beforeAll(async() => {
+    const port = await getUnusedPort(hostname, 9000, 9030);
+    return new Promise<void>((resolve) => {
+      server = net.createServer((_socket) => {
+        socket = _socket;
+        session = new dbgp.Session(socket);
+        resolve();
+      }).listen(port, 'localhost');
+      serverSocket = net.connect(port, hostname);
+    });
   });
   afterAll(function() {
     socket.end();

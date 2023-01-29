@@ -1033,7 +1033,7 @@ export class ExpressionEvaluator {
         return '';
       }
 
-      const name = await this.nodeToString(node.arguments[0]);
+      const name = await this.evalNode(node.arguments[0]);
       const maxDepth = 2 <= node.arguments.length
         ? Number(node.arguments[1])
         : 1;
