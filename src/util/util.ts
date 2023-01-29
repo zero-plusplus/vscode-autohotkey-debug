@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { statSync } from 'fs';
+import * as path from 'path';
+import { promises as fs, readFileSync, statSync } from 'fs';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { range } from 'lodash';
 import tcpPortUsed from 'tcp-port-used';
 import { URI } from 'vscode-uri';
+import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 
 export const isDirectory = (dirPath: string): boolean => {
   try {
@@ -191,4 +193,26 @@ export const getUnusedPort = async(hostname: string, start: number, end: number)
     }
   }
   throw Error(`All ports in the specified range (${start}-${end}) are in use.`);
+};
+
+const fileCache = new CaseInsensitiveMap<string, string>();
+export const readFileCache = async(filePath: string): Promise<string> => {
+  const _filePath = path.resolve(filePath);
+  if (fileCache.has(_filePath)) {
+    return fileCache.get(_filePath)!;
+  }
+
+  const source = await fs.readFile(_filePath, 'utf-8');
+  fileCache.set(_filePath, source);
+  return source;
+};
+export const readFileCacheSync = (filePath: string): string => {
+  const _filePath = path.resolve(filePath);
+  if (fileCache.has(_filePath)) {
+    return fileCache.get(_filePath)!;
+  }
+
+  const source = readFileSync(_filePath, 'utf-8');
+  fileCache.set(_filePath, source);
+  return source;
 };

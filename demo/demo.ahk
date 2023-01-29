@@ -1,5 +1,6 @@
 ﻿#SingleInstance Force
 #Warn All, StdOut
+
 globalVar := "Global"
 global SuperGlobalVar := "SuperGlobal"
 
@@ -50,6 +51,7 @@ demo()
     circular.circular := circular
 
     instance := new Clazz()
+    property := instance.property
     instance.property := "overwrite"
     instance.method()
 }

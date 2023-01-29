@@ -5,6 +5,7 @@ import { equalsIgnoreCase } from './stringUtils';
 import { toFileUri } from './util';
 
 export type BreakpointLogGroup = 'start' | 'startCollapsed' | 'end' | undefined;
+export type BreakpointAction = () => Promise<void>;
 export interface BreakpointAdvancedData {
   group?: string;
   condition?: string;
@@ -14,9 +15,10 @@ export interface BreakpointAdvancedData {
   shouldBreak?: boolean;
   hidden?: boolean;
   hitCount?: number;
+  additionalMetaVariables?: CaseInsensitiveMap<string, string>;
   unverifiedLine?: number;
   unverifiedColumn?: number;
-  action?: () => Promise<void>;
+  action?: BreakpointAction;
 }
 export type BreakpointKind = 'breakpoint' | 'logpoint' | 'conditional breakpoint' | 'conditional logpoint';
 export class Breakpoint implements BreakpointAdvancedData {
@@ -33,7 +35,8 @@ export class Breakpoint implements BreakpointAdvancedData {
   public shouldBreak: boolean;
   public unverifiedLine?: number;
   public unverifiedColumn?: number;
-  public action?: () => Promise<void>;
+  public additionalMetaVariables?: CaseInsensitiveMap<string, string>;
+  public action?: BreakpointAction;
   constructor(dbgpBreakpoint: dbgp.Breakpoint, advancedData?: BreakpointAdvancedData) {
     this.id = dbgpBreakpoint.id;
     this.fileUri = dbgpBreakpoint.fileUri;
@@ -47,6 +50,7 @@ export class Breakpoint implements BreakpointAdvancedData {
     this.hidden = advancedData?.hidden ?? false;
     this.unverifiedLine = advancedData?.unverifiedLine ?? dbgpBreakpoint.line;
     this.unverifiedColumn = advancedData?.unverifiedColumn;
+    this.additionalMetaVariables = advancedData?.additionalMetaVariables;
     this.action = advancedData?.action;
 
     this.shouldBreak = !(this.logMessage || this.action);
@@ -131,8 +135,8 @@ export class BreakpointManager {
       _advancedData = advancedData;
     }
 
-    const response = await this.session.sendBreakpointSetCommand(fileUri, unverifiedLine);
-    const settedBreakpoint = new Breakpoint((await this.session.sendBreakpointGetCommand(response.id)).breakpoint, _advancedData);
+    const { id: breakpointId } = await this.session.sendBreakpointSetCommand(fileUri, unverifiedLine);
+    const settedBreakpoint = new Breakpoint((await this.session.sendBreakpointGetCommand(breakpointId)).breakpoint, _advancedData);
     const verifiedLine = settedBreakpoint.line;
 
     let registeredLineBreakpoints: LineBreakpoints;
@@ -164,13 +168,16 @@ export class BreakpointManager {
       return;
     }
 
-    const newLineBreakpoints = new LineBreakpoints(...lineBreakpoints.filter((lineBreakpoint) => breakpoint.id !== lineBreakpoint.id));
     const key = this.createKey(breakpoint.fileUri, breakpoint.line);
-
     try {
       await this.session.sendBreakpointRemoveCommand(breakpoint.id);
       this.breakpointsMap.delete(key);
-      this.breakpointsMap.set(key, newLineBreakpoints);
+
+      const breakpointWithoutTarget = lineBreakpoints.filter((lineBreakpoint) => breakpoint.id !== lineBreakpoint.id);
+      if (0 < breakpointWithoutTarget.length) {
+        const newLineBreakpoints = new LineBreakpoints(...breakpointWithoutTarget);
+        this.breakpointsMap.set(key, newLineBreakpoints);
+      }
     }
     catch {
     }
@@ -207,6 +214,20 @@ export class BreakpointManager {
       }
     }
     return removedBreakpoints;
+  }
+  public async unregisterBreakpointGroup(groupName: string): Promise<void> {
+    const targets: Breakpoint[] = [];
+    for (const [ , lineBreakpoint ] of this.breakpointsMap) {
+      for (const breakpoint of lineBreakpoint) {
+        if (breakpoint.group === groupName) {
+          targets.push(breakpoint);
+        }
+      }
+    }
+
+    for await (const breakpoint of targets) {
+      await this.unregisterBreakpoint(breakpoint);
+    }
   }
   private createKey(file: string, line: number): string {
     // The following encoding differences have been converted to path

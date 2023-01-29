@@ -23,6 +23,7 @@ import LazyPromise from 'lazy-promise';
 import { ImplicitLibraryPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
 import {
   Breakpoint,
+  BreakpointAction,
   BreakpointAdvancedData,
   BreakpointManager,
   LineBreakpoints,
@@ -33,7 +34,7 @@ import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
-import { now, timeoutPromise, toFileUri } from './util/util';
+import { now, readFileCache, readFileCacheSync, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
 import { AhkConfigurationProvider, CategoryData } from './extension';
@@ -41,9 +42,39 @@ import { version as debuggerAdapterVersion } from '../package.json';
 import { SymbolFinder } from './util/SymbolFinder';
 import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from './util/evaluator/ExpressionEvaluator';
 import { enableRunToEndOfFunction, setEnableRunToEndOfFunction } from './commands';
+import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
+
+export type MatchSelector = undefined | 'first' | 'last' | 'all' | number | number[];
+export type LineMatcher =
+  | number
+  | number[]
+  | RegExLineMatcher;
+export interface RegExLineMatcher {
+  pattern: string;
+  ignoreCase?: boolean;
+  select?: MatchSelector;
+  offset?: number;
+}
+export type LineMatchResult = { line: number; match?: RegExpMatchArray };
+export type HiddenBreakpointActionName = 'ClearConsole';
+export interface HiddenBreakpoint {
+  target: string | string[];
+  line: LineMatcher;
+  condition?: string;
+  hitCondition?: string;
+  log?: string;
+  break: boolean;
+  action?: HiddenBreakpointActionName;
+}
+export interface HiddenBreakpointWithUI {
+  id: string;
+  label: string;
+  breakpoints: HiddenBreakpoint[];
+}
+
 export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   name: string;
   program: string;
@@ -79,12 +110,12 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
     scanImplicitLibrary: boolean;
   };
   useExceptionBreakpoint: boolean;
-  useFunctionBreakpoint: boolean | Array<string | FunctionBreakPointAdvancedData>;
   openFileOnExit: string;
   trace: boolean;
   skipFunctions?: string[];
   skipFiles?: string[];
   variableCategories?: CategoryData[];
+  setHiddenBreakpoints?: Array<HiddenBreakpoint | HiddenBreakpointWithUI>;
   // The following is not a configuration, but is set to pass data to the debug adapter.
   cancelReason?: string;
   extensionContext: vscode.ExtensionContext;
@@ -110,7 +141,10 @@ export class AhkDebugSession extends LoggingDebugSession {
   private isTerminateRequested = false;
   private readonly configProvider: AhkConfigurationProvider;
   private symbolFinder?: sym.SymbolFinder;
-  private callableSymbols: sym.NamedNodeBase[] | undefined;
+  private symbols?: sym.NamedNode[];
+  private callableSymbols?: sym.NamedNode[];
+  private hiddenBreakpoints?: HiddenBreakpoint[];
+  private hiddenBreakpointsWithUI?: HiddenBreakpointWithUI[];
   private exceptionArgs?: DebugProtocol.SetExceptionBreakpointsArguments;
   private server?: net.Server;
   private ahkProcess?: AutoHotkeyProcess;
@@ -155,36 +189,58 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportsEvaluateForHovers: true,
       supportsSetExpression: true,
       supportsHitConditionalBreakpoints: true,
+      supportsFunctionBreakpoints: true,
       supportsLoadedSourcesRequest: true,
       supportsLogPoints: true,
       supportsSetVariable: true,
       supportTerminateDebuggee: true,
     };
 
-    const config = this.configProvider.config!;
-    if (config.useExceptionBreakpoint) {
+    const config = this.configProvider.config;
+    if (config?.setHiddenBreakpoints) {
+      this.hiddenBreakpoints = config.setHiddenBreakpoints.filter((hiddenBreakpoint) => !('label' in hiddenBreakpoint)) as HiddenBreakpoint[];
+      this.hiddenBreakpointsWithUI = config.setHiddenBreakpoints.filter((hiddenBreakpoint) => 'label' in hiddenBreakpoint) as HiddenBreakpointWithUI[];
+
+      response.body.exceptionBreakpointFilters = Array.isArray(response.body.exceptionBreakpointFilters)
+        ? response.body.exceptionBreakpointFilters
+        : [];
+      response.body.exceptionBreakpointFilters.push(...this.hiddenBreakpointsWithUI.map((hiddenBreakpoint, i): DebugProtocol.ExceptionBreakpointsFilter => {
+        hiddenBreakpoint.id = `hidden-breakpoint-${i}`;
+        return {
+          label: hiddenBreakpoint.label,
+          filter: hiddenBreakpoint.id,
+          supportsCondition: false,
+          default: false,
+        };
+      }));
+    }
+
+    if (config?.useExceptionBreakpoint) {
       response.body.supportsExceptionOptions = true;
       response.body.supportsExceptionFilterOptions = true;
       response.body.supportsExceptionInfoRequest = true;
-      response.body.exceptionBreakpointFilters = [
+
+      response.body.exceptionBreakpointFilters = Array.isArray(response.body.exceptionBreakpointFilters)
+        ? response.body.exceptionBreakpointFilters
+        : [];
+      response.body.exceptionBreakpointFilters.push(...[
         {
           filter: 'caught-exceptions',
           label: 'Caught Exceptions',
           conditionDescription: '',
+          description: '',
           supportsCondition: true,
           default: false,
         },
         {
           filter: 'uncaught-exceptions',
-          label: 'Uncaught Breakpoint',
+          label: 'Uncaught Exceptions',
           conditionDescription: '',
+          description: '',
           supportsCondition: false,
           default: false,
         },
-      ];
-    }
-    if (config.useFunctionBreakpoint) {
-      response.body.supportsFunctionBreakpoints = true;
+      ] as DebugProtocol.ExceptionBreakpointsFilter[]);
     }
 
     this.sendResponse(response);
@@ -390,8 +446,19 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     this.exceptionArgs = args;
 
-    const state = (this.exceptionArgs.filterOptions ?? []).some((filter) => filter.filterId.endsWith('exceptions'));
-    await this.session!.sendExceptionBreakpointCommand(state);
+    const exceptionEnabled = (this.exceptionArgs.filterOptions ?? []).some((filter) => filter.filterId.endsWith('exceptions'));
+    await this.session!.sendExceptionBreakpointCommand(exceptionEnabled);
+
+    if (this.hiddenBreakpointsWithUI) {
+      this.unregisterHiddenBreakpointsWithUI();
+
+      for await (const filterOption of this.exceptionArgs.filterOptions ?? []) {
+        const hiddenBreakpointWithUI = this.hiddenBreakpointsWithUI.find((breakpoint) => filterOption.filterId === breakpoint.id);
+        if (hiddenBreakpointWithUI) {
+          await this.registerHiddenBreakpointsWithUI(hiddenBreakpointWithUI);
+        }
+      }
+    }
     this.sendResponse(response);
   }
   protected async exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments, request?: DebugProtocol.Request): Promise<void> {
@@ -422,20 +489,11 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    const breakpoints: Array<DebugProtocol.FunctionBreakpoint | FunctionBreakPointAdvancedData> = [ ...args.breakpoints ];
-    if (!this.callableSymbols) {
-      if (typeof this.config.useFunctionBreakpoint === 'object') {
-        breakpoints.push(...this.config.useFunctionBreakpoint.map((breakpoint) => {
-          return typeof breakpoint === 'string' ? { name: breakpoint } : breakpoint;
-        }));
-      }
-      this.callableSymbols = this.initCallableSymbols();
-    }
+    this.initSymbols();
 
-    for await (const breakpoint of breakpoints) {
-      const isMatch = wildcard(breakpoint.name, { separator: '.' });
-      const symbols = this.callableSymbols.filter((symbol) => isMatch(sym.getFullName(symbol)));
-      for await (const symbol of symbols) {
+    for await (const breakpoint of args.breakpoints) {
+      const callableSymbols = this.findCallableSymbols(breakpoint.name);
+      for await (const symbol of callableSymbols) {
         try {
           const existsFunctionBreakpoint = this.registeredFunctionBreakpoints.find((breakpoint) => {
             return breakpoint.group === 'function-breakpoint'
@@ -459,9 +517,6 @@ export class AhkDebugSession extends LoggingDebugSession {
             unverifiedLine: line,
             unverifiedColumn: 1,
           } as BreakpointAdvancedData;
-          if ('logPoint' in breakpoint && breakpoint.logPoint !== '') {
-            advancedData.logMessage = breakpoint.logPoint;
-          }
 
           const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
           this.registeredFunctionBreakpoints.push(registeredBreakpoint);
@@ -483,6 +538,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
     await this.registerDebugDirective();
+    await this.registerHiddenBreakpoints();
 
     const result = this.config.stopOnEntry
       ? await this.session!.sendContinuationCommand('step_into')
@@ -543,11 +599,12 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     let runToEndOfFunctionBreakpoint: Breakpoint | undefined;
     if (enableRunToEndOfFunction) {
-      this.callableSymbols = this.initCallableSymbols();
+      this.initSymbols();
+
       const filePath = this.currentStackFrames?.[0].source.path;
       const funcName = this.currentStackFrames?.[0].name;
       if (filePath && funcName?.includes('()')) {
-        const symbol = this.callableSymbols.find((symbol) => funcName.match(new RegExp(`^${symbol.fullname}()`, 'iu')));
+        const symbol = this.callableSymbols?.find((symbol) => funcName.match(new RegExp(`^${symbol.fullname}()$`, 'iu')));
         if (symbol?.location.endIndex) {
           const fileUri = toFileUri(filePath);
           const line = sym.getLine(symbol, symbol.location.endIndex);
@@ -950,7 +1007,6 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
       return;
     }
-
     const loadedScriptPathList = await this.getAllLoadedSourcePath();
 
     const sources: DebugProtocol.Source[] = [];
@@ -974,14 +1030,13 @@ export class AhkDebugSession extends LoggingDebugSession {
     response.body = { sources };
     this.sendResponse(response);
   }
-  private initCallableSymbols(): sym.NamedNodeBase[] {
-    if (this.callableSymbols) {
-      return this.callableSymbols;
+  private initSymbols(): void {
+    if (this.symbols) {
+      return;
     }
-    this.callableSymbols = this.symbolFinder!
-      .find(this.config.program)
-      .filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type)) as sym.NamedNodeBase[];
-    return this.callableSymbols;
+
+    this.symbols = this.symbolFinder!.find(this.config.program).filter((symbol) => 'name' in symbol) as sym.NamedNode[];
+    this.callableSymbols = this.symbols.filter((node) => [ 'function', 'getter', 'setter' ].includes(node.type));
   }
   private async getAllLoadedSourcePath(): Promise<string[]> {
     if (0 < this.loadedSources.length) {
@@ -1007,6 +1062,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (e: unknown) {
     }
+  }
+  private async clearDebugConsole(): Promise<void> {
+    // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
+    await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+    await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+    await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
   }
   private async registerDebugDirective(): Promise<void> {
     if (!this.config.useDebugDirective) {
@@ -1096,12 +1157,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 hitCondition,
                 logMessage,
                 hidden: true,
-                action: async() => {
-                  // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
-                  await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-                  await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-                  await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-                },
+                action: this.createBreakpointAction('ClearConsole'),
               } as BreakpointAdvancedData;
               await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
             }
@@ -1120,6 +1176,224 @@ export class AhkDebugSession extends LoggingDebugSession {
     // const DEBUG_ns = DEBUG_hrtime[0] * 1e9 + DEBUG_hrtime[1];
     // const DEBUG_s = DEBUG_ns / 1e9;
     // this.printLogMessage(`elapsedTime: ${DEBUG_s}s`);
+  }
+  private createBreakpointAction(action?: HiddenBreakpointActionName): BreakpointAction | undefined {
+    if (typeof action === 'undefined') {
+      return undefined;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (action === 'ClearConsole') {
+      return async() => {
+        await this.clearDebugConsole();
+      };
+    }
+    return undefined;
+  }
+  private async matchLineNumbers(filePathOrNode: string | sym.NamedNode, lineMatcher: LineMatcher): Promise<LineMatchResult[]> {
+    if (typeof lineMatcher === 'number') {
+      if (lineMatcher === 0) {
+        return [ { line: 1 } ];
+      }
+      if (0 < lineMatcher) {
+        if (typeof filePathOrNode === 'string') {
+          return [ { line: lineMatcher } ];
+        }
+
+        const node = filePathOrNode;
+        return [ { line: sym.getLine(node, node.location.startIndex) + (lineMatcher - 1) } ];
+      }
+
+      if (typeof filePathOrNode === 'string') {
+        const source = await readFileCache(filePathOrNode);
+        const lineCount = source.split(/\r\n|\n/u).length;
+        return [ { line: lineCount - Math.abs(lineMatcher + 1) } ];
+      }
+
+      const node = filePathOrNode;
+      return [ { line: sym.getLine(node, node.location.endIndex) - Math.abs(lineMatcher + 1) } ];
+    }
+    else if (Array.isArray(lineMatcher)) {
+      return (await Promise.all(lineMatcher.map(async(line) => this.matchLineNumbers(filePathOrNode, line)))).flat();
+    }
+
+    if ('pattern' in lineMatcher) {
+      return this.regexMatchLines(filePathOrNode, lineMatcher);
+    }
+    return [];
+  }
+  private async regexMatchLines(filePathOrNode: string | sym.NamedNode, matcher: RegExLineMatcher): Promise<LineMatchResult[]> {
+    const source = typeof filePathOrNode === 'string'
+      ? await readFileCache(filePathOrNode)
+      : sym.getText(filePathOrNode);
+    const startLine = typeof filePathOrNode === 'string' ? 0 : sym.getLine(filePathOrNode, filePathOrNode.location.startIndex);
+
+    const lines = source.split(/\r\n|\n/u);
+    const regexp = new RegExp(matcher.pattern, matcher.ignoreCase ? 'ui' : 'u');
+    const offset = matcher.offset ? matcher.offset : 0;
+    const matchedLines = lines
+      .flatMap((line, i): LineMatchResult[] => {
+        const match = line.match(regexp);
+        if (!match) {
+          return [];
+        }
+        return [ { line: (startLine + (i + 1)) + offset, match } ];
+      });
+    return this.selectLineMatchResults(matchedLines, matcher.select);
+  }
+  private selectLineMatchResults(results: LineMatchResult[], selector: MatchSelector): LineMatchResult[] {
+    return results.filter((result, i) => {
+      if (typeof selector === 'undefined') {
+        return true;
+      }
+      if (selector === 'first' && i === 0) {
+        return true;
+      }
+      if (selector === 'last' && (results.length - 1) === i) {
+        return true;
+      }
+      if (selector === 'all') {
+        return true;
+      }
+
+      const i_1base = i + 1;
+      if (typeof selector === 'number' && selector === i_1base) {
+        return true;
+      }
+      else if (Array.isArray(selector) && selector.includes(i_1base)) {
+        return true;
+      }
+      return false;
+    });
+  }
+  private findCallableSymbols(matcher: string): sym.NamedNode[] {
+    this.initSymbols();
+
+    const regex = /(\[\]|\(\))$/u;
+    const target = matcher.replace(regex, '');
+    const targetKind = matcher.match(regex)?.[0];
+
+    const isMatch = wildcard(target, { separator: '.', flags: 'i' });
+    return (this.callableSymbols ?? []).filter((symbol, i, symbols) => {
+      const matchResult = isMatch(symbol.fullname);
+      if (targetKind === '()') {
+        return matchResult && symbol.type === 'function';
+      }
+      if (targetKind === '[]') {
+        return matchResult && (symbol.type === 'property' || symbol.type === 'getter' || symbol.type === 'setter');
+      }
+      if (!matchResult && symbol.type === 'getter') {
+        const isMatch = wildcard(`${target}.get`, { separator: '.', flags: 'i' });
+        return symbols.some((symbol) => {
+          return isMatch(symbol.fullname);
+        });
+      }
+      if (!matchResult && symbol.type === 'setter') {
+        const isMatch = wildcard(`${target}.set`, { separator: '.', flags: 'i' });
+        return symbols.some((symbol) => {
+          return isMatch(symbol.fullname);
+        });
+      }
+      return matchResult;
+    });
+  }
+  private async registerHiddenBreakpoint(breakpointData: HiddenBreakpoint, groupName: string): Promise<void> {
+    const createAdditionalMetaVariables = (lineMatchResult: LineMatchResult): CaseInsensitiveMap<string, string> | undefined => {
+      if (!lineMatchResult.match) {
+        return undefined;
+      }
+
+      const additionalMetaVariables = new CaseInsensitiveMap<string, string>();
+      lineMatchResult.match.forEach((match, i) => {
+        additionalMetaVariables.set(`$${i}`, match);
+      });
+      Object.entries(lineMatchResult.match.groups ?? []).forEach(([ key, value ], i) => {
+        additionalMetaVariables.set(`$${key}`, value);
+      });
+      return additionalMetaVariables;
+    };
+
+    const shouldBreak = typeof breakpointData.break === 'undefined'
+      ? !(breakpointData.log ?? breakpointData.action)
+      : breakpointData.break;
+    const logMessage = breakpointData.log ? `${breakpointData.log}\n` : undefined;
+    const action = this.createBreakpointAction(breakpointData.action);
+
+    const targets = Array.isArray(breakpointData.target) ? breakpointData.target : [ breakpointData.target ];
+    for await (const target of targets) {
+      const fileMode = target.includes('/') || target.includes('\\');
+      if (fileMode) {
+        const loadedSources = await this.getAllLoadedSourcePath();
+        const replaceSlash = (filePath: string): string => path.resolve(filePath).replaceAll('\\', '/');
+
+        const isMatch = wildcard(targets.map((target) => replaceSlash(target)), { flags: 'i' });
+        const targetFilePathList = loadedSources.filter((source) => {
+          return isMatch(replaceSlash(source));
+        });
+
+        for await (const filePath of targetFilePathList) {
+          const lineMatchResults = await this.matchLineNumbers(filePath, breakpointData.line);
+
+          for await (const lineMatchResult of lineMatchResults) {
+            await this.breakpointManager!.registerBreakpoint(toFileUri(filePath), lineMatchResult.line, {
+              condition: breakpointData.condition,
+              hitCondition: breakpointData.hitCondition,
+              shouldBreak,
+              hidden: true,
+              logMessage,
+              additionalMetaVariables: createAdditionalMetaVariables(lineMatchResult),
+              group: groupName,
+              action,
+            });
+          }
+        }
+        return;
+      }
+
+      const callableSymbols = this.findCallableSymbols(target);
+      for await (const callableSymbol of callableSymbols) {
+        const lineMatchResults = await this.matchLineNumbers(callableSymbol, breakpointData.line);
+
+        for await (const lineMatchResult of lineMatchResults) {
+          await this.breakpointManager!.registerBreakpoint(toFileUri(callableSymbol.location.sourceFile), lineMatchResult.line, {
+            condition: breakpointData.condition,
+            hitCondition: breakpointData.hitCondition,
+            shouldBreak,
+            hidden: true,
+            logMessage,
+            additionalMetaVariables: createAdditionalMetaVariables(lineMatchResult),
+            group: groupName,
+            action,
+          });
+        }
+      }
+    }
+  }
+  private async registerHiddenBreakpoints(): Promise<void> {
+    if (!this.hiddenBreakpoints) {
+      return;
+    }
+
+    for await (const breakpointData of this.hiddenBreakpoints) {
+      await this.registerHiddenBreakpoint(breakpointData, 'hidden-breakpoint');
+    }
+  }
+  private async registerHiddenBreakpointsWithUI(hiddenBreakpoint: HiddenBreakpointWithUI): Promise<void> {
+    for await (const breakpoint of hiddenBreakpoint.breakpoints) {
+      await this.registerHiddenBreakpoint(breakpoint, hiddenBreakpoint.id);
+    }
+  }
+  private async unregisterHiddenBreakpointWithUI(hiddenBreakpoint: HiddenBreakpointWithUI): Promise<void> {
+    return this.breakpointManager!.unregisterBreakpointGroup(hiddenBreakpoint.id);
+  }
+  private async unregisterHiddenBreakpointsWithUI(): Promise<void> {
+    if (!this.hiddenBreakpointsWithUI) {
+      return;
+    }
+
+    for await (const hiddenBreakpointWithUI of this.hiddenBreakpointsWithUI) {
+      await this.unregisterHiddenBreakpointWithUI(hiddenBreakpointWithUI);
+    }
   }
   private fixPathOfRuntimeError(errorMessage: string): string {
     if (-1 < errorMessage.search(/--->\t\d+:/gmu)) {
@@ -1451,7 +1725,17 @@ export class AhkDebugSession extends LoggingDebugSession {
         await breakpoint.action();
       }
       if ((breakpoint.logMessage || breakpoint.logGroup) && await this.evaluateCondition(breakpoint)) {
+        const tempMetaVariableNames: string[] = [];
+        if (breakpoint.additionalMetaVariables) {
+          breakpoint.additionalMetaVariables.forEach((value, key) => {
+            tempMetaVariableNames.push(key);
+            this.currentMetaVariableMap.set(key, value);
+          });
+        }
+
         await this.printLogMessage(breakpoint, 'stdout');
+
+        tempMetaVariableNames.forEach((name) => this.currentMetaVariableMap.delete(name));
       }
     }
   }
@@ -1871,9 +2155,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 this.evaluator = new ExpressionEvaluator(this.session, this.currentMetaVariableMap);
                 completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
                 completionItemProvider.evaluator = this.evaluator;
-                if (this.config.useFunctionBreakpoint) {
-                  this.symbolFinder = new SymbolFinder(this.session.ahkVersion);
-                }
+                this.symbolFinder = new SymbolFinder(this.session.ahkVersion, readFileCacheSync);
                 this.sendEvent(new InitializedEvent());
               })
               .on('warning', (warning: string) => {

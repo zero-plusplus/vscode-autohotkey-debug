@@ -166,6 +166,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
       useAnnounce: true,
       useLoadedScripts: true,
       useExceptionBreakpoint: false,
+      setHiddenBreakpoints: [],
       trace: false,
       // The following is not a configuration, but is set to pass data to the debug adapter.
       cancelReason: undefined,
@@ -564,6 +565,52 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         return;
       }
       throw Error('`variableCategories` must be a "recommend" or array.');
+    })();
+
+    // init setHiddenBreakpoints
+    ((): void => {
+      if (!Array.isArray(config.setHiddenBreakpoints)) {
+        throw Error('`setHiddenBreakpoints` must be a array.');
+      }
+
+      const checkHiddenBreakpoint = (value: any): boolean => {
+        if (!('target' in value)) {
+          throw Error('The `target` attribute is required.');
+        }
+        if (!(typeof value.target === 'string' || Array.isArray(value.target))) {
+          throw Error('The `target` must be a string or array.');
+        }
+        if ('condition' in value && typeof value.condition !== 'string') {
+          throw Error('The `condition` must be a string.');
+        }
+        if ('hitCondition' in value && typeof value.hitCondition !== 'string') {
+          throw Error('The `hitCondition` must be a string.');
+        }
+
+        if (!('line' in value) || typeof value.line === 'undefined') {
+          value.line = 1;
+        }
+        return true;
+      };
+      const checkHiddenBreakpointWithUI = (value: any): boolean => {
+        if (!('label' in value) || typeof value.label !== 'string') {
+          throw Error('The `label` must be a string.');
+        }
+        if (!('breakpoints' in value) || !Array.isArray(value.breakpoints)) {
+          throw Error('The `breakpoints` must be a array.');
+        }
+
+        for (const breakpoint of value.breakpoints) {
+          checkHiddenBreakpoint(breakpoint);
+        }
+        return true;
+      };
+
+      for (const setHiddenBreakpoint of config.setHiddenBreakpoints) {
+        if (checkHiddenBreakpointWithUI(setHiddenBreakpoint) || checkHiddenBreakpoint(setHiddenBreakpoint)) {
+          continue;
+        }
+      }
     })();
 
     // init trace

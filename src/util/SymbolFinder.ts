@@ -1,6 +1,7 @@
-import { readFileSync } from 'fs';
 import { AhkVersion, ImplicitLibraryPathExtractor, IncludePathResolver } from '@zero-plusplus/autohotkey-utilities';
+import { readFileSync } from 'fs';
 import { TextEditorLineNumbersStyle } from 'vscode';
+import { equalsIgnoreCase } from './stringUtils';
 
 export interface Position {
   line: number;
@@ -16,6 +17,8 @@ export interface Location {
 export type Node =
   | SkipNode
   | IncludeNode
+  | NamedNode;
+export type NamedNode =
   | ClassNode
   | FunctionNode
   | DynamicPropertyNode
@@ -40,6 +43,7 @@ export interface IncludeNode extends NodeBase {
 }
 export interface ClassNode extends NamedNodeBase {
   type: 'class';
+  superClass?: string;
   block: Location;
 }
 export interface FunctionNode extends NamedNodeBase {
@@ -73,29 +77,45 @@ export type ParserContext = {
   parsedNodes: Node[];
 };
 
-export const getFullName = (node: NamedNodeBase): string => {
-  if (0 < node.scope.length) {
-    return `${node.scope.join('.')}.${node.name}`;
-  }
-  return node.name;
+export const getText = (node: Node): string => {
+  return node.context.source.slice(node.location.startIndex, node.location.endIndex);
 };
-export const getLine = (node: NamedNodeBase, index: number): number => {
+export const getLine = (node: Node, index: number): number => {
   const startLine_base1 = Array.from(node.context.source.slice(0, index).matchAll(/\r\n|\n/gu)).length + 1;
   return startLine_base1;
 };
-export const getColumn = (node: NamedNodeBase, index: number): number => {
+export const getColumn = (node: Node, index: number): number => {
   const startColumn_base1 = (node.context.source.slice(0, index).match(/(^|(\r)?\n)(?<lastLine>.+)$/u)?.groups?.lastLine.length ?? 0) + 1;
   return startColumn_base1;
 };
+export const getAncestorsMap = (classNodes: ClassNode[]): Map<string, NamedNode[]> => {
+  // const rootClassNode = classNodes.filter((node) => node.superClass);
+  const ancestorsMap = new Map<string, NamedNode[]>();
+  for (const classNode of classNodes) {
+    const ancestors: NamedNode[] = [];
 
+    let currentSuperClass = classNodes.find((node) => equalsIgnoreCase(node.fullname, classNode.superClass ?? ''));
+    while (currentSuperClass) {
+      ancestors.push(currentSuperClass);
+      // eslint-disable-next-line @typescript-eslint/no-loop-func
+      currentSuperClass = classNodes.find((node) => equalsIgnoreCase(node.fullname, currentSuperClass?.superClass ?? ''));
+    }
+    ancestorsMap.set(classNode.fullname, ancestors);
+  }
+  return ancestorsMap;
+};
+
+type FileReader = (...params: any[]) => string;
 export class SymbolFinder {
   private readonly version: AhkVersion;
   private readonly resolver: IncludePathResolver;
   private readonly implicitExtractor: ImplicitLibraryPathExtractor;
-  constructor(version: string | AhkVersion) {
+  private readonly fileReader: FileReader;
+  constructor(version: string | AhkVersion, fileReader?: FileReader) {
     this.version = typeof version === 'string' ? new AhkVersion(version) : version;
     this.resolver = new IncludePathResolver(this.version);
     this.implicitExtractor = new ImplicitLibraryPathExtractor(this.version);
+    this.fileReader = fileReader ?? ((filePath: string): string => readFileSync(filePath, 'utf-8'));
   }
   public find(sourceFile: string): Node[] {
     const context = this.createContext(sourceFile);
@@ -180,7 +200,7 @@ export class SymbolFinder {
         this.parseIncludeNode(context, match.groups.include, match.groups.includePath);
       }
       else if (match.groups.class) {
-        this.parseClassNode(context, match.groups.className, match.groups.classIndent);
+        this.parseClassNode(context, match.groups.className, match.groups.superClassName, match.groups.classIndent);
       }
       else if (match.groups.func) {
         this.parseFunctionNode(context, match.groups.funcName, match.groups.funcIndent);
@@ -209,7 +229,7 @@ export class SymbolFinder {
     }
     context.parsedNodes.push(this.createSkipNode(context, _contents));
   }
-  public parseClassNode(context: ParserContext, name: string, indent: string): void {
+  public parseClassNode(context: ParserContext, name: string, superClassName: string, indent: string): void {
     const startIndex = context.index;
     const stack: string[] = [];
     context.scope.push(name);
@@ -242,7 +262,7 @@ export class SymbolFinder {
         }
 
         if (match?.groups?.class) {
-          this.parseClassNode(context, match.groups.className, match.groups.classIndent);
+          this.parseClassNode(context, match.groups.className, match.groups.superClassName, match.groups.classIndent);
         }
         else if (match?.groups?.func) {
           this.parseFunctionNode(context, match.groups.funcName, match.groups.funcIndent);
@@ -264,7 +284,7 @@ export class SymbolFinder {
 
     const location = this.createLocation(context, startIndex, context.index);
     const blockLocation = this.createLocation(context, startBlockIndent, context.index);
-    const classNode = this.createClassNode(context, name, location, blockLocation);
+    const classNode = this.createClassNode(context, name, superClassName, location, blockLocation);
     context.parsedNodes.push(classNode);
   }
   public parseIncludeNode(context: ParserContext, includeLine: string, includePath: string): void {
@@ -463,7 +483,7 @@ export class SymbolFinder {
     });
   }
   public createContext(sourceFile: string, prevContext?: ParserContext): ParserContext {
-    const rootSource = readFileSync(sourceFile, 'utf-8');
+    const rootSource = this.fileReader(sourceFile);
     const context: ParserContext = {
       ...prevContext,
       sourceFile,
@@ -498,12 +518,13 @@ export class SymbolFinder {
       location: this.createLocation(context, context.index, context.index + contents.length),
     };
   }
-  public createClassNode(context: ParserContext, name: string, location: Location, blockLocation: Location): ClassNode {
+  public createClassNode(context: ParserContext, name: string, superClassName: string, location: Location, blockLocation: Location): ClassNode {
     return {
       context,
       type: 'class',
       name,
       fullname: this.createFullName(context, name),
+      superClass: superClassName,
       scope: context.scope.slice(),
       location,
       block: blockLocation,

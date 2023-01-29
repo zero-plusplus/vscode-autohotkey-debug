@@ -20,6 +20,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#224](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/224) Add `{callstack.trace}` to the MetaVariable
 * [#257](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/257) Add Exception Breakpoint
 * [#264](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/264) Add `vscode-autohotkey-debug.commands.runToEndOfFunction` vscode command
+* [#266](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/266) Add `setHiddenBreakpoints` attribute in launch.json
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.pinnedFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.leftmostFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.rightmostFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)

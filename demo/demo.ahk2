@@ -1,8 +1,7 @@
-#Warn All, StdOut
 #SingleInstance Force
-; #Include <Util>
-#Include "%A_LineFile%/../lib/Util.ahk"
+#Warn All, StdOut
 
+#Include "%A_LineFile%/../lib/Util.ahk"
 
 globalVar := "Global"
 global SuperGlobalVar := "SuperGlobal"
@@ -63,6 +62,7 @@ demo()
     circular.circular := circular
 
     instance := Clazz()
+    property := instance.property
     instance.property := "overwrite"
     instance.method()
 }
