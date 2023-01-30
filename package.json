@@ -214,6 +214,7 @@
         "runtime": "node",
         "configurationAttributes": {
           "launch": {
+            "additionalProperties": false,
             "properties": {
               "runtime": {
                 "type": "string",
@@ -394,6 +395,7 @@
                 "examples": [
                   "{{elapsedTime_s}}s elapsed"
                 ],
+                "additionalProperties": false,
                 "properties": {
                   "format": {
                     "type": "string",
@@ -427,6 +429,7 @@
                   "boolean",
                   "object"
                 ],
+                "additionalProperties": false,
                 "properties": {
                   "useBreakpointDirective": {
                     "type": "boolean",
@@ -463,6 +466,7 @@
                   "object"
                 ],
                 "description": "Whether to show OutputDebug in the debug console. Or more detailed settings about its behavior.",
+                "additionalProperties": false,
                 "properties": {
                   "category": {
                     "type": "string",
@@ -500,6 +504,7 @@
                   "boolean",
                   "object"
                 ],
+                "additionalProperties": false,
                 "properties": {
                   "scanImplicitLibrary": {
                     "type": "boolean",
@@ -554,6 +559,7 @@
                     "Global",
                     {}
                   ],
+                  "additionalProperties": false,
                   "properties": {
                     "label": {
                       "type": "string",
@@ -611,6 +617,7 @@
                           "Global",
                           {}
                         ],
+                        "additionalProperties": false,
                         "properties": {
                           "method": {
                             "type": "string",
@@ -870,6 +877,7 @@
             }
           },
           "attach": {
+            "additionalProperties": false,
             "properties": {
               "runtime": {
                 "type": "string",
@@ -926,6 +934,7 @@
                 "examples": [
                   "{{elapsedTime_s}}s elapsed"
                 ],
+                "additionalProperties": false,
                 "properties": {
                   "format": {
                     "type": "string",
@@ -959,6 +968,7 @@
                   "boolean",
                   "object"
                 ],
+                "additionalProperties": false,
                 "properties": {
                   "useBreakpointDirective": {
                     "type": "boolean",
@@ -990,6 +1000,7 @@
                   "object"
                 ],
                 "description": "Whether to show OutputDebug in the debug console. Or more detailed settings about its behavior.",
+                "additionalProperties": false,
                 "properties": {
                   "category": {
                     "type": "string",
@@ -1035,6 +1046,7 @@
                   "boolean",
                   "object"
                 ],
+                "additionalProperties": false,
                 "properties": {
                   "scanImplicitLibrary": {
                     "type": "boolean",
@@ -1089,6 +1101,7 @@
                     "Global",
                     {}
                   ],
+                  "additionalProperties": false,
                   "properties": {
                     "label": {
                       "type": "string",
@@ -1146,6 +1159,7 @@
                           "Global",
                           {}
                         ],
+                        "additionalProperties": false,
                         "properties": {
                           "method": {
                             "type": "string",
