@@ -39,6 +39,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Fixed: [#255](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/255) Objects with child elements in index notation such as `["a & -"]` may get stuck when retrieving child elements
     * Fixed: [#256](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/256) v2 only bug. If double/single quotes are used in #Include directive, they do not appear in Loaded Scripts
     * Fixed: [#262](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/262) If runtime is v2, it may be aborted with an error when attaching
+    * Fixed: [#285](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/285) The `extends` attribute in launch.json does not work in the multi-root workspace and throws an error
 
 * `1.11.0` - 2022-02-11
     * Added: [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json
