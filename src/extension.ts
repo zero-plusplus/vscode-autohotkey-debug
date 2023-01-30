@@ -2,9 +2,10 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable require-atomic-updates */
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import JSONC from 'jsonc-parser';
 import { defaults, groupBy, isString, range } from 'lodash';
 import tcpPortUsed from 'tcp-port-used';
 import { getAhkVersion } from './util/getAhkVersion';
@@ -134,7 +135,10 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
   public config?: LaunchRequestArguments;
   public resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
     if (config.extends) {
-      const launch = vscode.workspace.getConfiguration().get<Record<string, any>>('launch');
+      const launch = folder
+        ? JSONC.parse(readFileSync(path.resolve(folder.uri.fsPath, '.vscode', 'launch.json'), 'utf-8'))
+        : vscode.workspace.getConfiguration().get<Record<string, any>>('launch');
+
       if (launch && 'configurations' in launch && Array.isArray(launch.configurations)) {
         const sourceConfig = launch.configurations.find((conf) => equalsIgnoreCase(conf.name, config.extends));
         if (!sourceConfig) {
