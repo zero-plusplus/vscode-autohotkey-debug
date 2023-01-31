@@ -1,5 +1,4 @@
-import { describe } from '@jest/globals';
-import * as assert from 'assert';
+import { describe, expect } from '@jest/globals';
 import { ExpressionParser } from '../../src/util/evaluator/ExpressionParser';
 
 describe('ExpressionParser', () => {
@@ -24,8 +23,10 @@ describe('ExpressionParser', () => {
     'true ? true : false',
     'obj.member',
     'obj.member[3]',
+    'obj["member"][3]',
     'arr[3]',
     'arr[3, 4]',
+    'arr[3][4]',
     'func()',
     '1 < 2',
     '1 <= 2',
@@ -39,7 +40,10 @@ describe('ExpressionParser', () => {
   test('parse', () => {
     for (const testData of testDataList) {
       const result = parser.parse(testData);
-      assert.ok(result.succeeded(), result.message ? `${testData}\n${result.message}` : testData);
+      if (!result.succeeded()) {
+        console.log(result.message ? `${testData}\n${result.message}` : testData);
+      }
+      expect(result.succeeded()).toBeTruthy();
     }
   });
 });

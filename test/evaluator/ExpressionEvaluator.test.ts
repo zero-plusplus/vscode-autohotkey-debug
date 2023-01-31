@@ -1,54 +1,18 @@
-import * as fs from 'fs';
 import * as net from 'net';
-import { ChildProcess, spawn } from 'child_process';
+import { ChildProcess } from 'child_process';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../../src/dbgpSession';
 import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
-import { getUnusedPort, timeoutPromise, toFileUri } from '../../src/util/util';
 import { getFalse, getTrue } from '../../src/util/evaluator/library';
 import { MetaVariableValueMap } from '../../src/util/VariableManager';
-
-export const debugAutoHotkey = (file: string, runtime?: string, port = 9000, hostname = 'localhost'): ChildProcess => {
-  let _runtime = runtime ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey/AutoHotkey.exe`;
-  if (!path.isAbsolute(_runtime)) {
-    _runtime = path.join(`${String(process.env.PROGRAMFILES)}/AutoHotkey`, _runtime);
-  }
-  return spawn(_runtime, [ `/Debug=${hostname}:${port}`, '/force', '/restart', file ]);
-};
-export const launchDebug = async(runtime: string, program: string, port: number, hostname: string): Promise<{ session: dbgp.Session; process: ChildProcess; server: net.Server }> => {
-  return new Promise((resolve) => {
-    const process = debugAutoHotkey(program, runtime, port, hostname);
-    const server = net.createServer()
-      .listen(port, hostname)
-      .on('connection', (socket) => {
-        const session = new dbgp.Session(socket)
-          .on('init', (initPacket: dbgp.InitPacket) => {
-            // eslint-disable-next-line no-sync
-            const source = fs.readFileSync(program, 'utf-8');
-            const lines = source.split('\r\n').length;
-            session.sendBreakpointSetCommand(toFileUri(program), lines);
-            session.sendRunCommand();
-            resolve({ session, process, server });
-          });
-      });
-  });
-};
-const closeSession = async(session: dbgp.Session, process: ChildProcess): Promise<void> => {
-  if (session.socketWritable) {
-    await timeoutPromise(session.sendStopCommand(), 500).catch(() => {
-      process.kill();
-    });
-  }
-  await session.close();
-};
+import { closeSession, getPort, launchDebug } from '../util';
 
 const sampleDir = path.resolve(__dirname, 'ahk');
 const hostname = '127.0.0.1';
-const getPort = async(): Promise<number> => getUnusedPort(hostname, 9000, 9030);
 describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   let process: ChildProcess;
-  let server: net.Server;
+  let server: net.Server | undefined;
   let session: dbgp.Session;
   let evaluator: ExpressionEvaluator;
   let true_ahk: EvaluatedValue;
@@ -70,7 +34,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     // undefined_ahk = await getUndefined(session);
   });
   afterAll(async() => {
-    server.close();
+    server?.close();
     await closeSession(session, process);
   });
 
