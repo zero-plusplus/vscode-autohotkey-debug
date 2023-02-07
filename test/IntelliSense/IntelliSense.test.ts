@@ -2,9 +2,9 @@ import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as path from 'path';
 import * as net from 'net';
 import * as dbgp from '../../src/dbgpSession';
-import { IntelliSense } from '../../src/util/IntelliSense';
+import { CompletionItemConverter, IntelliSense } from '../../src/util/IntelliSense';
 import { ChildProcess } from 'child_process';
-import { closeSession, getPort, launchDebug } from '../util';
+import { closeSession, launchDebug } from '../util';
 
 const sampleDir = path.resolve(`${__dirname}/sample`);
 const hostname = '127.0.0.1';
@@ -15,7 +15,7 @@ describe('IntelliSense for v1', () => {
   let intellisense: IntelliSense;
 
   beforeAll(async() => {
-    const data = await launchDebug('AutoHotkey.exe', path.resolve(sampleDir, 'A.ahk'), await getPort(hostname), hostname);
+    const data = await launchDebug('AutoHotkey.exe', path.resolve(sampleDir, 'A.ahk'), 49153, hostname);
     process = data.process;
     server = data.server;
     session = data.session;
@@ -26,16 +26,71 @@ describe('IntelliSense for v1', () => {
     await closeSession(session, process);
   });
 
-  test('suggest', async() => {
-    expect((await intellisense.getSuggestion('  obj.a.b.c.')).map((prop) => prop.fullName)).toStrictEqual(expect.arrayContaining([
-      'obj.a.b.c.ddd',
-      'obj.a.b.c.eee',
+  const converter: CompletionItemConverter<dbgp.Property> = async(p) => Promise.resolve(p);
+  const suggest = async(text: string): Promise<string[]> => (await intellisense.getSuggestion(text, converter)).map((item) => item.name);
+  test('simple', async() => {
+    expect((await suggest(''))[0]).toStrictEqual('A_Args');
+    expect((await suggest('obj[key]'))[0]).toStrictEqual('A_Args');
+    expect(await suggest('obj.a.b.c.')).toStrictEqual(expect.arrayContaining([
+      'ddd',
+      'eee',
     ]));
-    expect((await intellisense.getSuggestion('obj.a.b.c.e')).map((prop) => prop.fullName)).toStrictEqual(expect.arrayContaining([ 'obj.a.b.c.eee' ]));
-    expect((await intellisense.getSuggestion('obj["a"]["b"]["c"]["')).map((prop) => prop.fullName)).toStrictEqual(expect.arrayContaining([
-      'obj.a.b.c.ddd',
-      'obj.a.b.c.eee',
+    expect(await suggest('obj.a.b.c.e')).toStrictEqual(expect.arrayContaining([ 'eee' ]));
+    expect(await suggest('obj["a"]["b"]["c"]["')).toStrictEqual(expect.arrayContaining([
+      'ddd',
+      'eee',
     ]));
+    expect(await suggest('inst')).toStrictEqual(expect.arrayContaining([ 'instance' ]));
+    expect(await suggest('instance.')).toStrictEqual(expect.arrayContaining([
+      '<base>',
+      '_property_baking',
+      'baseInstanceField',
+      'instanceField1',
+      'instanceField2',
+      '__Class',
+      '__Init',
+      'method',
+      'property',
+    ]));
+    expect(await suggest('instance.instanceField2')).toStrictEqual(expect.arrayContaining([]));
+    expect(await suggest('instance.instanceField2.a.b.c.')).toStrictEqual(expect.arrayContaining([
+      'ddd',
+      'eee',
+    ]));
+    expect(await suggest('instance.baseInstanceField.')).toStrictEqual(expect.arrayContaining([
+      'a',
+      'key',
+    ]));
+  });
+
+  test('complex', async() => {
+    expect(await suggest('abc obj.a.b.c.')).toStrictEqual(expect.arrayContaining([
+      'ddd',
+      'eee',
+    ]));
+    expect(await suggest('"abc obj.a.b.c.')).toStrictEqual(expect.arrayContaining([]));
+    expect(await suggest('abc[" obj.a.b.c.')).toStrictEqual(expect.arrayContaining([]));
+    // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/186
+    expect((await suggest('obj[key]obj')).includes('obj')).toBeTruthy();
+    expect((await suggest('obj[key].'))).toStrictEqual(expect.arrayContaining([ 'nest' ]));
+    expect(await suggest('obj[obj.')).toStrictEqual(expect.arrayContaining([
+      'a',
+      'key',
+    ]));
+    expect((await suggest('obj[')).slice(0, 3)).toStrictEqual(expect.arrayContaining([
+      'a',
+      'key',
+      'A_Args',
+    ]));
+    expect((await suggest('obj[  ')).slice(0, 3)).toStrictEqual(expect.arrayContaining([
+      'a',
+      'key',
+      'A_Args',
+    ]));
+    expect((await suggest('obj[  A_'))[0]).toStrictEqual('A_Args');
+    expect((await suggest('obj[obj . A_'))[0]).toStrictEqual('A_Args');
+    expect((await suggest('obj[ob')).includes('obj')).toBeTruthy();
+    expect((await suggest('obj[ob().a'))).toStrictEqual(expect.arrayContaining([]));
   });
 });
 
