@@ -87,10 +87,11 @@ describe('IntelliSense for v1', () => {
       'key',
       'A_Args',
     ]));
-    expect((await suggest('obj[  A_'))[0]).toStrictEqual('A_Args');
-    expect((await suggest('obj[obj . A_'))[0]).toStrictEqual('A_Args');
-    expect((await suggest('obj[ob')).includes('obj')).toBeTruthy();
+    expect((await suggest('obj[  A_'))).toStrictEqual(expect.arrayContaining([ 'A_Args' ]));
+    expect((await suggest('obj[obj . A_'))).toStrictEqual(expect.arrayContaining([ 'A_Args' ]));
+    expect((await suggest('obj[ob'))).toStrictEqual(expect.arrayContaining([ 'obj' ]));
     expect((await suggest('obj[ob().a'))).toStrictEqual(expect.arrayContaining([]));
+    expect((await suggest('a := ob'))).toStrictEqual(expect.arrayContaining([ 'obj' ]));
   });
 });
 

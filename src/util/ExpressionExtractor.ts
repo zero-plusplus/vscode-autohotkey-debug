@@ -1,5 +1,15 @@
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 
+export type AccessOperator = '' | '.' | '[' | '["' | `['`;
+
+export interface ExpressionExtractorData {
+  data: string;
+  object: string;
+  snippet: string;
+  operator: AccessOperator;
+  isStringMode: boolean;
+}
+
 export const maskQuotes = (version: AhkVersion, text: string): string => {
   const mask = (str: string): string => '*'.repeat(str.length);
   return 2 <= version.mejor
@@ -12,7 +22,7 @@ export class ExpressionExtractor {
   constructor(ahkVersion: AhkVersion) {
     this.version = ahkVersion;
   }
-  public extract(text: string): string {
+  public extract(text: string): ExpressionExtractorData {
     const targetText = this.getTargetText(text);
     const isV2 = 2 <= this.version.mejor;
 
@@ -24,8 +34,8 @@ export class ExpressionExtractor {
       : /\.(?<snippet>[a-zA-Z0-9_$#@]*)$/u;
     if (dotNotation_regex.test(targetText)) {
       const snippet = targetText.match(dotNotation_regex)?.groups?.snippet ?? '';
-      const expression = this.trimAnotherExpression(targetText).replace(dotNotation_regex, '');
-      return `${expression}.${snippet}`;
+      const object = this.trimAnotherExpression(targetText).replace(dotNotation_regex, '');
+      return { data: `${object}.${snippet}`, object, snippet, operator: '.', isStringMode: false };
     }
 
     // <Example>
@@ -34,8 +44,8 @@ export class ExpressionExtractor {
     const bracket_regex = isV2 ? /(?<=[\]a-zA-Z0-9_])\[(?<snippet>\s*)$/u : /(?<=[\]a-zA-Z0-9_$#@])\[(?<snippet>\s*)$/u;
     if (bracket_regex.test(targetText)) {
       const snippet = targetText.match(bracket_regex)?.groups?.snippet ?? '';
-      const expression = this.trimAnotherExpression(targetText.replace(bracket_regex, ''));
-      return `${expression}[${snippet}`;
+      const object = this.trimAnotherExpression(targetText.replace(bracket_regex, ''));
+      return { data: `${object}[${snippet}`, object, snippet, operator: '[', isStringMode: false };
     }
 
     // <Example>
@@ -44,8 +54,8 @@ export class ExpressionExtractor {
     const bracketDoubleQuote_regex = isV2 ? /(?<=[\]a-zA-Z0-9_])\[\s*("(?<snippet>(`"|[^"])*))$/u : /(?<=[\]a-zA-Z0-9_$#@])\[\s*("(?<snippet>(""|[^"])*))$/u;
     if (bracketDoubleQuote_regex.test(targetText)) {
       const snippet = targetText.match(bracketDoubleQuote_regex)?.groups?.snippet ?? '';
-      const expression = targetText.replace(bracketDoubleQuote_regex, '');
-      return `${expression}["${snippet}`;
+      const object = targetText.replace(bracketDoubleQuote_regex, '');
+      return { data: `${object}["${snippet}`, object, snippet, operator: '["', isStringMode: false };
     }
 
     // <Example>
@@ -54,29 +64,23 @@ export class ExpressionExtractor {
     const bracketSingleQuote_regex = /(?<=[\]a-zA-Z0-9_])\[\s*("(?<snippet>(`'|[^'])*))$/u;
     if (isV2 && bracketSingleQuote_regex.test(targetText)) {
       const snippet = targetText.match(bracketSingleQuote_regex)?.groups?.snippet ?? '';
-      const expression = targetText.replace(bracketSingleQuote_regex, '');
-      return `${expression}['${snippet}`;
+      const object = targetText.replace(bracketSingleQuote_regex, '');
+      return { data: `${object}['${snippet}`, object, snippet, operator: `['`, isStringMode: false };
     }
 
     // <Example>
     // "ab
     if (this.isStringMode(targetText)) {
-      return targetText;
+      return { data: targetText, object: targetText, snippet: '', operator: '', isStringMode: true };
     }
 
     // <Example>
     // ab
     // abc.efg.hij
-    const openBrackets = Array(...targetText.matchAll(/\[/gu));
-    const closeBrackets = Array(...targetText.matchAll(/\]/gu));
-    if (openBrackets.length === 0 && closeBrackets.length === 0) {
-      return this.trimAnotherExpression(targetText);
-    }
-
-    // <Example>
     // abc[def["
     // abc["def"]["hij"]["
-    return this.trimAnotherExpression(targetText);
+    const data = this.trimAnotherExpression(targetText);
+    return { data, object: data, snippet: '', operator: '', isStringMode: false };
   }
   private isStringMode(targetText: string): boolean {
     const masked = maskQuotes(this.version, targetText);
