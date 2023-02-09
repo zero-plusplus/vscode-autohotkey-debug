@@ -311,11 +311,12 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
   }
 
   const property = children.find((child) => {
+    const childName = child.name.replace(/^\["(.*)"\]$/u, '$1');
     if (typeof name === 'string') {
-      return equalsIgnoreCase(child.name, name);
+      return equalsIgnoreCase(childName, name);
     }
     else if (typeof name === 'number') {
-      return equalsIgnoreCase(child.name, `[${name}]`);
+      return equalsIgnoreCase(childName, `[${name}]`);
     }
     else if (child instanceof dbgp.ObjectProperty && name instanceof dbgp.ObjectProperty) {
       return child.address === name.address;
