@@ -95,7 +95,7 @@
         "title": "Returns the path to the first pinned file found"
       },
       {
-        "command": "vscode-autohotkey-debug.variables.leftmostFile",
+        "command": "vscode-autohotkey-debug.variables.firstFile",
         "title": "Returns the path of the first file found in the first tab group"
       },
       {
@@ -146,7 +146,7 @@
           "when": "false"
         },
         {
-          "command": "vscode-autohotkey-debug.variables.leftmostFile",
+          "command": "vscode-autohotkey-debug.variables.firstFile",
           "when": "false"
         },
         {

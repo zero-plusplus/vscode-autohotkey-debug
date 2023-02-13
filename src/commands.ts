@@ -108,7 +108,7 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
     }
     throw Error('`vscode-autohotkey-debug.variables.pinnedFile` can be used with vscode v1.67.0 or higher.');
   }));
-  context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.leftmostFile', (): string => {
+  context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.firstFile', (): string => {
     if (semver.gte(vscode.version, '1.67.0')) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const tabGroups: any = (vscode.window as any).tabGroups;
@@ -123,15 +123,15 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
         throw Error('File not found.');
       }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      const leftmostTab = tab.tabs[0];
+      const firstTab = tab.tabs[0];
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (leftmostTab.input?.uri) {
+      if (firstTab.input?.uri) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-        return URI.parse(leftmostTab.input.uri).fsPath;
+        return URI.parse(firstTab.input.uri).fsPath;
       }
       throw Error('File not found.');
     }
-    throw Error('`vscode-autohotkey-debug.variables.leftmostFile` can be used with vscode v1.67.0 or higher.');
+    throw Error('`vscode-autohotkey-debug.variables.firstFile` can be used with vscode v1.67.0 or higher.');
   }));
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.rightmostFile', (): string => {
     if (semver.gte(vscode.version, '1.67.0')) {
@@ -148,11 +148,11 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
         throw Error('File not found.');
       }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      const leftmostTab = tab.tabs[tab.tabs.length - 1];
+      const firstTab = tab.tabs[tab.tabs.length - 1];
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (leftmostTab.input?.uri) {
+      if (firstTab.input?.uri) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-        return URI.parse(leftmostTab.input.uri).fsPath;
+        return URI.parse(firstTab.input.uri).fsPath;
       }
       throw Error('File not found.');
     }

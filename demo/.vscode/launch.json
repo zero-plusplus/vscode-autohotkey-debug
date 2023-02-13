@@ -37,11 +37,11 @@
             "extends": "AutoHotkey Debug"
         },
         {
-            "name": "leftmostFile Test",
+            "name": "firstFile Test",
             "type": "autohotkey",
             "request": "launch",
-            "program": "${command:vscode-autohotkey-debug.variables.leftmostFile}",
-            "openFileOnExit": "${command:vscode-autohotkey-debug.variables.leftmostFile}",
+            "program": "${command:vscode-autohotkey-debug.variables.firstFile}",
+            "openFileOnExit": "${command:vscode-autohotkey-debug.variables.firstFile}",
             "extends": "AutoHotkey Debug"
         },
         {
