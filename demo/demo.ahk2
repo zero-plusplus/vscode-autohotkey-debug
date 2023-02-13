@@ -7,103 +7,118 @@ globalVar := "Global"
 global SuperGlobalVar := "SuperGlobal"
 
 demo()
-demo()
-{
-    static staticVar := "Static"
+demo() {
+  static staticVar := "Static"
 
-    ; Overwrite global var
-    globalVar := "Local"
-    SuperGlobalVar := "Local"
+  ; Overwrite global var
+  globalVar := "Local"
+  SuperGlobalVar := "Local"
 
-    ; Primitives
-    str_empty := ""
-    str := "string"
-    str_multiline := "
-    (LTrim
-        line 1
-        line 2
-        line 3
-    )"
-    int := 123
-    int_like := "123"
-    int_negative := -123
-    float := 123.456
-    float_like := "123.456"
-    float_negative := -123.456
-    hex := 0x123
-    hex_negative := -0x123
-    scientificNotation := 1e+5
-    bool_true := true
-    bool_false := false
+  ; Primitives
+  str_empty := ""
+  str := "string"
+  str_multiline := "
+  (LTrim
+      line 1
+      line 2
+      line 3
+  )"
+  int := 123
+  int_like := "123"
+  int_negative := -123
+  float := 123.456
+  float_like := "123.456"
+  float_negative := -123.456
+  hex := 0x123
+  hex_negative := -0x123
+  scientificNotation := 1e+5
+  bool_true := true
+  bool_false := false
 
-    ; Objects
-    arr_empty := []
-    arr := [ str, int, Util_CreateLargeArray() ]
-    arr_maxsize := Util_CreateMaxSizeArray()
-    arr_giant := Util_CreateGiantArray()
-    arr_like := Map()
-    for i, value in  Util_CreateLargeArray() {
-        arr_like[i] := value
-    }
-    arr_like["size"] := arr_like.count
-    arr_sparse := Map(1, str, 9000, int)
-    obj_specialkey := Map([ 1, 2, 3 ], "value", "spaced key", "value2")
+  ; Objects
+  arr_empty := []
+  arr := [ str, int, Util_CreateLargeArray() ]
+  arr_maxsize := Util_CreateMaxSizeArray()
+  arr_giant := Util_CreateGiantArray()
+  arr_like := Map()
+  for i, value in  Util_CreateLargeArray() {
+      arr_like[i] := value
+  }
+  arr_like["size"] := arr_like.count
+  arr_sparse := Map(1, str, 9000, int)
+  obj_specialkey := Map([ 1, 2, 3 ], "value", "spaced key", "value2")
 
-    obj_empty := {}
-    obj := { str: str, int: int, arr: arr }
+  obj_empty := {}
+  obj := { str: str, int: int, arr: arr }
 
-    mp := Map("key", "value", [ 1, 2, 3 ], "value2")
-    buf := Buffer(10)
+  key := "key"
+  mp := Map(key, obj, [ 1, 2, 3 ], "value2")
+  mpValue := mp[key . ''].arr
+  buf := Buffer(10)
 
-    fatArrow := () => "fatArrow"
-    closure := () => fatArrow
+  fatArrow := () => "fatArrow"
+  closure := () => fatArrow
 
-    circular := {}
-    circular.circular := circular
+  circular := {}
+  circular.circular := circular
 
-    instance := Clazz()
-    property := instance.property
-    instance.property := "overwrite"
-    instance.method()
+  instance := Clazz()
+  property := instance.property
+  instance.property := "overwrite"
+  instance.method()
+
+  ; Intellisense tests
+  ; obj.          ; arr, int, str...
+  ; obj["         ; <NONE>
+  ; arr[          ; A_Args, arr...
+  ; arr[3].       ; base, Capacity...
+  ; mp[           ; ["key"], A_Args...
+  ; mp["          ; ["key"]
+  ; mp[ "          ; ["key"]
+  ; mp["k         ; ["key"]
+  ; mp['          ; ['key']
+  ; mp[ '          ; ['key']
+  ; mp['k         ; ['key']
+  ; mp[key        ; key
+  ; mp[key].      ; arr, int, str...
+  ; instance.     ; base, baseField, method, property...
 }
-class Clazz extends ClazzBase
-{
-    static staticField := "static field"
-    static _staticField_baking := "baking"
-    static staticProperty {
-        get {
-            return this._staticField_baking
-        }
-        set {
-            return this._staticField_baking := value
-        }
+class Clazz extends ClazzBase {
+  static staticField := "static field"
+  static _staticField_baking := "baking"
+  static staticProperty {
+    get {
+      return this._staticField_baking
     }
-    __Enum() {
-        return this.ownProps()
+    set {
+      return this._staticField_baking := value
     }
+  }
+  __NEW() {
+  }
+  __Enum() {
+    return this.ownProps()
+  }
 
-    field := "instance field"
-    _property_baking := "baking"
-    property {
-        get {
-            return this._property_baking
-        }
-        set {
-            return this._property_baking := value
-        }
+  field := "instance field"
+  _property_baking := "baking"
+  property {
+    get {
+      return this._property_baking
     }
+    set {
+      return this._property_baking := value
+    }
+  }
 
-    ; method
-    static staticMethod()
-    {
-        FileAppend("Called static method!`n", "*")
-    }
-    method()
-    {
-        FileAppend("Called method!`n", "*")
-    }
+  ; method
+  static staticMethod() {
+    FileAppend("Called static method!`n", "*")
+  }
+  method() {
+    FileAppend("Called method!`n", "*")
+  }
 }
-class ClazzBase
-{
-    baseField := "baseField"
+class ClazzBase {
+  baseField := "baseField"
 }

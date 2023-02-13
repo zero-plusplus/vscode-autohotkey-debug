@@ -1,286 +1,152 @@
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { count } from 'underscore.string';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
-import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { ExpressionEvaluator, fetchInheritedProperties, getContexts } from './util/evaluator/ExpressionEvaluator';
-import { lastIndexOf } from './util/stringUtils';
-import { splitVariablePath } from './util/util';
+import { fetchBasePropertyName } from './util/evaluator/ExpressionEvaluator';
+import { AccessOperator, maskQuotes } from './util/ExpressionExtractor';
+import { IntelliSense } from './util/IntelliSense';
+import { equalsIgnoreCase } from './util/stringUtils';
+import { searchPair } from './util/util';
 
 export interface CompletionItemProvider extends vscode.CompletionItemProvider {
   useIntelliSenseInDebugging: boolean;
-  evaluator?: ExpressionEvaluator;
+  intellisense?: IntelliSense;
 }
 
-const createKind = (property: dbgp.Property): vscode.CompletionItemKind => {
-  let kind: vscode.CompletionItemKind = property.fullName.includes('.')
+export const toDotNotation = (ahkVersion: AhkVersion, name: string): string => {
+  if (name.startsWith('[')) {
+    const fixQuote = (str: string): string => str.replace(/""/gu, '`"');
+
+    if (2 <= ahkVersion.mejor) {
+      const fixedLabel = name.replace(/^\[("|')?/u, '').replace(/("|')?\]$/u, '');
+      return fixQuote(fixedLabel);
+    }
+    const fixedLabel = name.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
+    return fixedLabel;
+  }
+  return name;
+};
+export const createCompletionLabel = (propertyName: string): string => {
+  const label = propertyName;
+  if (propertyName === '<base>') {
+    return 'base';
+  }
+  return label;
+};
+export const createCompletionDetail = async(session: dbgp.Session, property: dbgp.Property): Promise<string> => {
+  const isChildProperty = property.fullName.includes('.') || property.fullName.includes('[');
+  const context = isChildProperty ? `[${property.context.name}]` : '';
+
+  const fullName = property.fullName.replaceAll('<base>', 'base');
+  if (property instanceof dbgp.ObjectProperty) {
+    if (property.name === '<base>') {
+      const basePropertyName = await fetchBasePropertyName(session, undefined, property, '__CLASS');
+      if (basePropertyName) {
+        return `${context} ${fullName}: ${basePropertyName}`;
+      }
+    }
+    return `${context} ${fullName}: ${property.className}`;
+  }
+
+  return `${context} ${fullName}: ${property.type}`;
+};
+export const createCompletionKind = (property: dbgp.Property): vscode.CompletionItemKind => {
+  if (property instanceof dbgp.ObjectProperty) {
+    if (equalsIgnoreCase(property.name, '__NEW')) {
+      return vscode.CompletionItemKind.Constructor;
+    }
+    if (property.className === 'Func') {
+      return property.fullName.includes('.')
+        ? vscode.CompletionItemKind.Method
+        : vscode.CompletionItemKind.Function;
+    }
+    if (property.className === 'Class') {
+      return vscode.CompletionItemKind.Class;
+    }
+    if (property.className === 'Property') {
+      return vscode.CompletionItemKind.Property;
+    }
+  }
+  return property.fullName.includes('.')
     ? vscode.CompletionItemKind.Field
     : vscode.CompletionItemKind.Variable;
-  if (property instanceof dbgp.ObjectProperty) {
-    if (property.className === 'Func') {
-      if (property.fullName.includes('.')) {
-        kind = vscode.CompletionItemKind.Method;
-      }
-      else {
-        kind = vscode.CompletionItemKind.Function;
-      }
-    }
-    else if (property.className === 'Class') {
-      kind = vscode.CompletionItemKind.Class;
-    }
-    else if (property.className === 'Property') {
-      kind = vscode.CompletionItemKind.Property;
-    }
-    else if (property.name.toLowerCase() === '__new') {
-      kind = vscode.CompletionItemKind.Constructor;
-    }
-  }
-  return kind;
 };
-const createDetail = (property: dbgp.Property): string => {
-  const kindName = vscode.CompletionItemKind[createKind(property)].toLowerCase();
-  const context = property.fullName.includes('.') || property.fullName.includes('[')
-    ? ''
-    : `[${property.context.name}] `;
-  if (kindName === 'class') {
-    return `${context}(${kindName}) ${(property as dbgp.ObjectProperty).className}`;
-  }
+export const createCompletionSortText = (...params: [ dbgp.Property ] | [ string, string ]): string => {
+  // const fullName = createCompletionLabel(params.length === 1 ? params[0].fullName : params[0]);
+  const name = params.length === 1 ? params[0].name : params[1];
 
-  const type = property instanceof dbgp.ObjectProperty ? property.className : property.type;
-  return `${context}(${kindName}) ${property.fullName}: ${type}`;
+  // const depth = [ ...fullName.matchAll(/\[[^\]]+\]|\./gu) ].length;
+  const orderPriority = name.match(/^(\[")?([_]*)/u)?.[0].length;
+  return `@:${orderPriority ?? 0}:${name}`;
 };
-
-export const fixPosition = (position: vscode.Position, offset: number): vscode.Position => {
-  return new vscode.Position(position.line, Math.max(position.character + offset, 0));
-};
-export const findWord = (ahkVersion: AhkVersion, document: vscode.TextDocument, position: vscode.Position, offset = 0): string => {
-  const targetText = document.lineAt(position).text.slice(0, fixPosition(position, offset).character);
-  const chars = targetText.split('').reverse();
-  const openBracketIndex = lastIndexOf(targetText, 2 <= ahkVersion.mejor ? /(?<=\[\s*)("|')/u : /(?<=\[\s*)(")/u);
-  const closeBracketIndex = lastIndexOf(targetText, 2 <= ahkVersion.mejor ? /("|')\s*(?=\])/u : /"\s*(?=\])/u);
-
-  const result: string[] = [];
-  let quote = '', bracketCount = 0;
-  if (-1 < openBracketIndex && closeBracketIndex < openBracketIndex) {
-    quote = targetText.charAt(openBracketIndex);
-    bracketCount = 1;
-  }
-  for (let i = 0; i < chars.length; i++) {
-    const char = chars[i];
-    const nextChar = chars[i + 1] as string | undefined;
-
-    if (quote) {
-      if (2 < ahkVersion.mejor) {
-        if (char === '"' && nextChar === '`') {
-          result.push(char);
-          result.push('"');
-          i++;
-          continue;
-        }
-
-        if (quote === `'` && char === '"') {
-          result.push('"');
-          result.push('"');
-          continue;
-        }
-        else if (quote === `'` && char === `'`) {
-          result.push('"');
-          quote = '';
-          continue;
-        }
-      }
-
-      if (quote === char) {
-        result.push(quote);
-        quote = '';
-        continue;
-      }
-      result.push(char);
-      continue;
-    }
-    else if (0 < bracketCount && char === '[') {
-      result.push(char);
-      bracketCount--;
-      continue;
+export const createCompletionFixers = (ahkVersion: AhkVersion, document: vscode.TextDocument, position: vscode.Position, label: string, snippet: string, triggerCharacter: AccessOperator): Partial<vscode.CompletionItem> => {
+  const fixers: Partial<vscode.CompletionItem> = {};
+  if ([ '[', '["', `['` ].includes(triggerCharacter)) {
+    if (2 <= ahkVersion.mejor && !label.startsWith('[')) {
+      return fixers;
     }
 
-    switch (char) {
-      case `'`: {
-        if (2 <= ahkVersion.mejor) {
-          quote = char;
-          result.push(quote);
-          continue;
-        }
-        result.push(char);
-        continue;
-      }
-      case '"': {
-        quote = char;
-        result.push(char);
-        continue;
-      }
-      case ']': {
-        result.push(char);
-        bracketCount++;
-        continue;
-      }
-      case '.': {
-        result.push(char);
-        continue;
-      }
-      default: {
-        const isIdentifierChar = (2 <= ahkVersion.mejor ? /[\w_]/u : /[\w_$@#]/u).test(char);
-        if (isIdentifierChar) {
-          result.push(char);
-          continue;
-        }
+    const beforeText = document.lineAt(position.line).text.slice(0, position.character);
+    const openBracketIndex = beforeText.lastIndexOf('[');
+    const spaces = beforeText.match(2 <= ahkVersion.mejor ? /\[(?<spaces>\s*)("|')?$/u : /\[(?<spaces>\s*)(")?$/u)?.groups?.spaces ?? '';
 
-        // Skip spaces
-        if (0 < bracketCount && (/\s/u).test(char)) {
-          continue;
-        }
-      }
+    const afterText = document.lineAt(position.line).text.slice(position.character);
+    const afterText_masked = maskQuotes(ahkVersion, afterText);
+    const pairIndex_close = searchPair(afterText_masked, '[', ']', 1);
+    const closeBracketIndex = pairIndex_close === -1 ? position.character : position.character + (pairIndex_close + 1);
+
+    fixers.range = new vscode.Range(
+      openBracketIndex === -1 ? position : new vscode.Position(position.line, openBracketIndex),
+      new vscode.Position(position.line, closeBracketIndex),
+    );
+
+    const quote = triggerCharacter === '[' ? '"' : triggerCharacter.slice(1);
+    const label_dotNotation = toDotNotation(ahkVersion, label);
+    fixers.insertText = `[${quote}${label_dotNotation}${quote}]`;
+    fixers.label = fixers.insertText;
+    fixers.filterText = `[${spaces}${quote}${label_dotNotation}${quote}]`;
+    return fixers;
+  }
+
+  if (triggerCharacter === '.') {
+    if (label.startsWith('[')) {
+      const replaceRange = new vscode.Range(new vscode.Position(position.line, position.character - 1), position);
+      fixers.additionalTextEdits = [ new vscode.TextEdit(replaceRange, '') ];
+      fixers.insertText = label;
     }
-    break;
   }
-  return result.reverse().join('');
-};
-export const fetchAllProperties = async(session: dbgp.Session): Promise<dbgp.Property[]> => {
-  const contexts = await getContexts(session);
-  if (!contexts) {
-    return [];
-  }
-
-  const propertyMap = new CaseInsensitiveMap<string, dbgp.Property>();
-  for await (const context of contexts) {
-    const { properties } = await session.sendContextGetCommand(context);
-    properties.forEach((property) => {
-      if (propertyMap.has(property.fullName)) {
-        return;
-      }
-      propertyMap.set(property.fullName, property);
-    });
-  }
-  return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
-};
-export const fetchSuggestItems = async(evaluator: ExpressionEvaluator, word: string): Promise<dbgp.Property[]> => {
-  const operatorRegExp = 2.0 <= evaluator.session.ahkVersion.mejor
-    ? /(?<operator>(?<=\w)\[\s*("|')?|(?<=\w|\])\.)$/u
-    : /(?<operator>(?<=\w)\[\s*(")?|(?<=\w|\])\.)$/u;
-  const match = word.match(operatorRegExp);
-  if (!match?.groups?.operator) {
-    return fetchAllProperties(evaluator.session);
-  }
-  const operator = match.groups.operator.replace(/\s/gu, '') as '[' | '["' | `['` | '.';
-  if (operator === '[') {
-    return fetchAllProperties(evaluator.session);
-  }
-  const expression = word.replace(operatorRegExp, '');
-  const result = await evaluator.eval(expression);
-  if (result instanceof dbgp.ObjectProperty) {
-    return fetchInheritedProperties(evaluator.session, undefined, result);
-  }
-  return fetchAllProperties(evaluator.session);
+  return fixers;
 };
 
 export const completionItemProvider = {
   useIntelliSenseInDebugging: true,
-  evaluator: undefined,
+  intellisense: undefined,
   async provideCompletionItems(document, position, token, context) {
     if (!this.useIntelliSenseInDebugging) {
       return [];
     }
-    if (!this.evaluator) {
+    if (!this.intellisense) {
       return [];
     }
-    else if (this.evaluator.session.socketClosed) {
-      this.evaluator = undefined;
+    else if (this.intellisense.evaluator.session.socketClosed) {
+      this.intellisense = undefined;
       return [];
     }
 
-    // #region util
-    const getPrevText = (length: number): string => {
-      return document.getText(new vscode.Range(fixPosition(position, -length), position));
-    };
-    // #endregion util
-
-    const word = findWord(this.evaluator.session.ahkVersion, document, position);
-    const lastWordPathPart = splitVariablePath(this.evaluator.session.ahkVersion, word).pop() ?? '';
-    const isBracketNotation = lastWordPathPart.startsWith('[');
-    const triggerCharacter = context.triggerCharacter ?? getPrevText(1);
-
-    const properties = await fetchSuggestItems(this.evaluator, word);
-    const fixedProperties = properties.filter((property) => {
-      if (property.name === '<enum>') {
-        return false;
-      }
-      if ((/\d+/u).test(property.name)) {
-        return false;
-      }
-      if (property.isIndexKey) {
-        return false;
-      }
-      const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
-      if (isIndexKeyByObject) {
-        return false;
-      }
-      return true;
-    });
-
-    const completionItems = fixedProperties.map((property): vscode.CompletionItem => {
-      const completionItem = new vscode.CompletionItem(property.name.replace(/<|>/gu, ''));
-      completionItem.kind = createKind(property);
-      completionItem.detail = createDetail(property);
-
-      const depth = count(property.fullName, '.');
-      const priority = property.name.startsWith('__') ? 1 : 0;
-      completionItem.sortText = `@:${priority}:${depth}:${property.name}`;
-
-      if (property.name.startsWith('[')) {
-        const fixQuote = (str: string): string => {
-          return str.replace(/""/gu, '`"');
-        };
-        const fixLabel = (label: string): string => {
-          if (2 <= this.evaluator!.session.ahkVersion.mejor) {
-            const fixedLabel = label.replace(/^\[("|')?/u, '').replace(/("|')?\]$/u, '');
-            return fixQuote(fixedLabel);
-          }
-          const fixedLabel = label.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
-          return fixedLabel;
-        };
-
-        const fixedLabel = fixLabel(property.name);
-        completionItem.label = fixedLabel;
-
-        if (!isBracketNotation && triggerCharacter === '.') {
-          // Since I could not use the range property to replace the dots as shown below, I will use TextEdit
-          // completionItem.range = {
-          //   inserting: new vscode.Range(fixedPosition, fixedPosition),
-          //   replacing: new vscode.Range(fixedPosition, position),
-          // };
-
-          // This is a strange implementation because I don't know the specs very well.
-          const replaceRange = new vscode.Range(fixPosition(position, -1), position);
-          const fixedPropertyName = fixQuote(property.name);
-          const a = fixedPropertyName.slice(0, 1);
-          const b = fixedPropertyName.slice(1);
-          completionItem.additionalTextEdits = [ new vscode.TextEdit(replaceRange, a) ];
-          completionItem.insertText = b;
-        }
-        else if (lastWordPathPart.startsWith('[')) {
-          completionItem.insertText = fixLabel(property.name); // fixedLabel.slice(fixedLastWordPathPart.length);
-
-          const fixedLastWordPathPart = fixLabel(lastWordPathPart);
-          completionItem.range = new vscode.Range(fixPosition(position, -fixedLastWordPathPart.length), position);
-        }
-        else {
-          completionItem.insertText = fixedLabel;
-        }
-      }
-
+    const session = this.intellisense.evaluator.session;
+    const ahkVersion = session.ahkVersion;
+    const text = document.getText(new vscode.Range(new vscode.Position(position.line, 0), position));
+    const suggestList = (await this.intellisense.getSuggestion(text, async(property, snippet, triggerCharacter): Promise<vscode.CompletionItem> => {
+      const label = createCompletionLabel(property.name);
+      const completionItem: vscode.CompletionItem = {
+        label,
+        kind: createCompletionKind(property),
+        detail: await createCompletionDetail(session, property),
+        ...createCompletionFixers(ahkVersion, document, position, label, snippet, triggerCharacter),
+      };
+      completionItem.sortText = createCompletionSortText(property.fullName, String(completionItem.label));
       return completionItem;
-    });
+    })).filter((item) => typeof item.label === 'string' && !item.label.toLocaleLowerCase().startsWith('<'));
 
-    return completionItems;
+    return suggestList;
   },
 } as CompletionItemProvider;

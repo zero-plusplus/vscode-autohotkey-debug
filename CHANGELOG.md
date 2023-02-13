@@ -24,6 +24,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.pinnedFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.leftmostFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.rightmostFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
+* [#286](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/286) Support autocomplete in Debug Console and Conditional Breakpoint
 
 ### Changed
 * [#60](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/60) Change to suppress error dialogs if runtime supports them
@@ -45,6 +46,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#232](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/232) Output of members in bracketed notation in Output directive, Watch expression, etc. may not be evaluated correctly
 * [#234](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/234) Breakpoint do not work when `runtime` is a UNC path (e.g. `//server/folder`)
 * [#236](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/236) Debugging gets stuck if the last line of the included script is a debug directive
+* [#245](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/245) Hover information is not displayed correctly
 * [#254](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/254) When a string containing `#` is displayed in `View Value` and `View as Text` in the Variable View context menu, the subsequent string is not displayed
 * [#255](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/255) Objects with child elements in index notation such as `["a & -"]` may get stuck when retrieving child elements
 * [#256](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/256) v2 only bug. If double/single quotes are used in #Include directive, they do not appear in Loaded Scripts

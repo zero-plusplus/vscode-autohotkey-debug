@@ -51,27 +51,28 @@ export class ExpressionExtractor {
     // <Example>
     // abc["
     // abc.de["fg
-    const bracketDoubleQuote_regex = isV2 ? /(?<=[\]a-zA-Z0-9_])\[\s*("(?<snippet>(`"|[^"])*))$/u : /(?<=[\]a-zA-Z0-9_$#@])\[\s*("(?<snippet>(""|[^"])*))$/u;
+    const bracketDoubleQuote_regex = isV2 ? /(?<=[\]a-zA-Z0-9_])\[\s*("(?<snippet>(`"|[^"])*))$/u : /(?<=[\]a-zA-Z0-9_$#@])\[\s*("(?<snippet>((?<=")"|[^"])*))$/u;
     if (bracketDoubleQuote_regex.test(targetText)) {
       const snippet = targetText.match(bracketDoubleQuote_regex)?.groups?.snippet ?? '';
-      const object = targetText.replace(bracketDoubleQuote_regex, '');
+      const object = this.trimAnotherExpression(targetText, 1).replace(bracketDoubleQuote_regex, '');
       return { data: `${object}["${snippet}`, object, snippet, operator: '["', isStringMode: false };
     }
 
     // <Example>
     // abc['
     // abc.de['fg
-    const bracketSingleQuote_regex = /(?<=[\]a-zA-Z0-9_])\[\s*("(?<snippet>(`'|[^'])*))$/u;
+    const bracketSingleQuote_regex = /(?<=[\]a-zA-Z0-9_])\[\s*('(?<snippet>(`'|[^'])*))$/u;
     if (isV2 && bracketSingleQuote_regex.test(targetText)) {
       const snippet = targetText.match(bracketSingleQuote_regex)?.groups?.snippet ?? '';
-      const object = targetText.replace(bracketSingleQuote_regex, '');
+      const object = this.trimAnotherExpression(targetText, 1).replace(bracketSingleQuote_regex, '');
       return { data: `${object}['${snippet}`, object, snippet, operator: `['`, isStringMode: false };
     }
 
+    const data = this.trimAnotherExpression(targetText);
     // <Example>
     // "ab
     if (this.isStringMode(targetText)) {
-      return { data: targetText, object: targetText, snippet: '', operator: '', isStringMode: true };
+      return { data, object: data, snippet: '', operator: '', isStringMode: true };
     }
 
     // <Example>
@@ -79,7 +80,6 @@ export class ExpressionExtractor {
     // abc.efg.hij
     // abc[def["
     // abc["def"]["hij"]["
-    const data = this.trimAnotherExpression(targetText);
     return { data, object: data, snippet: '', operator: '', isStringMode: false };
   }
   private isStringMode(targetText: string): boolean {
@@ -92,29 +92,51 @@ export class ExpressionExtractor {
       ? text.split(/\r\n|\n/u).pop()!
       : text;
   }
-  private trimAnotherExpression(targetText: string): string {
+  private trimAnotherExpression(targetText: string, initialBracketCount = 0): string {
     let trimStartIndex = -1;
-    let bracketCount = 0;
+    let bracketCount = initialBracketCount;
+    let parenCount = 0;
+    let braceCount = 0;
 
+    const terminatorRegExp = 2 <= this.version.mejor ? /^[^a-zA-Z0-9_#@$.]$/u : /^[^a-zA-Z0-9_.]$/u;
     const chars = maskQuotes(this.version, targetText).split('');
     for (let i = chars.length - 1; 0 <= i; i--) {
       const char = chars[i];
-      if (char === ']') {
-        if (![ '.', '[' ].includes(chars[i + 1])) {
-          break;
+      switch (char) {
+        case ']': {
+          if (![ '.', '[' ].includes(chars[i + 1])) {
+            break;
+          }
+          bracketCount++;
+          continue;
         }
-        bracketCount++;
-        continue;
-      }
-      else if (char === '[') {
-        if (bracketCount === 0) {
-          break;
+        case '[': {
+          if (bracketCount === 0) {
+            break;
+          }
+          bracketCount--;
+          continue;
         }
-        bracketCount--;
-        continue;
+        case ')': {
+          parenCount++;
+          continue;
+        }
+        case '(': {
+          parenCount--;
+          continue;
+        }
+        case '}': {
+          braceCount++;
+          continue;
+        }
+        case '{': {
+          braceCount--;
+          continue;
+        }
+        default: break;
       }
 
-      if (bracketCount === 0 && (/\s/u).test(char)) {
+      if ((braceCount === 0 && parenCount === 0 && bracketCount === 0) && terminatorRegExp.test(char)) {
         break;
       }
       trimStartIndex = i;

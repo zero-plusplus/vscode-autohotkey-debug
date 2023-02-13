@@ -29,8 +29,8 @@ describe('IntelliSense for v1', () => {
   const converter: CompletionItemConverter<dbgp.Property> = async(p) => Promise.resolve(p);
   const suggest = async(text: string): Promise<string[]> => (await intellisense.getSuggestion(text, converter)).map((item) => item.name);
   test('simple', async() => {
-    expect((await suggest(''))[0]).toStrictEqual('A_Args');
-    expect((await suggest('obj[key]'))[0]).toStrictEqual('A_Args');
+    expect(await suggest('')).toStrictEqual(expect.arrayContaining([ 'A_Args' ]));
+    expect(await suggest('obj[key]')).toStrictEqual(expect.arrayContaining([ 'A_Args' ]));
     expect(await suggest('obj.a.b.c.')).toStrictEqual(expect.arrayContaining([
       'ddd',
       'eee',
@@ -52,7 +52,7 @@ describe('IntelliSense for v1', () => {
       'method',
       'property',
     ]));
-    expect(await suggest('instance.instanceField2')).toStrictEqual(expect.arrayContaining([]));
+    expect(await suggest('instance.instanceField2')).toStrictEqual(expect.arrayContaining([ 'instanceField2' ]));
     expect(await suggest('instance.instanceField2.a.b.c.')).toStrictEqual(expect.arrayContaining([
       'ddd',
       'eee',
@@ -90,8 +90,10 @@ describe('IntelliSense for v1', () => {
     expect((await suggest('obj[  A_'))).toStrictEqual(expect.arrayContaining([ 'A_Args' ]));
     expect((await suggest('obj[obj . A_'))).toStrictEqual(expect.arrayContaining([ 'A_Args' ]));
     expect((await suggest('obj[ob'))).toStrictEqual(expect.arrayContaining([ 'obj' ]));
-    expect((await suggest('obj[ob().a'))).toStrictEqual(expect.arrayContaining([]));
+    expect((await suggest('obj[ob().a')).length).toStrictEqual(0);
+    expect((await suggest('obj[key].')).length).toStrictEqual(1);
     expect((await suggest('a := ob'))).toStrictEqual(expect.arrayContaining([ 'obj' ]));
+    expect((await suggest('a, ob'))).toStrictEqual(expect.arrayContaining([ 'obj' ]));
   });
 });
 

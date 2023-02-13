@@ -53,7 +53,7 @@ export class IntelliSense {
     if (value instanceof dbgp.ObjectProperty && value.hasChildren) {
       return fetchInheritedProperties(this.evaluator.session, undefined, value);
     }
-    return this.fetchAllProperties();
+    return [];
   }
   private async fetchAllProperties(): Promise<dbgp.Property[]> {
     const session = this.evaluator.session;
@@ -75,7 +75,11 @@ export class IntelliSense {
     return Array.from(propertyMap.entries()).map(([ key, property ]) => property);
   }
   private async convertItems<T>(properties: dbgp.Property[], snippet: string, trigger: AccessOperator, converter?: CompletionItemConverter<T>): Promise<T[]> {
-    return Promise.all(properties.filter((property) => {
+    const isV2 = 2 <= this.version.mejor;
+    const convertedItems = await Promise.all(properties.filter((property) => {
+      if ((/^<(?!base)/u).test(property.name)) {
+        return false;
+      }
       if (property.name === '<enum>') {
         return false;
       }
@@ -85,11 +89,17 @@ export class IntelliSense {
       if (property.isIndexKey) {
         return false;
       }
+      if (isV2 && trigger.startsWith('[') && !property.name.startsWith('[')) {
+        return false;
+      }
+
       const isIndexKeyByObject = (/[\w]+\(\d+\)/ui).test(property.name);
       if (isIndexKeyByObject) {
         return false;
       }
       return true;
     }).map(async(property) => (converter ? converter(property, snippet, trigger) : (property as T))));
+
+    return convertedItems;
   }
 }
