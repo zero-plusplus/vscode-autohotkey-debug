@@ -133,7 +133,7 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
     }
     throw Error('`vscode-autohotkey-debug.variables.firstFile` can be used with vscode v1.67.0 or higher.');
   }));
-  context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.rightmostFile', (): string => {
+  context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.variables.lastFile', (): string => {
     if (semver.gte(vscode.version, '1.67.0')) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
       const tabGroups: any = (vscode.window as any).tabGroups;
@@ -148,15 +148,15 @@ export const registerCommands = (context: vscode.ExtensionContext): void => {
         throw Error('File not found.');
       }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-      const firstTab = tab.tabs[tab.tabs.length - 1];
+      const lasttTab = tab.tabs[tab.tabs.length - 1];
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (firstTab.input?.uri) {
+      if (lasttTab.input?.uri) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-        return URI.parse(firstTab.input.uri).fsPath;
+        return URI.parse(lasttTab.input.uri).fsPath;
       }
       throw Error('File not found.');
     }
-    throw Error('`vscode-autohotkey-debug.variables.rightmostFile` can be used with vscode v1.67.0 or higher.');
+    throw Error('`vscode-autohotkey-debug.variables.lastFile` can be used with vscode v1.67.0 or higher.');
   }));
   context.subscriptions.push(vscode.commands.registerCommand('vscode-autohotkey-debug.commands.runToEndOfFunction', (): void => {
     enableRunToEndOfFunction = true;

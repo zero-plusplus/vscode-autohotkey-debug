@@ -99,7 +99,7 @@
         "title": "Returns the path of the first file found in the first tab group"
       },
       {
-        "command": "vscode-autohotkey-debug.variables.rightmostFile",
+        "command": "vscode-autohotkey-debug.variables.lastFile",
         "title": "Returns the path of the last file found in the last tab group"
       },
       {
@@ -150,7 +150,7 @@
           "when": "false"
         },
         {
-          "command": "vscode-autohotkey-debug.variables.rightmostFile",
+          "command": "vscode-autohotkey-debug.variables.lastFile",
           "when": "false"
         },
         {

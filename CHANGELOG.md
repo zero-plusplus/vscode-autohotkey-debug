@@ -23,7 +23,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#266](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/266) Add `setHiddenBreakpoints` attribute in launch.json
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.pinnedFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.firstFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
-* [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.rightmostFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
+* [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.lastFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
 * [#286](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/286) Support autocomplete in Debug Console and Conditional Breakpoint
 
 ### Changed

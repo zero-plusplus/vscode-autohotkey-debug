@@ -17,7 +17,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Added: [#266](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/266) Add `setHiddenBreakpoints` attribute in launch.json
     * Added: [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.pinnedFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
     * Added: [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.firstFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
-    * Added: [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.rightmostFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
+    * Added: [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.lastFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
     * Added: [#286](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/286) Support autocomplete in Debug Console and Conditional Breakpoint
     * Changed: [#60](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/60) Change to suppress error dialogs if runtime supports them
     * Changed: [#116](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/116) Enhanced conditional breakpoint
