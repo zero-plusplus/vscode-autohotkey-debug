@@ -216,3 +216,22 @@ export const readFileCacheSync = (filePath: string): string => {
   fileCache.set(_filePath, source);
   return source;
 };
+
+export const searchPair = (text: string, open: string, close: string, initialOpenCount = 0): number => {
+  let openCount = initialOpenCount;
+  const firstOpen = text.indexOf(open);
+  const index = (0 < openCount ? text : text.slice(firstOpen)).split('').findIndex((char, i) => {
+    if (char === open) {
+      openCount++;
+      return false;
+    }
+    if (char === close) {
+      openCount--;
+    }
+    return openCount === 0;
+  });
+  if (index === -1) {
+    return -1;
+  }
+  return firstOpen === -1 ? index : index + firstOpen;
+};

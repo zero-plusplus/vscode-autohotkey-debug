@@ -311,11 +311,12 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
   }
 
   const property = children.find((child) => {
+    const childName = child.name.replace(/^\["(.*)"\]$/u, '$1');
     if (typeof name === 'string') {
-      return equalsIgnoreCase(child.name, name);
+      return equalsIgnoreCase(childName, name);
     }
     else if (typeof name === 'number') {
-      return equalsIgnoreCase(child.name, `[${name}]`);
+      return equalsIgnoreCase(childName, `[${name}]`);
     }
     else if (child instanceof dbgp.ObjectProperty && name instanceof dbgp.ObjectProperty) {
       return child.address === name.address;
@@ -331,6 +332,13 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
   }
   if (property instanceof dbgp.ObjectProperty) {
     return property;
+  }
+  return undefined;
+};
+export const fetchBasePropertyName = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, name: EvaluatedValue): Promise<string | undefined> => {
+  const basePropertyName = await fetchPropertyChild(session, stackFrame, object, '__CLASS');
+  if (typeof basePropertyName === 'string') {
+    return basePropertyName;
   }
   return undefined;
 };
@@ -357,7 +365,7 @@ export const fetchInheritedProperties = async(session: dbgp.Session, stackFrame:
     const nestedChildren = (await fetchInheritedProperties(session, stackFrame, base));
     children.push(...nestedChildren);
   }
-  return uniqBy(children, (property) => property.name.replace(/^<|>$/gu, '').toLocaleLowerCase());
+  return uniqBy(children, (property) => property.name);
 };
 export const setProperty = async(session: dbgp.Session, context: dbgp.Context, nameOrObject: string | dbgp.ObjectProperty, value: string | number): Promise<boolean> => {
   const fullName = getFullName(nameOrObject);
@@ -431,13 +439,15 @@ export class ExpressionEvaluator {
   private readonly metaVariableMap: MetaVariableValueMap;
   private readonly parser: ExpressionParser;
   private readonly library: CaseInsensitiveMap<string, LibraryFunc>;
-  constructor(session: dbgp.Session, metaVariableMap?: MetaVariableValueMap) {
+  private readonly withoutFunction: boolean;
+  constructor(session: dbgp.Session, metaVariableMap?: MetaVariableValueMap, withoutFunction = false) {
     this.session = session;
     this.metaVariableMap = metaVariableMap ?? new MetaVariableValueMap();
     this.library = 2.0 <= session.ahkVersion.mejor
       ? library_for_v2
       : library_for_v1;
     this.parser = new ExpressionParser(session.ahkVersion);
+    this.withoutFunction = withoutFunction;
   }
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const matchResult = this.parser.parse(expression);
@@ -1007,6 +1017,10 @@ export class ExpressionEvaluator {
     return '';
   }
   public async evalCallExpression(node: CallNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
+    if (this.withoutFunction) {
+      return undefined;
+    }
+
     const libraryName = await this.nodeToString(node.caller);
     if (!libraryName) {
       return '';

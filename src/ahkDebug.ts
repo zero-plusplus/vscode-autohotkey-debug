@@ -20,7 +20,7 @@ import { sync as pathExistsSync } from 'path-exists';
 import AsyncLock from 'async-lock';
 import { chunk, range } from 'lodash';
 import LazyPromise from 'lazy-promise';
-import { ImplicitLibraryPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
+import { AhkVersion, ImplicitLibraryPathExtractor, IncludePathExtractor } from '@zero-plusplus/autohotkey-utilities';
 import {
   Breakpoint,
   BreakpointAction,
@@ -31,10 +31,10 @@ import {
 import { toFixed } from './util/numberUtils';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
-import { completionItemProvider } from './CompletionItemProvider';
+import { completionItemProvider, createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
-import { now, readFileCache, readFileCacheSync, timeoutPromise, toFileUri } from './util/util';
+import { now, readFileCache, readFileCacheSync, searchPair, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
 import { AhkConfigurationProvider, CategoryData } from './extension';
@@ -43,6 +43,8 @@ import { SymbolFinder } from './util/SymbolFinder';
 import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from './util/evaluator/ExpressionEvaluator';
 import { enableRunToEndOfFunction, setEnableRunToEndOfFunction } from './commands';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
+import { IntelliSense } from './util/IntelliSense';
+import { maskQuotes } from './util/ExpressionExtractor';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -154,6 +156,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private breakpointManager?: BreakpointManager;
   private readonly registeredFunctionBreakpoints: Breakpoint[] = [];
   private evaluator!: ExpressionEvaluator;
+  private intellisense?: IntelliSense;
   private prevStackFrames?: StackFrames;
   private currentStackFrames?: StackFrames;
   private readonly currentMetaVariableMap = new MetaVariableValueMap();
@@ -184,6 +187,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
     response.body = {
+      completionTriggerCharacters: [ '.' ],
+      supportsCompletionsRequest: true,
       supportsConditionalBreakpoints: true,
       supportsConfigurationDoneRequest: true,
       supportsEvaluateForHovers: true,
@@ -898,6 +903,11 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const value = await this.evaluator.eval(args.expression, stackFrame.dbgpStackFrame);
         if (typeof value === 'undefined') {
+          if (args.context === 'hover') {
+            this.sendResponse(response);
+            return;
+          }
+
           response.body = {
             result: 'Not initialized',
             type: 'undefined',
@@ -997,6 +1007,79 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void {
     this.traceLogger.log('sourceRequest');
+    this.sendResponse(response);
+  }
+  protected async completionsRequest(response: DebugProtocol.CompletionsResponse, args: DebugProtocol.CompletionsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
+    const createType = (property: dbgp.Property): DebugProtocol.CompletionItemType => {
+      if (property instanceof dbgp.ObjectProperty) {
+        if (equalsIgnoreCase(property.name, '__NEW')) {
+          return 'constructor';
+        }
+        if (property.className === 'Func') {
+          return property.fullName.includes('.') ? 'method' : 'function';
+        }
+        if (property.className === 'Class') {
+          return 'class';
+        }
+        if (property.className === 'Property') {
+          return 'property';
+        }
+      }
+
+      return property.fullName.includes('.') ? 'field' : 'variable';
+    };
+    const createFixers = (ahkVersion: AhkVersion, label: string, snippet: string, position: Pick<DebugProtocol.CompletionsArguments, 'line' | 'column'>, triggerCharacter: string): Partial<DebugProtocol.CompletionItem> => {
+      const column_0base = position.column - 1;
+      const fixers: Partial<DebugProtocol.CompletionItem> = {};
+      if ([ '[', '["', `['` ].includes(triggerCharacter)) {
+        if (2 <= ahkVersion.mejor && !label.startsWith('[')) {
+          return fixers;
+        }
+
+        const quote = triggerCharacter === '[' ? '"' : triggerCharacter.slice(1);
+        const afterText = args.text.slice(column_0base);
+        const afterText_masked = maskQuotes(ahkVersion, afterText);
+        const pairIndex_close = searchPair(afterText_masked, '[', ']', 1);
+
+        const openText = triggerCharacter === '[' ? '"' : '';
+        let closeText = triggerCharacter === '[' ? '"]' : `${triggerCharacter.slice(1)}]`;
+        if (pairIndex_close !== -1) {
+          closeText = '';
+
+          const closeQuote = afterText.charAt(pairIndex_close - 1);
+          if (!(closeQuote === '"' || (2 <= ahkVersion.mejor && closeQuote === `'`))) {
+            closeText = quote;
+          }
+        }
+
+        const label_dotNotation = toDotNotation(ahkVersion, label);
+        fixers.text = `${openText}${label_dotNotation}${closeText}`;
+        fixers.label = `[${quote}${label_dotNotation}${quote}]`;
+        fixers.start = triggerCharacter.length;
+        return fixers;
+      }
+      return fixers;
+    };
+
+    const targets = (await this.intellisense!.getSuggestion(args.text.slice(0, args.column - 1), async(property, snippet, triggerCharacter): Promise<DebugProtocol.CompletionItem | undefined> => {
+      // If the trigger is a dot and the completion outputs bracket notation, the dot must be removed. However, the completionsRequest cannot overwrite characters that have already been entered, so they should not be displayed in the completion in such cases
+      if (triggerCharacter === '.' && property.name.startsWith('[')) {
+        return undefined;
+      }
+
+      const label = createCompletionLabel(property.name);
+      const completionItem: DebugProtocol.CompletionItem = {
+        label,
+        detail: await createCompletionDetail(this.session!, property),
+        type: createType(property),
+        sortText: createCompletionSortText(property),
+        ...createFixers(this.session!.ahkVersion, label, snippet, args, triggerCharacter),
+      };
+      completionItem.sortText = createCompletionSortText(property.fullName, String(completionItem.label));
+      return completionItem;
+    })).filter((item) => typeof item !== 'undefined') as DebugProtocol.CompletionItem[];
+
+    response.body = { targets };
     this.sendResponse(response);
   }
   // eslint-disable-next-line @typescript-eslint/require-await
@@ -2153,8 +2236,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                 }
 
                 this.evaluator = new ExpressionEvaluator(this.session, this.currentMetaVariableMap);
+                this.intellisense = new IntelliSense(this.session);
                 completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
-                completionItemProvider.evaluator = this.evaluator;
+                completionItemProvider.intellisense = this.intellisense;
                 this.symbolFinder = new SymbolFinder(this.session.ahkVersion, readFileCacheSync);
                 this.sendEvent(new InitializedEvent());
               })

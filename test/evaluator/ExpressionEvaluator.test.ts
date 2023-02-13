@@ -6,7 +6,7 @@ import * as dbgp from '../../src/dbgpSession';
 import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
 import { getFalse, getTrue } from '../../src/util/evaluator/library';
 import { MetaVariableValueMap } from '../../src/util/VariableManager';
-import { closeSession, getPort, launchDebug } from '../util';
+import { closeSession, launchDebug } from '../util';
 
 const sampleDir = path.resolve(__dirname, 'ahk');
 const hostname = '127.0.0.1';
@@ -20,7 +20,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   // let undefined_ahk: EvaluatedValue;
 
   beforeAll(async() => {
-    const data = await launchDebug('AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk'), await getPort(), hostname);
+    const data = await launchDebug('AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk'), 49154, hostname);
     process = data.process;
     server = data.server;
     session = data.session;
@@ -649,7 +649,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   // let undefined_ahk: EvaluatedValue;
 
   beforeAll(async() => {
-    const data = await launchDebug('v2/AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk2'), await getPort(), hostname);
+    const data = await launchDebug('v2/AutoHotkey.exe', path.resolve(sampleDir, 'sample.ahk2'), 49155, hostname);
     process = data.process;
     server = data.server;
     session = data.session;

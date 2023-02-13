@@ -9,15 +9,16 @@ import JSONC from 'jsonc-parser';
 import { defaults, groupBy, isString, range } from 'lodash';
 import tcpPortUsed from 'tcp-port-used';
 import { getAhkVersion } from './util/getAhkVersion';
-import { completionItemProvider, findWord } from './CompletionItemProvider';
+import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession, LaunchRequestArguments } from './ahkDebug';
 import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
 import normalizeToUnix from 'normalize-path';
 import glob from 'fast-glob';
 import { registerCommands } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isDirectory, toArray } from './util/util';
+import { isDirectory, searchPair, toArray } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
+import { ExpressionExtractor } from './util/ExpressionExtractor';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -648,28 +649,45 @@ export const activate = (context: vscode.ExtensionContext): void => {
   context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory(provider)));
   context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], completionItemProvider, '.'));
 
-  const findWordRange = (ahkVersion: AhkVersion, document: vscode.TextDocument, position: vscode.Position, offset = 0): vscode.Range | undefined => {
+  const findExpressionRange = (expressionExtractor: ExpressionExtractor, document: vscode.TextDocument, position: vscode.Position, offset = 0): vscode.Range | undefined => {
     const range = document.getWordRangeAtPosition(position);
     if (!range) {
       return undefined;
     }
-    const wordBeforeCursor = findWord(ahkVersion, document, position);
-    const fixedRange = new vscode.Range(new vscode.Position(position.line, position.character - wordBeforeCursor.length), range.end);
-    const debug = document.getText(fixedRange); debug;
+
+    const lineText = document.lineAt(position).text;
+    const { data, object, operator } = expressionExtractor.extract(lineText.slice(0, position.character));
+
+    const startIndex = position.character - data.length;
+    const fixedRange = new vscode.Range(new vscode.Position(position.line, startIndex), range.end);
+    if (operator === '["' || operator === `['`) {
+      const bracketNotation = lineText.slice(object.length + startIndex);
+      const pairIndex = searchPair(bracketNotation, '[', ']');
+      if (pairIndex === -1) {
+        return fixedRange;
+      }
+      const endIndex = startIndex + object.length + pairIndex + 1;
+      return new vscode.Range(
+        fixedRange.start,
+        new vscode.Position(fixedRange.end.line, endIndex),
+      );
+    }
     return fixedRange;
   };
+  const expressionExtractor_v1 = new ExpressionExtractor(new AhkVersion('1.0'));
   context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk' ], {
     provideEvaluatableExpression(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.EvaluatableExpression> {
-      const range = findWordRange(new AhkVersion('1.0'), document, position);
+      const range = findExpressionRange(expressionExtractor_v1, document, position);
       if (!range) {
         return undefined;
       }
       return new vscode.EvaluatableExpression(range);
     },
   }));
+  const expressionExtractor_v2 = new ExpressionExtractor(new AhkVersion('2.0'));
   context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk2', 'ah2' ], {
     provideEvaluatableExpression(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.EvaluatableExpression> {
-      const range = findWordRange(new AhkVersion('2.0'), document, position);
+      const range = findExpressionRange(expressionExtractor_v2, document, position);
       if (!range) {
         return undefined;
       }

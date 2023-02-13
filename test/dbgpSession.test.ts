@@ -1,7 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../src/dbgpSession';
 import * as net from 'net';
-import { getPort } from './util';
 
 const hostname = '127.0.0.1';
 describe('Debug session test', () => {
@@ -10,7 +9,7 @@ describe('Debug session test', () => {
   let server: net.Server;
   let session: dbgp.Session;
   beforeAll(async() => {
-    const port = await getPort();
+    const port = 49152;
     return new Promise<void>((resolve) => {
       server = net.createServer((_socket) => {
         socket = _socket;
