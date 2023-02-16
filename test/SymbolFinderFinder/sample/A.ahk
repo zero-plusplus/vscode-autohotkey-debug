@@ -1,4 +1,12 @@
-﻿/**
+﻿Lib_Test()
+
+Func_1() {
+}
+Func_2()
+{
+}
+
+/**
  * abc
  */
 class A {
@@ -19,9 +27,4 @@ class A {
     C_Method_1() {
     }
   }
-}
-Func_1() {
-}
-Func_2()
-{
 }

@@ -5,7 +5,7 @@ globalVar := "Global"
 global SuperGlobalVar := "SuperGlobal"
 
 demo()
- demo() {
+demo() {
   static staticVar := "Static"
 
   ; Overwrite global var
