@@ -28,6 +28,9 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Changed: [#261](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/261) Support the expression in watch expression
     * Changed: [#269](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/269) Support the expression evaluate in debug console
     * Changed: [#270](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/270) Support expression in log point
+    * Changed: [#275](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/275) Change the syntax of debug directive
+    * Changed: [#288](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/288) Change the labelling process when outputting objects to the log
+
     * Fixed: [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
     * Fixed: [#212](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/212) Some errors were not detected and raw error messages were output. This caused `useAutoJumpToError` to not work in some cases
     * Fixed: [#215](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/215) The list of running AutoHotkey processes displayed before attaching does not display correctly when it contains multibyte strings

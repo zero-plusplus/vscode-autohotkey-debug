@@ -36,7 +36,7 @@ import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
 import { now, readFileCache, readFileCacheSync, searchPair, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
-import { Categories, Category, MetaVariable, MetaVariableValue, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
+import { Categories, Category, MetaVariable, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
 import { AhkConfigurationProvider, CategoryData } from './extension';
 import { version as debuggerAdapterVersion } from '../package.json';
 import { SymbolFinder } from './util/SymbolFinder';
@@ -45,6 +45,9 @@ import { enableRunToEndOfFunction, setEnableRunToEndOfFunction } from './command
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { IntelliSense } from './util/IntelliSense';
 import { maskQuotes } from './util/ExpressionExtractor';
+import { DebugDirectiveParser } from './util/DebugDirectiveParser';
+import { LogData, LogEvaluator } from './util/evaluator/LogEvaluator';
+import { ActionLogPrefixData, CategoryLogPrefixData, GroupLogPrefixData } from './util/evaluator/LogParser';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -170,6 +173,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private raisedCriticalError?: boolean;
   // The warning message is processed earlier than the server initialization, so it needs to be delayed.
   private readonly delayedWarningMessages: string[] = [];
+  private logEvalutor?: LogEvaluator;
   constructor(provider: AhkConfigurationProvider) {
     super('autohotkey-debug.txt');
 
@@ -1153,18 +1157,16 @@ export class AhkDebugSession extends LoggingDebugSession {
     await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
   }
   private async registerDebugDirective(): Promise<void> {
+    if (!this.session) {
+      return;
+    }
     if (!this.config.useDebugDirective) {
       return;
     }
-    const {
-      useBreakpointDirective,
-      useOutputDirective,
-      useClearConsoleDirective,
-    } = this.config.useDebugDirective;
+    const { useBreakpointDirective, useOutputDirective, useClearConsoleDirective } = this.config.useDebugDirective;
 
+    const parser = new DebugDirectiveParser(this.session.ahkVersion);
     const filePathListChunked = chunk(await this.getAllLoadedSourcePath(), 50); // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/203
-
-    // const DEBUG_start = process.hrtime();
     for await (const filePathList of filePathListChunked) {
       await Promise.all(filePathList.map(async(filePath) => {
         const document = await vscode.workspace.openTextDocument(filePath);
@@ -1172,36 +1174,15 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         await Promise.all(range(document.lineCount).map(async(line_0base) => {
           const textLine = document.lineAt(line_0base);
-          const match = textLine.text.match(/^\s*;\s*@Debug-(?<directiveType>[\w_]+)(?::(?<params>[\w_:]+))?\s*(?=\(|\[|-|=|$)(?:\((?<condition>[^\n)]+)\))?\s*(?:\[(?<hitCondition>[^\n]+)\])?\s*(?:(?<outputOperator>->|=>)?(?<leaveLeadingSpace>\|)?(?<message>.*))?$/ui);
-          if (!match?.groups) {
+          const parsed = parser.parse(textLine.text);
+          if (!parsed) {
             return;
           }
 
-          const directiveType = match.groups.directiveType.toLowerCase();
-          const {
-            condition = '',
-            hitCondition = '',
-            outputOperator,
-            message = '',
-          } = match.groups;
-          const params = match.groups.params ? match.groups.params.split(':') : '';
-          const removeLeadingSpace = match.groups.leaveLeadingSpace ? !match.groups.leaveLeadingSpace : true;
-
-          let logMessage = message;
-          if (removeLeadingSpace) {
-            logMessage = logMessage.trimLeft();
-          }
-          if (outputOperator === '=>') {
-            logMessage += '\n';
-          }
-
+          const { name: directiveName, condition, hitCondition, message: logMessage } = parsed;
           try {
             const line = line_0base + 1;
-            if (useBreakpointDirective && directiveType === 'breakpoint') {
-              if (0 < params.length) {
-                return;
-              }
-
+            if (useBreakpointDirective && directiveName === 'breakpoint') {
               const advancedData = {
                 condition,
                 hitCondition,
@@ -1211,30 +1192,17 @@ export class AhkDebugSession extends LoggingDebugSession {
               } as BreakpointAdvancedData;
               await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
             }
-            else if (useOutputDirective && directiveType === 'output') {
-              let logGroup: string | undefined;
-              if (0 < params.length) {
-                if (equalsIgnoreCase(params[0], 'start')) {
-                  logGroup = 'start';
-                }
-                else if (equalsIgnoreCase(params[0], 'startCollapsed')) {
-                  logGroup = 'startCollapsed';
-                }
-                else if (equalsIgnoreCase(params[0], 'end')) {
-                  logGroup = 'end';
-                }
-              }
+            else if (useOutputDirective && directiveName === 'output') {
               const newCondition = condition;
               const advancedData = {
                 condition: newCondition,
                 hitCondition,
                 logMessage,
-                logGroup,
                 hidden: true,
               } as BreakpointAdvancedData;
               await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
             }
-            else if (useClearConsoleDirective && directiveType === 'clearconsole') {
+            else if (useClearConsoleDirective && directiveName === 'clearconsole') {
               const advancedData = {
                 condition,
                 hitCondition,
@@ -1253,12 +1221,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         }));
       }));
     }
-    // const DEBUG_hrtime = process.hrtime(DEBUG_start);
-    // // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-    // // eslint-disable-next-line no-mixed-operators
-    // const DEBUG_ns = DEBUG_hrtime[0] * 1e9 + DEBUG_hrtime[1];
-    // const DEBUG_s = DEBUG_ns / 1e9;
-    // this.printLogMessage(`elapsedTime: ${DEBUG_s}s`);
   }
   private createBreakpointAction(action?: HiddenBreakpointActionName): BreakpointAction | undefined {
     if (typeof action === 'undefined') {
@@ -2027,39 +1989,63 @@ export class AhkDebugSession extends LoggingDebugSession {
     return false;
   }
   private async printLogMessage(breakpoint: Breakpoint, logCategory?: LogCategory): Promise<void> {
-    const { logMessage, logGroup = undefined, hitCount } = breakpoint;
+    const { logMessage, hitCount } = breakpoint;
     const metaVariables = new MetaVariableValueMap(this.currentMetaVariableMap.entries());
     metaVariables.set('hitCount', hitCount);
 
     try {
-      const evalucatedMessages = await this.evaluateLog(logMessage, { file: breakpoint.filePath, line: breakpoint.line });
-      const stringMessages = evalucatedMessages.filter((message) => typeof message === 'string' || typeof message === 'number') as string[];
-      const objectMessages = evalucatedMessages.filter((message) => typeof message === 'object') as Array<Scope | Category | Categories | Variable>;
-      if (objectMessages.length === 0) {
-        const event: DebugProtocol.OutputEvent = new OutputEvent(stringMessages.join(''), logCategory);
-        event.body.group = logGroup;
-        this.sendEvent(event);
+      const logDataList = await timeoutPromise(this.logEvalutor!.eval(logMessage), 5000).catch((e: unknown) => {
+        const messageHead = `Log Error at ${breakpoint.filePath}:${breakpoint.line}`;
+        if (e instanceof ParseError) {
+          const messageBody = e.message.split(/\r\n|\n/u).slice(1).join('\n');
+          this.sendAnnounce(`${messageHead}\n${messageBody}`, 'stderr');
+          return;
+        }
+        else if (e instanceof Error) {
+          this.sendAnnounce(`${messageHead}\n${e.message}`, 'stderr');
+          return;
+        }
+
+        if (e instanceof dbgp.DbgpCriticalError) {
+          this.criticalError(e.message);
+          return;
+        }
+
+        // If the message is output in disconnectRequest, it may not be displayed, so output it here
+        this.isTimeout = true;
+        this.sendAnnounce('Debugging stopped for the following reasons: Timeout occurred in communication with the debugger when the following log was output.', 'stderr');
+        this.sendAnnounce(`[${breakpoint.filePath}:${breakpoint.line}] ${logMessage}`, 'stderr');
+        this.sendTerminateEvent();
+      });
+
+      if (!logDataList) {
         return;
       }
 
-      let label = evalucatedMessages.reduce((prev: string, current): string => {
-        if (typeof current === 'string' || typeof current === 'number') {
-          return `${prev}${current}`;
+      const invokeBeforeAction = async(actionPrefixes?: ActionLogPrefixData[]): Promise<void> => {
+        const clearAction = actionPrefixes?.find((action) => action.value === 'clear');
+        if (clearAction) {
+          await (this.createBreakpointAction('ClearConsole')?.());
         }
-        return prev;
-      }, '');
-      if (!label) {
-        label = objectMessages.reduce((prev, current) => (prev ? `${prev}, ${current.name}` : current.name), '');
+      };
+      const invokeAfterAction = async(actionPrefixes?: ActionLogPrefixData[]): Promise<void> => {
+        const breakAction = actionPrefixes?.find((action) => action.value === 'break');
+        if (breakAction) {
+          this.sendStoppedEvent('breakpoint');
+        }
+        return Promise.resolve();
+      };
+
+      for await (const logData of logDataList) {
+        const logActions = logData.prefixes.filter((prefix): prefix is ActionLogPrefixData => prefix.type === 'action');
+
+        await invokeBeforeAction(logActions);
+        const outputEvent = this.createOutputEvent(logData, { source: { path: breakpoint.filePath }, line: breakpoint.line });
+        if (outputEvent) {
+          this.sendEvent(outputEvent);
+        }
+        await invokeAfterAction(logActions);
       }
-
-      const variableGroup = new MetaVariable(label, objectMessages.map((obj) => new MetaVariable(obj.name, obj)));
-      const variablesReference = this.variableManager!.createVariableReference(variableGroup);
-      this.logObjectsMap.set(variablesReference, variableGroup);
-
-      const event: DebugProtocol.OutputEvent = new OutputEvent(label, logCategory);
-      event.body.group = logGroup;
-      event.body.variablesReference = variablesReference;
-      this.sendEvent(event);
     }
     catch (e: unknown) {
       if (e instanceof dbgp.DbgpCriticalError) {
@@ -2067,92 +2053,43 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
   }
+  private createOutputEvent(logData: LogData, extraInfo?: Partial<DebugProtocol.OutputEvent['body']>): DebugProtocol.OutputEvent | undefined {
+    const label = logData.type === 'primitive' ? String(logData.value) : logData.label;
+    if ((/^\s*$/u).test(label)) {
+      return undefined;
+    }
+
+    const group = logData.prefixes.reverse().find((prefix) => prefix.type === 'group') as GroupLogPrefixData | undefined;
+    const category = logData.prefixes.reverse().find((prefix) => prefix.type === 'category') as CategoryLogPrefixData | undefined;
+    const createCategory = (category: CategoryLogPrefixData | undefined): string | undefined => {
+      switch (category?.value) {
+        case 'error': return 'stderr';
+        case 'info': return 'console';
+        case 'nortice': return 'important';
+        default: return undefined;
+      }
+    };
+
+    const event: DebugProtocol.OutputEvent = new OutputEvent(label, createCategory(category));
+    if (logData.type === 'object') {
+      const variableGroup = new MetaVariable(logData.label, logData.value.map((obj) => new MetaVariable(obj.name, obj)));
+      const variablesReference = this.variableManager!.createVariableReference(variableGroup);
+      this.logObjectsMap.set(variablesReference, variableGroup);
+      event.body.variablesReference = variablesReference;
+    }
+
+    event.body.group = group?.value;
+    event.body = {
+      ...extraInfo,
+      ...event.body,
+    };
+    return event;
+  }
   private criticalError(message: string): void {
     this.raisedCriticalError = true;
     const fixedMessage = this.fixPathOfRuntimeError(message);
     this.sendAnnounce(fixedMessage, 'stderr');
     this.sendTerminateEvent();
-  }
-  private async evaluateLog(format: string, source: { file: string; line: number }): Promise<MetaVariableValue[]> {
-    const results: MetaVariableValue[] = [];
-
-    let current = '';
-    try {
-      let blockCount = 0;
-      for (let i = 0; i < format.length; i++) {
-        const char = format.charAt(i);
-
-        if (0 < blockCount) {
-          if (char === '}') {
-            blockCount--;
-            if (blockCount === 0) {
-              const timeout_ms = 30 * 1000;
-              if (current === '') {
-                results.push('{}');
-                continue;
-              }
-              // eslint-disable-next-line no-await-in-loop
-              const value = await timeoutPromise(this.evaluator.eval(current), timeout_ms).catch((e: unknown) => {
-                if (e instanceof dbgp.DbgpCriticalError) {
-                  this.criticalError(e.message);
-                  return;
-                }
-
-                // If the message is output in disconnectRequest, it may not be displayed, so output it here
-                this.isTimeout = true;
-                this.sendAnnounce('Debugging stopped for the following reasons: Timeout occurred in communication with the debugger when the following log was output', 'stderr');
-                this.sendAnnounce(`[${source.file}:${source.line}] ${format}`, 'stderr');
-                this.sendTerminateEvent();
-              });
-
-              if (value instanceof dbgp.ObjectProperty) {
-                results.push(new Variable(this.session!, value));
-              }
-              else if (typeof value !== 'undefined') {
-                results.push(value);
-              }
-              current = '';
-            }
-            continue;
-          }
-
-          current += char;
-          continue;
-        }
-
-        if (char === '\\' && [ '{' ].includes(format.charAt(i + 1))) {
-          current += format.slice(i + 1, i + 2);
-          i++;
-          continue;
-        }
-
-        if (char === '{') {
-          blockCount++;
-          if (current) {
-            results.push(current);
-            current = '';
-          }
-          continue;
-        }
-
-        current += char;
-      }
-
-      if (current) {
-        results.push(current);
-      }
-    }
-    catch (e: unknown) {
-      const messageHead = `Log Error at ${source.file}:${source.line}`;
-      if (e instanceof ParseError) {
-        const messageBody = e.message.split(/\r\n|\n/u).slice(1).join('\n');
-        this.sendAnnounce(`${messageHead}\n${messageBody}`, 'stderr');
-      }
-      else if (e instanceof Error) {
-        this.sendAnnounce(`${messageHead}\n${e.message}`, 'stderr');
-      }
-    }
-    return results;
   }
   private async displayPerfTips(metaVariableMap: MetaVariableValueMap): Promise<void> {
     if (!this.config.usePerfTips) {
@@ -2171,13 +2108,24 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
 
       const { format } = this.config.usePerfTips;
-      const message = (await this.evaluateLog(format, { file: source.path, line: line_0base })).reduce((prev: string, current) => {
-        if (typeof current === 'string') {
-          return prev + current;
+      const logDataList = await timeoutPromise(this.logEvalutor!.eval(format), 5000).catch((e: unknown) => {
+        if (e instanceof dbgp.DbgpCriticalError) {
+          this.criticalError(e.message);
+          return;
         }
-        return prev;
-      }, '');
 
+        // If the message is output in disconnectRequest, it may not be displayed, so output it here
+        this.isTimeout = true;
+        this.sendAnnounce('Debugging stopped for the following reasons: Timeout occurred in communication with the debugger when the following perftips was output.', 'stderr');
+        this.sendAnnounce(`[${source.path}:${line}] ${format}`, 'stderr');
+        this.sendTerminateEvent();
+      });
+
+      if (!logDataList || logDataList.length === 0 || logDataList[0].type === 'object') {
+        return;
+      }
+
+      const message = String(logDataList[0].value);
       const decorationType = vscode.window.createTextEditorDecorationType({
         after: {
           fontStyle: this.config.usePerfTips.fontStyle,
@@ -2236,6 +2184,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                 }
 
                 this.evaluator = new ExpressionEvaluator(this.session, this.currentMetaVariableMap);
+                this.logEvalutor = new LogEvaluator(this.evaluator);
                 this.intellisense = new IntelliSense(this.session);
                 completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
                 completionItemProvider.intellisense = this.intellisense;

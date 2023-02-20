@@ -74,7 +74,7 @@ demo() {
 }
 class Clazz extends ClazzBase {
   ; static
-  static staticField := "static fie ld"
+  static staticField := "staticfield"
 
   ; property
   _property_baking := "baking"
