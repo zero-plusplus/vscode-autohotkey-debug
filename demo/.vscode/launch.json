@@ -205,7 +205,7 @@
                                 "ignoreCase": true,
                                 "offset": 1,
                             },
-                            "log": "{GetMeta(\"$1\")} {GetMeta(\"$var\")} := \"{GetVar(GetMeta(\"$var\"))}\"",
+                            "log": "{GetMetaVar(\"$1\")} {GetMetaVar(\"$var\")} := \"{GetVar(GetMetaVar(\"$var\"))}\"",
                         },
                     ]
                 }

@@ -34,8 +34,8 @@ describe('ExpressionParser', () => {
     '1 >= 2',
     'true && false',
     'true || false',
-    'GetMeta("thisCallstack").name',
-    'GetMeta("callstack")[0].name',
+    'GetMetaVar("thisCallstack").name',
+    'GetMetaVar("callstack")[0].name',
   ];
   test('parse', () => {
     for (const testData of testDataList) {

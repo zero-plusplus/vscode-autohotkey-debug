@@ -1031,7 +1031,7 @@ export class ExpressionEvaluator {
     }
 
     const library = this.library.get(libraryName);
-    if (equalsIgnoreCase(libraryName, 'GetMeta') && 0 < node.arguments.length) {
+    if (equalsIgnoreCase(libraryName, 'GetMetaVar') && 0 < node.arguments.length) {
       const metaVariableName = await this.nodeToString(node.arguments[0]);
       const metaVariableValue = this.metaVariableMap.get(metaVariableName);
       const value = metaVariableValue instanceof Promise

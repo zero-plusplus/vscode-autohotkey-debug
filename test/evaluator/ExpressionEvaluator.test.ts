@@ -392,16 +392,16 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('GetVar("instance.<base>")')).toBeTruthy();
   });
 
-  test('eval libraries (GetMeta)', async(): Promise<void> => {
-    expect(await evaluator.eval('GetMeta("hitCount")')).toBe(1);
-    expect(await evaluator.eval('GetMeta("callstack")[0].name')).toBe('A');
+  test('eval libraries (GetMetaVar)', async(): Promise<void> => {
+    expect(await evaluator.eval('GetMetaVar("hitCount")')).toBe(1);
+    expect(await evaluator.eval('GetMetaVar("callstack")[0].name')).toBe('A');
   });
 
   test('eval libraries (IsSet)', async(): Promise<void> => {
     for await (const name of [ 'IsSet', 'IsUndefined' ]) {
       expect(await evaluator.eval(`${name}(undefined)`)).toBe(true_ahk);
       expect(await evaluator.eval(`${name}(null)`)).toBe(false_ahk);
-      expect(await evaluator.eval(`${name}(GetMeta(""))`)).toBe(true_ahk);
+      expect(await evaluator.eval(`${name}(GetMetaVar(""))`)).toBe(true_ahk);
     }
   });
 
