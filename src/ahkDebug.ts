@@ -1994,7 +1994,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     metaVariables.set('hitCount', hitCount);
 
     try {
-      const logDataList = await timeoutPromise(this.logEvalutor!.eval(logMessage), 5000).catch((e: unknown) => {
+      const timeout_ms = 30 * 1000;
+      const logDataList = await timeoutPromise(this.logEvalutor!.eval(logMessage), timeout_ms).catch((e: unknown) => {
         const messageHead = `Log Error at ${breakpoint.filePath}:${breakpoint.line}`;
         if (e instanceof ParseError) {
           const messageBody = e.message.split(/\r\n|\n/u).slice(1).join('\n');
