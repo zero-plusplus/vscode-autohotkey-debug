@@ -116,7 +116,9 @@ export type Function = (...params: any[]) => string | number | undefined;
 export type Library = {
   [key: string]: (...params: any[]) => string | number | undefined;
 };
-export type EvaluatedValue = undefined | string | number | dbgp.ObjectProperty | MetaVariable;
+export type EvaluatedValue = undefined | EvaluatedPrimitiveValue | EvaluatedObjectValue;
+export type EvaluatedPrimitiveValue = string | number;
+export type EvaluatedObjectValue = dbgp.ObjectProperty | MetaVariable;
 export class EvaluatedNode {
   public readonly type: string;
   public readonly node: ohm.Node | ohm.Node[];
@@ -436,17 +438,19 @@ export class ParseError extends Error {
 }
 export class ExpressionEvaluator {
   public readonly session: dbgp.Session;
+  public readonly ahkVersion: AhkVersion;
   private readonly metaVariableMap: MetaVariableValueMap;
   private readonly parser: ExpressionParser;
   private readonly library: CaseInsensitiveMap<string, LibraryFunc>;
   private readonly withoutFunction: boolean;
   constructor(session: dbgp.Session, metaVariableMap?: MetaVariableValueMap, withoutFunction = false) {
     this.session = session;
+    this.ahkVersion = session.ahkVersion;
     this.metaVariableMap = metaVariableMap ?? new MetaVariableValueMap();
-    this.library = 2.0 <= session.ahkVersion.mejor
+    this.library = 2.0 <= this.ahkVersion.mejor
       ? library_for_v2
       : library_for_v1;
-    this.parser = new ExpressionParser(session.ahkVersion);
+    this.parser = new ExpressionParser(this.ahkVersion);
     this.withoutFunction = withoutFunction;
   }
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
