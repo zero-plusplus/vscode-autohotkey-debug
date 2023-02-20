@@ -393,7 +393,7 @@
                   "object"
                 ],
                 "examples": [
-                  "{{elapsedTime_s}}s elapsed"
+                  "{GetMetaVar(\"elapsedTime_s\")}s elapsed"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -401,9 +401,9 @@
                     "type": "string",
                     "description": "Content to be displayed. See the README for detailed instructions on how to set it up.",
                     "examples": [
-                      "{{elapsedTime_s}}s elapsed"
+                      "{GetMetaVar(\"elapsedTime_s\")}s elapsed"
                     ],
-                    "default": "{{elapsedTime_s}}s elapsed"
+                    "default": "{GetMetaVar(\"elapsedTime_s\")}s elapsed"
                   },
                   "fontColor": {
                     "type": "string",
@@ -932,7 +932,7 @@
                   "object"
                 ],
                 "examples": [
-                  "{{elapsedTime_s}}s elapsed"
+                  "{GetMetaVar(\"elapsedTime_s\")}s elapsed"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -940,9 +940,9 @@
                     "type": "string",
                     "description": "Content to be displayed. See the README for detailed instructions on how to set it up.",
                     "examples": [
-                      "{{elapsedTime_s}}s elapsed"
+                      "{GetMetaVar(\"elapsedTime_s\")}s elapsed"
                     ],
-                    "default": "{{elapsedTime_s}}s elapsed"
+                    "default": "{GetMetaVar(\"elapsedTime_s\")}s elapsed"
                   },
                   "fontColor": {
                     "type": "string",
