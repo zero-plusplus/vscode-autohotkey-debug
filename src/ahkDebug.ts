@@ -2184,8 +2184,8 @@ export class AhkDebugSession extends LoggingDebugSession {
                   });
                 }
 
-                this.evaluator = new ExpressionEvaluator(this.session, this.currentMetaVariableMap);
-                this.logEvalutor = new LogEvaluator(this.evaluator);
+                this.evaluator = new ExpressionEvaluator(this.session, { metaVariableMap: this.currentMetaVariableMap });
+                this.logEvalutor = new LogEvaluator(this.session, { metaVariableMap: this.currentMetaVariableMap });
                 this.intellisense = new IntelliSense(this.session);
                 completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
                 completionItemProvider.intellisense = this.intellisense;

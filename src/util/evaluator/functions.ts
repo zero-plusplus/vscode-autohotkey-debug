@@ -43,13 +43,16 @@ export const ahkRegexMatch = (value: string, regexString: string): number => {
   return (RegExp(regexString_body, `${flagsMatch.groups.flags}`).exec(_value)?.index ?? -1) + 1;
 };
 
+export type FunctionMap = CaseInsensitiveMap<string, LibraryFunc>;
+export type FormatSpecifyMap = Map<string, LibraryFunc>;
 export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, ...params: EvaluatedValue[]) => Promise<EvaluatedValue>;
 
-export const library_for_v1 = new CaseInsensitiveMap<string, LibraryFunc>();
-export const library_for_v2 = new CaseInsensitiveMap<string, LibraryFunc>();
+export const formatSpecifiers_v1: FormatSpecifyMap = new Map();
+export const formatSpecifiers_v2: FormatSpecifyMap = new Map();
 
-
-// #region Built-in like functions
+// #region Functions compatible with AutoHotkey
+export const copatibleFunctions_for_v1: FunctionMap = new CaseInsensitiveMap();
+export const copatibleFunctions_for_v2: FunctionMap = new CaseInsensitiveMap();
 // https://www.autohotkey.com/docs/lib/Object.htm#HasKey
 const hasKey: LibraryFunc = async(session, stackFrame, value, key) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
@@ -59,14 +62,17 @@ const hasKey: LibraryFunc = async(session, stackFrame, value, key) => {
   const child = await fetchPropertyChild(session, stackFrame, value, key);
   return child ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('HasKey', hasKey);
-library_for_v1.set('ObjHasKey', hasKey);
-library_for_v2.set('HasKey', hasKey);
-library_for_v2.set('HasOwnProp', hasKey);
-library_for_v2.set('ObjHasOwnProp', hasKey);
+copatibleFunctions_for_v1.set('HasKey', hasKey);
+copatibleFunctions_for_v1.set('ObjHasKey', hasKey);
+copatibleFunctions_for_v2.set('HasKey', hasKey);
+copatibleFunctions_for_v2.set('HasOwnProp', hasKey);
+copatibleFunctions_for_v2.set('ObjHasOwnProp', hasKey);
 // #endregion
 
-// #region original functions
+// #region Functions incompatible with AutoHotkey
+export const imcopatibleFunctions_for_v1: FunctionMap = new CaseInsensitiveMap();
+export const imcopatibleFunctions_for_v2: FunctionMap = new CaseInsensitiveMap();
+
 const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass) => {
   if (!(object instanceof dbgp.ObjectProperty)) {
     return getFalse(session, stackFrame);
@@ -86,8 +92,8 @@ const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass) =
 
   return instanceOf(session, stackFrame, baseClass, superClass);
 };
-library_for_v1.set('InstanceOf', instanceOf);
-library_for_v2.set('InstanceOf', instanceOf);
+imcopatibleFunctions_for_v1.set('InstanceOf', instanceOf);
+imcopatibleFunctions_for_v2.set('InstanceOf', instanceOf);
 
 const countOf: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty) {
@@ -96,28 +102,28 @@ const countOf: LibraryFunc = async(session, stackFrame, value) => {
   }
   return String(value).length;
 };
-library_for_v1.set('CountOf', countOf);
-library_for_v2.set('CountOf', countOf);
+imcopatibleFunctions_for_v1.set('CountOf', countOf);
+imcopatibleFunctions_for_v2.set('CountOf', countOf);
 
 const isSet: LibraryFunc = async(session, stackFrame, value) => {
   return typeof value === 'undefined' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsSet', isSet);
-library_for_v2.set('IsSet', isSet);
-library_for_v1.set('IsUndefined', isSet);
-library_for_v2.set('IsUndefined', isSet);
+imcopatibleFunctions_for_v1.set('IsSet', isSet);
+imcopatibleFunctions_for_v2.set('IsSet', isSet);
+imcopatibleFunctions_for_v1.set('IsUndefined', isSet);
+imcopatibleFunctions_for_v2.set('IsUndefined', isSet);
 
 const isString: LibraryFunc = async(session, stackFrame, value) => {
   return typeof value === 'string' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsString', isString);
-library_for_v2.set('IsString', isString);
+imcopatibleFunctions_for_v1.set('IsString', isString);
+imcopatibleFunctions_for_v2.set('IsString', isString);
 
 const isNumber: LibraryFunc = async(session, stackFrame, value) => {
   return typeof value === 'number' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsNumber', isNumber);
-library_for_v2.set('IsNumber', isNumber);
+imcopatibleFunctions_for_v1.set('IsNumber', isNumber);
+imcopatibleFunctions_for_v2.set('IsNumber', isNumber);
 
 const isNumberLike: LibraryFunc = async(session, stackFrame, value) => {
   switch (typeof value) {
@@ -127,8 +133,8 @@ const isNumberLike: LibraryFunc = async(session, stackFrame, value) => {
   }
   return getFalse(session, stackFrame);
 };
-library_for_v1.set('IsNumberLike', isNumberLike);
-library_for_v2.set('IsNumberLike', isNumberLike);
+imcopatibleFunctions_for_v1.set('IsNumberLike', isNumberLike);
+imcopatibleFunctions_for_v2.set('IsNumberLike', isNumberLike);
 
 const isInteger: LibraryFunc = async(session, stackFrame, value) => {
   if (!(await isNumber(session, stackFrame, value))) {
@@ -136,8 +142,8 @@ const isInteger: LibraryFunc = async(session, stackFrame, value) => {
   }
   return Number.isInteger(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsInteger', isInteger);
-library_for_v2.set('IsInteger', isInteger);
+imcopatibleFunctions_for_v1.set('IsInteger', isInteger);
+imcopatibleFunctions_for_v2.set('IsInteger', isInteger);
 
 const isIntegerLike: LibraryFunc = async(session, stackFrame, value) => {
   switch (typeof value) {
@@ -147,8 +153,8 @@ const isIntegerLike: LibraryFunc = async(session, stackFrame, value) => {
   }
   return getFalse(session, stackFrame);
 };
-library_for_v1.set('IsIntegerLike', isIntegerLike);
-library_for_v2.set('IsIntegerLike', isIntegerLike);
+imcopatibleFunctions_for_v1.set('IsIntegerLike', isIntegerLike);
+imcopatibleFunctions_for_v2.set('IsIntegerLike', isIntegerLike);
 
 const isFloat: LibraryFunc = async(session, stackFrame, value) => {
   if (!(await isNumber(session, stackFrame, value))) {
@@ -158,8 +164,8 @@ const isFloat: LibraryFunc = async(session, stackFrame, value) => {
     ? getTrue(session, stackFrame)
     : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsFloat', isFloat);
-library_for_v2.set('IsFloat', isFloat);
+imcopatibleFunctions_for_v1.set('IsFloat', isFloat);
+imcopatibleFunctions_for_v2.set('IsFloat', isFloat);
 
 const isFloatLike: LibraryFunc = async(session, stackFrame, value) => {
   switch (typeof value) {
@@ -169,8 +175,8 @@ const isFloatLike: LibraryFunc = async(session, stackFrame, value) => {
   }
   return getFalse(session, stackFrame);
 };
-library_for_v1.set('IsFloatLike', isFloatLike);
-library_for_v2.set('IsFloatLike', isFloatLike);
+imcopatibleFunctions_for_v1.set('IsFloatLike', isFloatLike);
+imcopatibleFunctions_for_v2.set('IsFloatLike', isFloatLike);
 
 const isHexLike: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
@@ -178,8 +184,8 @@ const isHexLike: LibraryFunc = async(session, stackFrame, value) => {
   }
   return (/^0x[0-9a-fA-F]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsHexLike', isHexLike);
-library_for_v2.set('IsHexLike', isHexLike);
+imcopatibleFunctions_for_v1.set('IsHexLike', isHexLike);
+imcopatibleFunctions_for_v2.set('IsHexLike', isHexLike);
 
 const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || !(typeof value === 'string' || typeof value === 'number')) {
@@ -187,8 +193,8 @@ const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
   }
   return getTrue(session, stackFrame);
 };
-library_for_v1.set('IsPrimitive', isPrimitive);
-library_for_v2.set('IsPrimitive', isPrimitive);
+imcopatibleFunctions_for_v1.set('IsPrimitive', isPrimitive);
+imcopatibleFunctions_for_v2.set('IsPrimitive', isPrimitive);
 
 const isObject: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty) {
@@ -196,8 +202,8 @@ const isObject: LibraryFunc = async(session, stackFrame, value) => {
   }
   return getFalse(session, stackFrame);
 };
-library_for_v1.set('IsObject', isObject);
-library_for_v2.set('IsObject', isObject);
+imcopatibleFunctions_for_v1.set('IsObject', isObject);
+imcopatibleFunctions_for_v2.set('IsObject', isObject);
 
 const isAlpha: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
@@ -205,8 +211,8 @@ const isAlpha: LibraryFunc = async(session, stackFrame, value) => {
   }
   return (/^[a-zA-Z]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsAlpha', isAlpha);
-library_for_v2.set('IsAlpha', isAlpha);
+imcopatibleFunctions_for_v1.set('IsAlpha', isAlpha);
+imcopatibleFunctions_for_v2.set('IsAlpha', isAlpha);
 
 const isAlnum: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
@@ -214,8 +220,8 @@ const isAlnum: LibraryFunc = async(session, stackFrame, value) => {
   }
   return (/^[a-zA-Z0-9]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsAlnum', isAlnum);
-library_for_v2.set('IsAlnum', isAlnum);
+imcopatibleFunctions_for_v1.set('IsAlnum', isAlnum);
+imcopatibleFunctions_for_v2.set('IsAlnum', isAlnum);
 
 const isUpper: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
@@ -223,8 +229,8 @@ const isUpper: LibraryFunc = async(session, stackFrame, value) => {
   }
   return (/^[A-Z]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsUpper', isUpper);
-library_for_v2.set('IsUpper', isUpper);
+imcopatibleFunctions_for_v1.set('IsUpper', isUpper);
+imcopatibleFunctions_for_v2.set('IsUpper', isUpper);
 
 const isLower: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
@@ -232,8 +238,8 @@ const isLower: LibraryFunc = async(session, stackFrame, value) => {
   }
   return (/^[a-z]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsLower', isLower);
-library_for_v2.set('IsLower', isLower);
+imcopatibleFunctions_for_v1.set('IsLower', isLower);
+imcopatibleFunctions_for_v2.set('IsLower', isLower);
 
 const isTime: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
@@ -241,8 +247,8 @@ const isTime: LibraryFunc = async(session, stackFrame, value) => {
   }
   return Number.isNaN(Date.parse(value)) ? getFalse(session, stackFrame) : getTrue(session, stackFrame);
 };
-library_for_v1.set('IsTime', isTime);
-library_for_v2.set('IsTime', isTime);
+imcopatibleFunctions_for_v1.set('IsTime', isTime);
+imcopatibleFunctions_for_v2.set('IsTime', isTime);
 
 const isSpace: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
@@ -250,8 +256,8 @@ const isSpace: LibraryFunc = async(session, stackFrame, value) => {
   }
   return (/^\s+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
-library_for_v1.set('IsSpace', isSpace);
-library_for_v2.set('IsSpace', isSpace);
+imcopatibleFunctions_for_v1.set('IsSpace', isSpace);
+imcopatibleFunctions_for_v2.set('IsSpace', isSpace);
 
 const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
@@ -279,8 +285,8 @@ const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
   }
   return getTrue(session, stackFrame);
 };
-library_for_v1.set('IsClass', isClass);
-library_for_v2.set('IsClass', isClass);
+imcopatibleFunctions_for_v1.set('IsClass', isClass);
+imcopatibleFunctions_for_v2.set('IsClass', isClass);
 
 const isFile: LibraryFunc = async(session, stackFrame, filePath) => {
   if (typeof filePath !== 'string') {
@@ -297,8 +303,8 @@ const isFile: LibraryFunc = async(session, stackFrame, filePath) => {
   }
   return getFalse(session, stackFrame);
 };
-library_for_v1.set('IsFile', isFile);
-library_for_v2.set('IsFile', isFile);
+imcopatibleFunctions_for_v1.set('IsFile', isFile);
+imcopatibleFunctions_for_v2.set('IsFile', isFile);
 
 const isDirectory: LibraryFunc = async(session, stackFrame, filePath) => {
   if (typeof filePath !== 'string') {
@@ -315,10 +321,10 @@ const isDirectory: LibraryFunc = async(session, stackFrame, filePath) => {
   }
   return getFalse(session, stackFrame);
 };
-library_for_v1.set('IsDirectory', isDirectory);
-library_for_v1.set('IsDir', isDirectory);
-library_for_v2.set('IsDirectory', isDirectory);
-library_for_v2.set('IsDir', isDirectory);
+imcopatibleFunctions_for_v1.set('IsDirectory', isDirectory);
+imcopatibleFunctions_for_v1.set('IsDir', isDirectory);
+imcopatibleFunctions_for_v2.set('IsDirectory', isDirectory);
+imcopatibleFunctions_for_v2.set('IsDir', isDirectory);
 
 const isPath: LibraryFunc = async(session, stackFrame, filePath) => {
   const result = await isFile(session, stackFrame, filePath);
@@ -327,8 +333,8 @@ const isPath: LibraryFunc = async(session, stackFrame, filePath) => {
   }
   return result;
 };
-library_for_v1.set('IsPath', isPath);
-library_for_v2.set('IsPath', isPath);
+imcopatibleFunctions_for_v1.set('IsPath', isPath);
+imcopatibleFunctions_for_v2.set('IsPath', isPath);
 
 const isGlob: LibraryFunc = async(session, stackFrame, filePattern) => {
   if (typeof filePattern !== 'string') {
@@ -342,8 +348,8 @@ const isGlob: LibraryFunc = async(session, stackFrame, filePattern) => {
   }
   return getFalse(session, stackFrame);
 };
-library_for_v1.set('IsGlob', isGlob);
-library_for_v2.set('IsGlob', isGlob);
+imcopatibleFunctions_for_v1.set('IsGlob', isGlob);
+imcopatibleFunctions_for_v2.set('IsGlob', isGlob);
 
 const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
@@ -365,9 +371,9 @@ const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => 
   }
   return getFalse(session, stackFrame);
 };
-library_for_v1.set('RegExHasKey', regexHasKey);
-library_for_v2.set('RegExHasKey', regexHasKey);
-library_for_v2.set('RegExHasOwnProp', regexHasKey);
+imcopatibleFunctions_for_v1.set('RegExHasKey', regexHasKey);
+imcopatibleFunctions_for_v2.set('RegExHasKey', regexHasKey);
+imcopatibleFunctions_for_v2.set('RegExHasOwnProp', regexHasKey);
 
 const contains: LibraryFunc = async(session, stackFrame, value, searchValue, ignoreCase) => {
   if (typeof searchValue !== 'string') {
@@ -401,10 +407,10 @@ const contains: LibraryFunc = async(session, stackFrame, value, searchValue, ign
   }
   return getFalse(session, stackFrame);
 };
-library_for_v1.set('Contains', contains);
-library_for_v1.set('Includes', contains);
-library_for_v2.set('Contains', contains);
-library_for_v2.set('Includes', contains);
+imcopatibleFunctions_for_v1.set('Contains', contains);
+imcopatibleFunctions_for_v1.set('Includes', contains);
+imcopatibleFunctions_for_v2.set('Contains', contains);
+imcopatibleFunctions_for_v2.set('Includes', contains);
 
 const toBinary: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
@@ -413,8 +419,10 @@ const toBinary: LibraryFunc = async(session, stackFrame, value) => {
   }
   return Promise.resolve(decimal.toString(2));
 };
-library_for_v1.set('ToBinary', toBinary);
-library_for_v2.set('ToBinary', toBinary);
+imcopatibleFunctions_for_v1.set('ToBinary', toBinary);
+imcopatibleFunctions_for_v2.set('ToBinary', toBinary);
+formatSpecifiers_v1.set('b', toBinary);
+formatSpecifiers_v2.set('b', toBinary);
 
 const toDecimal: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
@@ -423,8 +431,10 @@ const toDecimal: LibraryFunc = async(session, stackFrame, value) => {
   }
   return Promise.resolve(decimal);
 };
-library_for_v1.set('ToDecimal', toDecimal);
-library_for_v2.set('ToDecimal', toDecimal);
+imcopatibleFunctions_for_v1.set('ToDecimal', toDecimal);
+imcopatibleFunctions_for_v2.set('ToDecimal', toDecimal);
+formatSpecifiers_v1.set('d', toDecimal);
+formatSpecifiers_v2.set('d', toDecimal);
 
 const toOctal: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
@@ -433,17 +443,73 @@ const toOctal: LibraryFunc = async(session, stackFrame, value) => {
   }
   return Promise.resolve(decimal.toString(8));
 };
+imcopatibleFunctions_for_v1.set('ToOctal', toOctal);
+imcopatibleFunctions_for_v2.set('ToOctal', toOctal);
+formatSpecifiers_v1.set('o', toOctal);
+formatSpecifiers_v2.set('o', toOctal);
 
-library_for_v1.set('ToOctal', toOctal);
-library_for_v2.set('ToOctal', toOctal);
-
-const toHex: LibraryFunc = async(session, stackFrame, value, upper = 0) => {
+const toHex: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
   if (isNaN(decimal)) {
     return '';
   }
-  return Promise.resolve(upper ? `0x${decimal.toString(16).toUpperCase()}` : `0x${decimal.toString(16)}`);
+  return Promise.resolve(`0x${decimal.toString(16)}`);
 };
-library_for_v1.set('ToHex', toHex);
-library_for_v2.set('ToHex', toHex);
+imcopatibleFunctions_for_v1.set('ToHex', toHex);
+imcopatibleFunctions_for_v2.set('ToHex', toHex);
+formatSpecifiers_v1.set('h', toHex);
+formatSpecifiers_v2.set('h', toHex);
+formatSpecifiers_v1.set('x', toHex);
+formatSpecifiers_v2.set('x', toHex);
+
+const toUpperHex: LibraryFunc = async(session, StackFrame, value) => {
+  const decimal = parseInt(String(value), 10);
+  if (isNaN(decimal)) {
+    return '';
+  }
+  return Promise.resolve(`0x${decimal.toString(16).toUpperCase()}`);
+};
+imcopatibleFunctions_for_v1.set('ToUpperHex', toUpperHex);
+imcopatibleFunctions_for_v2.set('ToUpperHex', toUpperHex);
+formatSpecifiers_v1.set('H', toUpperHex);
+formatSpecifiers_v2.set('H', toUpperHex);
+formatSpecifiers_v1.set('X', toUpperHex);
+formatSpecifiers_v2.set('X', toUpperHex);
+
+const toHexWithoutPrefix: LibraryFunc = async(session, StackFrame, value) => {
+  const decimal = parseInt(String(value), 10);
+  if (isNaN(decimal)) {
+    return '';
+  }
+  return Promise.resolve(`${decimal.toString(16)}`);
+};
+imcopatibleFunctions_for_v1.set('ToHexWithoutPrefix', toHexWithoutPrefix);
+imcopatibleFunctions_for_v2.set('ToHexWithoutPrefix', toHexWithoutPrefix);
+formatSpecifiers_v1.set('xb', toHexWithoutPrefix);
+formatSpecifiers_v2.set('xb', toHexWithoutPrefix);
+formatSpecifiers_v1.set('hb', toHexWithoutPrefix);
+formatSpecifiers_v2.set('hb', toHexWithoutPrefix);
+
+const toUpperHexWithoutPrefix: LibraryFunc = async(session, StackFrame, value) => {
+  const decimal = parseInt(String(value), 10);
+  if (isNaN(decimal)) {
+    return '';
+  }
+  return Promise.resolve(`${decimal.toString(16).toUpperCase()}`);
+};
+imcopatibleFunctions_for_v1.set('ToUpperHexWithoutPrefix', toUpperHexWithoutPrefix);
+imcopatibleFunctions_for_v2.set('ToUpperHexWithoutPrefix', toUpperHexWithoutPrefix);
+formatSpecifiers_v1.set('Xb', toUpperHexWithoutPrefix);
+formatSpecifiers_v2.set('Xb', toUpperHexWithoutPrefix);
+formatSpecifiers_v1.set('Hb', toUpperHexWithoutPrefix);
+formatSpecifiers_v2.set('Hb', toUpperHexWithoutPrefix);
 // #endregion
+
+export const allFunctions_for_v1 = new CaseInsensitiveMap([
+  ...copatibleFunctions_for_v1,
+  ...imcopatibleFunctions_for_v1,
+]);
+export const allFunctions_for_v2 = new CaseInsensitiveMap([
+  ...copatibleFunctions_for_v2,
+  ...imcopatibleFunctions_for_v2,
+]);

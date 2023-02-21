@@ -2,9 +2,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { LibraryFunc, ahkRegexMatch, getFalse, getTrue, library_for_v1, library_for_v2 } from './library';
+import { FormatSpecifyMap, FunctionMap, ahkRegexMatch, allFunctions_for_v1, allFunctions_for_v2, getFalse, getTrue } from './functions';
 import * as dbgp from '../../dbgpSession';
-import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
 import { MetaVariable, MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';
@@ -436,22 +435,34 @@ export class ParseError extends Error {
     return `Expected ${expected}`;
   }
 }
+export interface ExpressionEvaluatorConfig {
+  metaVariableMap?: MetaVariableValueMap;
+  functionMap: FunctionMap;
+  formatSpecifiers?: FormatSpecifyMap;
+}
+
 export class ExpressionEvaluator {
   public readonly session: dbgp.Session;
   public readonly ahkVersion: AhkVersion;
-  private readonly metaVariableMap: MetaVariableValueMap;
   private readonly parser: ExpressionParser;
-  private readonly library: CaseInsensitiveMap<string, LibraryFunc>;
-  private readonly withoutFunction: boolean;
-  constructor(session: dbgp.Session, metaVariableMap?: MetaVariableValueMap, withoutFunction = false) {
+  private readonly config: ExpressionEvaluatorConfig;
+  constructor(session: dbgp.Session, config?: Partial<ExpressionEvaluatorConfig>) {
     this.session = session;
     this.ahkVersion = session.ahkVersion;
-    this.metaVariableMap = metaVariableMap ?? new MetaVariableValueMap();
-    this.library = 2.0 <= this.ahkVersion.mejor
-      ? library_for_v2
-      : library_for_v1;
+    const {
+      functionMap = 2.0 <= this.ahkVersion.mejor
+        ? allFunctions_for_v2
+        : allFunctions_for_v1,
+      metaVariableMap,
+      formatSpecifiers = undefined,
+    } = config ?? {};
+
+    this.config = {
+      metaVariableMap,
+      functionMap,
+      formatSpecifiers,
+    };
     this.parser = new ExpressionParser(this.ahkVersion);
-    this.withoutFunction = withoutFunction;
   }
   public async eval(expression: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const matchResult = this.parser.parse(expression);
@@ -714,55 +725,20 @@ export class ExpressionEvaluator {
 
     switch (operator) {
       case ',': {
+        if (!this.config.formatSpecifiers) {
+          return right;
+        }
+
         if (!(typeof node.right === 'object' && node.right.type === 'identifier')) {
           return left;
         }
 
         const specifier = await this.nodeToString(node.right);
-        switch (specifier) {
-          case 'b': {
-            const toBinary = this.library.get('toBinary')!;
-            return toBinary(this.session, stackFrame, left);
-          }
-          case 'd': {
-            const toDecimal = this.library.get('ToDecimal')!;
-            return toDecimal(this.session, stackFrame, left);
-          }
-          case 'o': {
-            const toOctal = this.library.get('ToOctal')!;
-            return toOctal(this.session, stackFrame, left);
-          }
-          case 'x':
-          case 'h': {
-            const toHex = this.library.get('ToHex')!;
-            return toHex(this.session, stackFrame, left);
-          }
-          case 'X':
-          case 'H': {
-            const toHex = this.library.get('ToHex')!;
-            return toHex(this.session, stackFrame, left, 1);
-          }
-          case 'xb':
-          case 'hb': {
-            const toHex = this.library.get('ToHex')!;
-            const result = await toHex(this.session, stackFrame, left);
-            if (result === '') {
-              return '';
-            }
-            return String(result).slice(2);
-          }
-          case 'Xb':
-          case 'Hb': {
-            const toHex = this.library.get('ToHex')!;
-            const result = await toHex(this.session, stackFrame, left, 1);
-            if (result === '') {
-              return '';
-            }
-            return String(result).slice(2);
-          }
-          default: break;
+        const formatter = this.config.formatSpecifiers.get(specifier);
+        if (!formatter) {
+          return '';
         }
-        return '';
+        return formatter(this.session, stackFrame, left);
       }
       case ' ':
       case '\t':
@@ -1021,19 +997,15 @@ export class ExpressionEvaluator {
     return '';
   }
   public async evalCallExpression(node: CallNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
-    if (this.withoutFunction) {
-      return undefined;
-    }
-
     const libraryName = await this.nodeToString(node.caller);
     if (!libraryName) {
       return '';
     }
 
-    const library = this.library.get(libraryName);
+    const library = this.config.functionMap.get(libraryName);
     if (equalsIgnoreCase(libraryName, 'GetMetaVar') && 0 < node.arguments.length) {
       const metaVariableName = await this.nodeToString(node.arguments[0]);
-      const metaVariableValue = this.metaVariableMap.get(metaVariableName);
+      const metaVariableValue = this.config.metaVariableMap?.get(metaVariableName);
       const value = metaVariableValue instanceof Promise
         ? await metaVariableValue
         : metaVariableValue;

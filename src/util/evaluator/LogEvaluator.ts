@@ -1,6 +1,8 @@
+import * as dbgp from '../../dbgpSession';
 import { maskQuotes } from '../ExpressionExtractor';
 import { searchPair } from '../util';
-import { EvaluatedObjectValue, EvaluatedPrimitiveValue, EvaluatedValue, ExpressionEvaluator } from './ExpressionEvaluator';
+import { EvaluatedObjectValue, EvaluatedPrimitiveValue, EvaluatedValue, ExpressionEvaluator, ExpressionEvaluatorConfig } from './ExpressionEvaluator';
+import { copatibleFunctions_for_v1, copatibleFunctions_for_v2, formatSpecifiers_v1, formatSpecifiers_v2 } from './functions';
 import { LogParser, LogPrefixData } from './LogParser';
 
 export type LogData = PrimitiveLogData | ObjectLogData;
@@ -20,8 +22,14 @@ export interface ObjectLogData extends LogDataBase {
 export class LogEvaluator {
   public readonly expressionEvaluator: ExpressionEvaluator;
   private readonly parser: LogParser;
-  constructor(evaluator: ExpressionEvaluator) {
-    this.expressionEvaluator = evaluator;
+  constructor(session: dbgp.Session, config?: Omit<ExpressionEvaluatorConfig, 'functionMap' | 'enableFormatSpecifiers'>) {
+    const functionMap = 2 <= session.ahkVersion.mejor
+      ? copatibleFunctions_for_v1
+      : copatibleFunctions_for_v2;
+    const formatSpecifiers = 2.0 <= session.ahkVersion.mejor
+      ? formatSpecifiers_v2
+      : formatSpecifiers_v1;
+    this.expressionEvaluator = new ExpressionEvaluator(session, { ...config, functionMap, formatSpecifiers });
     this.parser = new LogParser();
   }
   public async eval(text: string): Promise<LogData[]> {

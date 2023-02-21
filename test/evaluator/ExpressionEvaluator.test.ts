@@ -4,7 +4,7 @@ import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../../src/dbgpSession';
 import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
-import { getFalse, getTrue } from '../../src/util/evaluator/library';
+import { getFalse, getTrue } from '../../src/util/evaluator/functions';
 import { MetaVariableValueMap } from '../../src/util/VariableManager';
 import { closeSession, launchDebug } from '../util';
 
@@ -25,10 +25,10 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     server = data.server;
     session = data.session;
 
-    const metaVariables = new MetaVariableValueMap();
-    metaVariables.set('hitCount', 1);
-    metaVariables.set('callstack', [ { name: 'A' }, { name: 'B' } ]);
-    evaluator = new ExpressionEvaluator(session, metaVariables);
+    const metaVariableMap = new MetaVariableValueMap();
+    metaVariableMap.set('hitCount', 1);
+    metaVariableMap.set('callstack', [ { name: 'A' }, { name: 'B' } ]);
+    evaluator = new ExpressionEvaluator(session, { metaVariableMap });
     true_ahk = await getTrue(session);
     false_ahk = await getFalse(session);
     // undefined_ahk = await getUndefined(session);
@@ -39,18 +39,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('Expression_comma_sequence', async(): Promise<void> => {
-    expect(await evaluator.eval(`123, b`)).toBe('1111011');
-    expect(await evaluator.eval(`123, d`)).toBe(123);
-    expect(await evaluator.eval(`0x123, d`)).toBe(291);
-    expect(await evaluator.eval(`123, o`)).toBe('173');
-    expect(await evaluator.eval(`123, x`)).toBe('0x7b');
-    expect(await evaluator.eval(`123, h`)).toBe('0x7b');
-    expect(await evaluator.eval(`123, X`)).toBe('0x7B');
-    expect(await evaluator.eval(`123, H`)).toBe('0x7B');
-    expect(await evaluator.eval(`123, xb`)).toBe('7b');
-    expect(await evaluator.eval(`123, hb`)).toBe('7b');
-    expect(await evaluator.eval(`123, Xb`)).toBe('7B');
-    expect(await evaluator.eval(`123, Hb`)).toBe('7B');
+    expect(await evaluator.eval(`123, "a"`)).toBe('a');
   });
 
   test('AssignmentExpression_assign', async(): Promise<void> => {
@@ -654,10 +643,10 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     server = data.server;
     session = data.session;
 
-    const metaVariables = new MetaVariableValueMap();
-    metaVariables.set('hitCount', 1);
-    metaVariables.set('callstack', [ { name: 'A' }, { name: 'B' } ]);
-    evaluator = new ExpressionEvaluator(session, metaVariables);
+    const metaVariableMap = new MetaVariableValueMap();
+    metaVariableMap.set('hitCount', 1);
+    metaVariableMap.set('callstack', [ { name: 'A' }, { name: 'B' } ]);
+    evaluator = new ExpressionEvaluator(session, { metaVariableMap });
     true_ahk = await getTrue(session);
     false_ahk = await getFalse(session);
     // undefined_ahk = await getUndefined(session);

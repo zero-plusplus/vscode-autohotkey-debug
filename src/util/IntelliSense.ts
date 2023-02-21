@@ -2,6 +2,7 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import * as dbgp from '../dbgpSession';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 import { ExpressionEvaluator, fetchInheritedProperties, getContexts } from './evaluator/ExpressionEvaluator';
+import { copatibleFunctions_for_v1, copatibleFunctions_for_v2 } from './evaluator/functions';
 import { AccessOperator, ExpressionExtractor } from './ExpressionExtractor';
 
 export type CompletionItemConverter<T> = (property: dbgp.Property, snippet: string, trigger: AccessOperator) => Promise<T>;
@@ -12,7 +13,10 @@ export class IntelliSense {
   public readonly evaluator: ExpressionEvaluator;
   public readonly expressionExtractor: ExpressionExtractor;
   constructor(session: dbgp.Session) {
-    this.evaluator = new ExpressionEvaluator(session, undefined, false);
+    const functionMap = 2 <= session.ahkVersion.mejor
+      ? copatibleFunctions_for_v2
+      : copatibleFunctions_for_v1;
+    this.evaluator = new ExpressionEvaluator(session, { functionMap });
     this.version = this.evaluator.session.ahkVersion;
     this.expressionExtractor = new ExpressionExtractor(this.version);
   }

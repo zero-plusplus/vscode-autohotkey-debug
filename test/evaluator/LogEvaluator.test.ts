@@ -3,7 +3,6 @@ import { ChildProcess } from 'child_process';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../../src/dbgpSession';
-import { ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
 import { closeSession, launchDebug } from '../util';
 import { LogData, LogEvaluator } from '../../src/util/evaluator/LogEvaluator';
 
@@ -45,7 +44,7 @@ describe('LogEvaluator for AutoHotkey-v1', (): void => {
     server = data.server;
     session = data.session;
 
-    evaluator = new LogEvaluator(new ExpressionEvaluator(session));
+    evaluator = new LogEvaluator(session);
   });
   afterAll(async() => {
     server?.close();
@@ -78,5 +77,20 @@ describe('LogEvaluator for AutoHotkey-v1', (): void => {
       { type: 'primitive', prefixes: [ 'startCollapsed' ], value: 'A-A' },
       { type: 'primitive', prefixes: [ 'end', 'end' ], value: '' },
     ]);
+  });
+
+  test('Expression_comma_sequence', async(): Promise<void> => {
+    expect(simplifyDataList(await evaluator.eval(`{123, b}`))).toEqual([ { type: 'primitive', prefixes: [], value: '1111011' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, d}`))).toEqual([ { type: 'primitive', prefixes: [], value: '123' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{0x123, d}`))).toEqual([ { type: 'primitive', prefixes: [], value: '291' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, o}`))).toEqual([ { type: 'primitive', prefixes: [], value: '173' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, x}`))).toEqual([ { type: 'primitive', prefixes: [], value: '0x7b' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, h}`))).toEqual([ { type: 'primitive', prefixes: [], value: '0x7b' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, X}`))).toEqual([ { type: 'primitive', prefixes: [], value: '0x7B' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, H}`))).toEqual([ { type: 'primitive', prefixes: [], value: '0x7B' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, xb}`))).toEqual([ { type: 'primitive', prefixes: [], value: '7b' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, hb}`))).toEqual([ { type: 'primitive', prefixes: [], value: '7b' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, Xb}`))).toEqual([ { type: 'primitive', prefixes: [], value: '7B' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{123, Hb}`))).toEqual([ { type: 'primitive', prefixes: [], value: '7B' } ]);
   });
 });
