@@ -234,28 +234,18 @@ export const fetchPropertyAddress = async(session: dbgp.Session, name: string, s
   }
   return '';
 };
-export const fetchGlobalProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
-  const contexts = await getContexts(session, stackFrame);
-  const globalContext = contexts?.find((context) => context.name === 'Global');
-  if (!globalContext) {
-    return '';
-  }
-  const response = await session.sendPropertyGetCommand(globalContext, name, maxDepth);
-  const property = response.properties[0] as dbgp.Property | '';
-  if (property instanceof dbgp.ObjectProperty) {
-    return property;
-  }
-  if (property instanceof dbgp.PrimitiveProperty) {
-    if (property.type === 'undefined') {
-      return undefined;
-    }
-    return property.value;
-  }
-  return '';
-};
 export const fetchPropertyByContext = async(session: dbgp.Session, context: dbgp.Context, name: string, maxDepth = 1): Promise<EvaluatedValue> => {
   if (!name) {
     return undefined;
+  }
+
+  if (2 <= session.ahkVersion.mejor) {
+    if (equalsIgnoreCase(name, 'true')) {
+      return 1;
+    }
+    if (equalsIgnoreCase(name, 'false')) {
+      return 0;
+    }
   }
 
   const response = await session.sendPropertyGetCommand(context, name, maxDepth);
@@ -287,6 +277,14 @@ export const fetchProperty = async(session: dbgp.Session, name: string, stackFra
     }
   }
   return undefined;
+};
+export const fetchGlobalProperty = async(session: dbgp.Session, name: string, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> => {
+  const contexts = await getContexts(session, stackFrame);
+  const globalContext = contexts?.find((context) => context.name === 'Global');
+  if (!globalContext) {
+    return '';
+  }
+  return fetchPropertyByContext(session, globalContext, name, maxDepth);
 };
 export const fetchPropertyChildren = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: EvaluatedValue): Promise<dbgp.Property[] | undefined> => {
   if (!(object instanceof dbgp.ObjectProperty)) {
@@ -904,6 +902,9 @@ export class ExpressionEvaluator {
   }
   public async evalDeferenceExpression(node: DereferenceExpressionNode, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     const expression = await this.evalNode(node.expression, stackFrame, maxDepth);
+    if (!expression) {
+      return '';
+    }
     if (expression instanceof dbgp.ObjectProperty) {
       return '';
     }
