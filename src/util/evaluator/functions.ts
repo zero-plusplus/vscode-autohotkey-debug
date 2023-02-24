@@ -49,29 +49,50 @@ export type LibraryFunc = (session: dbgp.Session, stackFrame: dbgp.StackFrame | 
 
 export const formatSpecifiers_v1: FormatSpecifyMap = new Map();
 export const formatSpecifiers_v2: FormatSpecifyMap = new Map();
-
-// #region Functions compatible with AutoHotkey
 export const copatibleFunctions_for_v1: FunctionMap = new CaseInsensitiveMap();
 export const copatibleFunctions_for_v2: FunctionMap = new CaseInsensitiveMap();
+export const imcopatibleFunctions_for_v1: FunctionMap = new CaseInsensitiveMap();
+export const imcopatibleFunctions_for_v2: FunctionMap = new CaseInsensitiveMap();
+
+// #region Compatible functions with AutoHotkey
 // https://www.autohotkey.com/docs/lib/Object.htm#HasKey
-const hasKey: LibraryFunc = async(session, stackFrame, value, key) => {
+const objHasKey: LibraryFunc = async(session, stackFrame, value, key) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
     return getFalse(session, stackFrame);
   }
 
   const child = await fetchPropertyChild(session, stackFrame, value, key);
-  return child ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
+  // ObjHasKey in v1 returns pure numbers, unlike boolean values
+  return child ? 1 : 0;
 };
-copatibleFunctions_for_v1.set('HasKey', hasKey);
-copatibleFunctions_for_v1.set('ObjHasKey', hasKey);
-copatibleFunctions_for_v2.set('HasKey', hasKey);
-copatibleFunctions_for_v2.set('HasOwnProp', hasKey);
-copatibleFunctions_for_v2.set('ObjHasOwnProp', hasKey);
+copatibleFunctions_for_v1.set('ObjHasKey', objHasKey);
+copatibleFunctions_for_v1.set('HasKey', objHasKey);
+copatibleFunctions_for_v2.set('ObjHasOwnProp', objHasKey);
+copatibleFunctions_for_v2.set('HasOwnProp', objHasKey);
+copatibleFunctions_for_v2.set('ObjHasKey', objHasKey);
+copatibleFunctions_for_v2.set('HasKey', objHasKey);
+
+const isSet: LibraryFunc = async(session, stackFrame, value) => {
+  return typeof value === 'undefined' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
+};
+copatibleFunctions_for_v1.set('IsSet', isSet);
+copatibleFunctions_for_v2.set('IsSet', isSet);
+copatibleFunctions_for_v1.set('IsUndefined', isSet);
+copatibleFunctions_for_v2.set('IsUndefined', isSet);
 // #endregion
 
-// #region Functions incompatible with AutoHotkey
-export const imcopatibleFunctions_for_v1: FunctionMap = new CaseInsensitiveMap();
-export const imcopatibleFunctions_for_v2: FunctionMap = new CaseInsensitiveMap();
+// #region Compatibility functions with AutoHotkey
+const isInteger: LibraryFunc = async(session, stackFrame, value) => {
+  if (typeof value === 'number' && Number.isInteger(value)) {
+    return getTrue(session, stackFrame);
+  }
+  return getFalse(session, stackFrame);
+};
+imcopatibleFunctions_for_v1.set('IsInteger', isInteger);
+copatibleFunctions_for_v2.set('IsInteger', isInteger);
+// #endregion Compatibility functions with AutoHotkey
+
+// #region Incompatible functions with AutoHotkey
 
 const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass) => {
   if (!(object instanceof dbgp.ObjectProperty)) {
@@ -105,14 +126,6 @@ const countOf: LibraryFunc = async(session, stackFrame, value) => {
 imcopatibleFunctions_for_v1.set('CountOf', countOf);
 imcopatibleFunctions_for_v2.set('CountOf', countOf);
 
-const isSet: LibraryFunc = async(session, stackFrame, value) => {
-  return typeof value === 'undefined' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsSet', isSet);
-imcopatibleFunctions_for_v2.set('IsSet', isSet);
-imcopatibleFunctions_for_v1.set('IsUndefined', isSet);
-imcopatibleFunctions_for_v2.set('IsUndefined', isSet);
-
 const isString: LibraryFunc = async(session, stackFrame, value) => {
   return typeof value === 'string' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
@@ -135,15 +148,6 @@ const isNumberLike: LibraryFunc = async(session, stackFrame, value) => {
 };
 imcopatibleFunctions_for_v1.set('IsNumberLike', isNumberLike);
 imcopatibleFunctions_for_v2.set('IsNumberLike', isNumberLike);
-
-const isInteger: LibraryFunc = async(session, stackFrame, value) => {
-  if (!(await isNumber(session, stackFrame, value))) {
-    return getFalse(session, stackFrame);
-  }
-  return Number.isInteger(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsInteger', isInteger);
-imcopatibleFunctions_for_v2.set('IsInteger', isInteger);
 
 const isIntegerLike: LibraryFunc = async(session, stackFrame, value) => {
   switch (typeof value) {

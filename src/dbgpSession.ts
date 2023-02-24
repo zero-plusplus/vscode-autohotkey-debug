@@ -172,7 +172,18 @@ export abstract class Property {
     this.context = context;
     this.facet = facet as PropertyFacet;
     this.fullName = fullname;
-    this.name = name;
+
+    // If the fullName is `instance.<base>.method`, the name should be `method`, but sometimes the same string as the fullName is assigned.
+    // I guess that this problem occurs when `<base>` is included.
+    this.name = ((): string => {
+      if (!this.fullName.includes('.')) {
+        return name;
+      }
+      if (name !== this.fullName) {
+        return name;
+      }
+      return name.match(/\.(?<shortName>[\w_$@#]+)$/u)?.groups?.shortName ?? name;
+    })();
     this.type = type as PropertyType;
     this.size = parseInt(size, 10);
   }
