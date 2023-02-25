@@ -3,7 +3,7 @@ import glob from 'fast-glob';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
-import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyChildren } from './ExpressionEvaluator';
+import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyChildren, includesPropertyChild } from './ExpressionEvaluator';
 
 export const getTrue = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
   return fetchGlobalProperty(session, 'true', stackFrame);
@@ -58,11 +58,21 @@ export const imcopatibleFunctions_for_v2: FunctionMap = new CaseInsensitiveMap()
 // https://www.autohotkey.com/docs/lib/Object.htm#HasKey
 const objHasKey: LibraryFunc = async(session, stackFrame, value, key) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
-    return getFalse(session, stackFrame);
+    return 0;
+  }
+
+  if (2 <= session.ahkVersion.mejor) {
+    const children = await fetchPropertyChildren(session, stackFrame, value);
+    const child = children?.find((child) => {
+      if (child.name.startsWith('[')) {
+        return false;
+      }
+      return includesPropertyChild(session.ahkVersion, child, key);
+    });
+    return child ? 1 : 0;
   }
 
   const child = await fetchPropertyChild(session, stackFrame, value, key);
-  // ObjHasKey in v1 returns pure numbers, unlike boolean values
   return child ? 1 : 0;
 };
 copatibleFunctions_for_v1.set('ObjHasKey', objHasKey);

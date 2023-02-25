@@ -346,7 +346,43 @@ export const fetchPropertyChildren = async(session: dbgp.Session, stackFrame: db
   }
   return undefined;
 };
-export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, name: EvaluatedValue): Promise<EvaluatedValue> => {
+export const includesPropertyChild = (ahkVersion: AhkVersion, property: dbgp.Property, key: EvaluatedValue): boolean => {
+  if (key === undefined) {
+    return false;
+  }
+  if (key instanceof MetaVariable) {
+    return false;
+  }
+
+  if (property instanceof dbgp.ObjectProperty && key instanceof dbgp.ObjectProperty) {
+    return property.address === key.address;
+  }
+
+  let searchName = String(key);
+  const childName_dotNotation = property.name.replace(/^\["(.*)"\]$/u, '$1');
+  if (2 <= ahkVersion.mejor && String(key).includes('`"')) {
+    searchName = searchName.replaceAll('`"', '""');
+
+    // The full name of the field of the following object in v2 is `obj."`.
+    // obj := { %'"'%: "value" }
+    const key_escaped = unescapeAhk(searchName, ahkVersion);
+    if (equalsIgnoreCase(childName_dotNotation, key_escaped)) {
+      return true;
+    }
+  }
+
+  // Dot notation. e.g. obj.field, obj."test"
+  if (equalsIgnoreCase(childName_dotNotation, searchName)) {
+    return true;
+  }
+
+  // Bracket notation. e.g. obj["field"], arr[1]
+  if (equalsIgnoreCase(childName_dotNotation, `["${searchName}"]`) || equalsIgnoreCase(childName_dotNotation, `[${searchName}]`)) {
+    return true;
+  }
+  return false;
+};
+export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, key: EvaluatedValue): Promise<EvaluatedValue> => {
   if (!object.hasChildren) {
     return undefined;
   }
@@ -355,21 +391,7 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
     return undefined;
   }
 
-  const property = children.find((child) => {
-    const childName = child.name.replace(/^\["(.*)"\]$/u, '$1');
-    if (equalsIgnoreCase(childName, String(name))) {
-      return true;
-    }
-    if (equalsIgnoreCase(childName, `[${String(name)}]`)) {
-      return true;
-    }
-
-    if (child instanceof dbgp.ObjectProperty && name instanceof dbgp.ObjectProperty) {
-      return child.address === name.address;
-    }
-    return false;
-  });
-
+  const property = children.find((child) => includesPropertyChild(session.ahkVersion, child, key));
   if (property instanceof dbgp.PrimitiveProperty) {
     if (property.type === 'string') {
       return property.value;

@@ -47,7 +47,7 @@ testResults["instance.instanceField && ObjHasKey(instance, ""instanceField"")"] 
 testResults["instance.baseInstanceField && ObjHasKey(instance, ""baseInstanceField"")"] := instance.baseInstanceField && ObjHasKey(instance, "baseInstanceField")
 
 testResults["!(instance.method && ObjHasKey(instance, ""method""))"] := !(instance.method && ObjHasKey(instance, "method"))
-testResults["!ObjHasKey(str_alpha, str_alpha)"] := !ObjHasKey(str_alpha, str_alpha)
+testResults["!ObjHasKey(obj, ""unknown"")"] := !ObjHasKey(obj, str_alpha)
 ; #endregion ObjHasKey
 ; #endregion tests
 

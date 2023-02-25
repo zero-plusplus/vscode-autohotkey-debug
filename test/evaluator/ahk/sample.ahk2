@@ -1,8 +1,19 @@
 ﻿#SingleInstance
 #Warn All, StdOut
 
-str := "abc"
 abc := "str"
+a := "a"
+c := "c"
+
+null := ""
+str := "abc"
+str_alpha := "aBc"
+str_alnum := "aBc123"
+str_not_alnum := "$$$"
+str_upper := "ABC"
+str_lower := "abc"
+str_time := "01 Jan 1970 00:00:00 GMT"
+str_space := " "
 num_int := 123
 num_int_like := "123"
 num_float := 123.456
@@ -20,6 +31,24 @@ mapObj := Map("key", "value", "3", "100")
 arr := [ 1, 10, 100 ]
 nestedObj := { a: { b: { obj: obj, arr: arr } } }
 instance := T()
+
+; #region tests
+testResults := Map()
+; #region ObjHasOwnProp
+testResults['ObjHasOwnProp(obj, "key")'] := ObjHasOwnProp(obj, "key")
+testResults['ObjHasOwnProp(obj, key)'] := ObjHasOwnProp(obj, key)
+testResults['ObjHasOwnProp(T, "staticField")'] := ObjHasOwnProp(T, "staticField")
+testResults['instance.instanceField && ObjHasOwnProp(instance, "instanceField")'] := instance.instanceField && ObjHasOwnProp(instance, "instanceField")
+testResults['instance.baseInstanceField && ObjHasOwnProp(instance, "baseInstanceField")'] := instance.baseInstanceField && ObjHasOwnProp(instance, "baseInstanceField")
+
+testResults['!ObjHasOwnProp(obj, "unknown")'] := !ObjHasOwnProp(obj, "unknown")
+testResults['!ObjHasOwnProp(mapObj, "key")'] := !ObjHasOwnProp(mapObj, "key")
+testResults['!ObjHasOwnProp(mapObj, 3)'] := !ObjHasOwnProp(mapObj, 3)
+testResults['!ObjHasOwnProp(T, "method")'] := !ObjHasOwnProp(T, "method")
+testResults['!ObjHasOwnProp(arr, 1)'] := !ObjHasOwnProp(arr, 1)
+testResults['!(instance.method && ObjHasOwnProp(instance, "method"))'] := !(instance.method && ObjHasOwnProp(instance, "method"))
+; #endregion ObjHasOwnProp
+; #endregion tests
 
 class T extends T2 {
   static staticField := "static"

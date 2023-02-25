@@ -409,9 +409,9 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await testApi(`instance.instanceField && ObjHasKey(instance, "instanceField")`)).toBeTruthy();
     expect(await testApi(`instance.baseInstanceField && ObjHasKey(instance, "baseInstanceField")`)).toBeTruthy();
     expect(await testApi(`!(instance.method && ObjHasKey(instance, "method"))`)).toBeTruthy();
-    expect(await testApi(`!ObjHasKey(str_alpha, str_alpha)`)).toBeTruthy();
+    expect(await testApi(`!ObjHasKey(obj, "unknown")`)).toBeTruthy();
 
-    expect(await evaluator.eval('HasKey(obj, key)')).toBe(1);
+    expect(await evaluator.eval('HasKey(obj, key)')).toBeTruthy();
   });
 
   // test('eval libraries (IsSet)', async(): Promise<void> => {
@@ -647,6 +647,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   let process: ChildProcess;
   let server: net.Server;
   let session: dbgp.Session;
+  let testApi: ApiTester;
   let evaluator: ExpressionEvaluator;
   let true_ahk: EvaluatedValue;
   let false_ahk: EvaluatedValue;
@@ -662,6 +663,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     metaVariableMap.set('hitCount', 1);
     metaVariableMap.set('callstack', [ { name: 'A' }, { name: 'B' } ]);
     evaluator = new ExpressionEvaluator(session, { metaVariableMap });
+    testApi = createTestApi(evaluator);
     true_ahk = await getTrue(session);
     false_ahk = await getFalse(session);
     // undefined_ahk = await getUndefined(session);
@@ -737,23 +739,25 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('(instance || false).instanceField')).toBe('instance');
   });
 
-  //   test('eval libraries (ObjHasOwnProp)', async(): Promise<void> => {
-  //     for await (const name of [ 'ObjHasOwnProp', 'HasOwnProp', 'ObjHasKey', 'HasKey' ]) {
-  //       expect(await evaluator.eval(`${name}(obj, "key")`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`${name}(obj, key)`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`${name}(arr, 1)`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`${name}(T, "staticField")`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`${name}(instance, "instanceField")`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`instance.baseInstanceField && ${name}(instance, "baseInstanceField")`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`${name}(T, "method")`)).toBe(true_ahk);
-  //
-  //       expect(await evaluator.eval(`instance.method && ${name}(instance, "method")`)).toBe(false_ahk);
-  //       expect(await evaluator.eval(`${name}(str_alpha, str_alpha)`)).toBe(false_ahk);
-  //       expect(await evaluator.eval(`${name}(num_int, num_int)`)).toBe(false_ahk);
-  //       expect(await evaluator.eval(`${name}(undefined, undefined)`)).toBe(false_ahk);
-  //     }
-  //   });
-  //
+  test('eval libraries (ObjHasOwnProp)', async(): Promise<void> => {
+    expect(await testApi(`ObjHasOwnProp(obj, "key")`)).toBeTruthy();
+    expect(await testApi(`ObjHasOwnProp(obj, key)`)).toBeTruthy();
+    expect(await testApi(`ObjHasOwnProp(T, "staticField")`)).toBeTruthy();
+    expect(await testApi(`instance.instanceField && ObjHasOwnProp(instance, "instanceField")`)).toBeTruthy();
+    expect(await testApi(`instance.baseInstanceField && ObjHasOwnProp(instance, "baseInstanceField")`)).toBeTruthy();
+
+    expect(await testApi(`!ObjHasOwnProp(obj, "unknown")`)).toBeTruthy();
+    expect(await testApi(`!ObjHasOwnProp(mapObj, "key")`)).toBeTruthy();
+    expect(await testApi(`!ObjHasOwnProp(mapObj, 3)`)).toBeTruthy();
+    expect(await testApi(`!ObjHasOwnProp(T, "method")`)).toBeTruthy();
+    expect(await testApi(`!ObjHasOwnProp(arr, 1)`)).toBeTruthy();
+    expect(await testApi(`!(instance.method && ObjHasOwnProp(instance, "method"))`)).toBeTruthy();
+
+    expect(await evaluator.eval('HasOwnProp(obj, "key")')).toBeTruthy();
+    expect(await evaluator.eval('ObjHasKey(obj, "key")')).toBeTruthy();
+    expect(await evaluator.eval('HasKey(obj, "key")')).toBeTruthy();
+  });
+
   //   test('eval libraries (IsNumber)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsNumber(num_int)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsNumber(num_float)')).toBe(true_ahk);
