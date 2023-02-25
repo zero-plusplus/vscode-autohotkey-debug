@@ -15,6 +15,7 @@ module.exports = {
         ...preset.ts.default.rules,
         'no-undefined': 'off',
         '@typescript-eslint/explicit-module-boundary-types': 'off',
+        '@typescript-eslint/restrict-template-expressions': [ 'error', { allowNumber: true } ],
       },
     },
   ],
