@@ -49,6 +49,13 @@ testResults["instance.baseInstanceField && ObjHasKey(instance, ""baseInstanceFie
 testResults["!(instance.method && ObjHasKey(instance, ""method""))"] := !(instance.method && ObjHasKey(instance, "method"))
 testResults["!ObjHasKey(obj, ""unknown"")"] := !ObjHasKey(obj, str_alpha)
 ; #endregion ObjHasKey
+
+; #region IsSet
+testResults["IsSet(str_alpha)"] := IsSet(str_alpha)
+testResults["IsSet(obj)"] := IsSet(obj)
+testResults["IsSet(T)"] := IsSet(T)
+testResults["!IsSet(undefined)"] := !IsSet(undefined)
+; #endregion IsSet
 ; #endregion tests
 
 class T extends T2 {

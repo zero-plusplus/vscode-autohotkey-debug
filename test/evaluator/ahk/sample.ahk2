@@ -48,6 +48,13 @@ testResults['!ObjHasOwnProp(T, "method")'] := !ObjHasOwnProp(T, "method")
 testResults['!ObjHasOwnProp(arr, 1)'] := !ObjHasOwnProp(arr, 1)
 testResults['!(instance.method && ObjHasOwnProp(instance, "method"))'] := !(instance.method && ObjHasOwnProp(instance, "method"))
 ; #endregion ObjHasOwnProp
+
+; #region IsSet
+testResults["IsSet(str_alpha)"] := IsSet(str_alpha)
+testResults["IsSet(obj)"] := IsSet(obj)
+testResults["IsSet(T)"] := IsSet(T)
+testResults["!IsSet(undefined)"] := !IsSet(undefined)
+; #endregion IsSet
 ; #endregion tests
 
 class T extends T2 {

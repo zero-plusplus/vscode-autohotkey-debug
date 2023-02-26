@@ -414,13 +414,13 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('HasKey(obj, key)')).toBeTruthy();
   });
 
-  // test('eval libraries (IsSet)', async(): Promise<void> => {
-  //   for await (const name of [ 'IsSet', 'IsUndefined' ]) {
-  //     expect(await evaluator.eval(`${name}(undefined)`)).toBe(true_ahk);
-  //     expect(await evaluator.eval(`${name}(null)`)).toBe(false_ahk);
-  //     expect(await evaluator.eval(`${name}(GetMetaVar(""))`)).toBe(true_ahk);
-  //   }
-  // });
+  test('eval libraries (IsSet)', async(): Promise<void> => {
+    expect(await testApi(`IsSet(str_alpha)`)).toBeTruthy();
+    expect(await testApi(`IsSet(obj)`)).toBeTruthy();
+    expect(await testApi(`IsSet(T)`)).toBeTruthy();
+
+    expect(await testApi(`!IsSet(undefined)`)).toBeTruthy();
+  });
   // #endregion
 
   // #region Incompatible functions with AutoHotkey
@@ -756,6 +756,14 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('HasOwnProp(obj, "key")')).toBeTruthy();
     expect(await evaluator.eval('ObjHasKey(obj, "key")')).toBeTruthy();
     expect(await evaluator.eval('HasKey(obj, "key")')).toBeTruthy();
+  });
+
+  test('eval libraries (IsSet)', async(): Promise<void> => {
+    expect(await testApi(`IsSet(str_alpha)`)).toBeTruthy();
+    expect(await testApi(`IsSet(obj)`)).toBeTruthy();
+    expect(await testApi(`IsSet(T)`)).toBeTruthy();
+
+    expect(await testApi(`!IsSet(undefined)`)).toBeTruthy();
   });
 
   //   test('eval libraries (IsNumber)', async(): Promise<void> => {

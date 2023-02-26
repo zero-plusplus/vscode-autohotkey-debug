@@ -83,12 +83,10 @@ copatibleFunctions_for_v2.set('ObjHasKey', objHasKey);
 copatibleFunctions_for_v2.set('HasKey', objHasKey);
 
 const isSet: LibraryFunc = async(session, stackFrame, value) => {
-  return typeof value === 'undefined' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
+  return Promise.resolve(typeof value === 'undefined' ? 0 : 1);
 };
 copatibleFunctions_for_v1.set('IsSet', isSet);
 copatibleFunctions_for_v2.set('IsSet', isSet);
-copatibleFunctions_for_v1.set('IsUndefined', isSet);
-copatibleFunctions_for_v2.set('IsUndefined', isSet);
 // #endregion
 
 // #region Compatibility functions with AutoHotkey
