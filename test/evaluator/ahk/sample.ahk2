@@ -66,6 +66,16 @@ testResults["!IsObject(num_int)"] := !IsObject(num_int)
 ; testResults["!IsObject(undefined)"] := !IsObject(undefined) ; Error: This variable has not been assigned a value.
 ; #endregion IsObject
 
+; #region ObjGetBase
+testResults["ObjGetBase(obj)"] := ObjGetBase(obj)
+testResults["ObjGetBase(T)"] := ObjGetBase(T)
+testResults["ObjGetBase(T2)"] := ObjGetBase(T2)
+
+; testResults["ObjGetBase(str_alpha)"] := ObjGetBase(str_alpha) ; Error:  Parameter #1 invalid.
+; testResults["ObjGetBase(num_int)"] := ObjGetBase(num_int) ; Error:  Parameter #1 invalid.
+; testResults["ObjGetBase(undefined)"] := ObjGetBase(undefined) ; Error:  Parameter #1 invalid.
+; #endregion ObjGetBase
+
 ; #region StrLen
 testResults["StrLen(str_alpha)"] := StrLen(str_alpha)
 testResults["StrLen(num_int)"] := StrLen(num_int)

@@ -100,6 +100,22 @@ const isObject: LibraryFunc = async(session, stackFrame, value) => {
 copatibleFunctions_for_v1.set('IsObject', isObject);
 copatibleFunctions_for_v2.set('IsObject', isObject);
 
+const objGetBase: LibraryFunc = async(session, stackFrame, value) => {
+  if (value instanceof dbgp.ObjectProperty) {
+    const base = await fetchProperty(session, `${value.fullName}.<base>`, stackFrame);
+    if (base) {
+      return base;
+    }
+  }
+  return '';
+};
+copatibleFunctions_for_v1.set('ObjGetBase', objGetBase);
+copatibleFunctions_for_v1.set('GetBase', objGetBase);
+copatibleFunctions_for_v2.set('ObjGetBase', objGetBase);
+copatibleFunctions_for_v2.set('GetBase', objGetBase);
+// #endregion Compatible functions with AutoHotkey
+
+// #region Compatibility functions with AutoHotkey
 const strLen: LibraryFunc = async(session, stackFrame, value) => {
   if (typeof value === 'string') {
     return Promise.resolve(value.length);
@@ -113,11 +129,9 @@ const strLen: LibraryFunc = async(session, stackFrame, value) => {
   }
   return Promise.resolve(0);
 };
-copatibleFunctions_for_v1.set('StrLen', strLen);
+imcopatibleFunctions_for_v1.set('StrLen', strLen);
 copatibleFunctions_for_v2.set('StrLen', strLen);
-// #endregion
 
-// #region Compatibility functions with AutoHotkey
 const isInteger: LibraryFunc = async(session, stackFrame, value) => {
   if (typeof value === 'number' && Number.isInteger(value)) {
     return getTrue(session, stackFrame);

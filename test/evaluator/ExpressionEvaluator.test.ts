@@ -12,14 +12,17 @@ type ApiTester = (expression: string) => Promise<boolean>;
 const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
   return async(expression: string) => {
     const expected = await evaluator.eval(expression);
-    if (expected === undefined || expected === '') {
+    if (expected === undefined) {
       return false;
     }
 
     const key = expression.replaceAll('"', 2 <= evaluator.ahkVersion.mejor ? '`"' : '""');
     const actual = await evaluator.eval(`testResults["${key}"]`);
-    if (actual === undefined || actual === '') {
+    if (actual === undefined) {
       return false;
+    }
+    if (expected instanceof dbgp.ObjectProperty && actual instanceof dbgp.ObjectProperty) {
+      return expected.address === actual.address;
     }
     return expected === actual;
   };
@@ -438,6 +441,18 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await testApi(`!IsObject(num_int)`)).toBeTruthy();
     expect(await testApi(`!IsObject(undefined)`)).toBeTruthy();
   });
+
+  test('eval libraries (ObjGetBase)', async(): Promise<void> => {
+    expect(await testApi(`ObjGetBase(obj)`)).toBeTruthy();
+    expect(await testApi(`ObjGetBase(T)`)).toBeTruthy();
+    expect(await testApi(`ObjGetBase(T2)`)).toBeTruthy();
+
+    expect(await evaluator.eval(`ObjGetBase(str_alpha)`)).toBe('');
+    expect(await evaluator.eval(`ObjGetBase(num_int)`)).toBe('');
+    expect(await evaluator.eval(`ObjGetBase(undefined)`)).toBe('');
+
+    expect(await evaluator.eval(`GetBase(str_alpha)`)).toBe('');
+  });
   // #endregion Compatible functions
 
   // #region Compatibility functions
@@ -803,6 +818,18 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await testApi(`!IsObject(num_int)`)).toBeTruthy();
 
     expect(await evaluator.eval(`IsObject(undefined)`)).toBe('');
+  });
+
+  test('eval libraries (ObjGetBase)', async(): Promise<void> => {
+    expect(await testApi(`ObjGetBase(obj)`)).toBeTruthy();
+    expect(await testApi(`ObjGetBase(T)`)).toBeTruthy();
+    expect(await testApi(`ObjGetBase(T2)`)).toBeTruthy();
+
+    expect(await evaluator.eval(`ObjGetBase(str_alpha)`)).toBe('');
+    expect(await evaluator.eval(`ObjGetBase(num_int)`)).toBe('');
+    expect(await evaluator.eval(`ObjGetBase(undefined)`)).toBe('');
+
+    expect(await evaluator.eval(`GetBase(str_alpha)`)).toBe('');
   });
 
   test('eval libraries (StrLen)', async(): Promise<void> => {
