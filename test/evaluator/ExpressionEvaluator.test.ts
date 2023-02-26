@@ -453,6 +453,18 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
     expect(await evaluator.eval(`GetBase(str_alpha)`)).toBe('');
   });
+
+  test('eval libraries (ObjCount)', async(): Promise<void> => {
+    expect(await testApi(`ObjCount(obj)`)).toBeTruthy();
+    expect(await testApi(`ObjCount(arr)`)).toBeTruthy();
+    expect(await testApi(`ObjCount(arr_like)`)).toBeTruthy();
+    expect(await testApi(`ObjCount(T)`)).toBeTruthy();
+    expect(await testApi(`ObjCount(T2)`)).toBeTruthy();
+
+    expect(await testApi(`ObjCount(str_alpha)`)).toBeTruthy();
+    expect(await testApi(`ObjCount(num_int)`)).toBeTruthy();
+    expect(await testApi(`ObjCount(undefined)`)).toBeTruthy();
+  });
   // #endregion Compatible functions
 
   // #region Compatibility functions
@@ -830,6 +842,18 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`ObjGetBase(undefined)`)).toBe('');
 
     expect(await evaluator.eval(`GetBase(str_alpha)`)).toBe('');
+  });
+
+  test('eval libraries (ObjOwnPropCount)', async(): Promise<void> => {
+    expect(await testApi(`ObjOwnPropCount(obj)`)).toBeTruthy();
+    expect(await testApi(`ObjOwnPropCount(mapObj)`)).toBeTruthy();
+    expect(await testApi(`ObjOwnPropCount(arr)`)).toBeTruthy();
+    expect(await testApi(`ObjOwnPropCount(T)`)).toBeTruthy();
+    expect(await testApi(`ObjOwnPropCount(T2)`)).toBeTruthy();
+
+    expect(await evaluator.eval(`ObjOwnPropCount(str_alpha)`)).toBe('');
+    expect(await evaluator.eval(`ObjOwnPropCount(num_int)`)).toBe('');
+    expect(await evaluator.eval(`ObjOwnPropCount(undefined)`)).toBe('');
   });
 
   test('eval libraries (StrLen)', async(): Promise<void> => {

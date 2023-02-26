@@ -27,6 +27,7 @@ bool_false := false
 key := "key"
 obj := { key: "value", "3": "100" }
 arr := [ 1, 10, 100 ]
+arr_like := { 1: 1, 2: 10, 3: 100, size: 3 }
 nestedObj := { a: { b: { key: "value", obj: obj, arr: arr } } }
 instance := new T()
 
@@ -75,6 +76,18 @@ testResults["ObjGetBase(T2)"] := ObjGetBase(T2)
 ; testResults["ObjGetBase(str_alpha)"] := ObjGetBase(str_alpha) ; Error:  Parameter #1 invalid.
 ; testResults["ObjGetBase(num_int)"] := ObjGetBase(num_int) ; Error:  Parameter #1 invalid.
 ; testResults["ObjGetBase(undefined)"] := ObjGetBase(undefined) ; Error:  Parameter #1 invalid.
+; #endregion ObjGetBase
+
+; #region ObjCount
+testResults["ObjCount(obj)"] := ObjCount(obj)
+testResults["ObjCount(arr)"] := ObjCount(arr)
+testResults["ObjCount(arr_like)"] := ObjCount(arr_like)
+testResults["ObjCount(T)"] := ObjCount(T)
+testResults["ObjCount(T2)"] := ObjCount(T2)
+
+testResults["ObjCount(str_alpha)"] := ObjCount(str_alpha)
+testResults["ObjCount(num_int)"] := ObjCount(num_int)
+testResults["ObjCount(undefined)"] := ObjCount(undefined)
 ; #endregion ObjGetBase
 
 ; #region StrLen

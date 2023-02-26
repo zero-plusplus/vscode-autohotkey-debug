@@ -113,6 +113,29 @@ copatibleFunctions_for_v1.set('ObjGetBase', objGetBase);
 copatibleFunctions_for_v1.set('GetBase', objGetBase);
 copatibleFunctions_for_v2.set('ObjGetBase', objGetBase);
 copatibleFunctions_for_v2.set('GetBase', objGetBase);
+
+const objCount: LibraryFunc = async(session, stackFrame, value) => {
+  if (!(value instanceof dbgp.ObjectProperty)) {
+    return '';
+  }
+
+  const children = await fetchPropertyChildren(session, stackFrame, value);
+  if (!children) {
+    return 0;
+  }
+
+  return children.filter((child) => {
+    if (child.name.startsWith('<')) {
+      return false;
+    }
+    if (2 <= session.ahkVersion.mejor && child.name.startsWith('[')) {
+      return false;
+    }
+    return true;
+  }).length;
+};
+copatibleFunctions_for_v1.set('ObjCount', objCount);
+copatibleFunctions_for_v2.set('ObjOwnPropCount', objCount);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey

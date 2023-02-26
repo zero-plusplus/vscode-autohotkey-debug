@@ -76,6 +76,18 @@ testResults["ObjGetBase(T2)"] := ObjGetBase(T2)
 ; testResults["ObjGetBase(undefined)"] := ObjGetBase(undefined) ; Error:  Parameter #1 invalid.
 ; #endregion ObjGetBase
 
+; #region ObjOwnPropCount
+testResults["ObjOwnPropCount(obj)"] := ObjOwnPropCount(obj)
+testResults["ObjOwnPropCount(mapObj)"] := ObjOwnPropCount(mapObj)
+testResults["ObjOwnPropCount(arr)"] := ObjOwnPropCount(arr)
+testResults["ObjOwnPropCount(T)"] := ObjOwnPropCount(T)
+testResults["ObjOwnPropCount(T2)"] := ObjOwnPropCount(T2)
+
+; testResults["ObjOwnPropCount(str_alpha)"] := ObjOwnPropCount(str_alpha) ; Expected an Object but got a String.
+; testResults["ObjOwnPropCount(num_int)"] := ObjOwnPropCount(num_int) ; Expected an Object but got an Integer.
+; testResults["ObjOwnPropCount(undefined)"] := ObjOwnPropCount(undefined) ; This variable has not been assigned a value.
+; #endregion ObjGetBase
+
 ; #region StrLen
 testResults["StrLen(str_alpha)"] := StrLen(str_alpha)
 testResults["StrLen(num_int)"] := StrLen(num_int)
