@@ -56,6 +56,13 @@ testResults["IsSet(obj)"] := IsSet(obj)
 testResults["IsSet(T)"] := IsSet(T)
 testResults["!IsSet(undefined)"] := !IsSet(undefined)
 ; #endregion IsSet
+
+; #region StrLen
+testResults["StrLen(str_alpha)"] := StrLen(str_alpha)
+testResults["StrLen(num_int)"] := StrLen(num_int)
+testResults["StrLen(num_hex)"] := StrLen(num_hex)
+testResults["StrLen(obj)"] := StrLen(obj)
+; #endregion IsSet
 ; #endregion tests
 
 class T extends T2 {

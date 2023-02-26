@@ -90,6 +90,22 @@ const isSet: LibraryFunc = async(session, stackFrame, value) => {
 };
 copatibleFunctions_for_v1.set('IsSet', isSet);
 copatibleFunctions_for_v2.set('IsSet', isSet);
+
+const strLen: LibraryFunc = async(session, stackFrame, value) => {
+  if (typeof value === 'string') {
+    return Promise.resolve(value.length);
+  }
+  if (typeof value === 'number') {
+    return Promise.resolve(String(value).length);
+  }
+
+  if (2 <= session.ahkVersion.mejor) {
+    return Promise.resolve('');
+  }
+  return Promise.resolve(0);
+};
+copatibleFunctions_for_v1.set('StrLen', strLen);
+copatibleFunctions_for_v2.set('StrLen', strLen);
 // #endregion
 
 // #region Compatibility functions with AutoHotkey

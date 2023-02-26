@@ -11,10 +11,17 @@ import { closeSession, launchDebug } from '../util';
 type ApiTester = (expression: string) => Promise<boolean>;
 const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
   return async(expression: string) => {
-    const a = await evaluator.eval(expression);
+    const expected = await evaluator.eval(expression);
+    if (expected === undefined || expected === '') {
+      return false;
+    }
+
     const key = expression.replaceAll('"', 2 <= evaluator.ahkVersion.mejor ? '`"' : '""');
-    const b = await evaluator.eval(`testResults["${key}"]`);
-    return Boolean(a && b) && a === b;
+    const actual = await evaluator.eval(`testResults["${key}"]`);
+    if (actual === undefined || actual === '') {
+      return false;
+    }
+    return expected === actual;
   };
 };
 
@@ -399,7 +406,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('GetMetaVar("callstack")[0].name')).toBe('A');
   });
 
-  // #region Compatible functions with AutoHotkey
+  // #region Compatible functions
   test('eval libraries (ObjHasKey)', async(): Promise<void> => {
     expect(await testApi(`ObjHasKey(obj, "key")`)).toBeTruthy();
     expect(await testApi(`ObjHasKey(obj, key)`)).toBeTruthy();
@@ -421,7 +428,17 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
     expect(await testApi(`!IsSet(undefined)`)).toBeTruthy();
   });
-  // #endregion
+  // #endregion Compatible functions
+
+  // #region Compatibility functions
+  test('eval libraries (StrLen)', async(): Promise<void> => {
+    expect(await testApi(`StrLen(str_alpha)`)).toBeTruthy();
+    expect(await testApi(`StrLen(num_int)`)).toBeTruthy();
+    expect(await testApi(`StrLen(obj)`)).toBeTruthy();
+
+    expect(await evaluator.eval(`StrLen(num_hex)`)).not.toBe(5);
+  });
+  // #endregion Compatibility functions
 
   // #region Incompatible functions with AutoHotkey
   //   test('eval libraries (IsString)', async(): Promise<void> => {
@@ -739,6 +756,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('(instance || false).instanceField')).toBe('instance');
   });
 
+  // #region Compatible functions
   test('eval libraries (ObjHasOwnProp)', async(): Promise<void> => {
     expect(await testApi(`ObjHasOwnProp(obj, "key")`)).toBeTruthy();
     expect(await testApi(`ObjHasOwnProp(obj, key)`)).toBeTruthy();
@@ -765,6 +783,18 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
 
     expect(await testApi(`!IsSet(undefined)`)).toBeTruthy();
   });
+
+  test('eval libraries (StrLen)', async(): Promise<void> => {
+    expect(await testApi(`StrLen(str_alpha)`)).toBeTruthy();
+    expect(await testApi(`StrLen(num_int)`)).toBeTruthy();
+    expect(await testApi(`StrLen(num_hex)`)).toBeTruthy();
+
+    expect(await evaluator.eval(`StrLen(obj)`)).toBe('');
+  });
+  // #endregion Compatible functions
+
+  // #region Compatibility functions
+  // #endregion Compatibility functions
 
   //   test('eval libraries (IsNumber)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsNumber(num_int)')).toBe(true_ahk);
