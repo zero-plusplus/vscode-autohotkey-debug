@@ -42,6 +42,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     process = data.process;
     server = data.server;
     session = data.session;
+    await session.sendFeatureSetCommand('max_children', 10000);
 
     const metaVariableMap = new MetaVariableValueMap();
     metaVariableMap.set('hitCount', 1);
@@ -428,6 +429,15 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
     expect(await testApi(`!IsSet(undefined)`)).toBeTruthy();
   });
+
+  test('eval libraries (IsObject)', async(): Promise<void> => {
+    expect(await testApi(`IsObject(obj)`)).toBeTruthy();
+    expect(await testApi(`IsObject(T)`)).toBeTruthy();
+
+    expect(await testApi(`!IsObject(str_alpha)`)).toBeTruthy();
+    expect(await testApi(`!IsObject(num_int)`)).toBeTruthy();
+    expect(await testApi(`!IsObject(undefined)`)).toBeTruthy();
+  });
   // #endregion Compatible functions
 
   // #region Compatibility functions
@@ -675,6 +685,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     process = data.process;
     server = data.server;
     session = data.session;
+    await session.sendFeatureSetCommand('max_children', 10000);
 
     const metaVariableMap = new MetaVariableValueMap();
     metaVariableMap.set('hitCount', 1);
@@ -782,6 +793,16 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await testApi(`IsSet(T)`)).toBeTruthy();
 
     expect(await testApi(`!IsSet(undefined)`)).toBeTruthy();
+  });
+
+  test('eval libraries (IsObject)', async(): Promise<void> => {
+    expect(await testApi(`IsObject(obj)`)).toBeTruthy();
+    expect(await testApi(`IsObject(T)`)).toBeTruthy();
+
+    expect(await testApi(`!IsObject(str_alpha)`)).toBeTruthy();
+    expect(await testApi(`!IsObject(num_int)`)).toBeTruthy();
+
+    expect(await evaluator.eval(`IsObject(undefined)`)).toBe('');
   });
 
   test('eval libraries (StrLen)', async(): Promise<void> => {

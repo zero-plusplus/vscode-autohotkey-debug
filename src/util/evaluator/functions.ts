@@ -91,6 +91,15 @@ const isSet: LibraryFunc = async(session, stackFrame, value) => {
 copatibleFunctions_for_v1.set('IsSet', isSet);
 copatibleFunctions_for_v2.set('IsSet', isSet);
 
+const isObject: LibraryFunc = async(session, stackFrame, value) => {
+  if (2 <= session.ahkVersion.mejor && value === undefined) {
+    return Promise.resolve('');
+  }
+  return Promise.resolve(value instanceof dbgp.ObjectProperty ? 1 : 0);
+};
+copatibleFunctions_for_v1.set('IsObject', isObject);
+copatibleFunctions_for_v2.set('IsObject', isObject);
+
 const strLen: LibraryFunc = async(session, stackFrame, value) => {
   if (typeof value === 'string') {
     return Promise.resolve(value.length);
@@ -226,15 +235,6 @@ const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
 };
 imcopatibleFunctions_for_v1.set('IsPrimitive', isPrimitive);
 imcopatibleFunctions_for_v2.set('IsPrimitive', isPrimitive);
-
-const isObject: LibraryFunc = async(session, stackFrame, value) => {
-  if (value instanceof dbgp.ObjectProperty) {
-    return getTrue(session, stackFrame);
-  }
-  return getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsObject', isObject);
-imcopatibleFunctions_for_v2.set('IsObject', isObject);
 
 const isAlpha: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {

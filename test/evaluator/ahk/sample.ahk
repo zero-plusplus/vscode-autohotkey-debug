@@ -54,8 +54,18 @@ testResults["!ObjHasKey(obj, ""unknown"")"] := !ObjHasKey(obj, str_alpha)
 testResults["IsSet(str_alpha)"] := IsSet(str_alpha)
 testResults["IsSet(obj)"] := IsSet(obj)
 testResults["IsSet(T)"] := IsSet(T)
+
 testResults["!IsSet(undefined)"] := !IsSet(undefined)
 ; #endregion IsSet
+
+; #region IsObject
+testResults["IsObject(obj)"] := IsObject(obj)
+testResults["IsObject(T)"] := IsObject(T)
+
+testResults["!IsObject(str_alpha)"] := !IsObject(str_alpha)
+testResults["!IsObject(num_int)"] := !IsObject(num_int)
+testResults["!IsObject(undefined)"] := !IsObject(undefined)
+; #endregion IsObject
 
 ; #region StrLen
 testResults["StrLen(str_alpha)"] := StrLen(str_alpha)
