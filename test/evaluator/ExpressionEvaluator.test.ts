@@ -465,6 +465,15 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await testApi(`ObjCount(num_int)`)).toBeTruthy();
     expect(await testApi(`ObjCount(undefined)`)).toBeTruthy();
   });
+
+  test('eval libraries (Abs)', async(): Promise<void> => {
+    expect(await testApi(`Abs(0)`)).toBeTruthy();
+    expect(await testApi(`Abs(123)`)).toBeTruthy();
+    expect(await testApi(`Abs(-123)`)).toBeTruthy();
+
+    expect(await testApi(`Abs(str_alpha)`)).toBeTruthy();
+    expect(await testApi(`Abs(obj)`)).toBeTruthy();
+  });
   // #endregion Compatible functions
 
   // #region Compatibility functions
@@ -854,6 +863,15 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`ObjOwnPropCount(str_alpha)`)).toBe('');
     expect(await evaluator.eval(`ObjOwnPropCount(num_int)`)).toBe('');
     expect(await evaluator.eval(`ObjOwnPropCount(undefined)`)).toBe('');
+  });
+
+  test('eval libraries (Abs)', async(): Promise<void> => {
+    expect(await testApi(`Abs(0)`)).toBeTruthy();
+    expect(await testApi(`Abs(123)`)).toBeTruthy();
+    expect(await testApi(`Abs(-123)`)).toBeTruthy();
+
+    expect(await evaluator.eval(`Abs(str_alpha)`)).toBe('');
+    expect(await evaluator.eval(`Abs(obj)`)).toBe('');
   });
 
   test('eval libraries (StrLen)', async(): Promise<void> => {

@@ -88,14 +88,23 @@ testResults["ObjCount(T2)"] := ObjCount(T2)
 testResults["ObjCount(str_alpha)"] := ObjCount(str_alpha)
 testResults["ObjCount(num_int)"] := ObjCount(num_int)
 testResults["ObjCount(undefined)"] := ObjCount(undefined)
-; #endregion ObjGetBase
+; #endregion ObjCount
+
+; #region Abs
+testResults["Abs(0)"] := Abs(0)
+testResults["Abs(123)"] := Abs(123)
+testResults["Abs(-123)"] := Abs(-123)
+
+testResults["Abs(str_alpha)"] := Abs(str_alpha)
+testResults["Abs(obj)"] := Abs(obj)
+; #endregion Abs
 
 ; #region StrLen
 testResults["StrLen(str_alpha)"] := StrLen(str_alpha)
 testResults["StrLen(num_int)"] := StrLen(num_int)
 testResults["StrLen(num_hex)"] := StrLen(num_hex)
 testResults["StrLen(obj)"] := StrLen(obj)
-; #endregion IsSet
+; #endregion StrLen
 ; #endregion tests
 
 class T extends T2 {

@@ -86,14 +86,23 @@ testResults["ObjOwnPropCount(T2)"] := ObjOwnPropCount(T2)
 ; testResults["ObjOwnPropCount(str_alpha)"] := ObjOwnPropCount(str_alpha) ; Expected an Object but got a String.
 ; testResults["ObjOwnPropCount(num_int)"] := ObjOwnPropCount(num_int) ; Expected an Object but got an Integer.
 ; testResults["ObjOwnPropCount(undefined)"] := ObjOwnPropCount(undefined) ; This variable has not been assigned a value.
-; #endregion ObjGetBase
+; #endregion ObjOwnPropCount
+
+; #region Abs
+testResults["Abs(0)"] := Abs(0)
+testResults["Abs(123)"] := Abs(123)
+testResults["Abs(-123)"] := Abs(-123)
+
+; testResults["Abs(str_alpha)"] := Abs(str_alpha) ; Parameter #1 of Abs requires a Number, but received a String.
+; testResults["Abs(obj)"] := Abs(obj) ; Parameter #1 of Abs requires a Number, but received an Object.
+; #endregion Abs
 
 ; #region StrLen
 testResults["StrLen(str_alpha)"] := StrLen(str_alpha)
 testResults["StrLen(num_int)"] := StrLen(num_int)
 testResults["StrLen(num_hex)"] := StrLen(num_hex)
 ; testResults["StrLen(obj)"] := StrLen(obj) ; Error: Parameter #1 of StrLen requires a String. but receiverd an Object.
-; #endregion IsSet
+; #endregion StrLen
 ; #endregion tests
 
 class T extends T2 {

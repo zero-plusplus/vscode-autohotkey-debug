@@ -136,6 +136,16 @@ const objCount: LibraryFunc = async(session, stackFrame, value) => {
 };
 copatibleFunctions_for_v1.set('ObjCount', objCount);
 copatibleFunctions_for_v2.set('ObjOwnPropCount', objCount);
+
+const abs: LibraryFunc = async(session, stackFrame, value) => {
+  const num = toNumber(value);
+  if (num === '') {
+    return Promise.resolve('');
+  }
+  return Promise.resolve(Math.abs(num));
+};
+copatibleFunctions_for_v1.set('Abs', abs);
+copatibleFunctions_for_v2.set('Abs', abs);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
