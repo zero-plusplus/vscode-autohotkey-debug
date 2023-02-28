@@ -137,15 +137,39 @@ const objCount: LibraryFunc = async(session, stackFrame, value) => {
 copatibleFunctions_for_v1.set('ObjCount', objCount);
 copatibleFunctions_for_v2.set('ObjOwnPropCount', objCount);
 
-const abs: LibraryFunc = async(session, stackFrame, value) => {
-  const num = toNumber(value);
-  if (num === '') {
-    return Promise.resolve('');
-  }
-  return Promise.resolve(Math.abs(num));
+type MathFunctionResolve = (value: any, session: dbgp.Session, stackFrame?: dbgp.StackFrame) => string | number;
+const createMathFunction = (name: string, resolve?: MathFunctionResolve): LibraryFunc => {
+  const _resolve: MathFunctionResolve = resolve ?? ((value): string | number => (typeof value === 'string' || typeof value === 'number' ? value : ''));
+  return async(session, stackFrame, value) => {
+    if (value === '') {
+      return '';
+    }
+
+    const num = toNumber(value);
+    if (num === '') {
+      return Promise.resolve(_resolve('', session, stackFrame));
+    }
+
+    return Promise.resolve(_resolve(Math[name](num), session, stackFrame));
+  };
 };
-copatibleFunctions_for_v1.set('Abs', abs);
-copatibleFunctions_for_v2.set('Abs', abs);
+const returnZero: MathFunctionResolve = (value, session) => {
+  const isNumberLike = typeof value === 'number' && !isNaN(Number(value));
+  if (isNumberLike) {
+    return value;
+  }
+  if (2 <= session.ahkVersion.mejor) {
+    return '';
+  }
+  return 0;
+};
+
+copatibleFunctions_for_v1.set('Abs', createMathFunction('abs'));
+copatibleFunctions_for_v2.set('Abs', createMathFunction('abs', returnZero));
+
+const ceil = createMathFunction('ceil', returnZero);
+copatibleFunctions_for_v1.set('Ceil', ceil);
+copatibleFunctions_for_v2.set('Ceil', ceil);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey

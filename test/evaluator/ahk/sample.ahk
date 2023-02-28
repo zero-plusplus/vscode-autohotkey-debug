@@ -90,14 +90,18 @@ testResults["ObjCount(num_int)"] := ObjCount(num_int)
 testResults["ObjCount(undefined)"] := ObjCount(undefined)
 ; #endregion ObjCount
 
-; #region Abs
-testResults["Abs(0)"] := Abs(0)
-testResults["Abs(123)"] := Abs(123)
-testResults["Abs(-123)"] := Abs(-123)
-
-testResults["Abs(str_alpha)"] := Abs(str_alpha)
-testResults["Abs(obj)"] := Abs(obj)
-; #endregion Abs
+; #region Math
+for i, funcName in [ "Abs", "Ceil" ] {
+  testResults[funcName . "(0)"] := %funcName%(0)
+  testResults[funcName . "(123)"] := %funcName%(123)
+  testResults[funcName . "(-123)"] := %funcName%(-123)
+  testResults[funcName . "(123.456)"] := %funcName%(123.456)
+  testResults[funcName . "(-123.456)"] := %funcName%(-123.456)
+  testResults[funcName . "(num_int_like)"] := %funcName%(num_int_like)
+  testResults[funcName . "(str_alpha)"] := %funcName%(str_alpha)
+  testResults[funcName . "(obj)"] := %funcName%(obj)
+}
+; #endregion Math
 
 ; #region StrLen
 testResults["StrLen(str_alpha)"] := StrLen(str_alpha)

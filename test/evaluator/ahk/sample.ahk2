@@ -88,14 +88,18 @@ testResults["ObjOwnPropCount(T2)"] := ObjOwnPropCount(T2)
 ; testResults["ObjOwnPropCount(undefined)"] := ObjOwnPropCount(undefined) ; This variable has not been assigned a value.
 ; #endregion ObjOwnPropCount
 
-; #region Abs
-testResults["Abs(0)"] := Abs(0)
-testResults["Abs(123)"] := Abs(123)
-testResults["Abs(-123)"] := Abs(-123)
-
-; testResults["Abs(str_alpha)"] := Abs(str_alpha) ; Parameter #1 of Abs requires a Number, but received a String.
-; testResults["Abs(obj)"] := Abs(obj) ; Parameter #1 of Abs requires a Number, but received an Object.
-; #endregion Abs
+; #region Math
+for i, funcName in [ "Abs", "Ceil" ] {
+  testResults[funcName . "(0)"] := %funcName%(0)
+  testResults[funcName . "(123)"] := %funcName%(123)
+  testResults[funcName . "(-123)"] := %funcName%(-123)
+  testResults[funcName . "(123.456)"] := %funcName%(123.456)
+  testResults[funcName . "(-123.456)"] := %funcName%(-123.456)
+  testResults[funcName . "(num_int_like)"] := %funcName%(num_int_like)
+  ; testResults[funcName . "(str_alpha)"] := %funcName%(str_alpha) ; Parameter #1 of Abs requires a Number, but received a String.
+  ; testResults[funcName . "(obj)"] := %funcName%(obj) ; Parameter #1 of Abs requires a Number, but received an Object.
+}
+; #endregion Math
 
 ; #region StrLen
 testResults["StrLen(str_alpha)"] := StrLen(str_alpha)

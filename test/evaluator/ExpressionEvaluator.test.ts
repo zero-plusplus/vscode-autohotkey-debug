@@ -1,30 +1,36 @@
+import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
+import assert from 'assert';
 import * as net from 'net';
 import { ChildProcess } from 'child_process';
 import * as path from 'path';
-import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../../src/dbgpSession';
 import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
 import { getFalse, getTrue } from '../../src/util/evaluator/functions';
 import { MetaVariableValueMap } from '../../src/util/VariableManager';
 import { closeSession, launchDebug } from '../util';
 
-type ApiTester = (expression: string) => Promise<boolean>;
+type ApiTester = (expression: string) => Promise<[ string | number, string | number, string ]>;
 const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
-  return async(expression: string) => {
+  return async(expression: string, actual?: any) => {
     const expected = await evaluator.eval(expression);
     if (expected === undefined) {
-      return false;
+      throw Error(`The expected (\`${expression}\`) is undefined.`);
     }
 
     const key = expression.replaceAll('"', 2 <= evaluator.ahkVersion.mejor ? '`"' : '""');
-    const actual = await evaluator.eval(`testResults["${key}"]`);
-    if (actual === undefined) {
-      return false;
+    const actualExpression = `testResults["${key}"]`;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const _actual = actual ?? await evaluator.eval(actualExpression);
+    if (_actual === undefined) {
+      throw Error(`The actual (\`${actualExpression}\`) is undefined.`);
     }
-    if (expected instanceof dbgp.ObjectProperty && actual instanceof dbgp.ObjectProperty) {
-      return expected.address === actual.address;
+    if (expected instanceof dbgp.ObjectProperty && _actual instanceof dbgp.ObjectProperty) {
+      return [ _actual.address, expected.address, expression ];
     }
-    return expected === actual;
+    if ((typeof expected === 'string' || typeof expected === 'number') && (typeof _actual === 'string' || typeof _actual === 'number')) {
+      return [ _actual, expected, expression ];
+    }
+    throw Error('The value does not correspond to the test.');
   };
 };
 
@@ -412,40 +418,40 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
   // #region Compatible functions
   test('eval libraries (ObjHasKey)', async(): Promise<void> => {
-    expect(await testApi(`ObjHasKey(obj, "key")`)).toBeTruthy();
-    expect(await testApi(`ObjHasKey(obj, key)`)).toBeTruthy();
-    expect(await testApi(`ObjHasKey(arr, 1)`)).toBeTruthy();
-    expect(await testApi(`ObjHasKey(T, "staticField")`)).toBeTruthy();
-    expect(await testApi(`ObjHasKey(T, "method")`)).toBeTruthy();
-    expect(await testApi(`instance.instanceField && ObjHasKey(instance, "instanceField")`)).toBeTruthy();
-    expect(await testApi(`instance.baseInstanceField && ObjHasKey(instance, "baseInstanceField")`)).toBeTruthy();
-    expect(await testApi(`!(instance.method && ObjHasKey(instance, "method"))`)).toBeTruthy();
-    expect(await testApi(`!ObjHasKey(obj, "unknown")`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`ObjHasKey(obj, "key")`));
+    assert.strictEqual(...await testApi(`ObjHasKey(obj, key)`));
+    assert.strictEqual(...await testApi(`ObjHasKey(arr, 1)`));
+    assert.strictEqual(...await testApi(`ObjHasKey(T, "staticField")`));
+    assert.strictEqual(...await testApi(`ObjHasKey(T, "method")`));
+    assert.strictEqual(...await testApi(`instance.instanceField && ObjHasKey(instance, "instanceField")`));
+    assert.strictEqual(...await testApi(`instance.baseInstanceField && ObjHasKey(instance, "baseInstanceField")`));
+    assert.strictEqual(...await testApi(`!(instance.method && ObjHasKey(instance, "method"))`));
+    assert.strictEqual(...await testApi(`!ObjHasKey(obj, "unknown")`));
 
     expect(await evaluator.eval('HasKey(obj, key)')).toBeTruthy();
   });
 
   test('eval libraries (IsSet)', async(): Promise<void> => {
-    expect(await testApi(`IsSet(str_alpha)`)).toBeTruthy();
-    expect(await testApi(`IsSet(obj)`)).toBeTruthy();
-    expect(await testApi(`IsSet(T)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`IsSet(str_alpha)`));
+    assert.strictEqual(...await testApi(`IsSet(obj)`));
+    assert.strictEqual(...await testApi(`IsSet(T)`));
 
-    expect(await testApi(`!IsSet(undefined)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`!IsSet(undefined)`));
   });
 
   test('eval libraries (IsObject)', async(): Promise<void> => {
-    expect(await testApi(`IsObject(obj)`)).toBeTruthy();
-    expect(await testApi(`IsObject(T)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`IsObject(obj)`));
+    assert.strictEqual(...await testApi(`IsObject(T)`));
 
-    expect(await testApi(`!IsObject(str_alpha)`)).toBeTruthy();
-    expect(await testApi(`!IsObject(num_int)`)).toBeTruthy();
-    expect(await testApi(`!IsObject(undefined)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`!IsObject(str_alpha)`));
+    assert.strictEqual(...await testApi(`!IsObject(num_int)`));
+    assert.strictEqual(...await testApi(`!IsObject(undefined)`));
   });
 
   test('eval libraries (ObjGetBase)', async(): Promise<void> => {
-    expect(await testApi(`ObjGetBase(obj)`)).toBeTruthy();
-    expect(await testApi(`ObjGetBase(T)`)).toBeTruthy();
-    expect(await testApi(`ObjGetBase(T2)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`ObjGetBase(obj)`));
+    assert.strictEqual(...await testApi(`ObjGetBase(T)`));
+    assert.strictEqual(...await testApi(`ObjGetBase(T2)`));
 
     expect(await evaluator.eval(`ObjGetBase(str_alpha)`)).toBe('');
     expect(await evaluator.eval(`ObjGetBase(num_int)`)).toBe('');
@@ -455,24 +461,28 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('eval libraries (ObjCount)', async(): Promise<void> => {
-    expect(await testApi(`ObjCount(obj)`)).toBeTruthy();
-    expect(await testApi(`ObjCount(arr)`)).toBeTruthy();
-    expect(await testApi(`ObjCount(arr_like)`)).toBeTruthy();
-    expect(await testApi(`ObjCount(T)`)).toBeTruthy();
-    expect(await testApi(`ObjCount(T2)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`ObjCount(obj)`));
+    assert.strictEqual(...await testApi(`ObjCount(arr)`));
+    assert.strictEqual(...await testApi(`ObjCount(arr_like)`));
+    assert.strictEqual(...await testApi(`ObjCount(T)`));
+    assert.strictEqual(...await testApi(`ObjCount(T2)`));
 
-    expect(await testApi(`ObjCount(str_alpha)`)).toBeTruthy();
-    expect(await testApi(`ObjCount(num_int)`)).toBeTruthy();
-    expect(await testApi(`ObjCount(undefined)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`ObjCount(str_alpha)`));
+    assert.strictEqual(...await testApi(`ObjCount(num_int)`));
+    assert.strictEqual(...await testApi(`ObjCount(undefined)`));
   });
 
-  test('eval libraries (Abs)', async(): Promise<void> => {
-    expect(await testApi(`Abs(0)`)).toBeTruthy();
-    expect(await testApi(`Abs(123)`)).toBeTruthy();
-    expect(await testApi(`Abs(-123)`)).toBeTruthy();
-
-    expect(await testApi(`Abs(str_alpha)`)).toBeTruthy();
-    expect(await testApi(`Abs(obj)`)).toBeTruthy();
+  test('eval libraries (Math)', async(): Promise<void> => {
+    for await (const funcName of [ 'Abs', 'Ceil' ]) {
+      assert.strictEqual(...await testApi(`${funcName}(0)`));
+      assert.strictEqual(...await testApi(`${funcName}(123)`));
+      assert.strictEqual(...await testApi(`${funcName}(-123)`));
+      assert.strictEqual(...await testApi(`${funcName}(123.456)`));
+      assert.strictEqual(...await testApi(`${funcName}(-123.456)`));
+      assert.strictEqual(...await testApi(`${funcName}(num_int_like)`));
+      assert.strictEqual(...await testApi(`${funcName}(str_alpha)`));
+      assert.strictEqual(...await testApi(`${funcName}(obj)`));
+    }
   });
   // #endregion Compatible functions
 
@@ -805,18 +815,18 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
 
   // #region Compatible functions
   test('eval libraries (ObjHasOwnProp)', async(): Promise<void> => {
-    expect(await testApi(`ObjHasOwnProp(obj, "key")`)).toBeTruthy();
-    expect(await testApi(`ObjHasOwnProp(obj, key)`)).toBeTruthy();
-    expect(await testApi(`ObjHasOwnProp(T, "staticField")`)).toBeTruthy();
-    expect(await testApi(`instance.instanceField && ObjHasOwnProp(instance, "instanceField")`)).toBeTruthy();
-    expect(await testApi(`instance.baseInstanceField && ObjHasOwnProp(instance, "baseInstanceField")`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`ObjHasOwnProp(obj, "key")`));
+    assert.strictEqual(...await testApi(`ObjHasOwnProp(obj, key)`));
+    assert.strictEqual(...await testApi(`ObjHasOwnProp(T, "staticField")`));
+    assert.strictEqual(...await testApi(`instance.instanceField && ObjHasOwnProp(instance, "instanceField")`));
+    assert.strictEqual(...await testApi(`instance.baseInstanceField && ObjHasOwnProp(instance, "baseInstanceField")`));
 
-    expect(await testApi(`!ObjHasOwnProp(obj, "unknown")`)).toBeTruthy();
-    expect(await testApi(`!ObjHasOwnProp(mapObj, "key")`)).toBeTruthy();
-    expect(await testApi(`!ObjHasOwnProp(mapObj, 3)`)).toBeTruthy();
-    expect(await testApi(`!ObjHasOwnProp(T, "method")`)).toBeTruthy();
-    expect(await testApi(`!ObjHasOwnProp(arr, 1)`)).toBeTruthy();
-    expect(await testApi(`!(instance.method && ObjHasOwnProp(instance, "method"))`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(obj, "unknown")`));
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(mapObj, "key")`));
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(mapObj, 3)`));
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(T, "method")`));
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(arr, 1)`));
+    assert.strictEqual(...await testApi(`!(instance.method && ObjHasOwnProp(instance, "method"))`));
 
     expect(await evaluator.eval('HasOwnProp(obj, "key")')).toBeTruthy();
     expect(await evaluator.eval('ObjHasKey(obj, "key")')).toBeTruthy();
@@ -824,27 +834,27 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   });
 
   test('eval libraries (IsSet)', async(): Promise<void> => {
-    expect(await testApi(`IsSet(str_alpha)`)).toBeTruthy();
-    expect(await testApi(`IsSet(obj)`)).toBeTruthy();
-    expect(await testApi(`IsSet(T)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`IsSet(str_alpha)`));
+    assert.strictEqual(...await testApi(`IsSet(obj)`));
+    assert.strictEqual(...await testApi(`IsSet(T)`));
 
-    expect(await testApi(`!IsSet(undefined)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`!IsSet(undefined)`));
   });
 
   test('eval libraries (IsObject)', async(): Promise<void> => {
-    expect(await testApi(`IsObject(obj)`)).toBeTruthy();
-    expect(await testApi(`IsObject(T)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`IsObject(obj)`));
+    assert.strictEqual(...await testApi(`IsObject(T)`));
 
-    expect(await testApi(`!IsObject(str_alpha)`)).toBeTruthy();
-    expect(await testApi(`!IsObject(num_int)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`!IsObject(str_alpha)`));
+    assert.strictEqual(...await testApi(`!IsObject(num_int)`));
 
     expect(await evaluator.eval(`IsObject(undefined)`)).toBe('');
   });
 
   test('eval libraries (ObjGetBase)', async(): Promise<void> => {
-    expect(await testApi(`ObjGetBase(obj)`)).toBeTruthy();
-    expect(await testApi(`ObjGetBase(T)`)).toBeTruthy();
-    expect(await testApi(`ObjGetBase(T2)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`ObjGetBase(obj)`));
+    assert.strictEqual(...await testApi(`ObjGetBase(T)`));
+    assert.strictEqual(...await testApi(`ObjGetBase(T2)`));
 
     expect(await evaluator.eval(`ObjGetBase(str_alpha)`)).toBe('');
     expect(await evaluator.eval(`ObjGetBase(num_int)`)).toBe('');
@@ -854,30 +864,35 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   });
 
   test('eval libraries (ObjOwnPropCount)', async(): Promise<void> => {
-    expect(await testApi(`ObjOwnPropCount(obj)`)).toBeTruthy();
-    expect(await testApi(`ObjOwnPropCount(mapObj)`)).toBeTruthy();
-    expect(await testApi(`ObjOwnPropCount(arr)`)).toBeTruthy();
-    expect(await testApi(`ObjOwnPropCount(T)`)).toBeTruthy();
-    expect(await testApi(`ObjOwnPropCount(T2)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(obj)`));
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(mapObj)`));
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(arr)`));
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(T)`));
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(T2)`));
 
     expect(await evaluator.eval(`ObjOwnPropCount(str_alpha)`)).toBe('');
     expect(await evaluator.eval(`ObjOwnPropCount(num_int)`)).toBe('');
     expect(await evaluator.eval(`ObjOwnPropCount(undefined)`)).toBe('');
   });
 
-  test('eval libraries (Abs)', async(): Promise<void> => {
-    expect(await testApi(`Abs(0)`)).toBeTruthy();
-    expect(await testApi(`Abs(123)`)).toBeTruthy();
-    expect(await testApi(`Abs(-123)`)).toBeTruthy();
+  test('eval libraries (Math)', async(): Promise<void> => {
+    for await (const funcName of [ 'Abs', 'Ceil' ]) {
+      assert.strictEqual(...await testApi(`${funcName}(0)`));
+      assert.strictEqual(...await testApi(`${funcName}(123)`));
+      assert.strictEqual(...await testApi(`${funcName}(-123)`));
+      assert.strictEqual(...await testApi(`${funcName}(123.456)`));
+      assert.strictEqual(...await testApi(`${funcName}(-123.456)`));
+      assert.strictEqual(...await testApi(`${funcName}(num_int_like)`));
 
-    expect(await evaluator.eval(`Abs(str_alpha)`)).toBe('');
-    expect(await evaluator.eval(`Abs(obj)`)).toBe('');
+      assert.strictEqual(await evaluator.eval(`${funcName}(str_alpha)`), '');
+      assert.strictEqual(await evaluator.eval(`${funcName}(obj)`), '');
+    }
   });
 
   test('eval libraries (StrLen)', async(): Promise<void> => {
-    expect(await testApi(`StrLen(str_alpha)`)).toBeTruthy();
-    expect(await testApi(`StrLen(num_int)`)).toBeTruthy();
-    expect(await testApi(`StrLen(num_hex)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`StrLen(str_alpha)`));
+    assert.strictEqual(...await testApi(`StrLen(num_int)`));
+    assert.strictEqual(...await testApi(`StrLen(num_hex)`));
 
     expect(await evaluator.eval(`StrLen(obj)`)).toBe('');
   });
