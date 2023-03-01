@@ -138,7 +138,7 @@ copatibleFunctions_for_v1.set('ObjCount', objCount);
 copatibleFunctions_for_v2.set('ObjOwnPropCount', objCount);
 
 type MathFunctionResolve = (value: any, session: dbgp.Session, stackFrame?: dbgp.StackFrame) => string | number;
-const createMathFunction = (name: string, resolve?: MathFunctionResolve): LibraryFunc => {
+const createMathFunction = (name: keyof typeof Math, resolve?: MathFunctionResolve): LibraryFunc => {
   const _resolve: MathFunctionResolve = resolve ?? ((value): string | number => (typeof value === 'string' || typeof value === 'number' ? value : ''));
   return async(session, stackFrame, value) => {
     if (value === '') {
@@ -150,7 +150,7 @@ const createMathFunction = (name: string, resolve?: MathFunctionResolve): Librar
       return Promise.resolve(_resolve('', session, stackFrame));
     }
 
-    return Promise.resolve(_resolve(Math[name](num), session, stackFrame));
+    return Promise.resolve(_resolve(Math[String(name)](num), session, stackFrame));
   };
 };
 const returnZero: MathFunctionResolve = (value, session) => {
@@ -170,6 +170,10 @@ copatibleFunctions_for_v2.set('Abs', createMathFunction('abs', returnZero));
 const ceil = createMathFunction('ceil', returnZero);
 copatibleFunctions_for_v1.set('Ceil', ceil);
 copatibleFunctions_for_v2.set('Ceil', ceil);
+
+const exp = createMathFunction('exp', returnZero);
+copatibleFunctions_for_v1.set('Exp', exp);
+copatibleFunctions_for_v2.set('Exp', exp);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
