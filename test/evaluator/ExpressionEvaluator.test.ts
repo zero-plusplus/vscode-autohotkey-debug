@@ -473,12 +473,12 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('eval libraries (Math)', async(): Promise<void> => {
-    for await (const funcName of [ 'Abs', 'Ceil' ]) {
+    for await (const funcName of [ 'Abs', 'Ceil', 'Exp' ]) {
       assert.strictEqual(...await testApi(`${funcName}(0)`));
-      assert.strictEqual(...await testApi(`${funcName}(123)`));
-      assert.strictEqual(...await testApi(`${funcName}(-123)`));
-      assert.strictEqual(...await testApi(`${funcName}(123.456)`));
-      assert.strictEqual(...await testApi(`${funcName}(-123.456)`));
+      assert.strictEqual(...await testApi(`${funcName}(3)`));
+      assert.strictEqual(...await testApi(`${funcName}(-3)`));
+      assert.strictEqual(...await testApi(`${funcName}(1.23)`));
+      assert.strictEqual(...await testApi(`${funcName}(-1.23)`));
       assert.strictEqual(...await testApi(`${funcName}(num_int_like)`));
       assert.strictEqual(...await testApi(`${funcName}(str_alpha)`));
       assert.strictEqual(...await testApi(`${funcName}(obj)`));
@@ -876,12 +876,12 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   });
 
   test('eval libraries (Math)', async(): Promise<void> => {
-    for await (const funcName of [ 'Abs', 'Ceil' ]) {
+    for await (const funcName of [ 'Abs', 'Ceil', 'Exp' ]) {
       assert.strictEqual(...await testApi(`${funcName}(0)`));
-      assert.strictEqual(...await testApi(`${funcName}(123)`));
-      assert.strictEqual(...await testApi(`${funcName}(-123)`));
-      assert.strictEqual(...await testApi(`${funcName}(123.456)`));
-      assert.strictEqual(...await testApi(`${funcName}(-123.456)`));
+      assert.strictEqual(...await testApi(`${funcName}(3)`));
+      assert.strictEqual(...await testApi(`${funcName}(-3)`));
+      assert.strictEqual(...await testApi(`${funcName}(1.23)`));
+      assert.strictEqual(...await testApi(`${funcName}(-1.23)`));
       assert.strictEqual(...await testApi(`${funcName}(num_int_like)`));
 
       assert.strictEqual(await evaluator.eval(`${funcName}(str_alpha)`), '');

@@ -150,7 +150,11 @@ const createMathFunction = (name: keyof typeof Math, resolve?: MathFunctionResol
       return Promise.resolve(_resolve('', session, stackFrame));
     }
 
-    return Promise.resolve(_resolve(Math[String(name)](num), session, stackFrame));
+    const result = _resolve(Math[String(name)](num), session, stackFrame);
+    if (typeof result === 'number') {
+      return Promise.resolve(2 <= session.ahkVersion.mejor ? result : toNumber(result.toFixed(6)));
+    }
+    return Promise.resolve(result);
   };
 };
 const returnZero: MathFunctionResolve = (value, session) => {
@@ -163,6 +167,16 @@ const returnZero: MathFunctionResolve = (value, session) => {
   }
   return 0;
 };
+const returnOne: MathFunctionResolve = (value, session) => {
+  const isNumberLike = typeof value === 'number' && !isNaN(Number(value));
+  if (isNumberLike) {
+    return value;
+  }
+  if (2 <= session.ahkVersion.mejor) {
+    return 1.0;
+  }
+  return 1;
+};
 
 copatibleFunctions_for_v1.set('Abs', createMathFunction('abs'));
 copatibleFunctions_for_v2.set('Abs', createMathFunction('abs', returnZero));
@@ -171,9 +185,8 @@ const ceil = createMathFunction('ceil', returnZero);
 copatibleFunctions_for_v1.set('Ceil', ceil);
 copatibleFunctions_for_v2.set('Ceil', ceil);
 
-const exp = createMathFunction('exp', returnZero);
-copatibleFunctions_for_v1.set('Exp', exp);
-copatibleFunctions_for_v2.set('Exp', exp);
+copatibleFunctions_for_v1.set('Exp', createMathFunction('exp', returnOne));
+copatibleFunctions_for_v2.set('Exp', createMathFunction('exp', returnZero));
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey

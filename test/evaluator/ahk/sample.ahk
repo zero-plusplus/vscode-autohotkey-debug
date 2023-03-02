@@ -14,7 +14,7 @@ str_lower := "abc"
 str_time := "01 Jan 1970 00:00:00 GMT"
 str_space := " "
 num_int := 123
-num_int_like := "123"
+num_int_like := "3"
 num_float := 123.456
 num_float_like := "123.456"
 num_hex := 0x123
@@ -93,10 +93,10 @@ testResults["ObjCount(undefined)"] := ObjCount(undefined)
 ; #region Math
 for i, funcName in [ "Abs", "Ceil", "Exp" ] {
   testResults[funcName . "(0)"] := %funcName%(0)
-  testResults[funcName . "(123)"] := %funcName%(123)
-  testResults[funcName . "(-123)"] := %funcName%(-123)
-  testResults[funcName . "(123.456)"] := %funcName%(123.456)
-  testResults[funcName . "(-123.456)"] := %funcName%(-123.456)
+  testResults[funcName . "(3)"] := %funcName%(3)
+  testResults[funcName . "(-3)"] := %funcName%(-3)
+  testResults[funcName . "(1.23)"] := %funcName%(1.23)
+  testResults[funcName . "(-1.23)"] := %funcName%(-1.23)
   testResults[funcName . "(num_int_like)"] := %funcName%(num_int_like)
   testResults[funcName . "(str_alpha)"] := %funcName%(str_alpha)
   testResults[funcName . "(obj)"] := %funcName%(obj)
