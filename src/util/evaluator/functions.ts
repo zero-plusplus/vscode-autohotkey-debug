@@ -187,6 +187,9 @@ copatibleFunctions_for_v2.set('Ceil', ceil);
 
 copatibleFunctions_for_v1.set('Exp', createMathFunction('exp', returnOne));
 copatibleFunctions_for_v2.set('Exp', createMathFunction('exp', returnZero));
+
+copatibleFunctions_for_v1.set('Floor', createMathFunction('floor', returnZero));
+copatibleFunctions_for_v2.set('Floor', createMathFunction('floor', returnZero));
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
