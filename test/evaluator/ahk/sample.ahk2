@@ -89,16 +89,16 @@ testResults["ObjOwnPropCount(T2)"] := ObjOwnPropCount(T2)
 ; #endregion ObjOwnPropCount
 
 ; #region Math
-for i, funcName in [ "Abs", "Ceil", "Exp", "Floor" ] {
-  testResults[funcName . "(0)"] := %funcName%(0)
-  testResults[funcName . "(3)"] := %funcName%(3)
-  testResults[funcName . "(-3)"] := %funcName%(-3)
-  testResults[funcName . "(1.23)"] := %funcName%(1.23)
-  testResults[funcName . "(-1.23)"] := %funcName%(-1.23)
-  testResults[funcName . "(num_int_like)"] := %funcName%(num_int_like)
+for i, funcName in [ "Abs", "Ceil", "Exp", "Floor", "Log" ] {
+  testResults[funcName . "(0)"] := SafeCall(() => %funcName%(0))
+  testResults[funcName . "(3)"] := SafeCall(() => %funcName%(3))
+  testResults[funcName . "(-3)"] := SafeCall(() => %funcName%(-3))
+  testResults[funcName . "(1.23)"] := SafeCall(() => %funcName%(1.23))
+  testResults[funcName . "(-1.23)"] := SafeCall(() => %funcName%(-1.23))
+  testResults[funcName . "(num_int_like)"] := SafeCall(() => %funcName%(num_int_like))
 
-  ; testResults[funcName . "(str_alpha)"] := %funcName%(str_alpha) ; Parameter #1 of Abs requires a Number, but received a String.
-  ; testResults[funcName . "(obj)"] := %funcName%(obj) ; Parameter #1 of Abs requires a Number, but received an Object.
+  testResults[funcName . "(str_alpha)"] := SafeCall(() => %funcName%(str_alpha)) ; Parameter #1 of Abs requires a Number, but received a String.
+  testResults[funcName . "(obj)"] := SafeCall(() => %funcName%(obj)) ; Parameter #1 of Abs requires a Number, but received an Object.
 }
 ; #endregion Math
 
@@ -121,4 +121,13 @@ class T2 {
   baseMethod() {
   }
 }
+
+SafeCall(callable) {
+  try {
+    result := callable()
+    return result
+  }
+  return ""
+}
+
 ExitApp

@@ -27,6 +27,9 @@ const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
     if (expected instanceof dbgp.ObjectProperty && _actual instanceof dbgp.ObjectProperty) {
       return [ _actual.address, expected.address, expression ];
     }
+    if (typeof expected === 'number' && typeof _actual === 'number') {
+      return [ expected.toFixed(6), expected.toFixed(6), expression ];
+    }
     if ((typeof expected === 'string' || typeof expected === 'number') && (typeof _actual === 'string' || typeof _actual === 'number')) {
       return [ _actual, expected, expression ];
     }
@@ -473,7 +476,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('eval libraries (Math)', async(): Promise<void> => {
-    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor' ]) {
+    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor', 'Log' ]) {
       assert.strictEqual(...await testApi(`${funcName}(0)`));
       assert.strictEqual(...await testApi(`${funcName}(3)`));
       assert.strictEqual(...await testApi(`${funcName}(-3)`));
@@ -876,16 +879,15 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   });
 
   test('eval libraries (Math)', async(): Promise<void> => {
-    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor' ]) {
+    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor', 'Log' ]) {
       assert.strictEqual(...await testApi(`${funcName}(0)`));
       assert.strictEqual(...await testApi(`${funcName}(3)`));
       assert.strictEqual(...await testApi(`${funcName}(-3)`));
       assert.strictEqual(...await testApi(`${funcName}(1.23)`));
       assert.strictEqual(...await testApi(`${funcName}(-1.23)`));
       assert.strictEqual(...await testApi(`${funcName}(num_int_like)`));
-
-      assert.strictEqual(await evaluator.eval(`${funcName}(str_alpha)`), '');
-      assert.strictEqual(await evaluator.eval(`${funcName}(obj)`), '');
+      assert.strictEqual(...await testApi(`${funcName}(str_alpha)`));
+      assert.strictEqual(...await testApi(`${funcName}(obj)`));
     }
   });
 

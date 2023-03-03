@@ -191,6 +191,19 @@ const regexMatch = (left: EvaluatedValue, right: EvaluatedValue): number => {
 };
 // #endregion
 
+export const isInfinite = (value: any): boolean => {
+  if (value === '-inf' || value === '-1.#INF00') {
+    return true;
+  }
+  if (typeof value === 'number' && !isFinite(value)) {
+    return true;
+  }
+
+  if (value instanceof dbgp.PrimitiveProperty) {
+    return isInfinite(value.value);
+  }
+  return false;
+};
 export const getFullName = (nameOrObject: string | dbgp.ObjectProperty): string => {
   return typeof nameOrObject === 'string' ? nameOrObject : nameOrObject.fullName;
 };
@@ -303,8 +316,13 @@ export const fetchPropertyByContext = async(session: dbgp.Session, context: dbgp
     switch (property.type) {
       case 'undefined': return undefined;
       case 'string': return property.value;
-      case 'integer': return Number(property.value);
-      case 'float': return parseFloat(property.value);
+      case 'integer':
+      case 'float': {
+        if (isInfinite(property.value)) {
+          return '';
+        }
+        return property.type === 'integer' ? Number(property.value) : parseFloat(property.value);
+      }
       default: break;
     }
   }
@@ -395,6 +413,9 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
   if (property instanceof dbgp.PrimitiveProperty) {
     if (property.type === 'string') {
       return property.value;
+    }
+    if (isInfinite(property.value)) {
+      return '';
     }
     return Number(property.value);
   }
@@ -1088,7 +1109,8 @@ export class ExpressionEvaluator {
     }
     else if (library) {
       const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));
-      return library(this.session, stackFrame, ...args);
+      const result = library(this.session, stackFrame, ...args);
+      return result;
     }
     return '';
   }

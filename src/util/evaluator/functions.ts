@@ -3,7 +3,7 @@ import glob from 'fast-glob';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
-import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyChildren, includesPropertyChild } from './ExpressionEvaluator';
+import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyChildren, includesPropertyChild, isInfinite } from './ExpressionEvaluator';
 
 export const getTrue = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
   return fetchGlobalProperty(session, 'true', stackFrame);
@@ -138,8 +138,18 @@ copatibleFunctions_for_v1.set('ObjCount', objCount);
 copatibleFunctions_for_v2.set('ObjOwnPropCount', objCount);
 
 type MathFunctionResolve = (value: any, session: dbgp.Session, stackFrame?: dbgp.StackFrame) => string | number;
-const createMathFunction = (name: keyof typeof Math, resolve?: MathFunctionResolve): LibraryFunc => {
-  const _resolve: MathFunctionResolve = resolve ?? ((value): string | number => (typeof value === 'string' || typeof value === 'number' ? value : ''));
+const createMathFunction = (nameOrCallable: keyof typeof Math | ((value: number) => number), resolve?: MathFunctionResolve): LibraryFunc => {
+  const _resolve: MathFunctionResolve = resolve ?? ((value): string | number => {
+    if (isInfinite(value)) {
+      return '';
+    }
+
+    if (typeof value === 'string' || typeof value === 'number') {
+      return value;
+    }
+    return '';
+  });
+
   return async(session, stackFrame, value) => {
     if (value === '') {
       return '';
@@ -150,7 +160,12 @@ const createMathFunction = (name: keyof typeof Math, resolve?: MathFunctionResol
       return Promise.resolve(_resolve('', session, stackFrame));
     }
 
-    const result = _resolve(Math[String(name)](num), session, stackFrame);
+    const mathFunction = typeof nameOrCallable === 'function' ? nameOrCallable : Math[nameOrCallable];
+    if (typeof mathFunction !== 'function') {
+      throw Error('not function');
+    }
+
+    const result = _resolve(mathFunction(num), session, stackFrame);
     if (typeof result === 'number') {
       return Promise.resolve(2 <= session.ahkVersion.mejor ? result : toNumber(result.toFixed(6)));
     }
@@ -158,8 +173,11 @@ const createMathFunction = (name: keyof typeof Math, resolve?: MathFunctionResol
   };
 };
 const returnZero: MathFunctionResolve = (value, session) => {
-  const isNumberLike = typeof value === 'number' && !isNaN(Number(value));
-  if (isNumberLike) {
+  if (isInfinite(value)) {
+    return '';
+  }
+
+  if (typeof value === 'number') {
     return value;
   }
   if (2 <= session.ahkVersion.mejor) {
@@ -168,8 +186,11 @@ const returnZero: MathFunctionResolve = (value, session) => {
   return 0;
 };
 const returnOne: MathFunctionResolve = (value, session) => {
-  const isNumberLike = typeof value === 'number' && !isNaN(Number(value));
-  if (isNumberLike) {
+  if (isInfinite(value)) {
+    return '';
+  }
+
+  if (typeof value === 'number') {
     return value;
   }
   if (2 <= session.ahkVersion.mejor) {
@@ -188,8 +209,13 @@ copatibleFunctions_for_v2.set('Ceil', ceil);
 copatibleFunctions_for_v1.set('Exp', createMathFunction('exp', returnOne));
 copatibleFunctions_for_v2.set('Exp', createMathFunction('exp', returnZero));
 
-copatibleFunctions_for_v1.set('Floor', createMathFunction('floor', returnZero));
-copatibleFunctions_for_v2.set('Floor', createMathFunction('floor', returnZero));
+const floor = createMathFunction('floor', returnZero);
+copatibleFunctions_for_v1.set('Floor', floor);
+copatibleFunctions_for_v2.set('Floor', floor);
+
+const log = createMathFunction('log10');
+copatibleFunctions_for_v1.set('Log', log);
+copatibleFunctions_for_v2.set('Log', log);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
