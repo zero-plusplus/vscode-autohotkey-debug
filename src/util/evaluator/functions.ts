@@ -240,6 +240,10 @@ copatibleFunctions_for_v2.set('Cos', cos);
 const tan = createMathFunction('tan', returnZero);
 copatibleFunctions_for_v1.set('Tan', tan);
 copatibleFunctions_for_v2.set('Tan', tan);
+
+const asin = createMathFunction('asin', returnZero);
+copatibleFunctions_for_v1.set('ASin', asin);
+copatibleFunctions_for_v2.set('ASin', asin);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
