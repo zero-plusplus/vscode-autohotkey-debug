@@ -89,7 +89,7 @@ testResults["ObjOwnPropCount(T2)"] := ObjOwnPropCount(T2)
 ; #endregion ObjOwnPropCount
 
 ; #region Math
-for i, funcName in [ "Abs", "Ceil", "Exp", "Floor", "Log", "Ln", "Round", "Sqrt" ] {
+for i, funcName in [ "Abs", "Ceil", "Exp", "Floor", "Log", "Ln", "Round", "Sqrt", "Sin" ] {
   testResults[funcName . "(0)"] := SafeCall(() => %funcName%(0))
   testResults[funcName . "(3)"] := SafeCall(() => %funcName%(3))
   testResults[funcName . "(-3)"] := SafeCall(() => %funcName%(-3))
