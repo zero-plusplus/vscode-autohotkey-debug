@@ -476,7 +476,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('eval libraries (Math)', async(): Promise<void> => {
-    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor', 'Log', 'Ln', 'Round', 'Sqrt', 'Sin', 'Cos', 'Tan', 'ASin', 'ACos' ]) {
+    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor', 'Log', 'Ln', 'Round', 'Sqrt', 'Sin', 'Cos', 'Tan', 'ASin', 'ACos', 'ATan' ]) {
       assert.strictEqual(...await testApi(`${funcName}(0)`));
       assert.strictEqual(...await testApi(`${funcName}(3)`));
       assert.strictEqual(...await testApi(`${funcName}(-3)`));
@@ -879,7 +879,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   });
 
   test('eval libraries (Math)', async(): Promise<void> => {
-    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor', 'Log', 'Ln', 'Round', 'Sqrt', 'Sin', 'Cos', 'Tan', 'ASin', 'ACos' ]) {
+    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor', 'Log', 'Ln', 'Round', 'Sqrt', 'Sin', 'Cos', 'Tan', 'ASin', 'ACos', 'ATan' ]) {
       assert.strictEqual(...await testApi(`${funcName}(0)`));
       assert.strictEqual(...await testApi(`${funcName}(3)`));
       assert.strictEqual(...await testApi(`${funcName}(-3)`));
