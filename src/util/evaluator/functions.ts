@@ -224,6 +224,10 @@ copatibleFunctions_for_v2.set('Ln', ln);
 const round = createMathFunction('round', returnZero);
 copatibleFunctions_for_v1.set('Round', round);
 copatibleFunctions_for_v2.set('Round', round);
+
+const sqrt = createMathFunction('sqrt', returnZero);
+copatibleFunctions_for_v1.set('Sqrt', sqrt);
+copatibleFunctions_for_v2.set('Sqrt', sqrt);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
