@@ -244,6 +244,10 @@ copatibleFunctions_for_v2.set('Tan', tan);
 const asin = createMathFunction('asin', returnZero);
 copatibleFunctions_for_v1.set('ASin', asin);
 copatibleFunctions_for_v2.set('ASin', asin);
+
+const acos = createMathFunction('acos', returnZero);
+copatibleFunctions_for_v1.set('ACos', acos);
+copatibleFunctions_for_v2.set('ACos', acos);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
