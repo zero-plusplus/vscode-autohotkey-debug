@@ -2,13 +2,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { FormatSpecifyMap, FunctionMap, ahkRegexMatch, allFunctions_for_v1, allFunctions_for_v2 } from './functions';
+import { FormatSpecifyMap, FunctionMap, ahkRegexMatch, allFunctions_for_v1, allFunctions_for_v2, toNumber } from './functions';
 import * as dbgp from '../../dbgpSession';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
 import { MetaVariable, MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isNumberLike, isPrimitive } from '../util';
+import { isFloat, isNumberLike, isPrimitive } from '../util';
 import { uniqBy } from 'lodash';
 
 export type Node =
@@ -723,19 +723,22 @@ export class ExpressionEvaluator {
       case '+':
       case '-':
       case '~': {
-        const _expressionResult = Number(expressionResult);
-        if (Number.isNaN(_expressionResult)) {
+        let result = toNumber(expressionResult);
+        if (result === '') {
           return '';
         }
 
         switch (node.operator) {
-          case '+': return _expressionResult;
-          case '-': return -_expressionResult;
+          case '+': break;
+          case '-': result = -result; break;
           // eslint-disable-next-line no-bitwise
-          case '~': return ~_expressionResult;
-          default: break;
+          case '~': result = ~result; break;
+          default: return '';
         }
-        return '';
+        if (this.ahkVersion.mejor <= 1.1 && isFloat(result)) {
+          return String(result);
+        }
+        return result;
       }
       default: break;
     }
@@ -1109,7 +1112,7 @@ export class ExpressionEvaluator {
     }
     else if (library) {
       const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));
-      const result = library(this.session, stackFrame, ...args);
+      const result = await library(this.session, stackFrame, ...args);
       return result;
     }
     return '';

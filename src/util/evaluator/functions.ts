@@ -322,6 +322,19 @@ const isNumber: LibraryFunc = async(session, stackFrame, value) => {
 };
 imcopatibleFunctions_for_v1.set('IsNumber', isNumber);
 copatibleFunctions_for_v2.set('IsNumber', isNumber);
+
+const isDigit: LibraryFunc = async(session, stackFrame, value) => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  if ((/^\d+$/u).test(value)) {
+    return getTrue(session, stackFrame);
+  }
+  return getFalse(session, stackFrame);
+};
+imcopatibleFunctions_for_v1.set('IsDigit', isDigit);
+copatibleFunctions_for_v2.set('IsDigit', isDigit);
 // #endregion Compatibility functions with AutoHotkey
 
 // #region Incompatible functions with AutoHotkey

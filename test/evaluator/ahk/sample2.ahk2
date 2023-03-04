@@ -5,23 +5,23 @@
 testResults := Map()
 
 ; #region Predicate functions
-for i, funcName in [ "IsInteger", "IsFloat", "IsNumber" ] {
-  testResults[funcName . '("abc")'] := %funcName%("abc")
-  testResults[funcName . '("ABC")'] := %funcName%("ABC")
-  testResults[funcName . '("abcABC")'] := %funcName%("abcABC")
-  testResults[funcName . '(" ")'] := %funcName%(" ")
-  testResults[funcName . '(123)'] := %funcName%(123)
-  testResults[funcName . '("123")'] := %funcName%("123")
-  testResults[funcName . '(-123)'] := %funcName%(-123)
-  testResults[funcName . '("-123")'] := %funcName%("-123")
-  testResults[funcName . '(123.456)'] := %funcName%(123.456)
-  testResults[funcName . '("123.456")'] := %funcName%("123.456")
-  testResults[funcName . '(-123.456)'] := %funcName%(-123.456)
-  testResults[funcName . '("-123.456")'] := %funcName%("-123.456")
-  testResults[funcName . '(0x123)'] := %funcName%(0x123)
-  testResults[funcName . '("0x123")'] := %funcName%("0x123")
-  testResults[funcName . '(-0x123)'] := %funcName%(-0x123)
-  testResults[funcName . '("-0x123")'] := %funcName%("-0x123")
+for i, funcName in [ "IsInteger", "IsFloat", "IsNumber", "IsDigit" ] {
+  testResults[funcName . '("abc")'] := SafeCall(() => %funcName%("abc"))
+  testResults[funcName . '("ABC")'] := SafeCall(() => %funcName%("ABC"))
+  testResults[funcName . '("abcABC")'] := SafeCall(() => %funcName%("abcABC"))
+  testResults[funcName . '(" ")'] := SafeCall(() => %funcName%(" "))
+  testResults[funcName . '(123)'] := SafeCall(() => %funcName%(123))
+  testResults[funcName . '("123")'] := SafeCall(() => %funcName%("123"))
+  testResults[funcName . '(-123)'] := SafeCall(() => %funcName%(-123))
+  testResults[funcName . '("-123")'] := SafeCall(() => %funcName%("-123"))
+  testResults[funcName . '(123.456)'] := SafeCall(() => %funcName%(123.456))
+  testResults[funcName . '("123.456")'] := SafeCall(() => %funcName%("123.456"))
+  testResults[funcName . '(-123.456)'] := SafeCall(() => %funcName%(-123.456))
+  testResults[funcName . '("-123.456")'] := SafeCall(() => %funcName%("-123.456"))
+  testResults[funcName . '(0x123)'] := SafeCall(() => %funcName%(0x123))
+  testResults[funcName . '("0x123")'] := SafeCall(() => %funcName%("0x123"))
+  testResults[funcName . '(-0x123)'] := SafeCall(() => %funcName%(-0x123))
+  testResults[funcName . '("-0x123")'] := SafeCall(() => %funcName%("-0x123"))
 }
 ; #endregion Predicate functions
 

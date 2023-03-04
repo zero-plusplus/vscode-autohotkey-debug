@@ -988,30 +988,39 @@ describe('Tests of functions compatible only with v2', (): void => {
   });
 
   test('eval libraries - Predicate functions', async(): Promise<void> => {
-    for await (const funcName of [ 'IsInteger', 'IsFloat', 'IsNumber' ]) {
-      const expressions = [
-        `${funcName}("abc")`,
-        `${funcName}("ABC")`,
-        `${funcName}("abcABC")`,
-        `${funcName}(" ")`,
-        `${funcName}(123)`,
-        `${funcName}("123")`,
-        `${funcName}(123.456)`,
-        `${funcName}("123.456")`,
-        `${funcName}(-123)`,
-        `${funcName}("-123")`,
-        `${funcName}(-123.456)`,
-        `${funcName}("-123.456")`,
-        `${funcName}(0x123)`,
-        `${funcName}("0x123")`,
-        `${funcName}(-0x123)`,
-        `${funcName}("-0x123")`,
-      ];
+    const dataList = [
+      `"abc"`,
+      `"ABC"`,
+      `"abcABC"`,
+      `" "`,
+      `123`,
+      `"123"`,
+      `123.456`,
+      `"123.456"`,
+      `-123`,
+      `"-123"`,
+      `-123.456`,
+      `"-123.456"`,
+      `0x123`,
+      `"0x123"`,
+      `-0x123`,
+      `"-0x123"`,
+    ];
 
-      for await (const expression of expressions) {
-        const [ actual, expected, message ] = await testApi_v2(expression);
-        assert.strictEqual(actual, expected, message);
-        assert.strictEqual(String(actual), await evaluator_v1.eval(expression), expression);
+    for await (const funcName of [ 'IsInteger', 'IsFloat', 'IsNumber', 'IsDigit' ]) {
+      for await (const data of dataList) {
+        const expression = `${funcName}(${data})`;
+        const [ actual_v2, expected, message ] = await testApi_v2(expression);
+        assert.strictEqual(actual_v2, expected, message);
+
+        // v1 treats floating points as strings, so the same function gives different results
+        const actual_v1 = await evaluator_v1.eval(expression);
+        if (isFloat(Number(data))) {
+          const actual_v2 = await evaluator_v2.eval(`${funcName}("${data}")`);
+          assert.strictEqual(String(actual_v2), actual_v1, expression);
+          continue;
+        }
+        assert.strictEqual(String(actual_v2), actual_v1, expression);
       }
     }
   });
