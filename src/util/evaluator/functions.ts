@@ -297,6 +297,20 @@ const isFloat: LibraryFunc = async(session, stackFrame, value) => {
 };
 imcopatibleFunctions_for_v1.set('IsFloat', isFloat);
 copatibleFunctions_for_v2.set('IsFloat', isFloat);
+
+const isNumber: LibraryFunc = async(session, stackFrame, value) => {
+  const num = toNumber(value);
+  if (num === '') {
+    return getFalse(session, stackFrame);
+  }
+
+  if (typeof num === 'number') {
+    return getTrue(session, stackFrame);
+  }
+  return getFalse(session, stackFrame);
+};
+imcopatibleFunctions_for_v1.set('IsNumber', isNumber);
+copatibleFunctions_for_v2.set('IsNumber', isNumber);
 // #endregion Compatibility functions with AutoHotkey
 
 // #region Incompatible functions with AutoHotkey
@@ -338,23 +352,6 @@ const isString: LibraryFunc = async(session, stackFrame, value) => {
 };
 imcopatibleFunctions_for_v1.set('IsString', isString);
 imcopatibleFunctions_for_v2.set('IsString', isString);
-
-const isNumber: LibraryFunc = async(session, stackFrame, value) => {
-  return typeof value === 'number' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsNumber', isNumber);
-imcopatibleFunctions_for_v2.set('IsNumber', isNumber);
-
-const isNumberLike: LibraryFunc = async(session, stackFrame, value) => {
-  switch (typeof value) {
-    case 'string': return isNumber(session, stackFrame, toNumber(value));
-    case 'number': return getTrue(session, stackFrame);
-    default: break;
-  }
-  return getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsNumberLike', isNumberLike);
-imcopatibleFunctions_for_v2.set('IsNumberLike', isNumberLike);
 
 const isHexLike: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {

@@ -5,7 +5,7 @@
 testResults := Map()
 
 ; #region Predicate functions
-for i, funcName in [ "IsInteger", "IsFloat" ] {
+for i, funcName in [ "IsInteger", "IsFloat", "IsNumber" ] {
   testResults[funcName . '("abc")'] := %funcName%("abc")
   testResults[funcName . '("123")'] := %funcName%("123")
   testResults[funcName . '(123)'] := %funcName%(123)
