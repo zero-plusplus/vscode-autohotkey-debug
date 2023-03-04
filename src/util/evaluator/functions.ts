@@ -220,6 +220,10 @@ copatibleFunctions_for_v2.set('Log', log);
 const ln = createMathFunction('log');
 copatibleFunctions_for_v1.set('Ln', ln);
 copatibleFunctions_for_v2.set('Ln', ln);
+
+const round = createMathFunction('round', returnZero);
+copatibleFunctions_for_v1.set('Round', round);
+copatibleFunctions_for_v2.set('Round', round);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
