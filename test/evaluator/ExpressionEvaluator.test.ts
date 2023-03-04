@@ -988,7 +988,7 @@ describe('Tests of functions compatible only with v2', (): void => {
   });
 
   test('eval libraries - Predicate functions', async(): Promise<void> => {
-    for await (const funcName of [ 'IsInteger' ]) {
+    for await (const funcName of [ 'IsInteger', 'IsFloat' ]) {
       const expressions = [
         `${funcName}("abc")`,
         `${funcName}("123")`,
