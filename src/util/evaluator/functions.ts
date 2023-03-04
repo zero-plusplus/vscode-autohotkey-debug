@@ -236,6 +236,10 @@ copatibleFunctions_for_v2.set('Sin', sin);
 const cos = createMathFunction('cos', returnZero);
 copatibleFunctions_for_v1.set('Cos', cos);
 copatibleFunctions_for_v2.set('Cos', cos);
+
+const tan = createMathFunction('tan', returnZero);
+copatibleFunctions_for_v1.set('Tan', tan);
+copatibleFunctions_for_v2.set('Tan', tan);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
