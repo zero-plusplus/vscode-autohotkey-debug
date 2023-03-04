@@ -252,6 +252,21 @@ copatibleFunctions_for_v2.set('ACos', acos);
 const atan = createMathFunction('atan', returnZero);
 copatibleFunctions_for_v1.set('ATan', atan);
 copatibleFunctions_for_v2.set('ATan', atan);
+
+const max: LibraryFunc = async(session, stackFrame, ...values) => {
+  const numbers = values.map((element) => toNumber(element)).filter((element): element is number => typeof element === 'number');
+  if (values.length !== numbers.length) {
+    return Promise.resolve('');
+  }
+
+  const result = Math.max(...numbers);
+  if (isInfinite(result)) {
+    return Promise.resolve('');
+  }
+  return Promise.resolve(result);
+};
+copatibleFunctions_for_v1.set('Max', max);
+copatibleFunctions_for_v2.set('Max', max);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey

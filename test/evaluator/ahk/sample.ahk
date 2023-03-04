@@ -101,6 +101,12 @@ for i, funcName in [ "Abs", "Ceil", "Exp", "Floor", "Log", "Ln", "Round", "Sqrt"
   testResults[funcName . "(str_alpha)"] := %funcName%(str_alpha)
   testResults[funcName . "(obj)"] := %funcName%(obj)
 }
+
+; #region Max
+testResults["Max(1, ""2"", 3)"] := Max(1, "2", 3)
+testResults["Max(""a"", ""b"", ""c"")"] := Max("a", "b", "c")
+testResults["Max(""1"", ""b"", ""c"")"] := Max("1", "b", "c")
+; #endregion Max
 ; #endregion Math
 
 ; #region StrLen
