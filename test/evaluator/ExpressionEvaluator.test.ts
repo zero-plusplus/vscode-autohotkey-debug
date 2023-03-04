@@ -487,9 +487,11 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
       assert.strictEqual(...await testApi(`${funcName}(obj)`));
     }
 
-    assert.strictEqual(...await testApi(`Max(1, "2", 3)`));
-    assert.strictEqual(...await testApi(`Max("a", "b", "c")`));
-    assert.strictEqual(...await testApi(`Max("1", "b", "c")`));
+    for await (const funcName of [ 'Max', 'Min' ]) {
+      assert.strictEqual(...await testApi(`${funcName}(1, "2", 3)`));
+      assert.strictEqual(...await testApi(`${funcName}("a", "b", "c")`));
+      assert.strictEqual(...await testApi(`${funcName}("1", "b", "c")`));
+    }
   });
   // #endregion Compatible functions
 
@@ -894,9 +896,11 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
       assert.strictEqual(...await testApi(`${funcName}(obj)`));
     }
 
-    assert.strictEqual(...await testApi(`Max(1, "2", 3)`));
-    assert.strictEqual(...await testApi(`Max("a", "b", "c")`));
-    assert.strictEqual(...await testApi(`Max("1", "b", "c")`));
+    for await (const funcName of [ 'Max', 'Min' ]) {
+      assert.strictEqual(...await testApi(`${funcName}(1, "2", 3)`));
+      assert.strictEqual(...await testApi(`${funcName}("a", "b", "c")`));
+      assert.strictEqual(...await testApi(`${funcName}("1", "b", "c")`));
+    }
   });
 
   test('eval libraries (StrLen)', async(): Promise<void> => {

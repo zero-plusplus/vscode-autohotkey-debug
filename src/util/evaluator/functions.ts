@@ -253,20 +253,28 @@ const atan = createMathFunction('atan', returnZero);
 copatibleFunctions_for_v1.set('ATan', atan);
 copatibleFunctions_for_v2.set('ATan', atan);
 
-const max: LibraryFunc = async(session, stackFrame, ...values) => {
-  const numbers = values.map((element) => toNumber(element)).filter((element): element is number => typeof element === 'number');
-  if (values.length !== numbers.length) {
-    return Promise.resolve('');
-  }
+const createMaxMinFunction = (funcName: 'max' | 'min'): LibraryFunc => {
+  return async(session, stackFrame, ...values) => {
+    const numbers = values.map((element) => toNumber(element)).filter((element): element is number => typeof element === 'number');
+    if (values.length !== numbers.length) {
+      return Promise.resolve('');
+    }
 
-  const result = Math.max(...numbers);
-  if (isInfinite(result)) {
-    return Promise.resolve('');
-  }
-  return Promise.resolve(result);
+    const result = Math[funcName](...numbers);
+    if (isInfinite(result)) {
+      return Promise.resolve('');
+    }
+    return Promise.resolve(result);
+  };
 };
+
+const max = createMaxMinFunction('max');
 copatibleFunctions_for_v1.set('Max', max);
 copatibleFunctions_for_v2.set('Max', max);
+
+const min = createMaxMinFunction('min');
+copatibleFunctions_for_v1.set('Min', min);
+copatibleFunctions_for_v2.set('Min', min);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey

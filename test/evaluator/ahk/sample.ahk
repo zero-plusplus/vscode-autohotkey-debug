@@ -102,11 +102,13 @@ for i, funcName in [ "Abs", "Ceil", "Exp", "Floor", "Log", "Ln", "Round", "Sqrt"
   testResults[funcName . "(obj)"] := %funcName%(obj)
 }
 
-; #region Max
-testResults["Max(1, ""2"", 3)"] := Max(1, "2", 3)
-testResults["Max(""a"", ""b"", ""c"")"] := Max("a", "b", "c")
-testResults["Max(""1"", ""b"", ""c"")"] := Max("1", "b", "c")
-; #endregion Max
+; #region Max, Min
+for i, funcName in [ "Max", "Min" ] {
+  testResults[funcName . "(1, ""2"", 3)"] := %funcName%(1, "2", 3)
+  testResults[funcName . "(""a"", ""b"", ""c"")"] := %funcName%("a", "b", "c")
+  testResults[funcName . "(""1"", ""b"", ""c"")"] := %funcName%("1", "b", "c")
+}
+; #endregion Max, Min
 ; #endregion Math
 
 ; #region StrLen
