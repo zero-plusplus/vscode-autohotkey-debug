@@ -91,7 +91,7 @@ testResults["ObjCount(undefined)"] := ObjCount(undefined)
 ; #endregion ObjCount
 
 ; #region Math
-for i, funcName in [ "Abs", "Ceil", "Exp", "Floor", "Log", "Ln", "Round", "Sqrt", "Sin" ] {
+for i, funcName in [ "Abs", "Ceil", "Exp", "Floor", "Log", "Ln", "Round", "Sqrt", "Sin", "Cos" ] {
   testResults[funcName . "(0)"] := %funcName%(0)
   testResults[funcName . "(3)"] := %funcName%(3)
   testResults[funcName . "(-3)"] := %funcName%(-3)

@@ -232,6 +232,10 @@ copatibleFunctions_for_v2.set('Sqrt', sqrt);
 const sin = createMathFunction('sin', returnZero);
 copatibleFunctions_for_v1.set('Sin', sin);
 copatibleFunctions_for_v2.set('Sin', sin);
+
+const cos = createMathFunction('cos', returnZero);
+copatibleFunctions_for_v1.set('Cos', cos);
+copatibleFunctions_for_v2.set('Cos', cos);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
