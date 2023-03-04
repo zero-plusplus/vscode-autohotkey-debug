@@ -30,6 +30,16 @@ export const isNumberLike = (value: any): boolean => {
   }
   return false;
 };
+export const isFloat = (value): value is number => {
+  const value_num = Number(value);
+  if (!isFinite(value_num)) {
+    return false;
+  }
+  if ((value % 1) === 0) {
+    return false;
+  }
+  return true;
+};
 export const isFloatLike = (value): boolean => {
   if (!isNumberLike(value)) {
     return false;

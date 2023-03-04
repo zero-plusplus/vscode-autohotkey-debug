@@ -137,19 +137,20 @@ const objCount: LibraryFunc = async(session, stackFrame, value) => {
 copatibleFunctions_for_v1.set('ObjCount', objCount);
 copatibleFunctions_for_v2.set('ObjOwnPropCount', objCount);
 
-type MathFunctionResolve = (value: any, session: dbgp.Session, stackFrame?: dbgp.StackFrame) => string | number;
-const createMathFunction = (nameOrCallable: keyof typeof Math | ((value: number) => number), resolve?: MathFunctionResolve): LibraryFunc => {
-  const _resolve: MathFunctionResolve = resolve ?? ((value): string | number => {
+const createResolve = (defaultValueResolver: (session: dbgp.Session) => string | number): MathFunctionResolve => {
+  return (value, session) => {
     if (isInfinite(value)) {
       return '';
     }
 
-    if (typeof value === 'string' || typeof value === 'number') {
+    if (typeof value === 'number') {
       return value;
     }
-    return '';
-  });
-
+    return defaultValueResolver(session);
+  };
+};
+type MathFunctionResolve = (value: any, session: dbgp.Session, stackFrame?: dbgp.StackFrame) => string | number;
+const createMathFunction = (nameOrCallable: keyof typeof Math | ((value: number) => number), resolve: MathFunctionResolve): LibraryFunc => {
   return async(session, stackFrame, value) => {
     if (value === '') {
       return '';
@@ -157,7 +158,7 @@ const createMathFunction = (nameOrCallable: keyof typeof Math | ((value: number)
 
     const num = toNumber(value);
     if (num === '') {
-      return Promise.resolve(_resolve('', session, stackFrame));
+      return Promise.resolve(resolve('', session, stackFrame));
     }
 
     const mathFunction = typeof nameOrCallable === 'function' ? nameOrCallable : Math[nameOrCallable];
@@ -165,93 +166,60 @@ const createMathFunction = (nameOrCallable: keyof typeof Math | ((value: number)
       throw Error('not function');
     }
 
-    const result = _resolve(mathFunction(num), session, stackFrame);
+    const result = resolve(mathFunction(num), session, stackFrame);
     if (typeof result === 'number') {
       return Promise.resolve(2 <= session.ahkVersion.mejor ? result : toNumber(result.toFixed(6)));
     }
     return Promise.resolve(result);
   };
 };
-const returnZero: MathFunctionResolve = (value, session) => {
-  if (isInfinite(value)) {
-    return '';
-  }
+const returnBlank: MathFunctionResolve = createResolve(() => '');
+const returnZero: MathFunctionResolve = createResolve(() => 0);
+const returnOne: MathFunctionResolve = createResolve((session) => (2 <= session.ahkVersion.mejor ? 1.0 : 1));
 
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (2 <= session.ahkVersion.mejor) {
-    return '';
-  }
-  return 0;
-};
-const returnOne: MathFunctionResolve = (value, session) => {
-  if (isInfinite(value)) {
-    return '';
-  }
+copatibleFunctions_for_v1.set('Abs', createMathFunction('abs', returnBlank));
+copatibleFunctions_for_v2.set('Abs', createMathFunction('abs', returnBlank));
 
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (2 <= session.ahkVersion.mejor) {
-    return 1.0;
-  }
-  return 1;
-};
-
-copatibleFunctions_for_v1.set('Abs', createMathFunction('abs'));
-copatibleFunctions_for_v2.set('Abs', createMathFunction('abs', returnZero));
-
-const ceil = createMathFunction('ceil', returnZero);
-copatibleFunctions_for_v1.set('Ceil', ceil);
-copatibleFunctions_for_v2.set('Ceil', ceil);
+copatibleFunctions_for_v1.set('Ceil', createMathFunction('ceil', returnZero));
+copatibleFunctions_for_v2.set('Ceil', createMathFunction('ceil', returnBlank));
 
 copatibleFunctions_for_v1.set('Exp', createMathFunction('exp', returnOne));
-copatibleFunctions_for_v2.set('Exp', createMathFunction('exp', returnZero));
+copatibleFunctions_for_v2.set('Exp', createMathFunction('exp', returnBlank));
 
-const floor = createMathFunction('floor', returnZero);
-copatibleFunctions_for_v1.set('Floor', floor);
-copatibleFunctions_for_v2.set('Floor', floor);
+copatibleFunctions_for_v1.set('Floor', createMathFunction('floor', returnZero));
+copatibleFunctions_for_v2.set('Floor', createMathFunction('floor', returnBlank));
 
-const log = createMathFunction('log10');
+const log = createMathFunction('log10', returnBlank);
 copatibleFunctions_for_v1.set('Log', log);
 copatibleFunctions_for_v2.set('Log', log);
 
-const ln = createMathFunction('log');
+const ln = createMathFunction('log', returnBlank);
 copatibleFunctions_for_v1.set('Ln', ln);
 copatibleFunctions_for_v2.set('Ln', ln);
 
-const round = createMathFunction('round', returnZero);
-copatibleFunctions_for_v1.set('Round', round);
-copatibleFunctions_for_v2.set('Round', round);
+copatibleFunctions_for_v1.set('Round', createMathFunction('round', returnZero));
+copatibleFunctions_for_v2.set('Round', createMathFunction('round', returnBlank));
 
-const sqrt = createMathFunction('sqrt', returnZero);
-copatibleFunctions_for_v1.set('Sqrt', sqrt);
-copatibleFunctions_for_v2.set('Sqrt', sqrt);
+copatibleFunctions_for_v1.set('Sqrt', createMathFunction('sqrt', returnZero));
+copatibleFunctions_for_v2.set('Sqrt', createMathFunction('sqrt', returnBlank));
 
-const sin = createMathFunction('sin', returnZero);
-copatibleFunctions_for_v1.set('Sin', sin);
-copatibleFunctions_for_v2.set('Sin', sin);
+copatibleFunctions_for_v1.set('Sin', createMathFunction('sin', returnZero));
+copatibleFunctions_for_v2.set('Sin', createMathFunction('sin', returnBlank));
 
-const cos = createMathFunction('cos', returnZero);
-copatibleFunctions_for_v1.set('Cos', cos);
-copatibleFunctions_for_v2.set('Cos', cos);
+copatibleFunctions_for_v1.set('Cos', createMathFunction('cos', returnOne));
+copatibleFunctions_for_v2.set('Cos', createMathFunction('cos', returnBlank));
 
-const tan = createMathFunction('tan', returnZero);
-copatibleFunctions_for_v1.set('Tan', tan);
-copatibleFunctions_for_v2.set('Tan', tan);
+copatibleFunctions_for_v1.set('Tan', createMathFunction('tan', returnZero));
+copatibleFunctions_for_v2.set('Tan', createMathFunction('tan', returnBlank));
 
-const asin = createMathFunction('asin', returnZero);
-copatibleFunctions_for_v1.set('ASin', asin);
-copatibleFunctions_for_v2.set('ASin', asin);
+copatibleFunctions_for_v1.set('ASin', createMathFunction('asin', returnZero));
+copatibleFunctions_for_v2.set('ASin', createMathFunction('asin', returnBlank));
 
-const acos = createMathFunction('acos', returnZero);
-copatibleFunctions_for_v1.set('ACos', acos);
-copatibleFunctions_for_v2.set('ACos', acos);
+copatibleFunctions_for_v1.set('ACos', createMathFunction('acos', createResolve(() => 1.570796)));
+copatibleFunctions_for_v2.set('ACos', createMathFunction('acos', returnBlank));
 
-const atan = createMathFunction('atan', returnZero);
-copatibleFunctions_for_v1.set('ATan', atan);
-copatibleFunctions_for_v2.set('ATan', atan);
+copatibleFunctions_for_v1.set('ATan', createMathFunction('atan', returnZero));
+copatibleFunctions_for_v2.set('ATan', createMathFunction('atan', returnBlank));
 
 const createMaxMinFunction = (funcName: 'max' | 'min'): LibraryFunc => {
   return async(session, stackFrame, ...values) => {
@@ -310,7 +278,8 @@ imcopatibleFunctions_for_v1.set('StrLen', strLen);
 copatibleFunctions_for_v2.set('StrLen', strLen);
 
 const isInteger: LibraryFunc = async(session, stackFrame, value) => {
-  if (typeof value === 'number' && Number.isInteger(value)) {
+  const num = toNumber(value);
+  if (typeof num === 'number' && Number.isInteger(num)) {
     return getTrue(session, stackFrame);
   }
   return getFalse(session, stackFrame);

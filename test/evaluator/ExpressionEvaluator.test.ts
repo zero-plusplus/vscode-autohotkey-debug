@@ -8,6 +8,7 @@ import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/Ex
 import { getFalse, getTrue } from '../../src/util/evaluator/functions';
 import { MetaVariableValueMap } from '../../src/util/VariableManager';
 import { closeSession, launchDebug } from '../util';
+import { isFloat } from '../../src/util/util';
 
 type ApiTester = (expression: string) => Promise<[ string | number, string | number, string ]>;
 const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
@@ -27,7 +28,7 @@ const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
     if (expected instanceof dbgp.ObjectProperty && _actual instanceof dbgp.ObjectProperty) {
       return [ _actual.address, expected.address, expression ];
     }
-    if (typeof expected === 'number' && typeof _actual === 'number') {
+    if (isFloat(expected) && isFloat(_actual)) {
       return [ expected.toFixed(6), expected.toFixed(6), expression ];
     }
     if ((typeof expected === 'string' || typeof expected === 'number') && (typeof _actual === 'string' || typeof _actual === 'number')) {
@@ -528,13 +529,6 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   //     expect(await evaluator.eval('IsNumberLike(arr)')).toBe(false_ahk);
   //   });
   //
-  //   test('eval libraries (IsInteger)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsInteger(num_int)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsInteger(num_int_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsInteger(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsInteger(arr)')).toBe(false_ahk);
-  //   });
-  //
   //   test('eval libraries (IsIntegerLike)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsIntegerLike(num_int)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsIntegerLike(num_int_like)')).toBe(true_ahk);
@@ -934,12 +928,6 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   //     expect(await evaluator.eval('IsNumberLike(num_int_like)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsNumberLike(arr)')).toBe(false_ahk);
   //   });
-  //   test('eval libraries (IsInteger)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsInteger(num_int)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsInteger(num_int_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsInteger(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsInteger(arr)')).toBe(false_ahk);
-  //   });
   //   test('eval libraries (IsIntegerLike)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsIntegerLike(num_int)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsIntegerLike(num_int_like)')).toBe(true_ahk);
@@ -961,6 +949,65 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   //     expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false_ahk);
   //     expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false_ahk);
   //   });
+  test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
+  });
+});
+
+describe('Tests of functions compatible only with v2', (): void => {
+  let process_v1: ChildProcess;
+  let server_v1: net.Server | undefined;
+  let session_v1: dbgp.Session;
+  let evaluator_v1: ExpressionEvaluator;
+
+  let testApi_v2: ApiTester;
+  let process_v2: ChildProcess;
+  let server_v2: net.Server | undefined;
+  let session_v2: dbgp.Session;
+  let evaluator_v2: ExpressionEvaluator;
+
+  beforeAll(async() => {
+    const data_v1 = await launchDebug('AutoHotkey.exe', path.resolve(sampleDir, 'sample2.ahk'), 50000, hostname);
+    process_v1 = data_v1.process;
+    server_v1 = data_v1.server;
+    session_v1 = data_v1.session;
+    evaluator_v1 = new ExpressionEvaluator(session_v1);
+
+    const data_v2 = await launchDebug('v2/AutoHotkey.exe', path.resolve(sampleDir, 'sample2.ahk2'), 50001, hostname);
+    process_v2 = data_v2.process;
+    server_v2 = data_v2.server;
+    session_v2 = data_v2.session;
+    await session_v2.sendFeatureSetCommand('max_children', 10000);
+    evaluator_v2 = new ExpressionEvaluator(session_v2);
+    testApi_v2 = createTestApi(evaluator_v2);
+  });
+  afterAll(async() => {
+    server_v1?.close();
+    server_v2?.close();
+    await closeSession(session_v1, process_v1);
+    await closeSession(session_v2, process_v2);
+  });
+
+  test('eval libraries - Predicate functions', async(): Promise<void> => {
+    for await (const funcName of [ 'IsInteger' ]) {
+      const expressions = [
+        `${funcName}("abc")`,
+        `${funcName}("123")`,
+        `${funcName}(123)`,
+        `${funcName}(123.456)`,
+        `${funcName}(-123)`,
+        `${funcName}(-123.456)`,
+        `${funcName}(0x123)`,
+        `${funcName}(-0x123)`,
+      ];
+
+      for await (const expression of expressions) {
+        const [ actual, expected, message ] = await testApi_v2(expression);
+        assert.strictEqual(actual, expected, message);
+        assert.strictEqual(String(actual), await evaluator_v1.eval(expression), expression);
+      }
+    }
+  });
+
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });

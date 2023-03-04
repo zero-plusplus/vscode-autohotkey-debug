@@ -1,5 +1,6 @@
 ﻿#SingleInstance
 #Warn All, StdOut
+#Include ./lib/SafeCall.ahk2
 
 abc := "str"
 a := "a"
@@ -134,13 +135,4 @@ class T2 {
   baseMethod() {
   }
 }
-
-SafeCall(callable) {
-  try {
-    result := callable()
-    return result
-  }
-  return ""
-}
-
 ExitApp
