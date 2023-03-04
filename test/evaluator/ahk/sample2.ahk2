@@ -5,7 +5,7 @@
 testResults := Map()
 
 ; #region Predicate functions
-for i, funcName in [ "IsInteger", "IsFloat", "IsNumber", "IsDigit" ] {
+for i, funcName in [ "IsInteger", "IsFloat", "IsNumber", "IsDigit", "IsXDigit" ] {
   testResults[funcName . '("abc")'] := SafeCall(() => %funcName%("abc"))
   testResults[funcName . '("ABC")'] := SafeCall(() => %funcName%("ABC"))
   testResults[funcName . '("abcABC")'] := SafeCall(() => %funcName%("abcABC"))
