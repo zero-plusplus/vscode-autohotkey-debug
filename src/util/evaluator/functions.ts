@@ -275,6 +275,21 @@ copatibleFunctions_for_v2.set('Max', max);
 const min = createMaxMinFunction('min');
 copatibleFunctions_for_v1.set('Min', min);
 copatibleFunctions_for_v2.set('Min', min);
+
+const mod: LibraryFunc = async(session, stackFrame, ...values) => {
+  const numbers = values.map((element) => toNumber(element)).filter((element): element is number => typeof element === 'number');
+  if (values.length !== numbers.length) {
+    return Promise.resolve('');
+  }
+  if (numbers.length !== 2) {
+    return Promise.resolve('');
+  }
+
+  const [ dividend, divisor ] = numbers;
+  return Promise.resolve(dividend % divisor);
+};
+copatibleFunctions_for_v1.set('Mod', mod);
+copatibleFunctions_for_v2.set('Mod', mod);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey

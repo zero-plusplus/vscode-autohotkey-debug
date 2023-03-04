@@ -109,6 +109,11 @@ for i, funcName in [ "Max", "Min" ] {
   testResults[funcName . "(""1"", ""b"", ""c"")"] := %funcName%("1", "b", "c")
 }
 ; #endregion Max, Min
+
+; #region Mod
+testResults["Mod(7.5, ""2"")"] := Mod(7.5, "2")
+testResults["Mod(2, ""b"")"] := Mod(2, "b")
+; #endregion Mod
 ; #endregion Math
 
 ; #region StrLen

@@ -492,6 +492,9 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
       assert.strictEqual(...await testApi(`${funcName}("a", "b", "c")`));
       assert.strictEqual(...await testApi(`${funcName}("1", "b", "c")`));
     }
+
+    assert.strictEqual(...await testApi(`Mod(7.5, "2")`));
+    assert.strictEqual(...await testApi(`Mod(2, "b")`));
   });
   // #endregion Compatible functions
 
@@ -901,6 +904,9 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
       assert.strictEqual(...await testApi(`${funcName}("a", "b", "c")`));
       assert.strictEqual(...await testApi(`${funcName}("1", "b", "c")`));
     }
+
+    assert.strictEqual(...await testApi(`Mod(7.5, "2")`));
+    assert.strictEqual(...await testApi(`Mod(2, "b")`));
   });
 
   test('eval libraries (StrLen)', async(): Promise<void> => {
