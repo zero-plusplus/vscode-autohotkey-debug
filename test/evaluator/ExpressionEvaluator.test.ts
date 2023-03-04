@@ -991,13 +991,21 @@ describe('Tests of functions compatible only with v2', (): void => {
     for await (const funcName of [ 'IsInteger', 'IsFloat', 'IsNumber' ]) {
       const expressions = [
         `${funcName}("abc")`,
-        `${funcName}("123")`,
+        `${funcName}("ABC")`,
+        `${funcName}("abcABC")`,
+        `${funcName}(" ")`,
         `${funcName}(123)`,
+        `${funcName}("123")`,
         `${funcName}(123.456)`,
+        `${funcName}("123.456")`,
         `${funcName}(-123)`,
+        `${funcName}("-123")`,
         `${funcName}(-123.456)`,
+        `${funcName}("-123.456")`,
         `${funcName}(0x123)`,
+        `${funcName}("0x123")`,
         `${funcName}(-0x123)`,
+        `${funcName}("-0x123")`,
       ];
 
       for await (const expression of expressions) {

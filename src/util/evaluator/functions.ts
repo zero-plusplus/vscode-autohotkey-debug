@@ -23,8 +23,19 @@ export const toBoolean = async(session: dbgp.Session, stackFrame: dbgp.StackFram
   return getTrue(session, stackFrame);
 };
 export const toNumber = (value: any): number | '' => {
+  if ((/^\s+$/u).test(String(value))) {
+    return '';
+  }
+  if ((/^-0x/ui).test(String(value))) {
+    const number = Number(String(value).slice(1));
+    if (!isFinite(number)) {
+      return '';
+    }
+    return -number;
+  }
+
   const number = Number(value);
-  if (isNaN(number)) {
+  if (!isFinite(number)) {
     return '';
   }
   return number;
