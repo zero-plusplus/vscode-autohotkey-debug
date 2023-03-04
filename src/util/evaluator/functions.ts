@@ -216,6 +216,10 @@ copatibleFunctions_for_v2.set('Floor', floor);
 const log = createMathFunction('log10');
 copatibleFunctions_for_v1.set('Log', log);
 copatibleFunctions_for_v2.set('Log', log);
+
+const ln = createMathFunction('log');
+copatibleFunctions_for_v1.set('Ln', ln);
+copatibleFunctions_for_v2.set('Ln', ln);
 // #endregion Compatible functions with AutoHotkey
 
 // #region Compatibility functions with AutoHotkey
