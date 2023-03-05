@@ -503,12 +503,22 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
   // #region Compatibility functions
   test('eval libraries (StrLen)', async(): Promise<void> => {
-    expect(await testApi(`StrLen(str_alpha)`)).toBeTruthy();
-    expect(await testApi(`StrLen(num_int)`)).toBeTruthy();
-    expect(await testApi(`StrLen(obj)`)).toBeTruthy();
+    assert.strictEqual(...await testApi(`StrLen(str_alpha)`));
+    assert.strictEqual(...await testApi(`StrLen(num_int)`));
+    assert.strictEqual(...await testApi(`StrLen(obj)`));
 
     expect(await evaluator.eval(`StrLen(num_hex)`)).not.toBe(5);
   });
+
+  //   test('eval libraries (InStr)', async(): Promise<void> => {
+  //     assert.strictEqual(...await testApi(`InStr("abc", "B")`));
+  //     assert.strictEqual(...await testApi(`InStr("abc", "B", false)`));
+  //     assert.strictEqual(...await testApi(`InStr("abc", "b", true)`));
+  //     assert.strictEqual(...await testApi(`InStr("abc", "b", "true")`));
+  //     assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 3)`));
+  //     assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 1, 2)`));
+  //     assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, -2, 1)`));
+  //   });
   // #endregion Compatibility functions
 
   // #region Incompatible functions with AutoHotkey
@@ -912,6 +922,16 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
 
     expect(await evaluator.eval(`StrLen(obj)`)).toBe('');
   });
+
+  // test('eval libraries (InStr)', async(): Promise<void> => {
+  //   assert.strictEqual(...await testApi(`InStr("abc", "B")`));
+  //   assert.strictEqual(...await testApi(`InStr("abc", "B", false)`));
+  //   assert.strictEqual(...await testApi(`InStr("abc", "b", true)`));
+  //   assert.strictEqual(...await testApi(`InStr("abc", "b", "true")`));
+  //   assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 3)`));
+  //   assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 1, 2)`));
+  //   assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, -2, 1)`));
+  // });
   // #endregion Compatible functions
 
   // #region Compatibility functions

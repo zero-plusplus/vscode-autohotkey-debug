@@ -122,6 +122,16 @@ testResults["StrLen(num_int)"] := StrLen(num_int)
 testResults["StrLen(num_hex)"] := StrLen(num_hex)
 testResults["StrLen(obj)"] := StrLen(obj)
 ; #endregion StrLen
+
+; #region InStr
+; testResults["InStr(""abc"", ""B"")"] := InStr("abc", "b")
+; testResults["InStr(""abc"", ""B"", false)"] := InStr("abc", "b", false)
+; testResults["InStr(""abc"", ""b"", true)"] := InStr("abc", "b", true)
+; testResults["InStr(""abc"", ""b"", ""true"")"] := InStr("abc", "b", "true")
+; testResults["InStr(""abcabc"", ""b"", true, 3)"] := InStr("abcabc", "b", true, 3)
+; testResults["InStr(""abcabc"", ""b"", true, 1, 2)"] := InStr("abcabc", "b", true, 1, 2)
+; testResults["InStr(""abcabc"", ""b"", true, -2, 1)"] := InStr("abcabc", "b", true, -2, 1)
+; #endregion InStr
 ; #endregion tests
 
 class T extends T2 {

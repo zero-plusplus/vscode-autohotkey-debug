@@ -363,6 +363,79 @@ copatibleFunctions_for_v2.set('IsUpper', isUpper);
 const isLower = createStringPredicate(/^[a-z]+$/u);
 imcopatibleFunctions_for_v1.set('IsLower', isLower);
 copatibleFunctions_for_v2.set('IsLower', isLower);
+
+// const normalizeCaseSensitive = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, caseSensitive: EvaluatedValue): Promise<'On' | 'Off' | 'Locale' | undefined> => {
+//   if (caseSensitive === undefined) {
+//     return 'Off';
+//   }
+//   if (caseSensitive === await getTrue(session, stackFrame)) {
+//     return 'On';
+//   }
+//   if (caseSensitive === await getFalse(session, stackFrame)) {
+//     return 'Off';
+//   }
+//
+//   if (typeof caseSensitive === 'string') {
+//     if (equalsIgnoreCase(caseSensitive, 'On')) {
+//       return 'On';
+//     }
+//     else if (equalsIgnoreCase(caseSensitive, 'Off')) {
+//       return 'Off';
+//     }
+//     else if (equalsIgnoreCase(caseSensitive, 'Locale')) {
+//       return 'Locale';
+//     }
+//   }
+//
+//   if (2 <= session.ahkVersion.mejor) {
+//     return undefined;
+//   }
+//   return caseSensitive ? 'On' : 'Off';
+// };
+// const inStr: LibraryFunc = async(session, stackFrame, hayStack, needle, caseSensitive?, startingPos = 1, occurance = 1) => {
+//   if (typeof hayStack !== 'string') {
+//     return 2 <= session.ahkVersion.mejor ? '' : 0;
+//   }
+//   if (typeof needle !== 'string') {
+//     return 2 <= session.ahkVersion.mejor ? '' : 0;
+//   }
+//   if (typeof startingPos !== 'number') {
+//     return 2 <= session.ahkVersion.mejor ? '' : 0;
+//   }
+//   if (2 <= session.ahkVersion.mejor && startingPos === 0) {
+//     return '';
+//   }
+//   if (typeof occurance !== 'number') {
+//     return 2 <= session.ahkVersion.mejor ? '' : 0;
+//   }
+//
+//   const normalizedCaseSensitive = await normalizeCaseSensitive(session, stackFrame, caseSensitive);
+//   if (!normalizedCaseSensitive) {
+//     return 2 <= session.ahkVersion.mejor ? '' : 0;
+//   }
+//
+//   // Not support
+//   if (normalizedCaseSensitive === 'Locale') {
+//     return 2 <= session.ahkVersion.mejor ? '' : 0;
+//   }
+//
+//   const _hayStack = normalizedCaseSensitive === 'Off' ? hayStack.toLowerCase() : hayStack;
+//   const _needle = normalizedCaseSensitive === 'Off' ? needle.toLowerCase() : needle;
+//   const isLastFound = 2 <= session.ahkVersion.mejor && occurance !== 1 ? startingPos < 1 : startingPos < 0;
+//
+//   let currentPosition = Math.abs(startingPos - 1);
+//   for (let i = occurance; 0 < i; i--) {
+//     const index = isLastFound ? _hayStack.lastIndexOf(_needle, currentPosition) : _hayStack.indexOf(_needle, currentPosition);
+//     if (index === -1) {
+//       return 0;
+//     }
+//     currentPosition = index + 1;
+//   }
+//   return currentPosition;
+// };
+//
+// imcopatibleFunctions_for_v1.set('InStr', inStr);
+// copatibleFunctions_for_v2.set('InStr', inStr);
 // #endregion Compatibility functions with AutoHotkey
 
 // #region Incompatible functions with AutoHotkey
