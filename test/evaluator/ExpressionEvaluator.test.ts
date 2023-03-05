@@ -992,7 +992,9 @@ describe('Tests of functions compatible only with v2', (): void => {
       `"abc"`,
       `"ABC"`,
       `"abcABC"`,
+      `"abcABC123"`,
       `" "`,
+      `"a b"`,
       `123`,
       `"123"`,
       `123.456`,
@@ -1007,7 +1009,7 @@ describe('Tests of functions compatible only with v2', (): void => {
       `"-0x123"`,
     ];
 
-    for await (const funcName of [ 'IsInteger', 'IsFloat', 'IsNumber', 'IsDigit', 'IsXDigit', 'IsAlpha', 'IsAlnum' ]) {
+    for await (const funcName of [ 'IsInteger', 'IsFloat', 'IsNumber', 'IsDigit', 'IsXDigit', 'IsAlpha', 'IsAlnum', 'IsSpace' ]) {
       for await (const data of dataList) {
         const expression = `${funcName}(${data})`;
         const [ actual_v2, expected, message ] = await testApi_v2(expression);

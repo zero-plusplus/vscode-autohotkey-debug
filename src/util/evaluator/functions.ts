@@ -351,6 +351,10 @@ copatibleFunctions_for_v2.set('IsAlpha', isAlpha);
 const isAlnum = createStringPredicate(/^[a-zA-Z0-9]+$/u);
 imcopatibleFunctions_for_v1.set('IsAlnum', isAlnum);
 copatibleFunctions_for_v2.set('IsAlnum', isAlnum);
+
+const isSpace = createStringPredicate(/^\s+$/u);
+imcopatibleFunctions_for_v1.set('IsSpace', isSpace);
+copatibleFunctions_for_v2.set('IsSpace', isSpace);
 // #endregion Compatibility functions with AutoHotkey
 
 // #region Incompatible functions with AutoHotkey
@@ -428,15 +432,6 @@ const isTime: LibraryFunc = async(session, stackFrame, value) => {
 };
 imcopatibleFunctions_for_v1.set('IsTime', isTime);
 imcopatibleFunctions_for_v2.set('IsTime', isTime);
-
-const isSpace: LibraryFunc = async(session, stackFrame, value) => {
-  if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return getFalse(session, stackFrame);
-  }
-  return (/^\s+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsSpace', isSpace);
-imcopatibleFunctions_for_v2.set('IsSpace', isSpace);
 
 const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
