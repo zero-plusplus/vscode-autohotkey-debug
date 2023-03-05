@@ -323,45 +323,34 @@ const isNumber: LibraryFunc = async(session, stackFrame, value) => {
 imcopatibleFunctions_for_v1.set('IsNumber', isNumber);
 copatibleFunctions_for_v2.set('IsNumber', isNumber);
 
-const isDigit: LibraryFunc = async(session, stackFrame, value) => {
-  if (typeof value !== 'string') {
-    return '';
-  }
+const createStringPredicate = (regexp: RegExp): LibraryFunc => {
+  return async(session, stackFrame, value) => {
+    if (typeof value !== 'string') {
+      return '';
+    }
 
-  if ((/^\d+$/u).test(value)) {
-    return getTrue(session, stackFrame);
-  }
-  return getFalse(session, stackFrame);
+    if (regexp.test(value)) {
+      return getTrue(session, stackFrame);
+    }
+    return getFalse(session, stackFrame);
+  };
 };
+const isDigit = createStringPredicate(/^\d+$/u);
 imcopatibleFunctions_for_v1.set('IsDigit', isDigit);
 copatibleFunctions_for_v2.set('IsDigit', isDigit);
 
-const isXDigit: LibraryFunc = async(session, stackFrame, value) => {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  if ((/^(0x)?[\da-fA-F]+$/u).test(value)) {
-    return getTrue(session, stackFrame);
-  }
-  return getFalse(session, stackFrame);
-};
-
+const isXDigit = createStringPredicate(/^(0x)?[\da-fA-F]+$/u);
 imcopatibleFunctions_for_v1.set('IsXDigit', isXDigit);
 copatibleFunctions_for_v2.set('IsXDigit', isXDigit);
 
-const isAlpha: LibraryFunc = async(session, stackFrame, value) => {
-  if (typeof value !== 'string') {
-    return '';
-  }
-  if ((/^[a-zA-Z]+$/u).test(value)) {
-    return getTrue(session, stackFrame);
-  }
-  return getFalse(session, stackFrame);
-};
+const isAlpha = createStringPredicate(/^[a-zA-Z]+$/u);
 imcopatibleFunctions_for_v1.set('IsAlpha', isAlpha);
 copatibleFunctions_for_v2.set('IsAlpha', isAlpha);
 
+
+const isAlnum = createStringPredicate(/^[a-zA-Z0-9]+$/u);
+imcopatibleFunctions_for_v1.set('IsAlnum', isAlnum);
+copatibleFunctions_for_v2.set('IsAlnum', isAlnum);
 // #endregion Compatibility functions with AutoHotkey
 
 // #region Incompatible functions with AutoHotkey
@@ -412,15 +401,6 @@ const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
 };
 imcopatibleFunctions_for_v1.set('IsPrimitive', isPrimitive);
 imcopatibleFunctions_for_v2.set('IsPrimitive', isPrimitive);
-
-const isAlnum: LibraryFunc = async(session, stackFrame, value) => {
-  if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return getFalse(session, stackFrame);
-  }
-  return (/^[a-zA-Z0-9]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsAlnum', isAlnum);
-imcopatibleFunctions_for_v2.set('IsAlnum', isAlnum);
 
 const isUpper: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
