@@ -25,14 +25,16 @@ const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
     if (_actual === undefined) {
       throw Error(`The actual (\`${actualExpression}\`) is undefined.`);
     }
+    const message = `${expression} == ${actualExpression}`;
+
     if (expected instanceof dbgp.ObjectProperty && _actual instanceof dbgp.ObjectProperty) {
-      return [ _actual.address, expected.address, expression ];
+      return [ _actual.address, expected.address, message ];
     }
     if (isFloat(expected) && isFloat(_actual)) {
-      return [ expected.toFixed(6), expected.toFixed(6), expression ];
+      return [ expected.toFixed(6), expected.toFixed(6), message ];
     }
     if ((typeof expected === 'string' || typeof expected === 'number') && (typeof _actual === 'string' || typeof _actual === 'number')) {
-      return [ _actual, expected, expression ];
+      return [ _actual, expected, message ];
     }
     throw Error('The value does not correspond to the test.');
   };
@@ -1009,7 +1011,7 @@ describe('Tests of functions compatible only with v2', (): void => {
       `"-0x123"`,
     ];
 
-    for await (const funcName of [ 'IsInteger', 'IsFloat', 'IsNumber', 'IsDigit', 'IsXDigit', 'IsAlpha', 'IsAlnum', 'IsSpace' ]) {
+    for await (const funcName of [ 'IsInteger', 'IsFloat', 'IsNumber', 'IsDigit', 'IsXDigit', 'IsAlpha', 'IsAlnum', 'IsSpace', 'IsUpper' ]) {
       for await (const data of dataList) {
         const expression = `${funcName}(${data})`;
         const [ actual_v2, expected, message ] = await testApi_v2(expression);

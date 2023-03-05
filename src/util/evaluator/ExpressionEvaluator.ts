@@ -380,18 +380,18 @@ export const includesPropertyChild = (ahkVersion: AhkVersion, property: dbgp.Pro
     return property.address === key.address;
   }
 
-  const childName_dotNotation = unescapePropertyName(property.name.replace(/^\["(.*)"\]$/u, '$1'), ahkVersion);
-  const searchName = unescapePropertyName(String(key), ahkVersion);
-  // Dot notation. e.g. obj.field, obj."test"
-  if (equalsIgnoreCase(childName_dotNotation, searchName)) {
-    return true;
+  if (property.index) {
+    return property.index === key;
   }
 
-  // Bracket notation. e.g. obj["field"], arr[1]
-  if (equalsIgnoreCase(childName_dotNotation, `["${searchName}"]`) || equalsIgnoreCase(childName_dotNotation, `[${searchName}]`)) {
-    return true;
+  const isDotNotation = !property.name.startsWith('["');
+  const childName = unescapePropertyName(property.name.replace(/^\["(.*)"\]$/u, '$1'), ahkVersion);
+  const searchName = unescapePropertyName(String(key), ahkVersion);
+  // Dot notation. e.g. obj.field, obj."test"
+  if ((isDotNotation || ahkVersion.mejor < 2.0)) {
+    return equalsIgnoreCase(childName, searchName);
   }
-  return false;
+  return childName === searchName;
 };
 export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, key: EvaluatedValue): Promise<EvaluatedValue> => {
   if (!object.hasChildren) {

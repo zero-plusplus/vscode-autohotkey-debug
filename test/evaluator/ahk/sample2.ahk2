@@ -6,6 +6,7 @@ testResults := Map()
 
 predicateDataList := [
   [ "abc" ],
+  [ "ABC" ],
   [ "abcABC" ],
   [ "abcABC123" ],
   [ " " ],
@@ -25,7 +26,7 @@ predicateDataList := [
 ]
 
 ; #region Predicate functions
-for i, funcName in [ "IsInteger", "IsFloat", "IsNumber", "IsDigit", "IsXDigit", "IsAlpha", "IsAlnum", "IsSpace" ] {
+for i, funcName in [ "IsInteger", "IsFloat", "IsNumber", "IsDigit", "IsXDigit", "IsAlpha", "IsAlnum", "IsSpace", "IsUpper" ] {
   for j, dataAndLabel in predicateDataList {
     data := dataAndLabel[1]
     label := dataAndLabel.length == 2 ? dataAndLabel[2] : dataAndLabel[1]
