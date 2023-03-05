@@ -204,6 +204,10 @@ export const isInfinite = (value: any): boolean => {
   }
   return false;
 };
+export const unescapePropertyName = (name: string, ahkVersion: AhkVersion): string => {
+  const _name = 2 <= ahkVersion.mejor ? name.replaceAll('""', '`"') : name;
+  return unescapeAhk(_name, ahkVersion);
+};
 export const getFullName = (nameOrObject: string | dbgp.ObjectProperty): string => {
   return typeof nameOrObject === 'string' ? nameOrObject : nameOrObject.fullName;
 };
@@ -376,19 +380,8 @@ export const includesPropertyChild = (ahkVersion: AhkVersion, property: dbgp.Pro
     return property.address === key.address;
   }
 
-  let searchName = String(key);
-  const childName_dotNotation = property.name.replace(/^\["(.*)"\]$/u, '$1');
-  if (2 <= ahkVersion.mejor && String(key).includes('`"')) {
-    searchName = searchName.replaceAll('`"', '""');
-
-    // The full name of the field of the following object in v2 is `obj."`.
-    // obj := { %'"'%: "value" }
-    const key_escaped = unescapeAhk(searchName, ahkVersion);
-    if (equalsIgnoreCase(childName_dotNotation, key_escaped)) {
-      return true;
-    }
-  }
-
+  const childName_dotNotation = unescapePropertyName(property.name.replace(/^\["(.*)"\]$/u, '$1'), ahkVersion);
+  const searchName = unescapePropertyName(String(key), ahkVersion);
   // Dot notation. e.g. obj.field, obj."test"
   if (equalsIgnoreCase(childName_dotNotation, searchName)) {
     return true;
@@ -628,12 +621,10 @@ export class ExpressionEvaluator {
   public async evalNode(node: Node, stackFrame?: dbgp.StackFrame, maxDepth = 1): Promise<EvaluatedValue> {
     if (typeof node === 'string') {
       if (node.startsWith('"') && node.endsWith('"')) {
-        return node.slice(1, -1);
-        // return unescapeAhk(node.slice(1, -1), this.session.ahkVersion);
+        return unescapeAhk(node.slice(1, -1), this.session.ahkVersion);
       }
       if (node.startsWith(`'`) && node.endsWith(`'`)) {
-        return singleToDoubleString(node.slice(1, -1));
-        // return unescapeAhk(singleToDoubleString(node.slice(1, -1)), this.session.ahkVersion);
+        return unescapeAhk(singleToDoubleString(node.slice(1, -1)), this.session.ahkVersion);
       }
       return toAutohotkeyNumber(this.session.ahkVersion, node);
     }
