@@ -359,6 +359,10 @@ copatibleFunctions_for_v2.set('IsSpace', isSpace);
 const isUpper = createStringPredicate(/^[A-Z]+$/u);
 imcopatibleFunctions_for_v1.set('IsUpper', isUpper);
 copatibleFunctions_for_v2.set('IsUpper', isUpper);
+
+const isLower = createStringPredicate(/^[a-z]+$/u);
+imcopatibleFunctions_for_v1.set('IsLower', isLower);
+copatibleFunctions_for_v2.set('IsLower', isLower);
 // #endregion Compatibility functions with AutoHotkey
 
 // #region Incompatible functions with AutoHotkey
@@ -409,15 +413,6 @@ const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
 };
 imcopatibleFunctions_for_v1.set('IsPrimitive', isPrimitive);
 imcopatibleFunctions_for_v2.set('IsPrimitive', isPrimitive);
-
-const isLower: LibraryFunc = async(session, stackFrame, value) => {
-  if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return getFalse(session, stackFrame);
-  }
-  return (/^[a-z]+$/u).test(value) ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsLower', isLower);
-imcopatibleFunctions_for_v2.set('IsLower', isLower);
 
 const isTime: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
