@@ -4,26 +4,35 @@
 
 testResults := Map()
 
+predicateDataList := [
+  [ "abc" ],
+  [ "abcABC" ],
+  [ "abcABC123" ],
+  [ " " ],
+  [ "a b" ],
+  [ 123 ],
+  [ "123" ],
+  [ -123 ],
+  [ "-123" ],
+  [ 123.456 ],
+  [ "123.456" ],
+  [ -123.456 ],
+  [ "-123.456" ],
+  [ 0x123, "0x123" ],
+  [ "0x123" ],
+  [ -0x123, "-0x123" ],
+  [ "-0x123" ],
+]
+
 ; #region Predicate functions
 for i, funcName in [ "IsInteger", "IsFloat", "IsNumber", "IsDigit", "IsXDigit", "IsAlpha", "IsAlnum", "IsSpace" ] {
-  testResults[funcName . '("abc")'] := SafeCall(() => %funcName%("abc"))
-  testResults[funcName . '("ABC")'] := SafeCall(() => %funcName%("ABC"))
-  testResults[funcName . '("abcABC")'] := SafeCall(() => %funcName%("abcABC"))
-  testResults[funcName . '("abcABC123")'] := SafeCall(() => %funcName%("abcABC123"))
-  testResults[funcName . '(" ")'] := SafeCall(() => %funcName%(" "))
-  testResults[funcName . '("a b")'] := SafeCall(() => %funcName%("a b"))
-  testResults[funcName . '(123)'] := SafeCall(() => %funcName%(123))
-  testResults[funcName . '("123")'] := SafeCall(() => %funcName%("123"))
-  testResults[funcName . '(-123)'] := SafeCall(() => %funcName%(-123))
-  testResults[funcName . '("-123")'] := SafeCall(() => %funcName%("-123"))
-  testResults[funcName . '(123.456)'] := SafeCall(() => %funcName%(123.456))
-  testResults[funcName . '("123.456")'] := SafeCall(() => %funcName%("123.456"))
-  testResults[funcName . '(-123.456)'] := SafeCall(() => %funcName%(-123.456))
-  testResults[funcName . '("-123.456")'] := SafeCall(() => %funcName%("-123.456"))
-  testResults[funcName . '(0x123)'] := SafeCall(() => %funcName%(0x123))
-  testResults[funcName . '("0x123")'] := SafeCall(() => %funcName%("0x123"))
-  testResults[funcName . '(-0x123)'] := SafeCall(() => %funcName%(-0x123))
-  testResults[funcName . '("-0x123")'] := SafeCall(() => %funcName%("-0x123"))
+  for j, dataAndLabel in predicateDataList {
+    data := dataAndLabel[1]
+    label := dataAndLabel.length == 2 ? dataAndLabel[2] : dataAndLabel[1]
+
+    key := Type(data) == "String" ? funcName . '("' . label . '")' : funcName . '(' . label . ')'
+    testResults[key] := SafeCall(() => %funcName%(data))
+  }
 }
 ; #endregion Predicate functions
 
