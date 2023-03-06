@@ -563,10 +563,11 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('IsDate("abc")')).toBeFalsy();
   });
 
-  //   test('eval libraries (IsFile)', async(): Promise<void> => {
-  //     expect(await evaluator.eval(`IsFile("${__filename}")`)).toBe(true_ahk);
-  //     expect(await evaluator.eval(`IsFile("${__dirname}")`)).toBe(false_ahk);
-  //   });
+  test('eval libraries (IsFile)', async(): Promise<void> => {
+    expect(await evaluator.eval(`IsFile("${__filename}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsFile("${__dirname}")`)).toBeFalsy();
+    expect(await evaluator.eval(`IsFile(obj)`)).toBe('');
+  });
   //
   //   test('eval libraries (IsDirectory)', async(): Promise<void> => {
   //     expect(await evaluator.eval(`IsDirectory("${__dirname}")`)).toBe(true_ahk);
@@ -836,12 +837,6 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('IsPrimitive(arr)')).toBeFalsy();
   });
 
-  test('eval libraries (IsDate)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsDate("2000/1/1")')).toBeTruthy();
-    expect(await evaluator.eval('IsDate("2000/1/1 00:00")')).toBeTruthy();
-    expect(await evaluator.eval('IsDate("abc")')).toBeFalsy();
-  });
-
   test('eval libraries (IsClass)', async(): Promise<void> => {
     expect(await evaluator.eval('IsClass(T)')).toBeTruthy();
     expect(await evaluator.eval('IsClass(T2)')).toBeTruthy();
@@ -852,6 +847,18 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('IsClass(str_alpha)')).toBe('');
     expect(await evaluator.eval('IsClass(num_int)')).toBe('');
     expect(await evaluator.eval('IsClass(undefined)')).toBe('');
+  });
+
+  test('eval libraries (IsDate)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsDate("2000/1/1")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("2000/1/1 00:00")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("abc")')).toBeFalsy();
+  });
+
+  test('eval libraries (IsFile)', async(): Promise<void> => {
+    expect(await evaluator.eval(`IsFile("${__filename}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsFile("${__dirname}")`)).toBeFalsy();
+    expect(await evaluator.eval(`IsFile(obj)`)).toBe('');
   });
   // #endregion Utility functions
 
