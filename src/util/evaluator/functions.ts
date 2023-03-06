@@ -465,12 +465,6 @@ const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass) =
 imcopatibleFunctions_for_v1.set('InstanceOf', instanceOf);
 imcopatibleFunctions_for_v2.set('InstanceOf', instanceOf);
 
-const isString: LibraryFunc = async(session, stackFrame, value) => {
-  return typeof value === 'string' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsString', isString);
-imcopatibleFunctions_for_v2.set('IsString', isString);
-
 const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
   if (value instanceof dbgp.ObjectProperty || !(typeof value === 'string' || typeof value === 'number')) {
     return getFalse(session, stackFrame);

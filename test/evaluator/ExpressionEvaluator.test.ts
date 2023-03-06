@@ -346,7 +346,6 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('CallExpression_call', async(): Promise<void> => {
-    expect(await evaluator.eval('IsString(str_alpha)')).toBe(true_ahk);
     expect(await evaluator.eval(`Contains(obj, "value")`)).toBe(true_ahk);
   });
 
@@ -537,13 +536,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('InstanceOf(instance, obj)')).toBe(false_ahk);
     expect(await evaluator.eval('InstanceOf(num_int)')).toBe('');
   });
-  //   test('eval libraries (IsString)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsString(str_alpha)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsString(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsString(num_int_like)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsString(arr)')).toBe(false_ahk);
-  //   });
-  //
+
   //   test('eval libraries (IsPrimitive)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsPrimitive(str_alpha)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsPrimitive(num_int)')).toBe(true_ahk);
