@@ -465,16 +465,6 @@ const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass) =
 imcopatibleFunctions_for_v1.set('InstanceOf', instanceOf);
 imcopatibleFunctions_for_v2.set('InstanceOf', instanceOf);
 
-const countOf: LibraryFunc = async(session, stackFrame, value) => {
-  if (value instanceof dbgp.ObjectProperty) {
-    const children = await fetchPropertyChildren(session, stackFrame, value);
-    return children?.length ?? 0;
-  }
-  return String(value).length;
-};
-imcopatibleFunctions_for_v1.set('CountOf', countOf);
-imcopatibleFunctions_for_v2.set('CountOf', countOf);
-
 const isString: LibraryFunc = async(session, stackFrame, value) => {
   return typeof value === 'string' ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
 };
