@@ -544,132 +544,12 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   //     expect(await evaluator.eval('IsString(arr)')).toBe(false_ahk);
   //   });
   //
-  //   test('eval libraries (IsNumber)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsNumber(num_int)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsNumber(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsNumber(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsNumberLike)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsNumberLike(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsNumberLike(num_int)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsNumberLike(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsIntegerLike)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsIntegerLike(num_int)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsIntegerLike(num_int_like)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsIntegerLike(num_float)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsIntegerLike(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsFloat)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsFloat(num_float)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloat(num_float_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloat(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloat(num_int_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloat(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloat(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsFloatLike)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsFloatLike(num_float)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsFloatLike(num_float_like)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsFloatLike(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsHexLike)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsHexLike(num_hex_like)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsHexLike(num_hex)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsHexLike(num_float)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsHexLike(num_float_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsHexLike(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsHexLike(num_int_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsHexLike(arr)')).toBe(false_ahk);
-  //   });
-  //
   //   test('eval libraries (IsPrimitive)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsPrimitive(str_alpha)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsPrimitive(num_int)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsPrimitive(undefined)')).toBe(false_ahk);
   //     expect(await evaluator.eval('IsPrimitive(obj)')).toBe(false_ahk);
   //     expect(await evaluator.eval('IsPrimitive(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsObject)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsObject(obj)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsObject(arr)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsObject(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsObject(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsObject(undefined)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsAlpha)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsAlpha(str_alpha)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsAlpha(str_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsAlpha(str_not_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsAlpha(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsAlpha(undefined)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsAlpha(obj)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsAlpha(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsAlnum)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsAlnum(str_alpha)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsAlnum(str_alnum)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsAlnum(str_not_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsAlnum(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsAlnum(undefined)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsAlnum(obj)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsAlnum(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsUpper)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsUpper(str_upper)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsUpper(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsUpper(str_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsUpper(str_not_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsUpper(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsUpper(undefined)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsUpper(obj)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsUpper(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsLower)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsLower(str_lower)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsLower(str_upper)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsLower(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsLower(str_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsLower(str_not_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsLower(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsLower(undefined)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsLower(obj)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsLower(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsTime)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsTime(str_time)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsTime(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsTime(str_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsTime(str_not_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsTime(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsTime(undefined)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsTime(obj)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsTime(arr)')).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (IsSpace)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsSpace(str_space)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsSpace(str_time)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsSpace(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsSpace(str_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsSpace(str_not_alnum)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsSpace(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsSpace(undefined)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsSpace(obj)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsSpace(arr)')).toBe(false_ahk);
   //   });
   //
   //   test('eval libraries (IsClass)', async(): Promise<void> => {
@@ -940,40 +820,6 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   // #endregion Partial compatibility functions
 
   // #region Utility functions
-  //   test('eval libraries (IsNumber)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsNumber(num_int)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsNumber(num_float)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsNumber(num_hex)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsNumber(num_scientific_notation)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsNumber(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsNumber(arr)')).toBe(false_ahk);
-  //   });
-  //   test('eval libraries (IsNumberLike)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsNumberLike(num_int)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsNumberLike(num_int_like)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsNumberLike(arr)')).toBe(false_ahk);
-  //   });
-  //   test('eval libraries (IsIntegerLike)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsIntegerLike(num_int)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsIntegerLike(num_int_like)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsIntegerLike(num_float)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsIntegerLike(arr)')).toBe(false_ahk);
-  //   });
-  //   test('eval libraries (IsFloat)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsFloat(num_float)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsFloat(num_float_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloat(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloat(num_int_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloat(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloat(arr)')).toBe(false_ahk);
-  //   });
-  //   test('eval libraries (IsFloatLike)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsFloatLike(num_float)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsFloatLike(num_float_like)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsFloatLike(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false_ahk);
-  //   });
   // #endregion Utility functions
 
   test('eval not support', async(): Promise<void> => {
