@@ -484,15 +484,6 @@ const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
 imcopatibleFunctions_for_v1.set('IsPrimitive', isPrimitive);
 imcopatibleFunctions_for_v2.set('IsPrimitive', isPrimitive);
 
-const isTime: LibraryFunc = async(session, stackFrame, value) => {
-  if (value instanceof dbgp.ObjectProperty || typeof value !== 'string') {
-    return getFalse(session, stackFrame);
-  }
-  return Number.isNaN(Date.parse(value)) ? getFalse(session, stackFrame) : getTrue(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsTime', isTime);
-imcopatibleFunctions_for_v2.set('IsTime', isTime);
-
 const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
     return getFalse(session, stackFrame);
@@ -521,6 +512,19 @@ const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
 };
 imcopatibleFunctions_for_v1.set('IsClass', isClass);
 imcopatibleFunctions_for_v2.set('IsClass', isClass);
+
+const isDate: LibraryFunc = async(session, stackFrame, value) => {
+  if (typeof value !== 'string') {
+    return Promise.resolve('');
+  }
+
+  if (Number.isFinite(Date.parse(value))) {
+    return Promise.resolve(1);
+  }
+  return Promise.resolve(0);
+};
+imcopatibleFunctions_for_v1.set('IsDate', isDate);
+imcopatibleFunctions_for_v2.set('IsDate', isDate);
 
 const isFile: LibraryFunc = async(session, stackFrame, filePath) => {
   if (typeof filePath !== 'string') {

@@ -557,7 +557,13 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   //     expect(await evaluator.eval('IsClass(obj)')).toBe(false_ahk);
   //     expect(await evaluator.eval('IsClass(arr)')).toBe(false_ahk);
   //   });
-  //
+
+  test('eval libraries (IsDate)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsDate("2000/1/1")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("2000/1/1 00:00")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("abc")')).toBeFalsy();
+  });
+
   //   test('eval libraries (IsFile)', async(): Promise<void> => {
   //     expect(await evaluator.eval(`IsFile("${__filename}")`)).toBe(true_ahk);
   //     expect(await evaluator.eval(`IsFile("${__dirname}")`)).toBe(false_ahk);
@@ -829,6 +835,12 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('IsPrimitive(undefined)')).toBeFalsy();
     expect(await evaluator.eval('IsPrimitive(obj)')).toBeFalsy();
     expect(await evaluator.eval('IsPrimitive(arr)')).toBeFalsy();
+  });
+
+  test('eval libraries (IsDate)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsDate("2000/1/1")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("2000/1/1 00:00")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("abc")')).toBeFalsy();
   });
   // #endregion Utility functions
 
