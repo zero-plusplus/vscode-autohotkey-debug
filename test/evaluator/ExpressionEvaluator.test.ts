@@ -568,11 +568,14 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`IsFile("${__dirname}")`)).toBeFalsy();
     expect(await evaluator.eval(`IsFile(obj)`)).toBe('');
   });
-  //
-  //   test('eval libraries (IsDirectory)', async(): Promise<void> => {
-  //     expect(await evaluator.eval(`IsDirectory("${__dirname}")`)).toBe(true_ahk);
-  //     expect(await evaluator.eval(`IsDir("${__filename}")`)).toBe(false_ahk);
-  //   });
+
+  test('eval libraries (IsDirectory)', async(): Promise<void> => {
+    expect(await evaluator.eval(`IsDirectory("${__dirname}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsDirectory("${__filename}")`)).toBeFalsy();
+    expect(await evaluator.eval(`IsDirectory(obj)`)).toBe('');
+
+    expect(await evaluator.eval(`IsDir("${__dirname}")`)).toBeTruthy();
+  });
   //
   //   test('eval libraries (IsPath)', async(): Promise<void> => {
   //     expect(await evaluator.eval(`IsPath("${__dirname}")`)).toBe(true_ahk);
@@ -859,6 +862,14 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`IsFile("${__filename}")`)).toBeTruthy();
     expect(await evaluator.eval(`IsFile("${__dirname}")`)).toBeFalsy();
     expect(await evaluator.eval(`IsFile(obj)`)).toBe('');
+  });
+
+  test('eval libraries (IsDirectory)', async(): Promise<void> => {
+    expect(await evaluator.eval(`IsDirectory("${__dirname}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsDirectory("${__filename}")`)).toBeFalsy();
+    expect(await evaluator.eval(`IsDirectory(obj)`)).toBe('');
+
+    expect(await evaluator.eval(`IsDir("${__dirname}")`)).toBeTruthy();
   });
   // #endregion Utility functions
 

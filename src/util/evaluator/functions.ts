@@ -530,18 +530,18 @@ imcopatibleFunctions_for_v2.set('IsFile', isFile);
 
 const isDirectory: LibraryFunc = async(session, stackFrame, filePath) => {
   if (typeof filePath !== 'string') {
-    return getFalse(session, stackFrame);
+    return '';
   }
 
   try {
     const stat = await fs.stat(filePath);
     if (stat.isDirectory()) {
-      return await getTrue(session, stackFrame);
+      return 1;
     }
   }
   catch (e: unknown) {
   }
-  return getFalse(session, stackFrame);
+  return 0;
 };
 imcopatibleFunctions_for_v1.set('IsDirectory', isDirectory);
 imcopatibleFunctions_for_v1.set('IsDir', isDirectory);
