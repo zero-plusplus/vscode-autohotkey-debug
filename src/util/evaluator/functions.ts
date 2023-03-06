@@ -484,31 +484,15 @@ const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
 imcopatibleFunctions_for_v1.set('IsPrimitive', isPrimitive);
 imcopatibleFunctions_for_v2.set('IsPrimitive', isPrimitive);
 
-const isClass: LibraryFunc = async(session, stackFrame, value, name) => {
+const isClass: LibraryFunc = async(session, stackFrame, value) => {
   if (!(value instanceof dbgp.ObjectProperty)) {
-    return getFalse(session, stackFrame);
+    return '';
   }
 
-  const className = await fetchProperty(session, `${value.fullName}.__CLASS`, stackFrame);
-  const superClassName = await fetchProperty(session, `${value.fullName}.base.__CLASS`, stackFrame);
-  if (!className) {
-    return getFalse(session, stackFrame);
+  if (value.className === 'Class') {
+    return Promise.resolve(1);
   }
-  if (superClassName && className !== superClassName) {
-    return getFalse(session, stackFrame);
-  }
-
-  if (name) {
-    if (typeof name === 'string') {
-      return className === name ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-    }
-    if (name instanceof dbgp.ObjectProperty) {
-      const _name = await fetchProperty(session, `${name.fullName}.__CLASS`, stackFrame);
-      return className === _name ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-    }
-    return getFalse(session, stackFrame);
-  }
-  return getTrue(session, stackFrame);
+  return Promise.resolve(0);
 };
 imcopatibleFunctions_for_v1.set('IsClass', isClass);
 imcopatibleFunctions_for_v2.set('IsClass', isClass);

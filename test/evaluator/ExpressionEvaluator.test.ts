@@ -545,18 +545,17 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('IsPrimitive(arr)')).toBeFalsy();
   });
 
-  //   test('eval libraries (IsClass)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsClass(T)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsClass(T, "T")')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsClass(T, T)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsClass(2, "T")')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsClass(instance)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsClass(str_alpha)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsClass(num_int)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsClass(undefined)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsClass(obj)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsClass(arr)')).toBe(false_ahk);
-  //   });
+  test('eval libraries (IsClass)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsClass(T)')).toBeTruthy();
+    expect(await evaluator.eval('IsClass(T2)')).toBeTruthy();
+    expect(await evaluator.eval('IsClass(2)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(instance)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(obj)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(arr)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(str_alpha)')).toBe('');
+    expect(await evaluator.eval('IsClass(num_int)')).toBe('');
+    expect(await evaluator.eval('IsClass(undefined)')).toBe('');
+  });
 
   test('eval libraries (IsDate)', async(): Promise<void> => {
     expect(await evaluator.eval('IsDate("2000/1/1")')).toBeTruthy();
@@ -841,6 +840,18 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('IsDate("2000/1/1")')).toBeTruthy();
     expect(await evaluator.eval('IsDate("2000/1/1 00:00")')).toBeTruthy();
     expect(await evaluator.eval('IsDate("abc")')).toBeFalsy();
+  });
+
+  test('eval libraries (IsClass)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsClass(T)')).toBeTruthy();
+    expect(await evaluator.eval('IsClass(T2)')).toBeTruthy();
+    expect(await evaluator.eval('IsClass(2)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(instance)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(obj)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(arr)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(str_alpha)')).toBe('');
+    expect(await evaluator.eval('IsClass(num_int)')).toBe('');
+    expect(await evaluator.eval('IsClass(undefined)')).toBe('');
   });
   // #endregion Utility functions
 
