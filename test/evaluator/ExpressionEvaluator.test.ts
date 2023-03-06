@@ -531,6 +531,12 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   // #endregion Partial compatibility functions
 
   // #region Utility functions
+  test('eval libraries (InstanceOf)', async(): Promise<void> => {
+    expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true_ahk);
+    expect(await evaluator.eval('InstanceOf(instance, T2)')).toBe(true_ahk);
+    expect(await evaluator.eval('InstanceOf(instance, obj)')).toBe(false_ahk);
+    expect(await evaluator.eval('InstanceOf(num_int)')).toBe('');
+  });
   //   test('eval libraries (IsString)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsString(str_alpha)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsString(num_int)')).toBe(false_ahk);
