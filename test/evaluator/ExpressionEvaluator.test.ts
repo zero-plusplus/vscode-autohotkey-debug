@@ -531,9 +531,9 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
   // #region Utility functions
   test('eval libraries (InstanceOf)', async(): Promise<void> => {
-    expect(await evaluator.eval('InstanceOf(instance, T)')).toBe(true_ahk);
-    expect(await evaluator.eval('InstanceOf(instance, T2)')).toBe(true_ahk);
-    expect(await evaluator.eval('InstanceOf(instance, obj)')).toBe(false_ahk);
+    expect(await evaluator.eval('InstanceOf(instance, T)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(instance, T2)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(instance, obj)')).toBeFalsy();
     expect(await evaluator.eval('InstanceOf(num_int)')).toBe('');
   });
 
@@ -813,6 +813,15 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   // #endregion Partial compatibility functions
 
   // #region Utility functions
+  test('eval libraries (InstanceOf)', async(): Promise<void> => {
+    expect(await evaluator.eval('InstanceOf(instance, T)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(instance, T2)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(obj, Object)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(arr, Array)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(mapObj, Map)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(instance, obj)')).toBeFalsy();
+    expect(await evaluator.eval('InstanceOf(num_int)')).toBe('');
+  });
   // #endregion Utility functions
 
   test('eval not support', async(): Promise<void> => {

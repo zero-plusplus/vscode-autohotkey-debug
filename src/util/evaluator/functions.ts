@@ -445,19 +445,29 @@ const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass) =
   }
 
   if (!(object instanceof dbgp.ObjectProperty)) {
-    return getFalse(session, stackFrame);
+    return 0;
   }
   if (!(superClass instanceof dbgp.ObjectProperty)) {
-    return getFalse(session, stackFrame);
+    return 0;
   }
 
-  const baseClass = await fetchProperty(session, `${object.fullName}.base`, stackFrame);
+  const baseClass = await fetchProperty(session, `${object.fullName}.<base>`, stackFrame);
   if (!(baseClass instanceof dbgp.ObjectProperty)) {
-    return getFalse(session, stackFrame);
+    return 0;
   }
 
-  if (baseClass.address === superClass.address) {
-    return getTrue(session, stackFrame);
+  if (2 <= session.ahkVersion.mejor) {
+    const prototype = await fetchProperty(session, `${superClass.fullName}.Prototype`, stackFrame);
+    if (!(prototype instanceof dbgp.ObjectProperty)) {
+      return 0;
+    }
+
+    if (baseClass.address === prototype.address) {
+      return 1;
+    }
+  }
+  else if (baseClass.address === superClass.address) {
+    return 1;
   }
 
   return instanceOf(session, stackFrame, baseClass, superClass);
