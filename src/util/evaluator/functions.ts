@@ -476,10 +476,10 @@ imcopatibleFunctions_for_v1.set('InstanceOf', instanceOf);
 imcopatibleFunctions_for_v2.set('InstanceOf', instanceOf);
 
 const isPrimitive: LibraryFunc = async(session, stackFrame, value) => {
-  if (value instanceof dbgp.ObjectProperty || !(typeof value === 'string' || typeof value === 'number')) {
-    return getFalse(session, stackFrame);
+  if (typeof value === 'string' || typeof value === 'number') {
+    return Promise.resolve(1);
   }
-  return getTrue(session, stackFrame);
+  return Promise.resolve(0);
 };
 imcopatibleFunctions_for_v1.set('IsPrimitive', isPrimitive);
 imcopatibleFunctions_for_v2.set('IsPrimitive', isPrimitive);

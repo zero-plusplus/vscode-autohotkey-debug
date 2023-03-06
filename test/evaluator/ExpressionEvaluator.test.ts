@@ -537,14 +537,14 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('InstanceOf(num_int)')).toBe('');
   });
 
-  //   test('eval libraries (IsPrimitive)', async(): Promise<void> => {
-  //     expect(await evaluator.eval('IsPrimitive(str_alpha)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsPrimitive(num_int)')).toBe(true_ahk);
-  //     expect(await evaluator.eval('IsPrimitive(undefined)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsPrimitive(obj)')).toBe(false_ahk);
-  //     expect(await evaluator.eval('IsPrimitive(arr)')).toBe(false_ahk);
-  //   });
-  //
+  test('eval libraries (IsPrimitive)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsPrimitive(str_alpha)')).toBeTruthy();
+    expect(await evaluator.eval('IsPrimitive(num_int)')).toBeTruthy();
+    expect(await evaluator.eval('IsPrimitive(undefined)')).toBeFalsy();
+    expect(await evaluator.eval('IsPrimitive(obj)')).toBeFalsy();
+    expect(await evaluator.eval('IsPrimitive(arr)')).toBeFalsy();
+  });
+
   //   test('eval libraries (IsClass)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsClass(T)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsClass(T, "T")')).toBe(true_ahk);
@@ -821,6 +821,14 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('InstanceOf(mapObj, Map)')).toBeTruthy();
     expect(await evaluator.eval('InstanceOf(instance, obj)')).toBeFalsy();
     expect(await evaluator.eval('InstanceOf(num_int)')).toBe('');
+  });
+
+  test('eval libraries (IsPrimitive)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsPrimitive(str_alpha)')).toBeTruthy();
+    expect(await evaluator.eval('IsPrimitive(num_int)')).toBeTruthy();
+    expect(await evaluator.eval('IsPrimitive(undefined)')).toBeFalsy();
+    expect(await evaluator.eval('IsPrimitive(obj)')).toBeFalsy();
+    expect(await evaluator.eval('IsPrimitive(arr)')).toBeFalsy();
   });
   // #endregion Utility functions
 
