@@ -422,7 +422,18 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('GetMetaVar("callstack")[0].name')).toBe('A');
   });
 
-  // #region Compatible functions
+  test('eval precedence', async(): Promise<void> => {
+    expect(await evaluator.eval(`1 + (2 + 3) * 4 ** 5`)).toBe(5121);
+    expect(await evaluator.eval(`1 < 0 + 2`)).toBe(1);
+    expect(await evaluator.eval(`1 <= "abc" ~= "b"`)).toBe(1);
+    expect(await evaluator.eval(`1 + 2 * 3 "a" "b" . "c"`)).toBe('7abc');
+    expect(await evaluator.eval(`"abc" ~= "b" == 2 && +7 - -7 == 14`)).toBe(1);
+    expect(await evaluator.eval(`!("abc" ~= "b" == 2 && +7 - -7 == 14)`)).toBe(0);
+    expect(await evaluator.eval(`false ? 100 : 5 + 5 == 10`)).toBe(1);
+    expect(await evaluator.eval(`(false ? 100 : 5 + 5) + 5`)).toBe(15);
+  });
+
+  // #region Partial compatibility functions
   test('eval libraries (ObjHasKey)', async(): Promise<void> => {
     assert.strictEqual(...await testApi(`ObjHasKey(obj, "key")`));
     assert.strictEqual(...await testApi(`ObjHasKey(obj, key)`));
@@ -499,9 +510,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     assert.strictEqual(...await testApi(`Mod(7.5, "2")`));
     assert.strictEqual(...await testApi(`Mod(2, "b")`));
   });
-  // #endregion Compatible functions
 
-  // #region Compatibility functions
   test('eval libraries (StrLen)', async(): Promise<void> => {
     assert.strictEqual(...await testApi(`StrLen(str_alpha)`));
     assert.strictEqual(...await testApi(`StrLen(num_int)`));
@@ -519,9 +528,9 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   //     assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 1, 2)`));
   //     assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, -2, 1)`));
   //   });
-  // #endregion Compatibility functions
+  // #endregion Partial compatibility functions
 
-  // #region Incompatible functions with AutoHotkey
+  // #region Utility functions
   //   test('eval libraries (IsString)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsString(str_alpha)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsString(num_int)')).toBe(false_ahk);
@@ -712,17 +721,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   //       expect(await evaluator.eval(`${name}(undefined, "$")`)).toBe(false_ahk);
   //     }
   //   });
-
-  test('eval precedence', async(): Promise<void> => {
-    expect(await evaluator.eval(`1 + (2 + 3) * 4 ** 5`)).toBe(5121);
-    expect(await evaluator.eval(`1 < 0 + 2`)).toBe(1);
-    expect(await evaluator.eval(`1 <= "abc" ~= "b"`)).toBe(1);
-    expect(await evaluator.eval(`1 + 2 * 3 "a" "b" . "c"`)).toBe('7abc');
-    expect(await evaluator.eval(`"abc" ~= "b" == 2 && +7 - -7 == 14`)).toBe(1);
-    expect(await evaluator.eval(`!("abc" ~= "b" == 2 && +7 - -7 == 14)`)).toBe(0);
-    expect(await evaluator.eval(`false ? 100 : 5 + 5 == 10`)).toBe(1);
-    expect(await evaluator.eval(`(false ? 100 : 5 + 5) + 5`)).toBe(15);
-  });
+  // #endregion Utility functions
 
   test('eval not support', async(): Promise<void> => {
     expect(async() => evaluator.eval(`100 // 2`)).rejects.toThrow();
@@ -831,7 +830,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('(instance || false).instanceField')).toBe('instance');
   });
 
-  // #region Compatible functions
+  // #region Partial compatibility functions
   test('eval libraries (ObjHasOwnProp)', async(): Promise<void> => {
     assert.strictEqual(...await testApi(`ObjHasOwnProp(obj, "key")`));
     assert.strictEqual(...await testApi(`ObjHasOwnProp(obj, key)`));
@@ -932,11 +931,9 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   //   assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 1, 2)`));
   //   assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, -2, 1)`));
   // });
-  // #endregion Compatible functions
+  // #endregion Partial compatibility functions
 
-  // #region Compatibility functions
-  // #endregion Compatibility functions
-
+  // #region Utility functions
   //   test('eval libraries (IsNumber)', async(): Promise<void> => {
   //     expect(await evaluator.eval('IsNumber(num_int)')).toBe(true_ahk);
   //     expect(await evaluator.eval('IsNumber(num_float)')).toBe(true_ahk);
@@ -971,6 +968,14 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   //     expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false_ahk);
   //     expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false_ahk);
   //   });
+  // #endregion Utility functions
+
+  test('eval not support', async(): Promise<void> => {
+    expect(async() => evaluator.eval(`100 // 2`)).rejects.toThrow();
+
+    return Promise.resolve();
+  });
+
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });
