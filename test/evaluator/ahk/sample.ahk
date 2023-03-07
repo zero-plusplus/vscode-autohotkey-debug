@@ -25,11 +25,13 @@ bool_true := true
 bool_false := false
 
 key := "key"
-obj := { key: "value", "3": "100" }
+obj := { key: "value" }
 arr := [ 1, 10, 100 ]
 arr_like := { 1: 1, 2: 10, 3: 100, size: 3 }
 nestedObj := { a: { b: { key: "value", obj: obj, arr: arr } } }
 instance := new T()
+circular := {}
+circular.circular := circular
 
 num_prefix_unary := 0
 num_postfix_unary := 0

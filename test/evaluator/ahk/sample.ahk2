@@ -30,8 +30,11 @@ key := "key"
 obj := { key: "value" }
 mapObj := Map("key", "value", "3", "100")
 arr := [ 1, 10, 100 ]
+arr2 := [ arr, obj ]
 nestedObj := { a: { b: { obj: obj, arr: arr } } }
 instance := T()
+circular := {}
+circular.circular := circular
 
 ; #region tests
 testResults := Map()

@@ -3,8 +3,9 @@ import glob from 'fast-glob';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { equalsIgnoreCase } from '../stringUtils';
-import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyChildren, includesPropertyChild, isInfinite } from './ExpressionEvaluator';
+import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyOwnChildren, includesPropertyChild, isInfinite } from './ExpressionEvaluator';
 import * as util from '../util';
+import { MetaVariable } from '../VariableManager';
 
 export const getTrue = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
   return fetchGlobalProperty(session, 'true', stackFrame);
@@ -74,7 +75,7 @@ const objHasKey: LibraryFunc = async(session, stackFrame, value, key) => {
   }
 
   if (2 <= session.ahkVersion.mejor) {
-    const children = await fetchPropertyChildren(session, stackFrame, value);
+    const children = await fetchPropertyOwnChildren(session, stackFrame, value);
     const child = children?.find((child) => {
       if (child.name.startsWith('[')) {
         return false;
@@ -131,15 +132,12 @@ const objCount: LibraryFunc = async(session, stackFrame, value) => {
     return '';
   }
 
-  const children = await fetchPropertyChildren(session, stackFrame, value);
+  const children = await fetchPropertyOwnChildren(session, stackFrame, value);
   if (!children) {
     return 0;
   }
 
   return children.filter((child) => {
-    if (child.name.startsWith('<')) {
-      return false;
-    }
     if (2 <= session.ahkVersion.mejor && child.name.startsWith('[')) {
       return false;
     }
@@ -589,7 +587,7 @@ const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => 
     return getFalse(session, stackFrame);
   }
 
-  const children = await fetchPropertyChildren(session, stackFrame, value);
+  const children = await fetchPropertyOwnChildren(session, stackFrame, value);
   if (!children) {
     return getFalse(session, stackFrame);
   }
@@ -620,7 +618,7 @@ const contains: LibraryFunc = async(session, stackFrame, value, searchValue, ign
     return result ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
   }
 
-  const children = await fetchPropertyChildren(session, stackFrame, value);
+  const children = await fetchPropertyOwnChildren(session, stackFrame, value);
   if (!children) {
     return getFalse(session, stackFrame);
   }
@@ -733,6 +731,112 @@ formatSpecifiers_v1.set('Xb', toUpperHexWithoutPrefix);
 formatSpecifiers_v2.set('Xb', toUpperHexWithoutPrefix);
 formatSpecifiers_v1.set('Hb', toUpperHexWithoutPrefix);
 formatSpecifiers_v2.set('Hb', toUpperHexWithoutPrefix);
+
+const dumpLimit = 10000;
+export const propertyToJsValue = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, value: EvaluatedValue | dbgp.Property, config: { stack: number[]; limit: number } = { stack: [], limit: dumpLimit }): Promise<undefined | string | number | Record<any, any> | any[]> => {
+  if (typeof value === 'string' || typeof value === 'number') {
+    return value;
+  }
+  if (value instanceof dbgp.PrimitiveProperty) {
+    return value.type === 'string' ? value.value : toNumber(value.value);
+  }
+  if (value instanceof MetaVariable) {
+    return value;
+  }
+
+  const limitLabel = '[LIMIT]';
+  if (config.limit === 0) {
+    return limitLabel;
+  }
+
+  if (value instanceof dbgp.ObjectProperty) {
+    config.stack.push(value.address);
+    let children = (await fetchPropertyOwnChildren(session, stackFrame, value));
+    if (!children) {
+      return {};
+    }
+
+    let isLimitOver = config.limit < children.length;
+    if (isLimitOver) {
+      children = children.slice(0, config.limit);
+    }
+    config.limit = Math.max(config.limit - children.length, 0);
+
+    if (value.isArray) {
+      const result: any[] = [];
+      const elements = children.filter((child) => child.isIndexKey);
+      for await (const element of elements) {
+        if (element instanceof dbgp.ObjectProperty && config.stack.includes(element.address)) {
+          result.push('[Circular]');
+          continue;
+        }
+
+        const stringifiedElement = await propertyToJsValue(session, stackFrame, element, config);
+        result.push(stringifiedElement);
+        if (config.limit === 0) {
+          isLimitOver = true;
+          break;
+        }
+      }
+
+      config.stack.pop();
+      if (isLimitOver) {
+        result.push(limitLabel);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      return result;
+    }
+
+    const result: Record<any, any> = {};
+    for await (const child of children) {
+      const name = child.key ?? child.index ?? child.name;
+      if (child instanceof dbgp.ObjectProperty && config.stack.includes(child.address)) {
+        result[name] = '[Circular]';
+        continue;
+      }
+
+      result[name] = await propertyToJsValue(session, stackFrame, child, config);
+      if (config.limit === 0) {
+        isLimitOver = true;
+        break;
+      }
+    }
+
+    config.stack.pop();
+    if (isLimitOver) {
+      result[limitLabel] = limitLabel;
+    }
+    return result;
+  }
+
+  return undefined;
+};
+export const toJsonString: LibraryFunc = async(session, stackFrame, value, indent = 4, limit = dumpLimit) => {
+  const _limit = toNumber(limit);
+  if (typeof _limit !== 'number') {
+    return '';
+  }
+  if (typeof indent !== 'number' && typeof indent !== 'string') {
+    return '';
+  }
+
+  const jsValue = await propertyToJsValue(session, stackFrame, value, { stack: [], limit: _limit });
+  const jsonString = JSON.stringify(jsValue, undefined, indent);
+  return jsonString;
+};
+imcopatibleFunctions_for_v1.set('ToJsonString', toJsonString);
+imcopatibleFunctions_for_v2.set('ToJsonString', toJsonString);
+formatSpecifiers_v1.set('J', toJsonString);
+formatSpecifiers_v2.set('J', toJsonString);
+
+export const toOnlineJsonString: LibraryFunc = async(session, stackFrame, value, limit = dumpLimit) => {
+  return toJsonString(session, stackFrame, value, 0, limit);
+};
+imcopatibleFunctions_for_v1.set('ToOneLineJsonString', toOnlineJsonString);
+imcopatibleFunctions_for_v2.set('ToOneLineJsonString', toOnlineJsonString);
+formatSpecifiers_v1.set('Jo', toOnlineJsonString);
+formatSpecifiers_v2.set('Jo', toOnlineJsonString);
+
 // #endregion
 
 export const allFunctions_for_v1 = new CaseInsensitiveMap([

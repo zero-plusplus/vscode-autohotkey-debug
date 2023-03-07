@@ -611,6 +611,28 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   //       expect(await evaluator.eval(`${name}(undefined, "$")`)).toBe(false_ahk);
   //     }
   //   });
+
+  test('eval libraries (ToJsonString)', async(): Promise<void> => {
+    const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
+
+    expect(await evaluator.eval(`ToJsonString(str_alpha)`)).toBe(toJsonString('aBc'));
+    expect(await evaluator.eval(`ToJsonString(num_int)`)).toBe(toJsonString(123));
+    expect(await evaluator.eval(`ToJsonString(obj)`)).toBe(toJsonString({ 'key': 'value' }));
+    expect(await evaluator.eval(`ToJsonString(arr)`)).toBe(toJsonString([ 1, 10, 100 ]));
+    expect(await evaluator.eval(`ToJsonString(arr, 4, 1)`)).toBe(toJsonString([ 1, '[LIMIT]' ]));
+    expect(await evaluator.eval(`ToJsonString(arr_like)`)).toBe(toJsonString({ '1': 1, '2': 10, '3': 100, 'size': 3 }));
+    expect(await evaluator.eval(`ToJsonString(circular)`)).toBe(toJsonString({ circular: '[Circular]' }));
+  });
+
+  test('eval libraries (ToOneLineJsonString)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToOneLineJsonString(str_alpha)`)).toBe(JSON.stringify('aBc'));
+    expect(await evaluator.eval(`ToOneLineJsonString(num_int)`)).toBe(JSON.stringify(123));
+    expect(await evaluator.eval(`ToOneLineJsonString(obj)`)).toBe(JSON.stringify({ 'key': 'value' }));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr)`)).toBe(JSON.stringify([ 1, 10, 100 ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr, 1)`)).toBe(JSON.stringify([ 1, '[LIMIT]' ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr_like)`)).toBe(JSON.stringify({ '1': 1, '2': 10, '3': 100, 'size': 3 }));
+    expect(await evaluator.eval(`ToOneLineJsonString(circular)`)).toBe(JSON.stringify({ circular: '[Circular]' }));
+  });
   // #endregion Utility functions
 
   test('eval not support', async(): Promise<void> => {
@@ -880,6 +902,30 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`IsPath("not path")`)).toBeFalsy();
 
     expect(await evaluator.eval(`IsPath(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToJsonString)', async(): Promise<void> => {
+    const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
+
+    expect(await evaluator.eval(`ToJsonString(str_alpha)`)).toBe(toJsonString('aBc'));
+    expect(await evaluator.eval(`ToJsonString(num_int)`)).toBe(toJsonString(123));
+    expect(await evaluator.eval(`ToJsonString(obj)`)).toBe(toJsonString({ 'key': 'value' }));
+    expect(await evaluator.eval(`ToJsonString(arr)`)).toBe(toJsonString([ 1, 10, 100 ]));
+    expect(await evaluator.eval(`ToJsonString(arr, 4, 1)`)).toBe(toJsonString([ 1, '[LIMIT]' ]));
+    expect(await evaluator.eval(`ToJsonString(arr2)`)).toBe(toJsonString([ [ 1, 10, 100 ], { key: 'value' } ]));
+    expect(await evaluator.eval(`ToJsonString(mapObj)`)).toBe(toJsonString({ 'key': 'value', '3': '100' }));
+    expect(await evaluator.eval(`ToJsonString(circular)`)).toBe(toJsonString({ circular: '[Circular]' }));
+  });
+
+  test('eval libraries (ToOneLineJsonString)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToOneLineJsonString(str_alpha)`)).toBe(JSON.stringify('aBc'));
+    expect(await evaluator.eval(`ToOneLineJsonString(num_int)`)).toBe(JSON.stringify(123));
+    expect(await evaluator.eval(`ToOneLineJsonString(obj)`)).toBe(JSON.stringify({ 'key': 'value' }));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr)`)).toBe(JSON.stringify([ 1, 10, 100 ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr, 1)`)).toBe(JSON.stringify([ 1, '[LIMIT]' ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr2)`)).toBe(JSON.stringify([ [ 1, 10, 100 ], { key: 'value' } ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(mapObj)`)).toBe(JSON.stringify({ 'key': 'value', '3': '100' }));
+    expect(await evaluator.eval(`ToOneLineJsonString(circular)`)).toBe(JSON.stringify({ circular: '[Circular]' }));
   });
   // #endregion Utility functions
 

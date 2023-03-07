@@ -368,6 +368,14 @@ export const fetchPropertyChildren = async(session: dbgp.Session, stackFrame: db
   }
   return undefined;
 };
+export const fetchPropertyOwnChildren = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: EvaluatedValue): Promise<dbgp.Property[] | undefined> => {
+  return (await fetchPropertyChildren(session, stackFrame, object))?.filter((child) => {
+    if (child.name.startsWith('<')) {
+      return false;
+    }
+    return true;
+  });
+};
 export const includesPropertyChild = (ahkVersion: AhkVersion, property: dbgp.Property, key: EvaluatedValue): boolean => {
   if (key === undefined) {
     return false;

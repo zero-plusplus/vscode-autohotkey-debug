@@ -188,14 +188,21 @@ export abstract class Property {
     this.size = parseInt(size, 10);
   }
   public get isIndexKey(): boolean {
-    return this.index !== null;
+    return this.index !== undefined;
   }
-  public get index(): number | null {
-    const match = this.name.match(/\[(?<index>\d+)\]/u);
+  public get index(): number | undefined {
+    const match = this.name.match(/^\[(?<index>\d+)\]$/u);
     if (match?.groups?.index) {
-      return parseInt(match.groups.index, 10);
+      return Number(match.groups.index);
     }
-    return null;
+    return undefined;
+  }
+  public get key(): string | undefined {
+    const match = this.name.match(/^\["(?<key>.*)"\]$/u);
+    if (match?.groups?.key) {
+      return match.groups.key;
+    }
+    return undefined;
   }
   public static from(propertyNode: XmlNode, context: Context): Property {
     if (propertyNode.attributes.type === 'object') {
@@ -205,10 +212,10 @@ export abstract class Property {
   }
 }
 export class ObjectProperty extends Property {
-  public isArray = false;
   public hasChildren: boolean;
   public className: string;
   public children: Property[] = [];
+  public indexes: Property[] = [];
   public address: number;
   public page: number;
   public pageSize: number;
@@ -223,43 +230,28 @@ export class ObjectProperty extends Property {
     this.pageSize = parseInt(pagesize, 10);
 
     if (propertyNode.property) {
-      const properties = Array.isArray(propertyNode.property) ? propertyNode.property : [ propertyNode.property ];
-      const indexes: number[] = [];
-      properties.forEach((propertyNode) => {
+      const propertyNodes = Array.isArray(propertyNode.property) ? propertyNode.property : [ propertyNode.property ];
+      for (const propertyNode of propertyNodes) {
         const child = Property.from(propertyNode, context);
         if (child.name === '<enum>') {
-          return;
+          continue;
         }
         if (child.index) {
-          indexes.push(child.index);
+          this.indexes.push(child);
         }
         this.children.push(child);
-      });
-
-      if (this.maxIndex) {
-        this.isArray = true;
-
-        const isSparseArray = this.maxIndex !== indexes.length;
-        if (isSparseArray) {
-          this.isArray = false;
-        }
       }
     }
   }
+  public get isArray(): boolean {
+    if (this.className === 'Array') {
+      return true;
+    }
+    return this.maxIndex === this.children.length;
+  }
   public get maxIndex(): number | undefined {
-    for (let reverseIndex = this.children.length - 1; 0 <= reverseIndex; reverseIndex--) {
-      const property = this.children[reverseIndex];
-      const index = property.index;
-      if (index) {
-        return index;
-      }
-    }
-
-    const isEmptyArrayInV2 = this.className === 'Array';
-    if (isEmptyArrayInV2) {
-      return 0;
-    }
-    return undefined;
+    const maxIndex = this.indexes.at(-1)?.index;
+    return maxIndex;
   }
 }
 export class PrimitiveProperty extends Property {
