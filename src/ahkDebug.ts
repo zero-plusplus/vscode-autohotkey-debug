@@ -48,6 +48,7 @@ import { maskQuotes } from './util/ExpressionExtractor';
 import { DebugDirectiveParser } from './util/DebugDirectiveParser';
 import { LogData, LogEvaluator } from './util/evaluator/LogEvaluator';
 import { ActionLogPrefixData, CategoryLogPrefixData, GroupLogPrefixData } from './util/evaluator/LogParser';
+import { getAhkVersion } from './util/getAhkVersion';
 
 export type AnnounceLevel = boolean | 'error' | 'detail';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -1130,10 +1131,13 @@ export class AhkDebugSession extends LoggingDebugSession {
       return this.loadedSources;
     }
 
-    const extractor = new IncludePathExtractor(this.session!.ahkVersion);
+    // The loadedSourcesRequest may be called before the session is created, in which case the version should be obtained
+    const ahkVersion = this.session?.ahkVersion ?? getAhkVersion(this.config.runtime)!;
+
+    const extractor = new IncludePathExtractor(ahkVersion);
     this.loadedSources.push(...[ this.config.program, ...extractor.extract(this.config.program, { A_AhkPath: this.config.runtime }) ]);
     if (this.config.useLoadedScripts !== false && this.config.useLoadedScripts.scanImplicitLibrary) {
-      const implicitFunctionPathExtractor = new ImplicitLibraryPathExtractor(this.session!.ahkVersion);
+      const implicitFunctionPathExtractor = new ImplicitLibraryPathExtractor(ahkVersion);
       this.loadedSources.push(...implicitFunctionPathExtractor.extract(this.loadedSources, { A_AhkPath: this.config.runtime }));
     }
 
