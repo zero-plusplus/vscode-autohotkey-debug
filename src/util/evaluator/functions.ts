@@ -2,7 +2,6 @@ import { promises as fs } from 'fs';
 import glob from 'fast-glob';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
-import { equalsIgnoreCase } from '../stringUtils';
 import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyOwnChildren, includesPropertyChild, isInfinite } from './ExpressionEvaluator';
 import * as util from '../util';
 import { MetaVariable } from '../VariableManager';
@@ -602,43 +601,6 @@ const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => 
 imcopatibleFunctions_for_v1.set('RegExHasKey', regexHasKey);
 imcopatibleFunctions_for_v2.set('RegExHasKey', regexHasKey);
 imcopatibleFunctions_for_v2.set('RegExHasOwnProp', regexHasKey);
-
-const contains: LibraryFunc = async(session, stackFrame, value, searchValue, ignoreCase) => {
-  if (typeof searchValue !== 'string') {
-    return getFalse(session, stackFrame);
-  }
-
-  if (!(value instanceof dbgp.ObjectProperty)) {
-    if (typeof value === 'undefined') {
-      return getFalse(session, stackFrame);
-    }
-    const result = toNumber(ignoreCase) === 1
-      ? String(value).toLowerCase().includes(searchValue.toLowerCase())
-      : String(value).includes(searchValue);
-    return result ? getTrue(session, stackFrame) : getFalse(session, stackFrame);
-  }
-
-  const children = await fetchPropertyOwnChildren(session, stackFrame, value);
-  if (!children) {
-    return getFalse(session, stackFrame);
-  }
-
-  for (const child of children) {
-    if (child instanceof dbgp.PrimitiveProperty) {
-      const result = toNumber(ignoreCase) === 1
-        ? equalsIgnoreCase(child.value, searchValue)
-        : child.value === searchValue;
-      if (result) {
-        return getTrue(session, stackFrame);
-      }
-    }
-  }
-  return getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('Contains', contains);
-imcopatibleFunctions_for_v1.set('Includes', contains);
-imcopatibleFunctions_for_v2.set('Contains', contains);
-imcopatibleFunctions_for_v2.set('Includes', contains);
 
 const toBinary: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);

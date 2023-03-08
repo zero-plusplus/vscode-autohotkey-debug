@@ -346,7 +346,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('CallExpression_call', async(): Promise<void> => {
-    expect(await evaluator.eval(`Contains(obj, "value")`)).toBe(true_ahk);
+    expect(await evaluator.eval(`ObjHasKey(obj, "key")`)).toBeTruthy();
   });
 
   test('MemberExpression_propertyaccess', async(): Promise<void> => {
@@ -597,19 +597,6 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   //     expect(await evaluator.eval(`RegExHasKey(arr, "1")`)).toBe(true_ahk);
   //     expect(await evaluator.eval(`RegExHasKey(str_alpha, "a")`)).toBe(false_ahk);
   //     expect(await evaluator.eval(`RegExHasKey(num_int, "b")`)).toBe(false_ahk);
-  //   });
-  //
-  //   test('eval libraries (Contains)', async(): Promise<void> => {
-  //     for await (const name of [ 'Contains', 'Includes' ]) {
-  //       expect(await evaluator.eval(`${name}(obj, "value")`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`${name}(str_alpha, "a")`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`${name}(obj, "Value", true)`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`${name}(str_alpha, "b", true)`)).toBe(true_ahk);
-  //       expect(await evaluator.eval(`${name}(obj, "Value")`)).toBe(false_ahk);
-  //       expect(await evaluator.eval(`${name}(str_alpha, "b")`)).toBe(false_ahk);
-  //       expect(await evaluator.eval(`${name}(str_alpha, "z")`)).toBe(false_ahk);
-  //       expect(await evaluator.eval(`${name}(undefined, "$")`)).toBe(false_ahk);
-  //     }
   //   });
 
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
