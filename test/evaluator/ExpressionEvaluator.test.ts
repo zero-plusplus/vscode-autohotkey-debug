@@ -605,6 +605,16 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`ToDecimal(obj)`)).toBe('');
   });
 
+  test('eval libraries (ToOctal)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToOctal(0)`)).toBe(0);
+    expect(await evaluator.eval(`ToOctal(123)`)).toBe(173);
+    expect(await evaluator.eval(`ToOctal(-123)`)).toBe(-173);
+    expect(await evaluator.eval(`ToOctal(123.456)`)).toBe(await evaluator.eval(`ToOctal(123)`));
+    expect(await evaluator.eval(`ToOctal(0x123)`)).toBe(443);
+    expect(await evaluator.eval(`ToOctal("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToOctal(obj)`)).toBe('');
+  });
+
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
     const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
 
@@ -915,6 +925,16 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`ToDecimal(0x123)`)).toBe(291);
     expect(await evaluator.eval(`ToDecimal("abc")`)).toBe('');
     expect(await evaluator.eval(`ToDecimal(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToOctal)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToOctal(0)`)).toBe(0);
+    expect(await evaluator.eval(`ToOctal(123)`)).toBe(173);
+    expect(await evaluator.eval(`ToOctal(-123)`)).toBe(-173);
+    expect(await evaluator.eval(`ToOctal(123.456)`)).toBe(await evaluator.eval(`ToOctal(123)`));
+    expect(await evaluator.eval(`ToOctal(0x123)`)).toBe(443);
+    expect(await evaluator.eval(`ToOctal("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToOctal(obj)`)).toBe('');
   });
 
   test('eval libraries (ToJsonString)', async(): Promise<void> => {

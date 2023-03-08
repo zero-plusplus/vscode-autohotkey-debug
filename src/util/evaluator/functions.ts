@@ -588,10 +588,10 @@ formatSpecifiers_v2.set('d', toDecimal);
 
 const toOctal: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
-  if (isNaN(decimal)) {
-    return '';
+  if (isFinite(decimal)) {
+    return Promise.resolve(Number(decimal.toString(8)));
   }
-  return Promise.resolve(decimal.toString(8));
+  return '';
 };
 imcopatibleFunctions_for_v1.set('ToOctal', toOctal);
 imcopatibleFunctions_for_v2.set('ToOctal', toOctal);
