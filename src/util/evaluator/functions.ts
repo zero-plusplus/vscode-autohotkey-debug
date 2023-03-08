@@ -614,6 +614,20 @@ formatSpecifiers_v2.set('h', toHex);
 formatSpecifiers_v1.set('x', toHex);
 formatSpecifiers_v2.set('x', toHex);
 
+const toHexWithoutPrefix: LibraryFunc = async(session, StackFrame, value) => {
+  const decimal = parseInt(String(value), 10);
+  if (isFinite(decimal)) {
+    return Promise.resolve(decimal.toString(16));
+  }
+  return '';
+};
+imcopatibleFunctions_for_v1.set('ToHexWithoutPrefix', toHexWithoutPrefix);
+imcopatibleFunctions_for_v2.set('ToHexWithoutPrefix', toHexWithoutPrefix);
+formatSpecifiers_v1.set('xb', toHexWithoutPrefix);
+formatSpecifiers_v2.set('xb', toHexWithoutPrefix);
+formatSpecifiers_v1.set('hb', toHexWithoutPrefix);
+formatSpecifiers_v2.set('hb', toHexWithoutPrefix);
+
 const toUpperHex: LibraryFunc = async(session, StackFrame, value) => {
   const decimal = parseInt(String(value), 10);
   if (isNaN(decimal)) {
@@ -627,20 +641,6 @@ formatSpecifiers_v1.set('H', toUpperHex);
 formatSpecifiers_v2.set('H', toUpperHex);
 formatSpecifiers_v1.set('X', toUpperHex);
 formatSpecifiers_v2.set('X', toUpperHex);
-
-const toHexWithoutPrefix: LibraryFunc = async(session, StackFrame, value) => {
-  const decimal = parseInt(String(value), 10);
-  if (isNaN(decimal)) {
-    return '';
-  }
-  return Promise.resolve(`${decimal.toString(16)}`);
-};
-imcopatibleFunctions_for_v1.set('ToHexWithoutPrefix', toHexWithoutPrefix);
-imcopatibleFunctions_for_v2.set('ToHexWithoutPrefix', toHexWithoutPrefix);
-formatSpecifiers_v1.set('xb', toHexWithoutPrefix);
-formatSpecifiers_v2.set('xb', toHexWithoutPrefix);
-formatSpecifiers_v1.set('hb', toHexWithoutPrefix);
-formatSpecifiers_v2.set('hb', toHexWithoutPrefix);
 
 const toUpperHexWithoutPrefix: LibraryFunc = async(session, StackFrame, value) => {
   const decimal = parseInt(String(value), 10);

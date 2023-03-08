@@ -625,6 +625,16 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`ToHex(obj)`)).toBe('');
   });
 
+  test('eval libraries (ToHexWithoutPrefix)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToHexWithoutPrefix(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(123)`)).toBe('7b');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(-123)`)).toBe('-7b');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(123.456)`)).toBe(await evaluator.eval(`ToHexWithoutPrefix(123)`));
+    expect(await evaluator.eval(`ToHexWithoutPrefix(0x123)`)).toBe('123');
+    expect(await evaluator.eval(`ToHexWithoutPrefix("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(obj)`)).toBe('');
+  });
+
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
     const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
 
@@ -955,6 +965,16 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`ToHex(0x123)`)).toBe('0x123');
     expect(await evaluator.eval(`ToHex("abc")`)).toBe('');
     expect(await evaluator.eval(`ToHex(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToHexWithoutPrefix)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToHexWithoutPrefix(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(123)`)).toBe('7b');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(-123)`)).toBe('-7b');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(123.456)`)).toBe(await evaluator.eval(`ToHexWithoutPrefix(123)`));
+    expect(await evaluator.eval(`ToHexWithoutPrefix(0x123)`)).toBe('123');
+    expect(await evaluator.eval(`ToHexWithoutPrefix("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(obj)`)).toBe('');
   });
 
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
