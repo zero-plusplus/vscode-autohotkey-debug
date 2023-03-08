@@ -600,10 +600,12 @@ formatSpecifiers_v2.set('o', toOctal);
 
 const toHex: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
-  if (isNaN(decimal)) {
-    return '';
+  if (isFinite(decimal)) {
+    const isPositive = 0 <= decimal;
+    const hex = Math.abs(decimal).toString(16);
+    return Promise.resolve(isPositive ? `0x${hex}` : `-0x${hex}`);
   }
-  return Promise.resolve(`0x${decimal.toString(16)}`);
+  return '';
 };
 imcopatibleFunctions_for_v1.set('ToHex', toHex);
 imcopatibleFunctions_for_v2.set('ToHex', toHex);

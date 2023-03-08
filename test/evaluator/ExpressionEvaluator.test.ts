@@ -615,6 +615,16 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`ToOctal(obj)`)).toBe('');
   });
 
+  test('eval libraries (ToHex)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToHex(0)`)).toBe('0x0');
+    expect(await evaluator.eval(`ToHex(123)`)).toBe('0x7b');
+    expect(await evaluator.eval(`ToHex(-123)`)).toBe('-0x7b');
+    expect(await evaluator.eval(`ToHex(123.456)`)).toBe(await evaluator.eval(`ToHex(123)`));
+    expect(await evaluator.eval(`ToHex(0x123)`)).toBe('0x123');
+    expect(await evaluator.eval(`ToHex("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToHex(obj)`)).toBe('');
+  });
+
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
     const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
 
@@ -935,6 +945,16 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`ToOctal(0x123)`)).toBe(443);
     expect(await evaluator.eval(`ToOctal("abc")`)).toBe('');
     expect(await evaluator.eval(`ToOctal(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToHex)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToHex(0)`)).toBe('0x0');
+    expect(await evaluator.eval(`ToHex(123)`)).toBe('0x7b');
+    expect(await evaluator.eval(`ToHex(-123)`)).toBe('-0x7b');
+    expect(await evaluator.eval(`ToHex(123.456)`)).toBe(await evaluator.eval(`ToHex(123)`));
+    expect(await evaluator.eval(`ToHex(0x123)`)).toBe('0x123');
+    expect(await evaluator.eval(`ToHex("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToHex(obj)`)).toBe('');
   });
 
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
