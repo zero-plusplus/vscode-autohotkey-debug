@@ -585,11 +585,6 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`IsPath(obj)`)).toBe('');
   });
 
-  //   test('eval libraries (IsGlob)', async(): Promise<void> => {
-  //     expect(await evaluator.eval(`IsGlob("${__dirname}/*.*")`)).toBe(true_ahk);
-  //     expect(await evaluator.eval(`IsGlob("not path")`)).toBe(false_ahk);
-  //   });
-
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
     const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
 

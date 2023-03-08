@@ -1,5 +1,4 @@
 import { promises as fs } from 'fs';
-import glob from 'fast-glob';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyOwnChildren, includesPropertyChild, isInfinite } from './ExpressionEvaluator';
@@ -562,21 +561,6 @@ const isPath: LibraryFunc = async(session, stackFrame, filePath) => {
 };
 imcopatibleFunctions_for_v1.set('IsPath', isPath);
 imcopatibleFunctions_for_v2.set('IsPath', isPath);
-
-const isGlob: LibraryFunc = async(session, stackFrame, filePattern) => {
-  if (typeof filePattern !== 'string') {
-    return getFalse(session, stackFrame);
-  }
-
-  const _filePattern = filePattern.replaceAll('\\', '/');
-  const fileList = await glob(_filePattern, { });
-  if (0 < fileList.length) {
-    return getTrue(session, stackFrame);
-  }
-  return getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('IsGlob', isGlob);
-imcopatibleFunctions_for_v2.set('IsGlob', isGlob);
 
 const toBinary: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
