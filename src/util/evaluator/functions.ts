@@ -630,10 +630,12 @@ formatSpecifiers_v2.set('hb', toHexWithoutPrefix);
 
 const toUpperHex: LibraryFunc = async(session, StackFrame, value) => {
   const decimal = parseInt(String(value), 10);
-  if (isNaN(decimal)) {
-    return '';
+  if (isFinite(decimal)) {
+    const isPositive = 0 <= decimal;
+    const hex = Math.abs(decimal).toString(16).toUpperCase();
+    return Promise.resolve(isPositive ? `0x${hex}` : `-0x${hex}`);
   }
-  return Promise.resolve(`0x${decimal.toString(16).toUpperCase()}`);
+  return '';
 };
 imcopatibleFunctions_for_v1.set('ToUpperHex', toUpperHex);
 imcopatibleFunctions_for_v2.set('ToUpperHex', toUpperHex);
