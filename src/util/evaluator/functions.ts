@@ -576,10 +576,10 @@ formatSpecifiers_v2.set('b', toBinary);
 
 const toDecimal: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
-  if (isNaN(decimal)) {
-    return '';
+  if (isFinite(decimal)) {
+    return Promise.resolve(decimal);
   }
-  return Promise.resolve(decimal);
+  return '';
 };
 imcopatibleFunctions_for_v1.set('ToDecimal', toDecimal);
 imcopatibleFunctions_for_v2.set('ToDecimal', toDecimal);

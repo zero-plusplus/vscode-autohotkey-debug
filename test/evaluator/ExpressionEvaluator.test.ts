@@ -590,8 +590,19 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`ToBinary(123)`)).toBe('1111011');
     expect(await evaluator.eval(`ToBinary(-123)`)).toBe('-1111011');
     expect(await evaluator.eval(`ToBinary(0x123)`)).toBe('100100011');
+    expect(await evaluator.eval(`ToBinary(123.456)`)).toBe(await evaluator.eval(`ToBinary(123)`));
     expect(await evaluator.eval(`ToBinary("abc")`)).toBe('');
     expect(await evaluator.eval(`ToBinary(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToDecimal)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToDecimal(0)`)).toBe(0);
+    expect(await evaluator.eval(`ToDecimal(123)`)).toBe(123);
+    expect(await evaluator.eval(`ToDecimal(-123)`)).toBe(-123);
+    expect(await evaluator.eval(`ToDecimal(123.456)`)).toBe(123);
+    expect(await evaluator.eval(`ToDecimal(0x123)`)).toBe(291);
+    expect(await evaluator.eval(`ToDecimal("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToDecimal(obj)`)).toBe('');
   });
 
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
@@ -890,9 +901,20 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`ToBinary(0)`)).toBe('0');
     expect(await evaluator.eval(`ToBinary(123)`)).toBe('1111011');
     expect(await evaluator.eval(`ToBinary(-123)`)).toBe('-1111011');
+    expect(await evaluator.eval(`ToBinary(123.456)`)).toBe(await evaluator.eval(`ToBinary(123)`));
     expect(await evaluator.eval(`ToBinary(0x123)`)).toBe('100100011');
     expect(await evaluator.eval(`ToBinary("abc")`)).toBe('');
     expect(await evaluator.eval(`ToBinary(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToDecimal)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToDecimal(0)`)).toBe(0);
+    expect(await evaluator.eval(`ToDecimal(123)`)).toBe(123);
+    expect(await evaluator.eval(`ToDecimal(-123)`)).toBe(-123);
+    expect(await evaluator.eval(`ToDecimal(123.456)`)).toBe(123);
+    expect(await evaluator.eval(`ToDecimal(0x123)`)).toBe(291);
+    expect(await evaluator.eval(`ToDecimal("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToDecimal(obj)`)).toBe('');
   });
 
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
