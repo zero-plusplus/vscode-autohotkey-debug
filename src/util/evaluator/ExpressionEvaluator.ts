@@ -2,13 +2,13 @@
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { FormatSpecifyMap, FunctionMap, ahkRegexMatch, allFunctions_for_v1, allFunctions_for_v2, getFalse, getTrue } from './functions';
+import { FormatSpecifyMap, FunctionMap, ahkRegexMatch, allFunctions_for_v1, allFunctions_for_v2, toNumber } from './functions';
 import * as dbgp from '../../dbgpSession';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
 import { MetaVariable, MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isNumberLike, isPrimitive } from '../util';
+import { isFloat, isNumberLike, isPrimitive } from '../util';
 import { uniqBy } from 'lodash';
 
 export type Node =
@@ -128,23 +128,85 @@ export class EvaluatedNode {
     this.value = value;
   }
 }
-const equals = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, a: EvaluatedValue, b: EvaluatedValue, ignoreCase: EvaluatedValue): Promise<EvaluatedValue> => {
+// #region comparison operator
+// Comparison operators always return pure number
+const equals = (a: EvaluatedValue, b: EvaluatedValue, ignoreCase: boolean): number => {
   const _a = a instanceof dbgp.ObjectProperty ? a.address : a;
   const _b = b instanceof dbgp.ObjectProperty ? b.address : b;
-  const _ignoreCase = !(ignoreCase === '0' || ignoreCase === '');
-  const result = (_ignoreCase ? equalsIgnoreCase(String(_a), String(_b)) : String(_a) === String(_b))
-    ? await getTrue(session, stackFrame)
-    : await getFalse(session, stackFrame);
-  return result;
+  const result = (ignoreCase ? equalsIgnoreCase(String(_a), String(_b)) : String(_a) === String(_b));
+  return result ? 1 : 0;
 };
-const negate = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, value: EvaluatedValue): Promise<EvaluatedValue> => {
+const negate = (value: EvaluatedValue): number => {
   if (value === '0') {
-    return getTrue(session, stackFrame);
+    return 1;
   }
   if (value === '') {
-    return getFalse(session, stackFrame);
+    return 1;
   }
-  return value ? getFalse(session, stackFrame) : getTrue(session, stackFrame);
+  return value ? 0 : 1;
+};
+const relational = (left: EvaluatedValue, operator: '<' | '<=' | '>' | '>=', right: EvaluatedValue): number => {
+  const _left = Number(left);
+  const _right = Number(right);
+  if (Number.isNaN(_left) || Number.isNaN(_right)) {
+    return 0;
+  }
+  switch (operator) {
+    case '<': return _left < _right ? 1 : 0;
+    case '<=': return _left <= _right ? 1 : 0;
+    case '>': return _left > _right ? 1 : 0;
+    case '>=': return _left >= _right ? 1 : 0;
+    default: break;
+  }
+  return 0;
+};
+const logical = (ahkVersion: AhkVersion, left: EvaluatedValue, operator: '&&' | '||', right: EvaluatedValue): number | EvaluatedValue => {
+  const _left = left === '0' ? false : left;
+  const _right = right === '0' ? false : right;
+  switch (operator) {
+    case '&&': {
+      if (2.0 <= ahkVersion.mejor) {
+        if (_left) {
+          return right;
+        }
+        return left;
+      }
+      return (_left && _right) ? 1 : 0;
+    }
+    case '||': {
+      if (2.0 <= ahkVersion.mejor) {
+        return (_left || _right) ? left : right;
+      }
+      return (_left || _right) ? 1 : 0;
+    }
+    default: break;
+  }
+  return 0;
+};
+const regexMatch = (left: EvaluatedValue, right: EvaluatedValue): number => {
+  if (left instanceof dbgp.ObjectProperty || right instanceof dbgp.ObjectProperty) {
+    return 0;
+  }
+  return ahkRegexMatch(String(left), String(right));
+};
+// #endregion
+
+export const isInfinite = (value: any): boolean => {
+  if (value === '-inf' || value === '-1.#INF00') {
+    return true;
+  }
+  if (typeof value === 'number' && !isFinite(value)) {
+    return true;
+  }
+
+  if (value instanceof dbgp.PrimitiveProperty) {
+    return isInfinite(value.value);
+  }
+  return false;
+};
+export const unescapePropertyName = (name: string, ahkVersion: AhkVersion): string => {
+  const _name = 2 <= ahkVersion.mejor ? name.replaceAll('""', '`"') : name;
+  return unescapeAhk(_name, ahkVersion);
 };
 export const getFullName = (nameOrObject: string | dbgp.ObjectProperty): string => {
   return typeof nameOrObject === 'string' ? nameOrObject : nameOrObject.fullName;
@@ -239,6 +301,7 @@ export const fetchPropertyByContext = async(session: dbgp.Session, context: dbgp
     return undefined;
   }
 
+  // In AutoHotkey v2.0 it is not possible to get `true` and `false` through the debugger. Therefore, the values of those variables are prepared here
   if (2 <= session.ahkVersion.mejor) {
     if (equalsIgnoreCase(name, 'true')) {
       return 1;
@@ -257,8 +320,13 @@ export const fetchPropertyByContext = async(session: dbgp.Session, context: dbgp
     switch (property.type) {
       case 'undefined': return undefined;
       case 'string': return property.value;
-      case 'integer': return Number(property.value);
-      case 'float': return parseFloat(property.value);
+      case 'integer':
+      case 'float': {
+        if (isInfinite(property.value)) {
+          return '';
+        }
+        return property.type === 'integer' ? Number(property.value) : parseFloat(property.value);
+      }
       default: break;
     }
   }
@@ -300,7 +368,40 @@ export const fetchPropertyChildren = async(session: dbgp.Session, stackFrame: db
   }
   return undefined;
 };
-export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, name: EvaluatedValue): Promise<EvaluatedValue> => {
+export const fetchPropertyOwnChildren = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: EvaluatedValue): Promise<dbgp.Property[] | undefined> => {
+  return (await fetchPropertyChildren(session, stackFrame, object))?.filter((child) => {
+    if (child.name.startsWith('<')) {
+      return false;
+    }
+    return true;
+  });
+};
+export const includesPropertyChild = (ahkVersion: AhkVersion, property: dbgp.Property, key: EvaluatedValue): boolean => {
+  if (key === undefined) {
+    return false;
+  }
+  if (key instanceof MetaVariable) {
+    return false;
+  }
+
+  if (property instanceof dbgp.ObjectProperty && key instanceof dbgp.ObjectProperty) {
+    return property.address === key.address;
+  }
+
+  if (property.index) {
+    return property.index === key;
+  }
+
+  const isDotNotation = !property.name.startsWith('["');
+  const childName = unescapePropertyName(property.name.replace(/^\["(.*)"\]$/u, '$1'), ahkVersion);
+  const searchName = unescapePropertyName(String(key), ahkVersion);
+  // Dot notation. e.g. obj.field, obj."test"
+  if ((isDotNotation || ahkVersion.mejor < 2.0)) {
+    return equalsIgnoreCase(childName, searchName);
+  }
+  return childName === searchName;
+};
+export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.StackFrame | undefined, object: dbgp.ObjectProperty, key: EvaluatedValue): Promise<EvaluatedValue> => {
   if (!object.hasChildren) {
     return undefined;
   }
@@ -309,23 +410,13 @@ export const fetchPropertyChild = async(session: dbgp.Session, stackFrame: dbgp.
     return undefined;
   }
 
-  const property = children.find((child) => {
-    const childName = child.name.replace(/^\["(.*)"\]$/u, '$1');
-    if (typeof name === 'string') {
-      return equalsIgnoreCase(childName, name);
-    }
-    else if (typeof name === 'number') {
-      return equalsIgnoreCase(childName, `[${name}]`);
-    }
-    else if (child instanceof dbgp.ObjectProperty && name instanceof dbgp.ObjectProperty) {
-      return child.address === name.address;
-    }
-    return false;
-  });
-
+  const property = children.find((child) => includesPropertyChild(session.ahkVersion, child, key));
   if (property instanceof dbgp.PrimitiveProperty) {
     if (property.type === 'string') {
       return property.value;
+    }
+    if (isInfinite(property.value)) {
+      return '';
     }
     return Number(property.value);
   }
@@ -627,23 +718,26 @@ export class ExpressionEvaluator {
     const expressionResult = await this.evalNode(node.expression, stackFrame, maxDepth);
 
     switch (node.operator) {
-      case '!': return negate(this.session, stackFrame, expressionResult);
+      case '!': return negate(expressionResult);
       case '+':
       case '-':
       case '~': {
-        const _expressionResult = Number(expressionResult);
-        if (Number.isNaN(_expressionResult)) {
+        let result = toNumber(expressionResult);
+        if (result === '') {
           return '';
         }
 
         switch (node.operator) {
-          case '+': return _expressionResult;
-          case '-': return -_expressionResult;
+          case '+': break;
+          case '-': result = -result; break;
           // eslint-disable-next-line no-bitwise
-          case '~': return ~_expressionResult;
-          default: break;
+          case '~': result = ~result; break;
+          default: return '';
         }
-        return '';
+        if (this.ahkVersion.mejor <= 1.1 && isFloat(result)) {
+          return String(result);
+        }
+        return result;
       }
       default: break;
     }
@@ -790,58 +884,17 @@ export class ExpressionEvaluator {
         }
         return '';
       }
-      case '=': return equals(this.session, stackFrame, left, right, '1');
-      case '==': return equals(this.session, stackFrame, left, right, '0');
-      case '!=': return negate(this.session, stackFrame, await equals(this.session, stackFrame, left, right, '1'));
-      case '!==': return negate(this.session, stackFrame, await equals(this.session, stackFrame, left, right, '0'));
-      case '<':
-      case '<=':
-      case '>':
-      case '>=': {
-        const _left = Number(left);
-        const _right = Number(right);
-        if (Number.isNaN(_left) || Number.isNaN(_right)) {
-          return getFalse(this.session, stackFrame);
-        }
-        switch (operator) {
-          case '<': return _left < _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
-          case '<=': return _left <= _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
-          case '>': return _left > _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
-          case '>=': return _left >= _right ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
-          default: break;
-        }
-        break;
-      }
-      case '&&':
-      case '||': {
-        const _left = left === '0' ? false : left;
-        const _right = right === '0' ? false : right;
-        switch (operator) {
-          case '&&': {
-            if (2.0 <= this.session.ahkVersion.mejor) {
-              if (_left) {
-                return right;
-              }
-              return left;
-            }
-            return (_left && _right) ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
-          }
-          case '||': {
-            if (2.0 <= this.session.ahkVersion.mejor) {
-              return (_left || _right) ? left : right;
-            }
-            return (_left || _right) ? getTrue(this.session, stackFrame) : getFalse(this.session, stackFrame);
-          }
-          default: break;
-        }
-        break;
-      }
-      case '~=': {
-        if (left instanceof dbgp.ObjectProperty || right instanceof dbgp.ObjectProperty) {
-          return getFalse(this.session, stackFrame);
-        }
-        return ahkRegexMatch(String(left), String(right));
-      }
+      case '=': return equals(left, right, true);
+      case '==': return equals(left, right, false);
+      case '!=': return negate(equals(left, right, true));
+      case '!==': return negate(equals(left, right, false));
+      case '<': return relational(left, '<', right);
+      case '<=': return relational(left, '<=', right);
+      case '>': return relational(left, '>', right);
+      case '>=': return relational(left, '>=', right);
+      case '&&': return logical(this.ahkVersion, left, '&&', right);
+      case '||': return logical(this.ahkVersion, left, '||', right);
+      case '~=': return regexMatch(left, right);
       case '//':
       case '//=': throw Error(`The ${operator} operator is not supported.`);
       case '+=':
@@ -1058,7 +1111,8 @@ export class ExpressionEvaluator {
     }
     else if (library) {
       const args = await Promise.all(node.arguments.map(async(arg) => this.evalNode(arg)));
-      return library(this.session, stackFrame, ...args);
+      const result = await library(this.session, stackFrame, ...args);
+      return result;
     }
     return '';
   }

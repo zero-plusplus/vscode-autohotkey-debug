@@ -1,16 +1,49 @@
+import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
+import assert from 'assert';
 import * as net from 'net';
 import { ChildProcess } from 'child_process';
 import * as path from 'path';
-import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as dbgp from '../../src/dbgpSession';
 import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
 import { getFalse, getTrue } from '../../src/util/evaluator/functions';
 import { MetaVariableValueMap } from '../../src/util/VariableManager';
 import { closeSession, launchDebug } from '../util';
+import { isFloat } from '../../src/util/util';
+
+type ApiTester = (expression: string) => Promise<[ string | number, string | number, string ]>;
+const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
+  return async(expression: string, actual?: any) => {
+    const expected = await evaluator.eval(expression);
+    if (expected === undefined) {
+      throw Error(`The expected (\`${expression}\`) is undefined.`);
+    }
+
+    const key = expression.replaceAll('"', 2 <= evaluator.ahkVersion.mejor ? '`"' : '""');
+    const actualExpression = `testResults["${key}"]`;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const _actual = actual ?? await evaluator.eval(actualExpression);
+    if (_actual === undefined) {
+      throw Error(`The actual (\`${actualExpression}\`) is undefined.`);
+    }
+    const message = `${expression} == ${actualExpression}`;
+
+    if (expected instanceof dbgp.ObjectProperty && _actual instanceof dbgp.ObjectProperty) {
+      return [ _actual.address, expected.address, message ];
+    }
+    if (isFloat(expected) && isFloat(_actual)) {
+      return [ expected.toFixed(6), expected.toFixed(6), message ];
+    }
+    if ((typeof expected === 'string' || typeof expected === 'number') && (typeof _actual === 'string' || typeof _actual === 'number')) {
+      return [ _actual, expected, message ];
+    }
+    throw Error('The value does not correspond to the test.');
+  };
+};
 
 const sampleDir = path.resolve(__dirname, 'ahk');
 const hostname = '127.0.0.1';
 describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
+  let testApi: ApiTester;
   let process: ChildProcess;
   let server: net.Server | undefined;
   let session: dbgp.Session;
@@ -24,13 +57,16 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     process = data.process;
     server = data.server;
     session = data.session;
+    await session.sendFeatureSetCommand('max_children', 10000);
 
     const metaVariableMap = new MetaVariableValueMap();
     metaVariableMap.set('hitCount', 1);
     metaVariableMap.set('callstack', [ { name: 'A' }, { name: 'B' } ]);
     evaluator = new ExpressionEvaluator(session, { metaVariableMap });
+    testApi = createTestApi(evaluator);
     true_ahk = await getTrue(session);
     false_ahk = await getFalse(session);
+
     // undefined_ahk = await getUndefined(session);
   });
   afterAll(async() => {
@@ -119,77 +155,77 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('LogicalOrExpression_or', async(): Promise<void> => {
-    expect(await evaluator.eval('true || true')).toBe(true_ahk);
-    expect(await evaluator.eval('true || false')).toBe(true_ahk);
-    expect(await evaluator.eval('instance || false')).toBe(true_ahk);
-    expect(await evaluator.eval('false || false')).toBe(false_ahk);
+    expect(await evaluator.eval('true || true')).toBe(1);
+    expect(await evaluator.eval('true || false')).toBe(1);
+    expect(await evaluator.eval('instance || false')).toBe(1);
+    expect(await evaluator.eval('false || false')).toBe(0);
   });
 
   test('LogicalAndExpression_and', async(): Promise<void> => {
-    expect(await evaluator.eval('true && true')).toBe(true_ahk);
-    expect(await evaluator.eval('true && false')).toBe(false_ahk);
-    expect(await evaluator.eval('false && false')).toBe(false_ahk);
-    expect(await evaluator.eval('instance && false')).toBe(false_ahk);
+    expect(await evaluator.eval('true && true')).toBe(1);
+    expect(await evaluator.eval('true && false')).toBe(0);
+    expect(await evaluator.eval('false && false')).toBe(0);
+    expect(await evaluator.eval('instance && false')).toBe(0);
   });
 
   test('EqualityExpression_loose_equal', async(): Promise<void> => {
-    expect(await evaluator.eval('10 = 10')).toBe(true_ahk);
-    expect(await evaluator.eval('"abc" = "ABC"')).toBe(true_ahk);
-    expect(await evaluator.eval('obj = obj')).toBe(true_ahk);
-    expect(await evaluator.eval('"abc" = "ABCD"')).toBe(false_ahk);
-    expect(await evaluator.eval('instance = T')).toBe(false_ahk);
+    expect(await evaluator.eval('10 = 10')).toBe(1);
+    expect(await evaluator.eval('"abc" = "ABC"')).toBe(1);
+    expect(await evaluator.eval('obj = obj')).toBe(1);
+    expect(await evaluator.eval('"abc" = "ABCD"')).toBe(0);
+    expect(await evaluator.eval('instance = T')).toBe(0);
   });
 
   test('EqualityExpression_equal', async(): Promise<void> => {
-    expect(await evaluator.eval('10 == 10')).toBe(true_ahk);
-    expect(await evaluator.eval('obj == obj')).toBe(true_ahk);
-    expect(await evaluator.eval('"abc" == "ABC"')).toBe(false_ahk);
-    expect(await evaluator.eval('instance == T')).toBe(false_ahk);
+    expect(await evaluator.eval('10 == 10')).toBe(1);
+    expect(await evaluator.eval('obj == obj')).toBe(1);
+    expect(await evaluator.eval('"abc" == "ABC"')).toBe(0);
+    expect(await evaluator.eval('instance == T')).toBe(0);
   });
 
   test('EqualityExpression_not_loose_equal', async(): Promise<void> => {
-    expect(await evaluator.eval('"abc" != "ABCD"')).toBe(true_ahk);
-    expect(await evaluator.eval('instance != T')).toBe(true_ahk);
-    expect(await evaluator.eval('10 != 10')).toBe(false_ahk);
-    expect(await evaluator.eval('"abc" != "ABC"')).toBe(false_ahk);
-    expect(await evaluator.eval('obj != obj')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" != "ABCD"')).toBe(1);
+    expect(await evaluator.eval('instance != T')).toBe(1);
+    expect(await evaluator.eval('10 != 10')).toBe(0);
+    expect(await evaluator.eval('"abc" != "ABC"')).toBe(0);
+    expect(await evaluator.eval('obj != obj')).toBe(0);
   });
 
   test('EqualityExpression_not_equal', async(): Promise<void> => {
-    expect(await evaluator.eval('"abc" !== "ABC"')).toBe(true_ahk);
-    expect(await evaluator.eval('instance !== T')).toBe(true_ahk);
-    expect(await evaluator.eval('10 !== 10')).toBe(false_ahk);
-    expect(await evaluator.eval('obj !== obj')).toBe(false_ahk);
+    expect(await evaluator.eval('"abc" !== "ABC"')).toBe(1);
+    expect(await evaluator.eval('instance !== T')).toBe(1);
+    expect(await evaluator.eval('10 !== 10')).toBe(0);
+    expect(await evaluator.eval('obj !== obj')).toBe(0);
   });
 
   test('RelationalExpression_lessthan', async(): Promise<void> => {
-    expect(await evaluator.eval('0 < 1')).toBe(true_ahk);
-    expect(await evaluator.eval('0 < num_int')).toBe(true_ahk);
-    expect(await evaluator.eval('0 < 0')).toBe(false_ahk);
-    expect(await evaluator.eval('"abc" < "ABC"')).toBe(false_ahk);
+    expect(await evaluator.eval('0 < 1')).toBe(1);
+    expect(await evaluator.eval('0 < num_int')).toBe(1);
+    expect(await evaluator.eval('0 < 0')).toBe(0);
+    expect(await evaluator.eval('"abc" < "ABC"')).toBe(0);
   });
 
   test('RelationalExpression_lessthan_equal', async(): Promise<void> => {
-    expect(await evaluator.eval('0 <= 1')).toBe(true_ahk);
-    expect(await evaluator.eval('0 <= num_int')).toBe(true_ahk);
-    expect(await evaluator.eval('0 <= 0')).toBe(true_ahk);
-    expect(await evaluator.eval('"abc" <= "ABC"')).toBe(false_ahk);
+    expect(await evaluator.eval('0 <= 1')).toBe(1);
+    expect(await evaluator.eval('0 <= num_int')).toBe(1);
+    expect(await evaluator.eval('0 <= 0')).toBe(1);
+    expect(await evaluator.eval('"abc" <= "ABC"')).toBe(0);
   });
 
   test('RelationalExpression_greaterthan', async(): Promise<void> => {
-    expect(await evaluator.eval('1 > 0')).toBe(true_ahk);
-    expect(await evaluator.eval('num_int > 0')).toBe(true_ahk);
-    expect(await evaluator.eval('0 > 0')).toBe(false_ahk);
-    expect(await evaluator.eval('0 > num_int')).toBe(false_ahk);
-    expect(await evaluator.eval('"abc" > "ABC"')).toBe(false_ahk);
+    expect(await evaluator.eval('1 > 0')).toBe(1);
+    expect(await evaluator.eval('num_int > 0')).toBe(1);
+    expect(await evaluator.eval('0 > 0')).toBe(0);
+    expect(await evaluator.eval('0 > num_int')).toBe(0);
+    expect(await evaluator.eval('"abc" > "ABC"')).toBe(0);
   });
 
   test('RelationalExpression_greaterthan_equal', async(): Promise<void> => {
-    expect(await evaluator.eval('1 >= 0')).toBe(true_ahk);
-    expect(await evaluator.eval('num_int >= 0')).toBe(true_ahk);
-    expect(await evaluator.eval('0 >= 0')).toBe(true_ahk);
-    expect(await evaluator.eval('0 >= num_int')).toBe(false_ahk);
-    expect(await evaluator.eval('"abc" >= "ABC"')).toBe(false_ahk);
+    expect(await evaluator.eval('1 >= 0')).toBe(1);
+    expect(await evaluator.eval('num_int >= 0')).toBe(1);
+    expect(await evaluator.eval('0 >= 0')).toBe(1);
+    expect(await evaluator.eval('0 >= num_int')).toBe(0);
+    expect(await evaluator.eval('"abc" >= "ABC"')).toBe(0);
   });
 
   test('RegExMatchExpression_regex_match', async(): Promise<void> => {
@@ -279,9 +315,9 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('UnaryExpression_not', async(): Promise<void> => {
-    expect(await evaluator.eval(`!true`)).toBe(false_ahk);
-    expect(await evaluator.eval(`!num_int`)).toBe(false_ahk);
-    expect(await evaluator.eval(`! num_int`)).toBe(false_ahk);
+    expect(await evaluator.eval(`!true`)).toBe(0);
+    expect(await evaluator.eval(`!num_int`)).toBe(0);
+    expect(await evaluator.eval(`! num_int`)).toBe(0);
   });
 
   test('UnaryExpression_address', async(): Promise<void> => {
@@ -310,8 +346,7 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   });
 
   test('CallExpression_call', async(): Promise<void> => {
-    expect(await evaluator.eval('IsString(str_alpha)')).toBe(true_ahk);
-    expect(await evaluator.eval(`Contains(obj, "value")`)).toBe(true_ahk);
+    expect(await evaluator.eval(`ObjHasKey(obj, "key")`)).toBeTruthy();
   });
 
   test('MemberExpression_propertyaccess', async(): Promise<void> => {
@@ -337,9 +372,9 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
 
   test('ParenthesizedExpression', async(): Promise<void> => {
     expect(await evaluator.eval(`(1 + 2) * 3`)).toBe(9);
-    expect(await evaluator.eval(`true && false || true`)).toBe(true_ahk);
-    expect(await evaluator.eval(`true || true && false`)).toBe(true_ahk);
-    expect(await evaluator.eval(`(true || true) && false`)).toBe(false_ahk);
+    expect(await evaluator.eval(`true && false || true`)).toBe(1);
+    expect(await evaluator.eval(`true || true && false`)).toBe(1);
+    expect(await evaluator.eval(`(true || true) && false`)).toBe(0);
   });
 
   test('identifier', async(): Promise<void> => {
@@ -386,237 +421,262 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval('GetMetaVar("callstack")[0].name')).toBe('A');
   });
 
+  test('eval precedence', async(): Promise<void> => {
+    expect(await evaluator.eval(`1 + (2 + 3) * 4 ** 5`)).toBe(5121);
+    expect(await evaluator.eval(`1 < 0 + 2`)).toBe(1);
+    expect(await evaluator.eval(`1 <= "abc" ~= "b"`)).toBe(1);
+    expect(await evaluator.eval(`1 + 2 * 3 "a" "b" . "c"`)).toBe('7abc');
+    expect(await evaluator.eval(`"abc" ~= "b" == 2 && +7 - -7 == 14`)).toBe(1);
+    expect(await evaluator.eval(`!("abc" ~= "b" == 2 && +7 - -7 == 14)`)).toBe(0);
+    expect(await evaluator.eval(`false ? 100 : 5 + 5 == 10`)).toBe(1);
+    expect(await evaluator.eval(`(false ? 100 : 5 + 5) + 5`)).toBe(15);
+  });
+
+  // #region Partial compatibility functions
+  test('eval libraries (ObjHasKey)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`ObjHasKey(obj, "key")`));
+    assert.strictEqual(...await testApi(`ObjHasKey(obj, key)`));
+    assert.strictEqual(...await testApi(`ObjHasKey(arr, 1)`));
+    assert.strictEqual(...await testApi(`ObjHasKey(T, "staticField")`));
+    assert.strictEqual(...await testApi(`ObjHasKey(T, "method")`));
+    assert.strictEqual(...await testApi(`instance.instanceField && ObjHasKey(instance, "instanceField")`));
+    assert.strictEqual(...await testApi(`instance.baseInstanceField && ObjHasKey(instance, "baseInstanceField")`));
+    assert.strictEqual(...await testApi(`!(instance.method && ObjHasKey(instance, "method"))`));
+    assert.strictEqual(...await testApi(`!ObjHasKey(obj, "unknown")`));
+
+    expect(await evaluator.eval('HasKey(obj, key)')).toBeTruthy();
+  });
+
   test('eval libraries (IsSet)', async(): Promise<void> => {
-    for await (const name of [ 'IsSet', 'IsUndefined' ]) {
-      expect(await evaluator.eval(`${name}(undefined)`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(null)`)).toBe(false_ahk);
-      expect(await evaluator.eval(`${name}(GetMetaVar(""))`)).toBe(true_ahk);
-    }
-  });
+    assert.strictEqual(...await testApi(`IsSet(str_alpha)`));
+    assert.strictEqual(...await testApi(`IsSet(obj)`));
+    assert.strictEqual(...await testApi(`IsSet(T)`));
 
-  test('eval libraries (IsString)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsString(str_alpha)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsString(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsString(num_int_like)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsString(arr)')).toBe(false_ahk);
-  });
-
-  test('eval libraries (IsNumber)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsNumber(num_int)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsNumber(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsNumber(arr)')).toBe(false_ahk);
-  });
-
-  test('eval libraries (IsNumberLike)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsNumberLike(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsNumberLike(num_int)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsNumberLike(arr)')).toBe(false_ahk);
-  });
-
-  test('eval libraries (IsInteger)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsInteger(num_int)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsInteger(num_int_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsInteger(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsInteger(arr)')).toBe(false_ahk);
-  });
-
-  test('eval libraries (IsIntegerLike)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsIntegerLike(num_int)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsIntegerLike(num_int_like)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsIntegerLike(num_float)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsIntegerLike(arr)')).toBe(false_ahk);
-  });
-
-  test('eval libraries (IsFloat)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsFloat(num_float)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloat(num_float_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloat(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloat(num_int_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloat(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloat(arr)')).toBe(false_ahk);
-  });
-
-  test('eval libraries (IsFloatLike)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsFloatLike(num_float)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsFloatLike(num_float_like)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsFloatLike(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false_ahk);
-  });
-
-  test('eval libraries (IsHexLike)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsHexLike(num_hex_like)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsHexLike(num_hex)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsHexLike(num_float)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsHexLike(num_float_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsHexLike(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsHexLike(num_int_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsHexLike(arr)')).toBe(false_ahk);
-  });
-
-  test('eval libraries (IsPrimitive)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsPrimitive(str_alpha)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsPrimitive(num_int)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsPrimitive(undefined)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsPrimitive(obj)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsPrimitive(arr)')).toBe(false_ahk);
+    assert.strictEqual(...await testApi(`!IsSet(undefined)`));
   });
 
   test('eval libraries (IsObject)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsObject(obj)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsObject(arr)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsObject(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsObject(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsObject(undefined)')).toBe(false_ahk);
+    assert.strictEqual(...await testApi(`IsObject(obj)`));
+    assert.strictEqual(...await testApi(`IsObject(T)`));
+
+    assert.strictEqual(...await testApi(`!IsObject(str_alpha)`));
+    assert.strictEqual(...await testApi(`!IsObject(num_int)`));
+    assert.strictEqual(...await testApi(`!IsObject(undefined)`));
   });
 
-  test('eval libraries (IsAlpha)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsAlpha(str_alpha)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsAlpha(str_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsAlpha(str_not_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsAlpha(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsAlpha(undefined)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsAlpha(obj)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsAlpha(arr)')).toBe(false_ahk);
+  test('eval libraries (ObjGetBase)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`ObjGetBase(obj)`));
+    assert.strictEqual(...await testApi(`ObjGetBase(T)`));
+    assert.strictEqual(...await testApi(`ObjGetBase(T2)`));
+
+    expect(await evaluator.eval(`ObjGetBase(str_alpha)`)).toBe('');
+    expect(await evaluator.eval(`ObjGetBase(num_int)`)).toBe('');
+    expect(await evaluator.eval(`ObjGetBase(undefined)`)).toBe('');
+
+    expect(await evaluator.eval(`GetBase(str_alpha)`)).toBe('');
   });
 
-  test('eval libraries (IsAlnum)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsAlnum(str_alpha)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsAlnum(str_alnum)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsAlnum(str_not_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsAlnum(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsAlnum(undefined)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsAlnum(obj)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsAlnum(arr)')).toBe(false_ahk);
+  test('eval libraries (ObjCount)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`ObjCount(obj)`));
+    assert.strictEqual(...await testApi(`ObjCount(arr)`));
+    assert.strictEqual(...await testApi(`ObjCount(arr_like)`));
+    assert.strictEqual(...await testApi(`ObjCount(T)`));
+    assert.strictEqual(...await testApi(`ObjCount(T2)`));
+
+    assert.strictEqual(...await testApi(`ObjCount(str_alpha)`));
+    assert.strictEqual(...await testApi(`ObjCount(num_int)`));
+    assert.strictEqual(...await testApi(`ObjCount(undefined)`));
   });
 
-  test('eval libraries (IsUpper)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsUpper(str_upper)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsUpper(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsUpper(str_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsUpper(str_not_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsUpper(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsUpper(undefined)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsUpper(obj)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsUpper(arr)')).toBe(false_ahk);
+  test('eval libraries (Math)', async(): Promise<void> => {
+    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor', 'Log', 'Ln', 'Round', 'Sqrt', 'Sin', 'Cos', 'Tan', 'ASin', 'ACos', 'ATan' ]) {
+      assert.strictEqual(...await testApi(`${funcName}(0)`));
+      assert.strictEqual(...await testApi(`${funcName}(3)`));
+      assert.strictEqual(...await testApi(`${funcName}(-3)`));
+      assert.strictEqual(...await testApi(`${funcName}(1.23)`));
+      assert.strictEqual(...await testApi(`${funcName}(-1.23)`));
+      assert.strictEqual(...await testApi(`${funcName}(num_int_like)`));
+      assert.strictEqual(...await testApi(`${funcName}(str_alpha)`));
+      assert.strictEqual(...await testApi(`${funcName}(obj)`));
+    }
+
+    for await (const funcName of [ 'Max', 'Min' ]) {
+      assert.strictEqual(...await testApi(`${funcName}(1, "2", 3)`));
+      assert.strictEqual(...await testApi(`${funcName}("a", "b", "c")`));
+      assert.strictEqual(...await testApi(`${funcName}("1", "b", "c")`));
+    }
+
+    assert.strictEqual(...await testApi(`Mod(7.5, "2")`));
+    assert.strictEqual(...await testApi(`Mod(2, "b")`));
   });
 
-  test('eval libraries (IsLower)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsLower(str_lower)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsLower(str_upper)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsLower(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsLower(str_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsLower(str_not_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsLower(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsLower(undefined)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsLower(obj)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsLower(arr)')).toBe(false_ahk);
+  test('eval libraries (StrLen)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`StrLen(str_alpha)`));
+    assert.strictEqual(...await testApi(`StrLen(num_int)`));
+    assert.strictEqual(...await testApi(`StrLen(obj)`));
+
+    expect(await evaluator.eval(`StrLen(num_hex)`)).not.toBe(5);
   });
 
-  test('eval libraries (IsTime)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsTime(str_time)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsTime(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsTime(str_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsTime(str_not_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsTime(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsTime(undefined)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsTime(obj)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsTime(arr)')).toBe(false_ahk);
+  //   test('eval libraries (InStr)', async(): Promise<void> => {
+  //     assert.strictEqual(...await testApi(`InStr("abc", "B")`));
+  //     assert.strictEqual(...await testApi(`InStr("abc", "B", false)`));
+  //     assert.strictEqual(...await testApi(`InStr("abc", "b", true)`));
+  //     assert.strictEqual(...await testApi(`InStr("abc", "b", "true")`));
+  //     assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 3)`));
+  //     assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 1, 2)`));
+  //     assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, -2, 1)`));
+  //   });
+  // #endregion Partial compatibility functions
+
+  // #region Utility functions
+  test('eval libraries (InstanceOf)', async(): Promise<void> => {
+    expect(await evaluator.eval('InstanceOf(instance, T)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(instance, T2)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(instance, obj)')).toBeFalsy();
+    expect(await evaluator.eval('InstanceOf(num_int)')).toBe('');
   });
 
-  test('eval libraries (IsSpace)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsSpace(str_space)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsSpace(str_time)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsSpace(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsSpace(str_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsSpace(str_not_alnum)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsSpace(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsSpace(undefined)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsSpace(obj)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsSpace(arr)')).toBe(false_ahk);
+  test('eval libraries (IsPrimitive)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsPrimitive(str_alpha)')).toBeTruthy();
+    expect(await evaluator.eval('IsPrimitive(num_int)')).toBeTruthy();
+    expect(await evaluator.eval('IsPrimitive(undefined)')).toBeFalsy();
+    expect(await evaluator.eval('IsPrimitive(obj)')).toBeFalsy();
+    expect(await evaluator.eval('IsPrimitive(arr)')).toBeFalsy();
   });
 
   test('eval libraries (IsClass)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsClass(T)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsClass(T, "T")')).toBe(true_ahk);
-    expect(await evaluator.eval('IsClass(T, T)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsClass(2, "T")')).toBe(false_ahk);
-    expect(await evaluator.eval('IsClass(instance)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsClass(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsClass(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsClass(undefined)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsClass(obj)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsClass(arr)')).toBe(false_ahk);
+    expect(await evaluator.eval('IsClass(T)')).toBeTruthy();
+    expect(await evaluator.eval('IsClass(T2)')).toBeTruthy();
+    expect(await evaluator.eval('IsClass(2)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(instance)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(obj)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(arr)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(str_alpha)')).toBe('');
+    expect(await evaluator.eval('IsClass(num_int)')).toBe('');
+    expect(await evaluator.eval('IsClass(undefined)')).toBe('');
+  });
+
+  test('eval libraries (IsDate)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsDate("2000/1/1")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("2000/1/1 00:00")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("abc")')).toBeFalsy();
   });
 
   test('eval libraries (IsFile)', async(): Promise<void> => {
-    expect(await evaluator.eval(`IsFile("${__filename}")`)).toBe(true_ahk);
-    expect(await evaluator.eval(`IsFile("${__dirname}")`)).toBe(false_ahk);
+    expect(await evaluator.eval(`IsFile("${__filename}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsFile("${__dirname}")`)).toBeFalsy();
+    expect(await evaluator.eval(`IsFile(obj)`)).toBe('');
   });
 
   test('eval libraries (IsDirectory)', async(): Promise<void> => {
-    expect(await evaluator.eval(`IsDirectory("${__dirname}")`)).toBe(true_ahk);
-    expect(await evaluator.eval(`IsDir("${__filename}")`)).toBe(false_ahk);
+    expect(await evaluator.eval(`IsDirectory("${__dirname}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsDirectory("${__filename}")`)).toBeFalsy();
+    expect(await evaluator.eval(`IsDirectory(obj)`)).toBe('');
+
+    expect(await evaluator.eval(`IsDir("${__dirname}")`)).toBeTruthy();
   });
 
   test('eval libraries (IsPath)', async(): Promise<void> => {
-    expect(await evaluator.eval(`IsPath("${__dirname}")`)).toBe(true_ahk);
-    expect(await evaluator.eval(`IsPath("${__filename}")`)).toBe(true_ahk);
-    expect(await evaluator.eval(`IsPath("not path")`)).toBe(false_ahk);
+    expect(await evaluator.eval(`IsPath("${__dirname}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsPath("${__filename}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsPath("not path")`)).toBeFalsy();
+
+    expect(await evaluator.eval(`IsPath(obj)`)).toBe('');
   });
 
-  test('eval libraries (IsGlob)', async(): Promise<void> => {
-    expect(await evaluator.eval(`IsGlob("${__dirname}/*.*")`)).toBe(true_ahk);
-    expect(await evaluator.eval(`IsGlob("not path")`)).toBe(false_ahk);
+  test('eval libraries (ToBinary)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToBinary(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToBinary(123)`)).toBe('1111011');
+    expect(await evaluator.eval(`ToBinary(-123)`)).toBe('-1111011');
+    expect(await evaluator.eval(`ToBinary(0x123)`)).toBe('100100011');
+    expect(await evaluator.eval(`ToBinary(123.456)`)).toBe(await evaluator.eval(`ToBinary(123)`));
+    expect(await evaluator.eval(`ToBinary("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToBinary(obj)`)).toBe('');
   });
 
-  test('eval libraries (HasKey)', async(): Promise<void> => {
-    for await (const name of [ 'HasKey', 'ObjHasKey' ]) {
-      expect(await evaluator.eval(`${name}(obj, "key")`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(obj, key)`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(arr, 1)`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(T, "staticField")`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(T, "method")`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(instance, "instanceField")`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(instance, "method")`)).toBe(false_ahk);
-      expect(await evaluator.eval(`${name}(str_alpha)`)).toBe(false_ahk);
-      expect(await evaluator.eval(`${name}(num_int)`)).toBe(false_ahk);
-      expect(await evaluator.eval(`${name}(undefined)`)).toBe(false_ahk);
-    }
+  test('eval libraries (ToDecimal)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToDecimal(0)`)).toBe(0);
+    expect(await evaluator.eval(`ToDecimal(123)`)).toBe(123);
+    expect(await evaluator.eval(`ToDecimal(-123)`)).toBe(-123);
+    expect(await evaluator.eval(`ToDecimal(123.456)`)).toBe(123);
+    expect(await evaluator.eval(`ToDecimal(0x123)`)).toBe(291);
+    expect(await evaluator.eval(`ToDecimal("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToDecimal(obj)`)).toBe('');
   });
 
-  test('eval libraries (RegExHasKey)', async(): Promise<void> => {
-    expect(await evaluator.eval(`RegExHasKey(obj, "key")`)).toBe(true_ahk);
-    expect(await evaluator.eval(`RegExHasKey(obj, "i)Key")`)).toBe(true_ahk);
-    expect(await evaluator.eval(`RegExHasKey(obj, "k*")`)).toBe(true_ahk);
-    expect(await evaluator.eval(`RegExHasKey(arr, "1")`)).toBe(true_ahk);
-    expect(await evaluator.eval(`RegExHasKey(str_alpha, "a")`)).toBe(false_ahk);
-    expect(await evaluator.eval(`RegExHasKey(num_int, "b")`)).toBe(false_ahk);
+  test('eval libraries (ToOctal)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToOctal(0)`)).toBe(0);
+    expect(await evaluator.eval(`ToOctal(123)`)).toBe(173);
+    expect(await evaluator.eval(`ToOctal(-123)`)).toBe(-173);
+    expect(await evaluator.eval(`ToOctal(123.456)`)).toBe(await evaluator.eval(`ToOctal(123)`));
+    expect(await evaluator.eval(`ToOctal(0x123)`)).toBe(443);
+    expect(await evaluator.eval(`ToOctal("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToOctal(obj)`)).toBe('');
   });
 
-  test('eval libraries (Contains)', async(): Promise<void> => {
-    for await (const name of [ 'Contains', 'Includes' ]) {
-      expect(await evaluator.eval(`${name}(obj, "value")`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(str_alpha, "a")`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(obj, "Value", true)`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(str_alpha, "b", true)`)).toBe(true_ahk);
-      expect(await evaluator.eval(`${name}(obj, "Value")`)).toBe(false_ahk);
-      expect(await evaluator.eval(`${name}(str_alpha, "b")`)).toBe(false_ahk);
-      expect(await evaluator.eval(`${name}(str_alpha, "z")`)).toBe(false_ahk);
-      expect(await evaluator.eval(`${name}(undefined, "$")`)).toBe(false_ahk);
-    }
+  test('eval libraries (ToHex)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToHex(0)`)).toBe('0x0');
+    expect(await evaluator.eval(`ToHex(123)`)).toBe('0x7b');
+    expect(await evaluator.eval(`ToHex(-123)`)).toBe('-0x7b');
+    expect(await evaluator.eval(`ToHex(123.456)`)).toBe(await evaluator.eval(`ToHex(123)`));
+    expect(await evaluator.eval(`ToHex(0x123)`)).toBe('0x123');
+    expect(await evaluator.eval(`ToHex("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToHex(obj)`)).toBe('');
   });
 
-  test('eval precedence', async(): Promise<void> => {
-    expect(await evaluator.eval(`1 + (2 + 3) * 4 ** 5`)).toBe(5121);
-    expect(await evaluator.eval(`1 < 0 + 2`)).toBe(true_ahk);
-    expect(await evaluator.eval(`1 <= "abc" ~= "b"`)).toBe(true_ahk);
-    expect(await evaluator.eval(`1 + 2 * 3 "a" "b" . "c"`)).toBe('7abc');
-    expect(await evaluator.eval(`"abc" ~= "b" == 2 && +7 - -7 == 14`)).toBe(true_ahk);
-    expect(await evaluator.eval(`!("abc" ~= "b" == 2 && +7 - -7 == 14)`)).toBe(false_ahk);
-    expect(await evaluator.eval(`false ? 100 : 5 + 5 == 10`)).toBe(true_ahk);
-    expect(await evaluator.eval(`(false ? 100 : 5 + 5) + 5`)).toBe(15);
+  test('eval libraries (ToHexWithoutPrefix)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToHexWithoutPrefix(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(123)`)).toBe('7b');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(-123)`)).toBe('-7b');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(123.456)`)).toBe(await evaluator.eval(`ToHexWithoutPrefix(123)`));
+    expect(await evaluator.eval(`ToHexWithoutPrefix(0x123)`)).toBe('123');
+    expect(await evaluator.eval(`ToHexWithoutPrefix("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(obj)`)).toBe('');
   });
+
+  test('eval libraries (ToUpperHex)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToUpperHex(0)`)).toBe('0x0');
+    expect(await evaluator.eval(`ToUpperHex(123)`)).toBe('0x7B');
+    expect(await evaluator.eval(`ToUpperHex(-123)`)).toBe('-0x7B');
+    expect(await evaluator.eval(`ToUpperHex(123.456)`)).toBe(await evaluator.eval(`ToUpperHex(123)`));
+    expect(await evaluator.eval(`ToUpperHex(0x123)`)).toBe('0x123');
+    expect(await evaluator.eval(`ToUpperHex("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToUpperHex(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToUpperHexWithoutPrefix)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(123)`)).toBe('7B');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(-123)`)).toBe('-7B');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(123.456)`)).toBe(await evaluator.eval(`ToUpperHexWithoutPrefix(123)`));
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(0x123)`)).toBe('123');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToJsonString)', async(): Promise<void> => {
+    const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
+
+    expect(await evaluator.eval(`ToJsonString(str_alpha)`)).toBe(toJsonString('aBc'));
+    expect(await evaluator.eval(`ToJsonString(num_int)`)).toBe(toJsonString(123));
+    expect(await evaluator.eval(`ToJsonString(obj)`)).toBe(toJsonString({ 'key': 'value' }));
+    expect(await evaluator.eval(`ToJsonString(arr)`)).toBe(toJsonString([ 1, 10, 100 ]));
+    expect(await evaluator.eval(`ToJsonString(arr, 4, 1)`)).toBe(toJsonString([ 1, '[LIMIT]' ]));
+    expect(await evaluator.eval(`ToJsonString(arr_like)`)).toBe(toJsonString({ '1': 1, '2': 10, '3': 100, 'size': 3 }));
+    expect(await evaluator.eval(`ToJsonString(circular)`)).toBe(toJsonString({ circular: '[Circular]' }));
+  });
+
+  test('eval libraries (ToOneLineJsonString)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToOneLineJsonString(str_alpha)`)).toBe(JSON.stringify('aBc'));
+    expect(await evaluator.eval(`ToOneLineJsonString(num_int)`)).toBe(JSON.stringify(123));
+    expect(await evaluator.eval(`ToOneLineJsonString(obj)`)).toBe(JSON.stringify({ 'key': 'value' }));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr)`)).toBe(JSON.stringify([ 1, 10, 100 ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr, 1)`)).toBe(JSON.stringify([ 1, '[LIMIT]' ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr_like)`)).toBe(JSON.stringify({ '1': 1, '2': 10, '3': 100, 'size': 3 }));
+    expect(await evaluator.eval(`ToOneLineJsonString(circular)`)).toBe(JSON.stringify({ circular: '[Circular]' }));
+  });
+  // #endregion Utility functions
 
   test('eval not support', async(): Promise<void> => {
     expect(async() => evaluator.eval(`100 // 2`)).rejects.toThrow();
@@ -632,6 +692,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   let process: ChildProcess;
   let server: net.Server;
   let session: dbgp.Session;
+  let testApi: ApiTester;
   let evaluator: ExpressionEvaluator;
   let true_ahk: EvaluatedValue;
   let false_ahk: EvaluatedValue;
@@ -642,11 +703,13 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     process = data.process;
     server = data.server;
     session = data.session;
+    await session.sendFeatureSetCommand('max_children', 10000);
 
     const metaVariableMap = new MetaVariableValueMap();
     metaVariableMap.set('hitCount', 1);
     metaVariableMap.set('callstack', [ { name: 'A' }, { name: 'B' } ]);
     evaluator = new ExpressionEvaluator(session, { metaVariableMap });
+    testApi = createTestApi(evaluator);
     true_ahk = await getTrue(session);
     false_ahk = await getFalse(session);
     // undefined_ahk = await getUndefined(session);
@@ -699,6 +762,7 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
   test('eval dereference', async(): Promise<void> => {
     expect(await evaluator.eval(`%"str"%`)).toBe('abc');
     expect(await evaluator.eval(`%'str'%`)).toBe('abc');
+    expect(await evaluator.eval(`%str%`)).toBe('str');
     expect(async() => evaluator.eval('% "str" %')).rejects.toThrow();
   });
 
@@ -721,46 +785,347 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval('(instance || false).instanceField')).toBe('instance');
   });
 
-  test('eval libraries (IsNumber)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsNumber(num_int)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsNumber(num_float)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsNumber(num_hex)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsNumber(num_scientific_notation)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsNumber(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsNumber(arr)')).toBe(false_ahk);
+  // #region Partial compatibility functions
+  test('eval libraries (ObjHasOwnProp)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`ObjHasOwnProp(obj, "key")`));
+    assert.strictEqual(...await testApi(`ObjHasOwnProp(obj, key)`));
+    assert.strictEqual(...await testApi(`ObjHasOwnProp(T, "staticField")`));
+    assert.strictEqual(...await testApi(`instance.instanceField && ObjHasOwnProp(instance, "instanceField")`));
+    assert.strictEqual(...await testApi(`instance.baseInstanceField && ObjHasOwnProp(instance, "baseInstanceField")`));
+
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(obj, "unknown")`));
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(mapObj, "key")`));
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(mapObj, 3)`));
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(T, "method")`));
+    assert.strictEqual(...await testApi(`!ObjHasOwnProp(arr, 1)`));
+    assert.strictEqual(...await testApi(`!(instance.method && ObjHasOwnProp(instance, "method"))`));
+
+    expect(await evaluator.eval('HasOwnProp(obj, "key")')).toBeTruthy();
+    expect(await evaluator.eval('ObjHasKey(obj, "key")')).toBeTruthy();
+    expect(await evaluator.eval('HasKey(obj, "key")')).toBeTruthy();
   });
-  test('eval libraries (IsNumberLike)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsNumberLike(num_int)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsNumberLike(num_int_like)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsNumberLike(arr)')).toBe(false_ahk);
+
+  test('eval libraries (IsSet)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`IsSet(str_alpha)`));
+    assert.strictEqual(...await testApi(`IsSet(obj)`));
+    assert.strictEqual(...await testApi(`IsSet(T)`));
+
+    assert.strictEqual(...await testApi(`!IsSet(undefined)`));
   });
-  test('eval libraries (IsInteger)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsInteger(num_int)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsInteger(num_int_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsInteger(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsInteger(arr)')).toBe(false_ahk);
+
+  test('eval libraries (IsObject)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`IsObject(obj)`));
+    assert.strictEqual(...await testApi(`IsObject(T)`));
+
+    assert.strictEqual(...await testApi(`!IsObject(str_alpha)`));
+    assert.strictEqual(...await testApi(`!IsObject(num_int)`));
+
+    expect(await evaluator.eval(`IsObject(undefined)`)).toBe('');
   });
-  test('eval libraries (IsIntegerLike)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsIntegerLike(num_int)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsIntegerLike(num_int_like)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsIntegerLike(num_float)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsIntegerLike(arr)')).toBe(false_ahk);
+
+  test('eval libraries (ObjGetBase)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`ObjGetBase(obj)`));
+    assert.strictEqual(...await testApi(`ObjGetBase(T)`));
+    assert.strictEqual(...await testApi(`ObjGetBase(T2)`));
+
+    expect(await evaluator.eval(`ObjGetBase(str_alpha)`)).toBe('');
+    expect(await evaluator.eval(`ObjGetBase(num_int)`)).toBe('');
+    expect(await evaluator.eval(`ObjGetBase(undefined)`)).toBe('');
+
+    expect(await evaluator.eval(`GetBase(str_alpha)`)).toBe('');
   });
-  test('eval libraries (IsFloat)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsFloat(num_float)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsFloat(num_float_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloat(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloat(num_int_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloat(str_alpha)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloat(arr)')).toBe(false_ahk);
+
+  test('eval libraries (ObjOwnPropCount)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(obj)`));
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(mapObj)`));
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(arr)`));
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(T)`));
+    assert.strictEqual(...await testApi(`ObjOwnPropCount(T2)`));
+
+    expect(await evaluator.eval(`ObjOwnPropCount(str_alpha)`)).toBe('');
+    expect(await evaluator.eval(`ObjOwnPropCount(num_int)`)).toBe('');
+    expect(await evaluator.eval(`ObjOwnPropCount(undefined)`)).toBe('');
   });
-  test('eval libraries (IsFloatLike)', async(): Promise<void> => {
-    expect(await evaluator.eval('IsFloatLike(num_float)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsFloatLike(num_float_like)')).toBe(true_ahk);
-    expect(await evaluator.eval('IsFloatLike(num_int)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloatLike(num_int_like)')).toBe(false_ahk);
-    expect(await evaluator.eval('IsFloatLike(arr)')).toBe(false_ahk);
+
+  test('eval libraries (Math)', async(): Promise<void> => {
+    for await (const funcName of [ 'Abs', 'Ceil', 'Exp', 'Floor', 'Log', 'Ln', 'Round', 'Sqrt', 'Sin', 'Cos', 'Tan', 'ASin', 'ACos', 'ATan' ]) {
+      assert.strictEqual(...await testApi(`${funcName}(0)`));
+      assert.strictEqual(...await testApi(`${funcName}(3)`));
+      assert.strictEqual(...await testApi(`${funcName}(-3)`));
+      assert.strictEqual(...await testApi(`${funcName}(1.23)`));
+      assert.strictEqual(...await testApi(`${funcName}(-1.23)`));
+      assert.strictEqual(...await testApi(`${funcName}(num_int_like)`));
+      assert.strictEqual(...await testApi(`${funcName}(str_alpha)`));
+      assert.strictEqual(...await testApi(`${funcName}(obj)`));
+    }
+
+    for await (const funcName of [ 'Max', 'Min' ]) {
+      assert.strictEqual(...await testApi(`${funcName}(1, "2", 3)`));
+      assert.strictEqual(...await testApi(`${funcName}("a", "b", "c")`));
+      assert.strictEqual(...await testApi(`${funcName}("1", "b", "c")`));
+    }
+
+    assert.strictEqual(...await testApi(`Mod(7.5, "2")`));
+    assert.strictEqual(...await testApi(`Mod(2, "b")`));
   });
+
+  test('eval libraries (StrLen)', async(): Promise<void> => {
+    assert.strictEqual(...await testApi(`StrLen(str_alpha)`));
+    assert.strictEqual(...await testApi(`StrLen(num_int)`));
+    assert.strictEqual(...await testApi(`StrLen(num_hex)`));
+
+    expect(await evaluator.eval(`StrLen(obj)`)).toBe('');
+  });
+
+  // test('eval libraries (InStr)', async(): Promise<void> => {
+  //   assert.strictEqual(...await testApi(`InStr("abc", "B")`));
+  //   assert.strictEqual(...await testApi(`InStr("abc", "B", false)`));
+  //   assert.strictEqual(...await testApi(`InStr("abc", "b", true)`));
+  //   assert.strictEqual(...await testApi(`InStr("abc", "b", "true")`));
+  //   assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 3)`));
+  //   assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, 1, 2)`));
+  //   assert.strictEqual(...await testApi(`InStr("abcabc", "b", true, -2, 1)`));
+  // });
+  // #endregion Partial compatibility functions
+
+  // #region Utility functions
+  test('eval libraries (InstanceOf)', async(): Promise<void> => {
+    expect(await evaluator.eval('InstanceOf(instance, T)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(instance, T2)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(obj, Object)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(arr, Array)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(mapObj, Map)')).toBeTruthy();
+    expect(await evaluator.eval('InstanceOf(instance, obj)')).toBeFalsy();
+    expect(await evaluator.eval('InstanceOf(num_int)')).toBe('');
+  });
+
+  test('eval libraries (IsPrimitive)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsPrimitive(str_alpha)')).toBeTruthy();
+    expect(await evaluator.eval('IsPrimitive(num_int)')).toBeTruthy();
+    expect(await evaluator.eval('IsPrimitive(undefined)')).toBeFalsy();
+    expect(await evaluator.eval('IsPrimitive(obj)')).toBeFalsy();
+    expect(await evaluator.eval('IsPrimitive(arr)')).toBeFalsy();
+  });
+
+  test('eval libraries (IsClass)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsClass(T)')).toBeTruthy();
+    expect(await evaluator.eval('IsClass(T2)')).toBeTruthy();
+    expect(await evaluator.eval('IsClass(2)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(instance)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(obj)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(arr)')).toBeFalsy();
+    expect(await evaluator.eval('IsClass(str_alpha)')).toBe('');
+    expect(await evaluator.eval('IsClass(num_int)')).toBe('');
+    expect(await evaluator.eval('IsClass(undefined)')).toBe('');
+  });
+
+  test('eval libraries (IsDate)', async(): Promise<void> => {
+    expect(await evaluator.eval('IsDate("2000/1/1")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("2000/1/1 00:00")')).toBeTruthy();
+    expect(await evaluator.eval('IsDate("abc")')).toBeFalsy();
+  });
+
+  test('eval libraries (IsFile)', async(): Promise<void> => {
+    expect(await evaluator.eval(`IsFile("${__filename}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsFile("${__dirname}")`)).toBeFalsy();
+    expect(await evaluator.eval(`IsFile(obj)`)).toBe('');
+  });
+
+  test('eval libraries (IsDirectory)', async(): Promise<void> => {
+    expect(await evaluator.eval(`IsDirectory("${__dirname}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsDirectory("${__filename}")`)).toBeFalsy();
+    expect(await evaluator.eval(`IsDirectory(obj)`)).toBe('');
+
+    expect(await evaluator.eval(`IsDir("${__dirname}")`)).toBeTruthy();
+  });
+
+  test('eval libraries (IsPath)', async(): Promise<void> => {
+    expect(await evaluator.eval(`IsPath("${__dirname}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsPath("${__filename}")`)).toBeTruthy();
+    expect(await evaluator.eval(`IsPath("not path")`)).toBeFalsy();
+
+    expect(await evaluator.eval(`IsPath(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToBinary)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToBinary(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToBinary(123)`)).toBe('1111011');
+    expect(await evaluator.eval(`ToBinary(-123)`)).toBe('-1111011');
+    expect(await evaluator.eval(`ToBinary(123.456)`)).toBe(await evaluator.eval(`ToBinary(123)`));
+    expect(await evaluator.eval(`ToBinary(0x123)`)).toBe('100100011');
+    expect(await evaluator.eval(`ToBinary("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToBinary(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToDecimal)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToDecimal(0)`)).toBe(0);
+    expect(await evaluator.eval(`ToDecimal(123)`)).toBe(123);
+    expect(await evaluator.eval(`ToDecimal(-123)`)).toBe(-123);
+    expect(await evaluator.eval(`ToDecimal(123.456)`)).toBe(123);
+    expect(await evaluator.eval(`ToDecimal(0x123)`)).toBe(291);
+    expect(await evaluator.eval(`ToDecimal("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToDecimal(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToOctal)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToOctal(0)`)).toBe(0);
+    expect(await evaluator.eval(`ToOctal(123)`)).toBe(173);
+    expect(await evaluator.eval(`ToOctal(-123)`)).toBe(-173);
+    expect(await evaluator.eval(`ToOctal(123.456)`)).toBe(await evaluator.eval(`ToOctal(123)`));
+    expect(await evaluator.eval(`ToOctal(0x123)`)).toBe(443);
+    expect(await evaluator.eval(`ToOctal("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToOctal(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToHex)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToHex(0)`)).toBe('0x0');
+    expect(await evaluator.eval(`ToHex(123)`)).toBe('0x7b');
+    expect(await evaluator.eval(`ToHex(-123)`)).toBe('-0x7b');
+    expect(await evaluator.eval(`ToHex(123.456)`)).toBe(await evaluator.eval(`ToHex(123)`));
+    expect(await evaluator.eval(`ToHex(0x123)`)).toBe('0x123');
+    expect(await evaluator.eval(`ToHex("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToHex(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToHexWithoutPrefix)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToHexWithoutPrefix(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(123)`)).toBe('7b');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(-123)`)).toBe('-7b');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(123.456)`)).toBe(await evaluator.eval(`ToHexWithoutPrefix(123)`));
+    expect(await evaluator.eval(`ToHexWithoutPrefix(0x123)`)).toBe('123');
+    expect(await evaluator.eval(`ToHexWithoutPrefix("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToHexWithoutPrefix(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToUpperHex)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToUpperHex(0)`)).toBe('0x0');
+    expect(await evaluator.eval(`ToUpperHex(123)`)).toBe('0x7B');
+    expect(await evaluator.eval(`ToUpperHex(-123)`)).toBe('-0x7B');
+    expect(await evaluator.eval(`ToUpperHex(123.456)`)).toBe(await evaluator.eval(`ToUpperHex(123)`));
+    expect(await evaluator.eval(`ToUpperHex(0x123)`)).toBe('0x123');
+    expect(await evaluator.eval(`ToUpperHex("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToUpperHex(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToUpperHexWithoutPrefix)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(123)`)).toBe('7B');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(-123)`)).toBe('-7B');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(123.456)`)).toBe(await evaluator.eval(`ToUpperHexWithoutPrefix(123)`));
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(0x123)`)).toBe('123');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToJsonString)', async(): Promise<void> => {
+    const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
+
+    expect(await evaluator.eval(`ToJsonString(str_alpha)`)).toBe(toJsonString('aBc'));
+    expect(await evaluator.eval(`ToJsonString(num_int)`)).toBe(toJsonString(123));
+    expect(await evaluator.eval(`ToJsonString(obj)`)).toBe(toJsonString({ 'key': 'value' }));
+    expect(await evaluator.eval(`ToJsonString(arr)`)).toBe(toJsonString([ 1, 10, 100 ]));
+    expect(await evaluator.eval(`ToJsonString(arr, 4, 1)`)).toBe(toJsonString([ 1, '[LIMIT]' ]));
+    expect(await evaluator.eval(`ToJsonString(arr2)`)).toBe(toJsonString([ [ 1, 10, 100 ], { key: 'value' } ]));
+    expect(await evaluator.eval(`ToJsonString(mapObj)`)).toBe(toJsonString({ 'key': 'value', '3': '100' }));
+    expect(await evaluator.eval(`ToJsonString(circular)`)).toBe(toJsonString({ circular: '[Circular]' }));
+  });
+
+  test('eval libraries (ToOneLineJsonString)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToOneLineJsonString(str_alpha)`)).toBe(JSON.stringify('aBc'));
+    expect(await evaluator.eval(`ToOneLineJsonString(num_int)`)).toBe(JSON.stringify(123));
+    expect(await evaluator.eval(`ToOneLineJsonString(obj)`)).toBe(JSON.stringify({ 'key': 'value' }));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr)`)).toBe(JSON.stringify([ 1, 10, 100 ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr, 1)`)).toBe(JSON.stringify([ 1, '[LIMIT]' ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(arr2)`)).toBe(JSON.stringify([ [ 1, 10, 100 ], { key: 'value' } ]));
+    expect(await evaluator.eval(`ToOneLineJsonString(mapObj)`)).toBe(JSON.stringify({ 'key': 'value', '3': '100' }));
+    expect(await evaluator.eval(`ToOneLineJsonString(circular)`)).toBe(JSON.stringify({ circular: '[Circular]' }));
+  });
+  // #endregion Utility functions
+
+  test('eval not support', async(): Promise<void> => {
+    expect(async() => evaluator.eval(`100 // 2`)).rejects.toThrow();
+
+    return Promise.resolve();
+  });
+
+  test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
+  });
+});
+
+describe('Tests of functions compatible only with v2', (): void => {
+  let process_v1: ChildProcess;
+  let server_v1: net.Server | undefined;
+  let session_v1: dbgp.Session;
+  let evaluator_v1: ExpressionEvaluator;
+
+  let testApi_v2: ApiTester;
+  let process_v2: ChildProcess;
+  let server_v2: net.Server | undefined;
+  let session_v2: dbgp.Session;
+  let evaluator_v2: ExpressionEvaluator;
+
+  beforeAll(async() => {
+    const data_v1 = await launchDebug('AutoHotkey.exe', path.resolve(sampleDir, 'sample2.ahk'), 50000, hostname);
+    process_v1 = data_v1.process;
+    server_v1 = data_v1.server;
+    session_v1 = data_v1.session;
+    evaluator_v1 = new ExpressionEvaluator(session_v1);
+
+    const data_v2 = await launchDebug('v2/AutoHotkey.exe', path.resolve(sampleDir, 'sample2.ahk2'), 50001, hostname);
+    process_v2 = data_v2.process;
+    server_v2 = data_v2.server;
+    session_v2 = data_v2.session;
+    await session_v2.sendFeatureSetCommand('max_children', 10000);
+    evaluator_v2 = new ExpressionEvaluator(session_v2);
+    testApi_v2 = createTestApi(evaluator_v2);
+  });
+  afterAll(async() => {
+    server_v1?.close();
+    server_v2?.close();
+    await closeSession(session_v1, process_v1);
+    await closeSession(session_v2, process_v2);
+  });
+
+  test('eval libraries - Predicate functions', async(): Promise<void> => {
+    const dataList = [
+      `"abc"`,
+      `"ABC"`,
+      `"abcABC"`,
+      `"abcABC123"`,
+      `" "`,
+      `"a b"`,
+      `123`,
+      `"123"`,
+      `123.456`,
+      `"123.456"`,
+      `-123`,
+      `"-123"`,
+      `-123.456`,
+      `"-123.456"`,
+      `0x123`,
+      `"0x123"`,
+      `-0x123`,
+      `"-0x123"`,
+    ];
+
+    for await (const funcName of [ 'IsInteger', 'IsFloat', 'IsNumber', 'IsDigit', 'IsXDigit', 'IsAlpha', 'IsAlnum', 'IsSpace', 'IsUpper', 'IsLower' ]) {
+      for await (const data of dataList) {
+        const expression = `${funcName}(${data})`;
+        const [ actual_v2, expected, message ] = await testApi_v2(expression);
+        assert.strictEqual(actual_v2, expected, message);
+
+        // v1 treats floating points as strings, so the same function gives different results
+        const actual_v1 = await evaluator_v1.eval(expression);
+        if (isFloat(Number(data))) {
+          const actual_v2 = await evaluator_v2.eval(`${funcName}("${data}")`);
+          assert.strictEqual(String(actual_v2), actual_v1, expression);
+          continue;
+        }
+        assert.strictEqual(String(actual_v2), actual_v1, expression);
+      }
+    }
+  });
+
   test.skip('Even if all tests succeed, test suite is treated as a failure. For some reason, adding skip solves this problem.', async(): Promise<void> => {
   });
 });

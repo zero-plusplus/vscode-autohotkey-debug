@@ -1,26 +1,151 @@
 ﻿#SingleInstance
+#Warn All, StdOut
+#Include ./lib/SafeCall.ahk2
 
+abc := "str"
+a := "a"
+c := "c"
+
+null := ""
 str := "abc"
+str_alpha := "aBc"
+str_alnum := "aBc123"
+str_not_alnum := "$$$"
+str_upper := "ABC"
+str_lower := "abc"
+str_time := "01 Jan 1970 00:00:00 GMT"
+str_space := " "
 num_int := 123
-num_int_like := "123"
+num_int_like := "3"
 num_float := 123.456
 num_float_like := "123.456"
 num_hex := 0x123
 num_hex_like := "0x123"
 num_scientific_notation := 1.0e4
 num_scientific_notation_like := "1.0e4"
+bool_true := true
+bool_false := false
+
 key := "key"
 obj := { key: "value" }
 mapObj := Map("key", "value", "3", "100")
 arr := [ 1, 10, 100 ]
+arr2 := [ arr, obj ]
 nestedObj := { a: { b: { obj: obj, arr: arr } } }
 instance := T()
-class T {
+circular := {}
+circular.circular := circular
+
+; #region tests
+testResults := Map()
+; #region ObjHasOwnProp
+testResults['ObjHasOwnProp(obj, "key")'] := ObjHasOwnProp(obj, "key")
+testResults['ObjHasOwnProp(obj, key)'] := ObjHasOwnProp(obj, key)
+testResults['ObjHasOwnProp(T, "staticField")'] := ObjHasOwnProp(T, "staticField")
+testResults['instance.instanceField && ObjHasOwnProp(instance, "instanceField")'] := instance.instanceField && ObjHasOwnProp(instance, "instanceField")
+testResults['instance.baseInstanceField && ObjHasOwnProp(instance, "baseInstanceField")'] := instance.baseInstanceField && ObjHasOwnProp(instance, "baseInstanceField")
+
+testResults['!ObjHasOwnProp(obj, "unknown")'] := !ObjHasOwnProp(obj, "unknown")
+testResults['!ObjHasOwnProp(mapObj, "key")'] := !ObjHasOwnProp(mapObj, "key")
+testResults['!ObjHasOwnProp(mapObj, 3)'] := !ObjHasOwnProp(mapObj, 3)
+testResults['!ObjHasOwnProp(T, "method")'] := !ObjHasOwnProp(T, "method")
+testResults['!ObjHasOwnProp(arr, 1)'] := !ObjHasOwnProp(arr, 1)
+testResults['!(instance.method && ObjHasOwnProp(instance, "method"))'] := !(instance.method && ObjHasOwnProp(instance, "method"))
+; #endregion ObjHasOwnProp
+
+; #region IsSet
+testResults["IsSet(str_alpha)"] := IsSet(str_alpha)
+testResults["IsSet(obj)"] := IsSet(obj)
+testResults["IsSet(T)"] := IsSet(T)
+
+testResults["!IsSet(undefined)"] := !IsSet(undefined)
+; #endregion IsSet
+
+; #region IsObject
+testResults["IsObject(obj)"] := IsObject(obj)
+testResults["IsObject(T)"] := IsObject(T)
+
+testResults["!IsObject(str_alpha)"] := !IsObject(str_alpha)
+testResults["!IsObject(num_int)"] := !IsObject(num_int)
+; testResults["!IsObject(undefined)"] := !IsObject(undefined) ; Error: This variable has not been assigned a value.
+; #endregion IsObject
+
+; #region ObjGetBase
+testResults["ObjGetBase(obj)"] := ObjGetBase(obj)
+testResults["ObjGetBase(T)"] := ObjGetBase(T)
+testResults["ObjGetBase(T2)"] := ObjGetBase(T2)
+
+; testResults["ObjGetBase(str_alpha)"] := ObjGetBase(str_alpha) ; Error:  Parameter #1 invalid.
+; testResults["ObjGetBase(num_int)"] := ObjGetBase(num_int) ; Error:  Parameter #1 invalid.
+; testResults["ObjGetBase(undefined)"] := ObjGetBase(undefined) ; Error:  Parameter #1 invalid.
+; #endregion ObjGetBase
+
+; #region ObjOwnPropCount
+testResults["ObjOwnPropCount(obj)"] := ObjOwnPropCount(obj)
+testResults["ObjOwnPropCount(mapObj)"] := ObjOwnPropCount(mapObj)
+testResults["ObjOwnPropCount(arr)"] := ObjOwnPropCount(arr)
+testResults["ObjOwnPropCount(T)"] := ObjOwnPropCount(T)
+testResults["ObjOwnPropCount(T2)"] := ObjOwnPropCount(T2)
+
+; testResults["ObjOwnPropCount(str_alpha)"] := ObjOwnPropCount(str_alpha) ; Expected an Object but got a String.
+; testResults["ObjOwnPropCount(num_int)"] := ObjOwnPropCount(num_int) ; Expected an Object but got an Integer.
+; testResults["ObjOwnPropCount(undefined)"] := ObjOwnPropCount(undefined) ; This variable has not been assigned a value.
+; #endregion ObjOwnPropCount
+
+; #region Math
+for i, funcName in [ "Abs", "Ceil", "Exp", "Floor", "Log", "Ln", "Round", "Sqrt", "Sin", "Cos", "Tan", "ASin", "ACos", "ATan" ] {
+  testResults[funcName . "(0)"] := SafeCall(() => %funcName%(0))
+  testResults[funcName . "(3)"] := SafeCall(() => %funcName%(3))
+  testResults[funcName . "(-3)"] := SafeCall(() => %funcName%(-3))
+  testResults[funcName . "(1.23)"] := SafeCall(() => %funcName%(1.23))
+  testResults[funcName . "(-1.23)"] := SafeCall(() => %funcName%(-1.23))
+  testResults[funcName . "(num_int_like)"] := SafeCall(() => %funcName%(num_int_like))
+
+  testResults[funcName . "(str_alpha)"] := SafeCall(() => %funcName%(str_alpha)) ; Parameter #1 of Abs requires a Number, but received a String.
+  testResults[funcName . "(obj)"] := SafeCall(() => %funcName%(obj)) ; Parameter #1 of Abs requires a Number, but received an Object.
+}
+
+; #region Max, Min
+for i, funcName in [ "Max", "Min" ] {
+  testResults[funcName "(1, `"2`", 3)"] := %funcName%(1, "2", 3)
+  testResults[funcName "(`"a`", `"b`", `"c`")"] := SafeCall(() => %funcName%("a", "b", "c") )
+  testResults[funcName "(`"1`", `"b`", `"c`")"] := SafeCall(() => %funcName%("1", "b", "c") )
+}
+; #endregion Max, Min
+
+; #region Mod
+testResults["Mod(7.5, `"2`")"] := Mod(7.5, "2")
+testResults["Mod(2, `"b`")"] := SafeCall(() => Mod(2, "b"))
+; #endregion Mod
+; #endregion Math
+
+; #region StrLen
+testResults["StrLen(str_alpha)"] := StrLen(str_alpha)
+testResults["StrLen(num_int)"] := StrLen(num_int)
+testResults["StrLen(num_hex)"] := StrLen(num_hex)
+; testResults["StrLen(obj)"] := StrLen(obj) ; Error: Parameter #1 of StrLen requires a String. but receiverd an Object.
+; #endregion StrLen
+
+; #region InStr
+; testResults["InStr(`"abc`", `"B`")"] := InStr("abc", "b")
+; testResults["InStr(`"abc`", `"B`", false)"] := InStr("abc", "b", false)
+; testResults["InStr(`"abc`", `"b`", true)"] := InStr("abc", "b", true)
+; testResults["InStr(`"abc`", `"b`", `"true`")"] := SafeCall(() => InStr("abc", "b", "true"))
+; testResults["InStr(`"abcabc`", `"b`", true, 3)"] := InStr("abcabc", "b", true, 3)
+; testResults["InStr(`"abcabc`", `"b`", true, 1, 2)"] := InStr("abcabc", "b", true, 1, 2)
+; testResults["InStr(`"abcabc`", `"b`", true, -2, 1)"] := InStr("abcabc", "b", true, -2, 1)
+; #endregion InStr
+; #endregion tests
+
+class T extends T2 {
   static staticField := "static"
   instanceField := "instance"
   method() {
   }
 }
 class T2 {
+  baseInstanceField := 'base'
+  baseMethod() {
+  }
 }
-return
+ExitApp

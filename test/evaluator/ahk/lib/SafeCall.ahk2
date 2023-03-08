@@ -1,0 +1,7 @@
+﻿SafeCall(callable) {
+  try {
+    result := callable()
+    return result
+  }
+  return ""
+}

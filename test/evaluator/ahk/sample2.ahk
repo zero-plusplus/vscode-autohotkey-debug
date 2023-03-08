@@ -1,0 +1,3 @@
+﻿#SingleInstance
+#Persistent
+return

@@ -92,5 +92,7 @@ describe('LogEvaluator for AutoHotkey-v1', (): void => {
     expect(simplifyDataList(await evaluator.eval(`{123, hb}`))).toEqual([ { type: 'primitive', prefixes: [], value: '7b' } ]);
     expect(simplifyDataList(await evaluator.eval(`{123, Xb}`))).toEqual([ { type: 'primitive', prefixes: [], value: '7B' } ]);
     expect(simplifyDataList(await evaluator.eval(`{123, Hb}`))).toEqual([ { type: 'primitive', prefixes: [], value: '7B' } ]);
+    expect(simplifyDataList(await evaluator.eval(`{obj, J}`))).toEqual([ { type: 'primitive', prefixes: [], value: JSON.stringify({ key: 'value' }, undefined, 4) } ]);
+    expect(simplifyDataList(await evaluator.eval(`{obj, Jo}`))).toEqual([ { type: 'primitive', prefixes: [], value: JSON.stringify({ key: 'value' }) } ]);
   });
 });
