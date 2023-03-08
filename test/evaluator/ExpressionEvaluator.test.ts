@@ -585,6 +585,15 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`IsPath(obj)`)).toBe('');
   });
 
+  test('eval libraries (ToBinary)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToBinary(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToBinary(123)`)).toBe('1111011');
+    expect(await evaluator.eval(`ToBinary(-123)`)).toBe('-1111011');
+    expect(await evaluator.eval(`ToBinary(0x123)`)).toBe('100100011');
+    expect(await evaluator.eval(`ToBinary("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToBinary(obj)`)).toBe('');
+  });
+
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
     const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
 
@@ -875,6 +884,15 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`IsPath("not path")`)).toBeFalsy();
 
     expect(await evaluator.eval(`IsPath(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToBinary)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToBinary(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToBinary(123)`)).toBe('1111011');
+    expect(await evaluator.eval(`ToBinary(-123)`)).toBe('-1111011');
+    expect(await evaluator.eval(`ToBinary(0x123)`)).toBe('100100011');
+    expect(await evaluator.eval(`ToBinary("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToBinary(obj)`)).toBe('');
   });
 
   test('eval libraries (ToJsonString)', async(): Promise<void> => {

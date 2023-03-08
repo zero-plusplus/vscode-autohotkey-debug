@@ -564,10 +564,10 @@ imcopatibleFunctions_for_v2.set('IsPath', isPath);
 
 const toBinary: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
-  if (isNaN(decimal)) {
-    return '';
+  if (isFinite(decimal)) {
+    return Promise.resolve(decimal.toString(2));
   }
-  return Promise.resolve(decimal.toString(2));
+  return '';
 };
 imcopatibleFunctions_for_v1.set('ToBinary', toBinary);
 imcopatibleFunctions_for_v2.set('ToBinary', toBinary);
@@ -758,7 +758,6 @@ imcopatibleFunctions_for_v1.set('ToOneLineJsonString', toOnlineJsonString);
 imcopatibleFunctions_for_v2.set('ToOneLineJsonString', toOnlineJsonString);
 formatSpecifiers_v1.set('Jo', toOnlineJsonString);
 formatSpecifiers_v2.set('Jo', toOnlineJsonString);
-
 // #endregion
 
 export const allFunctions_for_v1 = new CaseInsensitiveMap([
