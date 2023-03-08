@@ -646,10 +646,10 @@ formatSpecifiers_v2.set('X', toUpperHex);
 
 const toUpperHexWithoutPrefix: LibraryFunc = async(session, StackFrame, value) => {
   const decimal = parseInt(String(value), 10);
-  if (isNaN(decimal)) {
-    return '';
+  if (isFinite(decimal)) {
+    return Promise.resolve(decimal.toString(16).toUpperCase());
   }
-  return Promise.resolve(`${decimal.toString(16).toUpperCase()}`);
+  return '';
 };
 imcopatibleFunctions_for_v1.set('ToUpperHexWithoutPrefix', toUpperHexWithoutPrefix);
 imcopatibleFunctions_for_v2.set('ToUpperHexWithoutPrefix', toUpperHexWithoutPrefix);

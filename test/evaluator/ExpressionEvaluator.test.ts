@@ -645,6 +645,16 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
     expect(await evaluator.eval(`ToUpperHex(obj)`)).toBe('');
   });
 
+  test('eval libraries (ToUpperHexWithoutPrefix)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(123)`)).toBe('7B');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(-123)`)).toBe('-7B');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(123.456)`)).toBe(await evaluator.eval(`ToUpperHexWithoutPrefix(123)`));
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(0x123)`)).toBe('123');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(obj)`)).toBe('');
+  });
+
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
     const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
 
@@ -995,6 +1005,16 @@ describe('ExpressionEvaluator for AutoHotkey-v2', (): void => {
     expect(await evaluator.eval(`ToUpperHex(0x123)`)).toBe('0x123');
     expect(await evaluator.eval(`ToUpperHex("abc")`)).toBe('');
     expect(await evaluator.eval(`ToUpperHex(obj)`)).toBe('');
+  });
+
+  test('eval libraries (ToUpperHexWithoutPrefix)', async(): Promise<void> => {
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(0)`)).toBe('0');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(123)`)).toBe('7B');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(-123)`)).toBe('-7B');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(123.456)`)).toBe(await evaluator.eval(`ToUpperHexWithoutPrefix(123)`));
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(0x123)`)).toBe('123');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix("abc")`)).toBe('');
+    expect(await evaluator.eval(`ToUpperHexWithoutPrefix(obj)`)).toBe('');
   });
 
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
