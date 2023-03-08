@@ -578,30 +578,6 @@ const isGlob: LibraryFunc = async(session, stackFrame, filePattern) => {
 imcopatibleFunctions_for_v1.set('IsGlob', isGlob);
 imcopatibleFunctions_for_v2.set('IsGlob', isGlob);
 
-const regexHasKey: LibraryFunc = async(session, stackFrame, value, regexKey) => {
-  if (!(value instanceof dbgp.ObjectProperty)) {
-    return getFalse(session, stackFrame);
-  }
-  if (typeof regexKey !== 'string') {
-    return getFalse(session, stackFrame);
-  }
-
-  const children = await fetchPropertyOwnChildren(session, stackFrame, value);
-  if (!children) {
-    return getFalse(session, stackFrame);
-  }
-
-  for (const child of children) {
-    if (ahkRegexMatch(child.name, regexKey)) {
-      return getTrue(session, stackFrame);
-    }
-  }
-  return getFalse(session, stackFrame);
-};
-imcopatibleFunctions_for_v1.set('RegExHasKey', regexHasKey);
-imcopatibleFunctions_for_v2.set('RegExHasKey', regexHasKey);
-imcopatibleFunctions_for_v2.set('RegExHasOwnProp', regexHasKey);
-
 const toBinary: LibraryFunc = async(session, stackFrame, value) => {
   const decimal = parseInt(String(value), 10);
   if (isNaN(decimal)) {

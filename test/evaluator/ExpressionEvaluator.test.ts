@@ -589,15 +589,6 @@ describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   //     expect(await evaluator.eval(`IsGlob("${__dirname}/*.*")`)).toBe(true_ahk);
   //     expect(await evaluator.eval(`IsGlob("not path")`)).toBe(false_ahk);
   //   });
-  //
-  //   test('eval libraries (RegExHasKey)', async(): Promise<void> => {
-  //     expect(await evaluator.eval(`RegExHasKey(obj, "key")`)).toBe(true_ahk);
-  //     expect(await evaluator.eval(`RegExHasKey(obj, "i)Key")`)).toBe(true_ahk);
-  //     expect(await evaluator.eval(`RegExHasKey(obj, "k*")`)).toBe(true_ahk);
-  //     expect(await evaluator.eval(`RegExHasKey(arr, "1")`)).toBe(true_ahk);
-  //     expect(await evaluator.eval(`RegExHasKey(str_alpha, "a")`)).toBe(false_ahk);
-  //     expect(await evaluator.eval(`RegExHasKey(num_int, "b")`)).toBe(false_ahk);
-  //   });
 
   test('eval libraries (ToJsonString)', async(): Promise<void> => {
     const toJsonString = (value: any): string => JSON.stringify(value, undefined, 4);
