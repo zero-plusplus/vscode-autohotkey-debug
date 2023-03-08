@@ -46,6 +46,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Fixed: [#262](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/262) If runtime is v2, it may be aborted with an error when attaching
     * Fixed: [#283](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/283) No warning if wrong child attributes are specified in launch.json
     * Fixed: [#285](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/285) The `extends` attribute in launch.json does not work in the multi-root workspace and throws an error
+    * Fixed: [#292](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/292) Loaded Scripts may not be displayed
 
 * `1.11.0` - 2022-02-11
     * Added: [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json

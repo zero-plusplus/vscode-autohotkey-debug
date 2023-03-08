@@ -55,6 +55,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#262](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/262) If runtime is v2, it may be aborted with an error when attaching
 * [#283](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/283) No warning if wrong child attributes are specified in launch.json
 * [#285](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/285) The `extends` attribute in launch.json does not work in the multi-root workspace and throws an error
+* [#292](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/292) Loaded Scripts may not be displayed
 
 ## [1.11.0] - 2022-02-11
 ### Added
