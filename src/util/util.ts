@@ -245,3 +245,11 @@ export const searchPair = (text: string, open: string, close: string, initialOpe
   }
   return firstOpen === -1 ? index : index + firstOpen;
 };
+export const reverseSearchPair = (text: string, open: string, close: string, initialOpenCount = 0): number => {
+  const reverseText = text.split('').reverse().join('');
+  const index = searchPair(reverseText, open, close, initialOpenCount);
+  if (index === -1) {
+    return -1;
+  }
+  return text.length - index;
+};

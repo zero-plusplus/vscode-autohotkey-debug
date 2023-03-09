@@ -30,6 +30,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Changed: [#270](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/270) Support expression in log point
     * Changed: [#275](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/275) Change the syntax of debug directive
     * Changed: [#288](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/288) Change the labelling process when outputting objects to the log
+    * Changed: [#293](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/293) Change to allow child element to be retrieved even in bracketed notation
 
     * Fixed: [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
     * Fixed: [#212](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/212) Some errors were not detected and raw error messages were output. This caused `useAutoJumpToError` to not work in some cases
