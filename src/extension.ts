@@ -16,7 +16,7 @@ import normalizeToUnix from 'normalize-path';
 import glob from 'fast-glob';
 import { registerCommands } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isDirectory, searchPair, toArray } from './util/util';
+import { isDirectory, reverseSearchPair, searchPair, toArray } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { ExpressionExtractor } from './util/ExpressionExtractor';
 
@@ -650,12 +650,27 @@ export const activate = (context: vscode.ExtensionContext): void => {
   context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], completionItemProvider, '.'));
 
   const findExpressionRange = (expressionExtractor: ExpressionExtractor, document: vscode.TextDocument, position: vscode.Position, offset = 0): vscode.Range | undefined => {
-    const range = document.getWordRangeAtPosition(position);
-    if (!range) {
-      return undefined;
-    }
+    const range = document.getWordRangeAtPosition(position) ?? new vscode.Range(position, position);
 
     const lineText = document.lineAt(position).text;
+    const charOnCursor = lineText.at(position.character);
+    if (charOnCursor === '[') {
+      const pairIndex = searchPair(lineText, '[', ']');
+      const range = findExpressionRange(expressionExtractor, document, new vscode.Position(position.line, position.character - 1));
+      if (!range) {
+        return undefined;
+      }
+      return new vscode.Range(range.start, new vscode.Position(position.line, pairIndex + 1));
+    }
+    if (charOnCursor === ']') {
+      const pairIndex = reverseSearchPair(lineText, ']', '[');
+      const range = findExpressionRange(expressionExtractor, document, new vscode.Position(position.line, pairIndex));
+      if (!range) {
+        return undefined;
+      }
+      return new vscode.Range(range.start, new vscode.Position(position.line, position.character + 1));
+    }
+
     const { data, object, operator } = expressionExtractor.extract(lineText.slice(0, position.character));
 
     const startIndex = position.character - data.length;

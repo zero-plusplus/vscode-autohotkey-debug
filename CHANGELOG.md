@@ -38,6 +38,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#270](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/270) Support expression in log point
 * [#275](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/275) Change the syntax of debug directive
 * [#288](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/288) Change the labelling process when outputting objects to the log
+* [#293](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/293) Change to allow child element to be retrieved even in bracketed notation
 
 ### Fixed
 * [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
