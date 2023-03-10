@@ -25,6 +25,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.firstFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
 * [#271](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/271) Add `vscode-autohotkey-debug.variables.lastFile` [command variable](https://code.visualstudio.com/docs/editor/variables-reference#_command-variables)
 * [#286](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/286) Support autocomplete in Debug Console and Conditional Breakpoint
+* [#295](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/295) Add `"develop"` to useAnnounce in launch.json. This feature is intended to log problems with the extension and is of no value to users in many cases
 
 ### Changed
 * [#60](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/60) Change to suppress error dialogs if runtime supports them

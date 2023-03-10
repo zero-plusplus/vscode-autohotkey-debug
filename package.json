@@ -494,9 +494,10 @@
                   false,
                   true,
                   "error",
-                  "detail"
+                  "detail",
+                  "develop"
                 ],
-                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed. If `develop` is specified, additional logs are output in case of problems with the extension in addition to the logs in `detail`.",
                 "default": true
               },
               "useLoadedScripts": {
@@ -1036,9 +1037,10 @@
                   false,
                   true,
                   "error",
-                  "detail"
+                  "detail",
+                  "develop"
                 ],
-                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed.",
+                "description": "Enable / disable announcements from the debug adapter. If \"error\" is specified, only errors will be displayed. If \"detail\" is specified, more detailed announcements will be displayed. If `develop` is specified, additional logs are output in case of problems with the extension in addition to the logs in `detail`.",
                 "default": true
               },
               "useLoadedScripts": {
