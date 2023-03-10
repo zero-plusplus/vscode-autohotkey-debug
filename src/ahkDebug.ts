@@ -443,7 +443,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData).catch((err: unknown) => {
           if (err instanceof Error) {
-            this.sendAnnounce(`An attempt to set a breakpoint at \`${filePath}:${line}\` failed for the following reasons.\n => ${err.message}`, 'stderr');
+            this.sendAnnounce(`An attempt to set a breakpoint at \`${filePath}:${line}\` failed for the following reasons.\n => ${err.message}`, 'develop');
           }
         });
 
@@ -487,7 +487,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           if (hiddenBreakpointWithUI) {
             await this.registerHiddenBreakpointsWithUI(hiddenBreakpointWithUI).catch((err: unknown) => {
               if (err instanceof Error) {
-                this.sendAnnounce(`An attempt to set a hidden breakpoint with the label set to \`${hiddenBreakpointWithUI.label}\` failed for the following reasons.\n => ${err.message}`, 'stderr');
+                this.sendAnnounce(`An attempt to set a hidden breakpoint with the label set to \`${hiddenBreakpointWithUI.label}\` failed for the following reasons.\n => ${err.message}`, 'develop');
               }
             });
           }
