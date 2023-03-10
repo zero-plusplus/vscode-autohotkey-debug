@@ -50,7 +50,7 @@ import { LogData, LogEvaluator } from './util/evaluator/LogEvaluator';
 import { ActionLogPrefixData, CategoryLogPrefixData, GroupLogPrefixData } from './util/evaluator/LogParser';
 import { getAhkVersion } from './util/getAhkVersion';
 
-export type AnnounceLevel = boolean | 'error' | 'detail';
+export type AnnounceLevel = boolean | 'error' | 'detail' | 'develop';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
 
 export type MatchSelector = undefined | 'first' | 'last' | 'all' | number | number[];
@@ -259,21 +259,20 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.traceLogger.log('disconnectRequest');
     this.clearPerfTipsDecorations();
 
+    const catchProcess = (): void => {
+      this.ahkProcess?.close();
+      this.sendResponse(response);
+    };
+
     if (this.session?.socketWritable) {
       if (args.restart && this.config.request === 'attach') {
-        await timeoutPromise(this.session.sendDetachCommand(), 500).catch(() => {
-          this.ahkProcess?.close();
-        });
+        await timeoutPromise(this.session.sendDetachCommand(), 500).catch(catchProcess);
       }
       else if (args.terminateDebuggee === undefined || args.terminateDebuggee) {
-        await timeoutPromise(this.session.sendStopCommand(), 500).catch(() => {
-          this.ahkProcess?.close();
-        });
+        await timeoutPromise(this.session.sendStopCommand(), 500).catch(catchProcess);
       }
       else {
-        await timeoutPromise(this.session.sendDetachCommand(), 500).catch(() => {
-          this.ahkProcess?.close();
-        });
+        await timeoutPromise(this.session.sendDetachCommand(), 500).catch(catchProcess);
       }
     }
 
@@ -296,13 +295,17 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    await this.session?.close();
-    this.server?.close();
+    await this.session?.close().catch(catchProcess);
+    this.server?.close((err) => {
+      if (err) {
+        catchProcess();
+      }
+    });
     this.isTerminateRequested = true;
 
-    const jumpToError = await this.jumpToError();
+    const jumpToError = await this.jumpToError().catch(catchProcess);
     if (!jumpToError) {
-      this.openFileOnExit();
+      this.openFileOnExit().catch(catchProcess);
     }
 
     this.sendResponse(response);
@@ -343,13 +346,15 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.sendOutputDebug(this.errorMessage);
         });
       this.sendAnnounce(`${this.ahkProcess.command}`);
-      await this.createServer(args);
+      await this.createServer(args).catch(() => {
+        this.sendAnnounce('Force debugging to terminate because the debug server creation failed.', 'stderr');
+        this.sendTerminateEvent();
+      });
     }
-    catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-      this.sendErrorResponse(response, { id: this.errorCounter++, format: errorMessage });
-      this.sendTerminateEvent();
-      return;
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[launchRequest] ${err.message}`, 'develop');
+      }
     }
 
     this.sendResponse(response);
@@ -359,45 +364,56 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.traceLogger.log('attachRequest');
     this.config = args;
 
-    if (this.config.cancelReason) {
-      this.sendAnnounce(`${this.config.cancelReason}`, 'stderr');
-      this.sendTerminateEvent();
-      this.sendResponse(response);
-      return;
-    }
-
-    const ahkProcess = new AutoHotkeyLauncher(this.config).attach();
-    if (!ahkProcess) {
-      this.sendAnnounce(`Failed to attach "${this.config.program}".`, 'stderr');
-      this.sendTerminateEvent();
-      this.sendResponse(response);
-      return;
-    }
-
-    this.sendAnnounce(`Attached to "${this.config.program}".`);
-    this.ahkProcess = ahkProcess;
-    this.ahkProcess.event
-      .on('close', (exitCode?: number) => {
-        if (this.isTerminateRequested) {
-          return;
-        }
-
-        if (typeof exitCode === 'number') {
-          this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}`, exitCode === 0 ? 'console' : 'stderr', exitCode === 0 ? 'detail' : 'error');
-        }
+    try {
+      if (this.config.cancelReason) {
+        this.sendAnnounce(`${this.config.cancelReason}`, 'stderr');
+        this.sendResponse(response);
         this.sendTerminateEvent();
-      })
-      .on('stdout', (message: string) => {
-        const fixedData = this.fixPathOfRuntimeError(message);
-        this.sendOutputEvent(fixedData, 'stdout');
-      })
-      .on('stderr', (message: string) => {
-        const fixedData = this.fixPathOfRuntimeError(String(message));
-        this.errorMessage = fixedData;
-        this.sendOutputEvent(fixedData, 'stderr');
-      });
+        return;
+      }
 
-    await this.createServer(args);
+      const ahkProcess = new AutoHotkeyLauncher(this.config).attach();
+      if (!ahkProcess) {
+        this.sendAnnounce(`Failed to attach "${this.config.program}".`, 'stderr');
+        this.sendResponse(response);
+        this.sendTerminateEvent();
+        return;
+      }
+
+      this.sendAnnounce(`Attached to "${this.config.program}".`);
+      this.ahkProcess = ahkProcess;
+      this.ahkProcess.event
+        .on('close', (exitCode?: number) => {
+          if (this.isTerminateRequested) {
+            return;
+          }
+
+          if (typeof exitCode === 'number') {
+            this.sendAnnounce(`AutoHotkey closed for the following exit code: ${exitCode}`, exitCode === 0 ? 'console' : 'stderr', exitCode === 0 ? 'detail' : 'error');
+          }
+          this.sendTerminateEvent();
+        })
+        .on('stdout', (message: string) => {
+          const fixedData = this.fixPathOfRuntimeError(message);
+          this.sendOutputEvent(fixedData, 'stdout');
+        })
+        .on('stderr', (message: string) => {
+          const fixedData = this.fixPathOfRuntimeError(String(message));
+          this.errorMessage = fixedData;
+          this.sendOutputEvent(fixedData, 'stderr');
+        });
+
+      await this.createServer(args).catch(() => {
+        this.sendAnnounce('Force debugging to terminate because the debug server creation failed.', 'stderr');
+        this.sendTerminateEvent();
+      });
+    }
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[attachRequest] ${err.message}`, 'develop');
+      }
+    }
+
     this.sendResponse(response);
   }
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments): Promise<void> {
@@ -415,96 +431,117 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       const vscodeBreakpoints: DebugProtocol.Breakpoint[] = [];
       for await (const requestedBreakpoint of args.breakpoints ?? []) {
-        try {
-          const { condition, hitCondition, line, column = 1 } = requestedBreakpoint;
-          const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
-          const advancedData = {
-            condition,
-            hitCondition,
-            logMessage,
-            unverifiedLine: line,
-            unverifiedColumn: column,
-          } as BreakpointAdvancedData;
+        const { condition, hitCondition, line, column = 1 } = requestedBreakpoint;
+        const logMessage = requestedBreakpoint.logMessage ? `${requestedBreakpoint.logMessage}\n` : '';
+        const advancedData = {
+          condition,
+          hitCondition,
+          logMessage,
+          unverifiedLine: line,
+          unverifiedColumn: column,
+        } as BreakpointAdvancedData;
 
-          const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
-
-          // Restore hitCount
-          const removedBreakpoint = removedBreakpoints.find((breakpoint) => registeredBreakpoint.unverifiedLine === breakpoint.unverifiedLine && registeredBreakpoint.unverifiedColumn === breakpoint.unverifiedColumn);
-          if (removedBreakpoint) {
-            registeredBreakpoint.hitCount = removedBreakpoint.hitCount;
+        const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData).catch((err: unknown) => {
+          if (err instanceof Error) {
+            this.sendAnnounce(`An attempt to set a breakpoint at \`${filePath}:${line}\` failed for the following reasons.\n => ${err.message}`, 'stderr');
           }
+        });
 
-          vscodeBreakpoints.push({
-            id: registeredBreakpoint.id,
-            line: registeredBreakpoint.line,
-            verified: true,
-          });
+        if (!registeredBreakpoint) {
+          continue;
         }
-        catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-          vscodeBreakpoints.push({
-            verified: false,
-            message: errorMessage,
-          });
+
+        // Restore hitCount
+        const removedBreakpoint = removedBreakpoints.find((breakpoint) => registeredBreakpoint.unverifiedLine === breakpoint.unverifiedLine && registeredBreakpoint.unverifiedColumn === breakpoint.unverifiedColumn);
+        if (removedBreakpoint) {
+          registeredBreakpoint.hitCount = removedBreakpoint.hitCount;
         }
+
+        vscodeBreakpoints.push({
+          id: registeredBreakpoint.id,
+          line: registeredBreakpoint.line,
+          verified: true,
+        });
       }
 
       response.body = { breakpoints: vscodeBreakpoints };
       this.sendResponse(response);
+    }).catch((err: unknown) => {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[setBreakPointsRequest] ${err.message}`, 'develop');
+      }
+      this.sendResponse(response);
     });
   }
   protected async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    this.exceptionArgs = args;
+    return asyncLock.acquire('setExceptionBreakPointsRequest', async() => {
+      this.exceptionArgs = args;
+      const exceptionEnabled = (this.exceptionArgs.filterOptions ?? []).some((filter) => filter.filterId.endsWith('exceptions'));
+      await this.session!.sendExceptionBreakpointCommand(exceptionEnabled);
 
-    const exceptionEnabled = (this.exceptionArgs.filterOptions ?? []).some((filter) => filter.filterId.endsWith('exceptions'));
-    await this.session!.sendExceptionBreakpointCommand(exceptionEnabled);
+      if (this.hiddenBreakpointsWithUI) {
+        await this.unregisterHiddenBreakpointsWithUI();
 
-    if (this.hiddenBreakpointsWithUI) {
-      this.unregisterHiddenBreakpointsWithUI();
-
-      for await (const filterOption of this.exceptionArgs.filterOptions ?? []) {
-        const hiddenBreakpointWithUI = this.hiddenBreakpointsWithUI.find((breakpoint) => filterOption.filterId === breakpoint.id);
-        if (hiddenBreakpointWithUI) {
-          await this.registerHiddenBreakpointsWithUI(hiddenBreakpointWithUI);
+        for await (const filterOption of this.exceptionArgs.filterOptions ?? []) {
+          const hiddenBreakpointWithUI = this.hiddenBreakpointsWithUI.find((breakpoint) => filterOption.filterId === breakpoint.id);
+          if (hiddenBreakpointWithUI) {
+            await this.registerHiddenBreakpointsWithUI(hiddenBreakpointWithUI).catch((err: unknown) => {
+              if (err instanceof Error) {
+                this.sendAnnounce(`An attempt to set a hidden breakpoint with the label set to \`${hiddenBreakpointWithUI.label}\` failed for the following reasons.\n => ${err.message}`, 'stderr');
+              }
+            });
+          }
         }
       }
-    }
-    this.sendResponse(response);
+      this.sendResponse(response);
+    }).catch((err: unknown) => {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[setExceptionBreakPointsRequest] ${err.message}`, 'develop');
+      }
+      this.sendResponse(response);
+    });
   }
   protected async exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments, request?: DebugProtocol.Request): Promise<void> {
-    const exception = (await this.evaluator.eval('GetVar("<exception>")')) as dbgp.ObjectProperty | undefined;
-    if (typeof exception === 'undefined') {
+    return asyncLock.acquire('exceptionInfoRequest', async() => {
+      const exception = (await this.evaluator.eval('GetVar("<exception>")', this.currentStackFrames?.[0].dbgpStackFrame)) as dbgp.ObjectProperty | undefined;
+      if (typeof exception === 'undefined') {
+        this.sendResponse(response);
+        return;
+      }
+
+      await this.trySuppressAutoHotkeyDialog();
+      const classNameProperty = exception.children.find((child) => equalsIgnoreCase(child.name, '__CLASS'));
+      const exceptionId = classNameProperty instanceof dbgp.PrimitiveProperty ? classNameProperty.value : '<exception>';
+      const messageProperty = exception.children.find((child) => equalsIgnoreCase(child.name, 'Message'));
+
+      response.body = {
+        exceptionId: messageProperty instanceof dbgp.PrimitiveProperty && messageProperty.value !== ''
+          ? `${exceptionId}: ${messageProperty.value}`
+          : exceptionId,
+        breakMode: 'always',
+        description: this.currentStackFrames!.map((stackFrame, index) => {
+          const message = `${stackFrame.name} (${stackFrame.source.path}:${stackFrame.line})`;
+          if (index === 0) {
+            return message;
+          }
+          return `  at ${message}`;
+        }).join('\n'),
+      };
       this.sendResponse(response);
-      return;
-    }
-
-    await this.trySuppressAutoHotkeyDialog();
-    const classNameProperty = exception.children.find((child) => equalsIgnoreCase(child.name, '__CLASS'));
-    const exceptionId = classNameProperty instanceof dbgp.PrimitiveProperty ? classNameProperty.value : '<exception>';
-    const messageProperty = exception.children.find((child) => equalsIgnoreCase(child.name, 'Message'));
-
-    response.body = {
-      exceptionId: messageProperty instanceof dbgp.PrimitiveProperty && messageProperty.value !== ''
-        ? `${exceptionId}: ${messageProperty.value}`
-        : exceptionId,
-      breakMode: 'always',
-      description: this.currentStackFrames!.map((stackFrame, index) => {
-        const message = `${stackFrame.name} (${stackFrame.source.path}:${stackFrame.line})`;
-        if (index === 0) {
-          return message;
-        }
-        return `  at ${message}`;
-      }).join('\n'),
-    };
-    this.sendResponse(response);
+    }).catch((err: unknown) => {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[exceptionInfoRequest] ${err.message}`, 'develop');
+      }
+      this.sendResponse(response);
+    });
   }
   protected async setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    this.initSymbols();
+    return asyncLock.acquire('setFunctionBreakPointsRequest', async() => {
+      this.initSymbols();
 
-    for await (const breakpoint of args.breakpoints) {
-      const callableSymbols = this.findCallableSymbols(breakpoint.name);
-      for await (const symbol of callableSymbols) {
-        try {
+      for await (const breakpoint of args.breakpoints) {
+        const callableSymbols = this.findCallableSymbols(breakpoint.name);
+        for await (const symbol of callableSymbols) {
           const existsFunctionBreakpoint = this.registeredFunctionBreakpoints.find((breakpoint) => {
             return breakpoint.group === 'function-breakpoint'
               && breakpoint.filePath === symbol.location.sourceFile
@@ -528,145 +565,215 @@ export class AhkDebugSession extends LoggingDebugSession {
             unverifiedColumn: 1,
           } as BreakpointAdvancedData;
 
-          const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
-          this.registeredFunctionBreakpoints.push(registeredBreakpoint);
-        }
-        catch (error: unknown) {
-          const errorMessage = error instanceof Error ? error.message : 'User will never see this message.';
-          console.log(errorMessage);
+          const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData).catch((err: unknown) => {
+            if (err instanceof Error) {
+              this.sendAnnounce(`An attempt to set a breakpoint at \`${symbol.location.sourceFile}:${line}\` failed for the following reasons.\n => ${err.message}`, 'stderr');
+            }
+          });
+
+          if (registeredBreakpoint) {
+            this.registeredFunctionBreakpoints.push(registeredBreakpoint);
+          }
         }
       }
-    }
-    this.sendResponse(response);
+      this.sendResponse(response);
+    }).catch((err: unknown) => {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[setFunctionBreakPointsRequest] ${err.message}`, 'develop');
+      }
+      this.sendResponse(response);
+    });
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('configurationDoneRequest');
-    this.sendResponse(response);
+
     if (this.isClosedSession) {
+      this.sendResponse(response);
       return;
     }
 
-    await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
-    await this.registerDebugDirective();
-    await this.registerHiddenBreakpoints();
+    try {
+      await this.session!.sendFeatureSetCommand('max_children', this.config.maxChildren);
+      await this.registerDebugDirective();
+      await this.registerHiddenBreakpoints();
 
-    const result = this.config.stopOnEntry
-      ? await this.session!.sendContinuationCommand('step_into')
-      : await this.session!.sendContinuationCommand('run');
-    this.checkContinuationStatus(result);
-  }
-  protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.traceLogger.log('continueRequest');
-    this.sendResponse(response);
-    if (this.isClosedSession) {
-      return;
+      const result = this.config.stopOnEntry
+        ? await this.session!.sendContinuationCommand('step_into')
+        : await this.session!.sendContinuationCommand('run');
+      this.checkContinuationStatus(result);
     }
-
-    this.currentMetaVariableMap.clear();
-    this.pauseRequested = false;
-    this.isPaused = false;
-
-    this.clearPerfTipsDecorations();
-    const result = await this.session!.sendContinuationCommand('run');
-    this.checkContinuationStatus(result);
-  }
-  protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.traceLogger.log('nextRequest');
-    this.sendResponse(response);
-    if (this.isClosedSession) {
-      return;
-    }
-
-    this.currentMetaVariableMap.clear();
-    this.pauseRequested = false;
-    this.isPaused = false;
-
-    this.clearPerfTipsDecorations();
-    const result = await this.session!.sendContinuationCommand('step_over');
-    this.checkContinuationStatus(result);
-  }
-  protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.traceLogger.log('stepInRequest');
-    this.sendResponse(response);
-    if (this.isClosedSession) {
-      return;
-    }
-
-    this.currentMetaVariableMap.clear();
-    this.pauseRequested = false;
-    this.isPaused = false;
-
-    this.clearPerfTipsDecorations();
-    const result = await this.session!.sendContinuationCommand('step_into');
-    this.checkContinuationStatus(result);
-  }
-  protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.traceLogger.log('stepOutRequest');
-    this.sendResponse(response);
-    if (this.isClosedSession) {
-      return;
-    }
-
-    let runToEndOfFunctionBreakpoint: Breakpoint | undefined;
-    if (enableRunToEndOfFunction) {
-      this.initSymbols();
-
-      const filePath = this.currentStackFrames?.[0].source.path;
-      const funcName = this.currentStackFrames?.[0].name;
-      if (filePath && funcName?.includes('()')) {
-        const symbol = this.callableSymbols?.find((symbol) => funcName.match(new RegExp(`^${symbol.fullname}()$`, 'iu')));
-        if (symbol?.location.endIndex) {
-          const fileUri = toFileUri(filePath);
-          const line = sym.getLine(symbol, symbol.location.endIndex);
-          runToEndOfFunctionBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, { group: 'runToEndOfFunction' });
-        }
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[configurationDoneRequest] ${err.message}`, 'develop');
       }
     }
 
-    this.currentMetaVariableMap.clear();
-    this.pauseRequested = false;
-    this.isPaused = false;
+    this.sendResponse(response);
+  }
+  protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('continueRequest');
 
-    this.clearPerfTipsDecorations();
-    const result = await this.session!.sendContinuationCommand('step_out');
-    if (runToEndOfFunctionBreakpoint) {
-      await this.breakpointManager!.unregisterBreakpoint(runToEndOfFunctionBreakpoint);
-      setEnableRunToEndOfFunction(false);
+    if (this.isClosedSession) {
+      this.sendResponse(response);
+      return;
     }
-    this.checkContinuationStatus(result);
+
+    try {
+      this.currentMetaVariableMap.clear();
+      this.pauseRequested = false;
+      this.isPaused = false;
+
+      this.clearPerfTipsDecorations();
+      const result = await this.session!.sendContinuationCommand('run');
+      this.checkContinuationStatus(result);
+    }
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[continueRequest] ${err.message}`, 'develop');
+      }
+    }
+
+    this.sendResponse(response);
+  }
+  protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('nextRequest');
+
+    if (this.isClosedSession) {
+      this.sendResponse(response);
+      return;
+    }
+
+    try {
+      this.currentMetaVariableMap.clear();
+      this.pauseRequested = false;
+      this.isPaused = false;
+
+      this.clearPerfTipsDecorations();
+      const result = await this.session!.sendContinuationCommand('step_over');
+      this.checkContinuationStatus(result);
+    }
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[nextRequest] ${err.message}`, 'develop');
+      }
+    }
+
+    this.sendResponse(response);
+  }
+  protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('stepInRequest');
+
+    if (this.isClosedSession) {
+      this.sendResponse(response);
+      return;
+    }
+
+    try {
+      this.currentMetaVariableMap.clear();
+      this.pauseRequested = false;
+      this.isPaused = false;
+
+      this.clearPerfTipsDecorations();
+      const result = await this.session!.sendContinuationCommand('step_into');
+      this.checkContinuationStatus(result);
+    }
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[stepInRequest] ${err.message}`, 'develop');
+      }
+    }
+
+    this.sendResponse(response);
+  }
+  protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
+    this.traceLogger.log('stepOutRequest');
+
+    if (this.isClosedSession) {
+      this.sendResponse(response);
+      return;
+    }
+
+    try {
+      let runToEndOfFunctionBreakpoint: Breakpoint | undefined;
+      if (enableRunToEndOfFunction) {
+        this.initSymbols();
+
+        const filePath = this.currentStackFrames?.[0].source.path;
+        const funcName = this.currentStackFrames?.[0].name;
+        if (filePath && funcName?.includes('()')) {
+          const symbol = this.callableSymbols?.find((symbol) => funcName.match(new RegExp(`^${symbol.fullname}()$`, 'iu')));
+          if (symbol?.location.endIndex) {
+            const fileUri = toFileUri(filePath);
+            const line = sym.getLine(symbol, symbol.location.endIndex);
+            runToEndOfFunctionBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, { group: 'runToEndOfFunction' });
+          }
+        }
+      }
+
+      this.currentMetaVariableMap.clear();
+      this.pauseRequested = false;
+      this.isPaused = false;
+
+      this.clearPerfTipsDecorations();
+      const result = await this.session!.sendContinuationCommand('step_out');
+      if (runToEndOfFunctionBreakpoint) {
+        await this.breakpointManager!.unregisterBreakpoint(runToEndOfFunctionBreakpoint);
+        setEnableRunToEndOfFunction(false);
+      }
+      this.checkContinuationStatus(result);
+    }
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[stepOutRequest] ${err.message}`, 'develop');
+      }
+    }
+
+    this.sendResponse(response);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('pauseRequest');
-    this.sendResponse(response);
+
     if (this.isClosedSession) {
+      this.sendResponse(response);
       return;
     }
 
-    this.pauseRequested = false;
-    this.isPaused = false;
+    try {
+      this.pauseRequested = false;
+      this.isPaused = false;
 
-    if (this.autoExecuting) {
-      this.pauseRequested = true;
+      if (this.autoExecuting) {
+        this.pauseRequested = true;
 
-      // Force pause
-      setTimeout(() => {
-        if (!this.isPaused) {
-          if (this.isClosedSession) {
-            return;
+        // Force pause
+        setTimeout(() => {
+          if (!this.isPaused) {
+            if (this.isClosedSession) {
+              return;
+            }
+
+            this.pauseRequested = false;
+            this.session!.sendContinuationCommand('break').then((result) => {
+              this.checkContinuationStatus(result);
+            });
           }
+        }, 100);
 
-          this.pauseRequested = false;
-          this.session!.sendContinuationCommand('break').then((result) => {
-            this.checkContinuationStatus(result);
-          });
-        }
-      }, 100);
-      return;
+        this.sendResponse(response);
+        return;
+      }
+
+      this.currentMetaVariableMap.clear();
+      const result = await this.session!.sendContinuationCommand('break');
+      this.checkContinuationStatus(result);
+    }
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[pauseRequest] ${err.message}`, 'develop');
+      }
     }
 
-    this.currentMetaVariableMap.clear();
-    const result = await this.session!.sendContinuationCommand('break');
-    this.checkContinuationStatus(result);
+    this.sendResponse(response);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     this.traceLogger.log('threadsRequest');
@@ -680,46 +787,63 @@ export class AhkDebugSession extends LoggingDebugSession {
   }
   protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('stackTraceRequest');
+
     if (this.isClosedSession) {
       this.sendResponse(response);
       return;
     }
 
-    const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
-    const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
-    const endFrame = startFrame + maxLevels;
+    try {
+      const startFrame = typeof args.startFrame === 'number' ? args.startFrame : 0;
+      const maxLevels = typeof args.levels === 'number' ? args.levels : 1000;
+      const endFrame = startFrame + maxLevels;
 
-    if (!this.currentStackFrames) {
-      this.currentStackFrames = await this.variableManager!.createStackFrames();
+      if (!this.currentStackFrames) {
+        this.currentStackFrames = await this.variableManager!.createStackFrames();
+      }
+      const allStackFrames = this.currentStackFrames;
+      const stackFrames = allStackFrames.slice(startFrame, endFrame);
+      response.body = {
+        totalFrames: allStackFrames.length,
+        stackFrames,
+      };
     }
-    const allStackFrames = this.currentStackFrames;
-    const stackFrames = allStackFrames.slice(startFrame, endFrame);
-    response.body = {
-      totalFrames: allStackFrames.length,
-      stackFrames,
-    };
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[stackTraceRequest] ${err.message}`, 'develop');
+      }
+    }
+
     this.sendResponse(response);
   }
   protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('scopesRequest');
+
     if (this.isClosedSession) {
       this.sendResponse(response);
       return;
     }
 
-    const categories = await this.variableManager!.createCategories(args.frameId);
-    const metaVaribalesByFrameId = this.metaVaribalesByFrameId.get(args.frameId);
-    this.currentMetaVariableMap.clear();
-    if (metaVaribalesByFrameId) {
-      this.currentMetaVariableMap.setAll(metaVaribalesByFrameId);
+    try {
+      const categories = await this.variableManager!.createCategories(args.frameId);
+      const metaVaribalesByFrameId = this.metaVaribalesByFrameId.get(args.frameId);
+      this.currentMetaVariableMap.clear();
+      if (metaVaribalesByFrameId) {
+        this.currentMetaVariableMap.setAll(metaVaribalesByFrameId);
+      }
+      response.body = {
+        scopes: categories.map((scope) => ({
+          name: scope.name,
+          expensive: scope.expensive,
+          variablesReference: scope.variablesReference,
+        })),
+      };
     }
-    response.body = {
-      scopes: categories.map((scope) => ({
-        name: scope.name,
-        expensive: scope.expensive,
-        variablesReference: scope.variablesReference,
-      })),
-    };
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[scopesRequest] ${err.message}`, 'develop');
+      }
+    }
 
     this.sendResponse(response);
   }
@@ -731,157 +855,172 @@ export class AhkDebugSession extends LoggingDebugSession {
       return;
     }
 
-    const logged = this.logObjectsMap.get(args.variablesReference);
-    if (logged) {
-      if (logged instanceof Scope || logged instanceof Category || logged instanceof Categories) {
-        const scope = logged;
+    try {
+      const logged = this.logObjectsMap.get(args.variablesReference);
+      if (logged) {
+        if (logged instanceof Scope || logged instanceof Category || logged instanceof Categories) {
+          const scope = logged;
+          response.body = {
+            variables: [
+              {
+                name: scope.name,
+                variablesReference: scope.variablesReference,
+                value: scope.name,
+                type: '',
+              },
+            ],
+          };
+        }
+        else if (logged instanceof Variable) {
+          const variable = logged;
+          response.body = {
+            variables: [
+              {
+                name: variable.name,
+                variablesReference: variable.variablesReference,
+                value: `${variable.name}: ${variable.value}`,
+                type: variable.type,
+                indexedVariables: variable.indexedVariables,
+                namedVariables: variable.namedVariables,
+              },
+            ],
+          };
+        }
+        else if (logged instanceof MetaVariable) {
+          const metaVarible = logged;
+          response.body = {
+            variables: [
+              {
+                name: metaVarible.name,
+                value: metaVarible.name,
+                variablesReference: metaVarible.variablesReference,
+                indexedVariables: metaVarible.indexedVariables,
+                namedVariables: metaVarible.namedVariables,
+              },
+            ],
+          };
+        }
+        this.sendResponse(response);
+        return;
+      }
+
+      const categories = this.variableManager!.getCategories(args.variablesReference);
+      if (categories) {
         response.body = {
-          variables: [
-            {
-              name: scope.name,
-              variablesReference: scope.variablesReference,
-              value: scope.name,
-              type: '',
-            },
-          ],
+          variables: categories.map((category) => ({
+            name: category.name,
+            variablesReference: category.variablesReference,
+            value: category.name,
+          })),
+        };
+        this.sendResponse(response);
+        return;
+      }
+
+      const metaVariable = this.variableManager!.getMetaVariable(args.variablesReference);
+      if (metaVariable && !(metaVariable.rawValue instanceof Variable)) {
+        response.body = {
+          variables: (await metaVariable.createChildren()).map((child) => ({
+            name: child.name,
+            variablesReference: child.variablesReference,
+            value: child.value,
+            indexedVariables: child.indexedVariables,
+            namedVariables: child.namedVariables,
+          })),
+        };
+        this.sendResponse(response);
+        return;
+      }
+
+      const variables = await (metaVariable?.rawValue as Variable | undefined)?.createMembers(args)
+        ?? await this.variableManager!.getCategory(args.variablesReference)?.createChildren()
+        ?? await this.variableManager!.createVariables(args);
+      if (variables) {
+        response.body = {
+          variables: variables.map((variable) => ({
+            name: variable.name,
+            variablesReference: variable.variablesReference,
+            value: variable.value,
+            type: variable.type,
+            indexedVariables: variable.indexedVariables,
+            namedVariables: variable.namedVariables,
+            evaluateName: variable.fullName,
+            __vscodeVariableMenuContext: variable.__vscodeVariableMenuContext,
+          })),
         };
       }
-      else if (logged instanceof Variable) {
-        const variable = logged;
-        response.body = {
-          variables: [
-            {
-              name: variable.name,
-              variablesReference: variable.variablesReference,
-              value: `${variable.name}: ${variable.value}`,
-              type: variable.type,
-              indexedVariables: variable.indexedVariables,
-              namedVariables: variable.namedVariables,
-            },
-          ],
-        };
+    }
+    catch (err: unknown) {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[variablesRequest] ${err.message}`, 'develop');
       }
-      else if (logged instanceof MetaVariable) {
-        const metaVarible = logged;
-        response.body = {
-          variables: [
-            {
-              name: metaVarible.name,
-              value: metaVarible.name,
-              variablesReference: metaVarible.variablesReference,
-              indexedVariables: metaVarible.indexedVariables,
-              namedVariables: metaVarible.namedVariables,
-            },
-          ],
-        };
-      }
-      this.sendResponse(response);
-      return;
     }
 
-    const categories = this.variableManager!.getCategories(args.variablesReference);
-    if (categories) {
-      response.body = {
-        variables: categories.map((category) => ({
-          name: category.name,
-          variablesReference: category.variablesReference,
-          value: category.name,
-        })),
-      };
-      this.sendResponse(response);
-      return;
-    }
-
-    const metaVariable = this.variableManager!.getMetaVariable(args.variablesReference);
-    if (metaVariable && !(metaVariable.rawValue instanceof Variable)) {
-      response.body = {
-        variables: (await metaVariable.createChildren()).map((child) => ({
-          name: child.name,
-          variablesReference: child.variablesReference,
-          value: child.value,
-          indexedVariables: child.indexedVariables,
-          namedVariables: child.namedVariables,
-        })),
-      };
-      this.sendResponse(response);
-      return;
-    }
-
-    const variables = await (metaVariable?.rawValue as Variable | undefined)?.createMembers(args)
-      ?? await this.variableManager!.getCategory(args.variablesReference)?.createChildren()
-      ?? await this.variableManager!.createVariables(args);
-    if (variables) {
-      response.body = {
-        variables: variables.map((variable) => ({
-          name: variable.name,
-          variablesReference: variable.variablesReference,
-          value: variable.value,
-          type: variable.type,
-          indexedVariables: variable.indexedVariables,
-          namedVariables: variable.namedVariables,
-          evaluateName: variable.fullName,
-          __vscodeVariableMenuContext: variable.__vscodeVariableMenuContext,
-        })),
-      };
-    }
     this.sendResponse(response);
   }
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('setVariableRequest');
 
-    if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
-      throw Error('Could not retrieve stack frame.');
-    }
-
-    let fullName = args.name;
-    try {
-      let context: dbgp.Context;
-      const objectVariable = this.variableManager!.getObjectVariable(args.variablesReference);
-      if (objectVariable) {
-        const name = args.name.startsWith('[') ? args.name : `.${args.name}`;
-        fullName = `${objectVariable.fullName}${name}`;
-        context = objectVariable.context;
-      }
-      else {
-        context = this.variableManager!.getCategory(args.variablesReference)!.context;
+    return asyncLock.acquire('setVariableRequest', async() => {
+      if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
+        throw Error('Could not retrieve stack frame.');
       }
 
-      if (args.value === '') {
-        throw Error('Empty value cannot be set.');
-      }
+      let fullName = args.name;
+      try {
+        let context: dbgp.Context;
+        const objectVariable = this.variableManager!.getObjectVariable(args.variablesReference);
+        if (objectVariable) {
+          const name = args.name.startsWith('[') ? args.name : `.${args.name}`;
+          fullName = `${objectVariable.fullName}${name}`;
+          context = objectVariable.context;
+        }
+        else {
+          context = this.variableManager!.getCategory(args.variablesReference)!.context;
+        }
 
-      const result = await this.setVariable(fullName, args.value, context);
-      if (typeof result === 'undefined') {
-        response.body = {
-          value: 'Not initialized',
-          type: 'undefined',
-        };
+        if (args.value === '') {
+          throw Error('Empty value cannot be set.');
+        }
+
+        const result = await this.setVariable(fullName, args.value, context);
+        if (typeof result === 'undefined') {
+          response.body = {
+            value: 'Not initialized',
+            type: 'undefined',
+          };
+        }
+        else {
+          response.body = result;
+        }
+        this.sendResponse(response);
       }
-      else {
-        response.body = result;
+      catch (e: unknown) {
+        if (e instanceof dbgp.DbgpCriticalError) {
+          const message = `A critical error occurred evaluating the value to be written to \`${args.value}\` in watch expression.`;
+          this.criticalError(message);
+        }
+        else if (e instanceof ParseError) {
+          const message = `Failed to parse the value to be written to \`${fullName}\`.`;
+          this.sendErrorResponse(response, {
+            id: this.errorCounter++,
+            format: message,
+          } as DebugProtocol.Message);
+        }
+        else if (e instanceof Error) {
+          const title = `Failed to write variable \`${fullName}\``;
+          this.sendErrorResponse(response, {
+            id: this.errorCounter++,
+            format: `${title}. ${e.message}`,
+          } as DebugProtocol.Message);
+        }
+      }
+    }).catch((err: unknown) => {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[setVariableRequest] ${err.message}`, 'develop');
       }
       this.sendResponse(response);
-    }
-    catch (e: unknown) {
-      if (e instanceof dbgp.DbgpCriticalError) {
-        const message = `A critical error occurred evaluating the value to be written to \`${args.value}\` in watch expression.`;
-        this.criticalError(message);
-      }
-      else if (e instanceof ParseError) {
-        const message = `Failed to parse the value to be written to \`${fullName}\`.`;
-        this.sendErrorResponse(response, {
-          id: this.errorCounter++,
-          format: message,
-        } as DebugProtocol.Message);
-      }
-      else if (e instanceof Error) {
-        const title = `Failed to write variable \`${fullName}\``;
-        this.sendErrorResponse(response, {
-          id: this.errorCounter++,
-          format: `${title}. ${e.message}`,
-        } as DebugProtocol.Message);
-      }
-    }
+    });
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request): Promise<void> {
     return asyncLock.acquire('evaluateRequest', async() => {
@@ -976,10 +1115,15 @@ export class AhkDebugSession extends LoggingDebugSession {
           });
         }
       }
+    }).catch((err: unknown) => {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[evaluateRequest] ${err.message}`, 'develop');
+      }
+      this.sendResponse(response);
     });
   }
   protected async setExpressionRequest(response: DebugProtocol.SetExpressionResponse, args: DebugProtocol.SetExpressionArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    return asyncLock.acquire('evaluateRequest', async() => {
+    return asyncLock.acquire('setExpressionRequest', async() => {
       if (!args.frameId) {
         return;
       }
@@ -1008,6 +1152,11 @@ export class AhkDebugSession extends LoggingDebugSession {
           vscode.window.showErrorMessage(message);
         }
       }
+    }).catch((err: unknown) => {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[setExpressionRequest] ${err.message}`, 'develop');
+      }
+      this.sendResponse(response);
     });
   }
   protected sourceRequest(response: DebugProtocol.SourceResponse, args: DebugProtocol.SourceArguments, request?: DebugProtocol.Request): void {
@@ -1015,108 +1164,122 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendResponse(response);
   }
   protected async completionsRequest(response: DebugProtocol.CompletionsResponse, args: DebugProtocol.CompletionsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    const createType = (property: dbgp.Property): DebugProtocol.CompletionItemType => {
-      if (property instanceof dbgp.ObjectProperty) {
-        if (equalsIgnoreCase(property.name, '__NEW')) {
-          return 'constructor';
-        }
-        if (property.className === 'Func') {
-          return property.fullName.includes('.') ? 'method' : 'function';
-        }
-        if (property.className === 'Class') {
-          return 'class';
-        }
-        if (property.className === 'Property') {
-          return 'property';
-        }
-      }
-
-      return property.fullName.includes('.') ? 'field' : 'variable';
-    };
-    const createFixers = (ahkVersion: AhkVersion, label: string, snippet: string, position: Pick<DebugProtocol.CompletionsArguments, 'line' | 'column'>, triggerCharacter: string): Partial<DebugProtocol.CompletionItem> => {
-      const column_0base = position.column - 1;
-      const fixers: Partial<DebugProtocol.CompletionItem> = {};
-      if ([ '[', '["', `['` ].includes(triggerCharacter)) {
-        if (2 <= ahkVersion.mejor && !label.startsWith('[')) {
-          return fixers;
-        }
-
-        const quote = triggerCharacter === '[' ? '"' : triggerCharacter.slice(1);
-        const afterText = args.text.slice(column_0base);
-        const afterText_masked = maskQuotes(ahkVersion, afterText);
-        const pairIndex_close = searchPair(afterText_masked, '[', ']', 1);
-
-        const openText = triggerCharacter === '[' ? '"' : '';
-        let closeText = triggerCharacter === '[' ? '"]' : `${triggerCharacter.slice(1)}]`;
-        if (pairIndex_close !== -1) {
-          closeText = '';
-
-          const closeQuote = afterText.charAt(pairIndex_close - 1);
-          if (!(closeQuote === '"' || (2 <= ahkVersion.mejor && closeQuote === `'`))) {
-            closeText = quote;
+    return asyncLock.acquire('completionsRequest', async() => {
+      const createType = (property: dbgp.Property): DebugProtocol.CompletionItemType => {
+        if (property instanceof dbgp.ObjectProperty) {
+          if (equalsIgnoreCase(property.name, '__NEW')) {
+            return 'constructor';
+          }
+          if (property.className === 'Func') {
+            return property.fullName.includes('.') ? 'method' : 'function';
+          }
+          if (property.className === 'Class') {
+            return 'class';
+          }
+          if (property.className === 'Property') {
+            return 'property';
           }
         }
 
-        const label_dotNotation = toDotNotation(ahkVersion, label);
-        fixers.text = `${openText}${label_dotNotation}${closeText}`;
-        fixers.label = `[${quote}${label_dotNotation}${quote}]`;
-        fixers.start = triggerCharacter.length;
-        return fixers;
-      }
-      return fixers;
-    };
-
-    const targets = (await this.intellisense!.getSuggestion(args.text.slice(0, args.column - 1), async(property, snippet, triggerCharacter): Promise<DebugProtocol.CompletionItem | undefined> => {
-      // If the trigger is a dot and the completion outputs bracket notation, the dot must be removed. However, the completionsRequest cannot overwrite characters that have already been entered, so they should not be displayed in the completion in such cases
-      if (triggerCharacter === '.' && property.name.startsWith('[')) {
-        return undefined;
-      }
-
-      const label = createCompletionLabel(property.name);
-      const completionItem: DebugProtocol.CompletionItem = {
-        label,
-        detail: await createCompletionDetail(this.session!, property),
-        type: createType(property),
-        sortText: createCompletionSortText(property),
-        ...createFixers(this.session!.ahkVersion, label, snippet, args, triggerCharacter),
+        return property.fullName.includes('.') ? 'field' : 'variable';
       };
-      completionItem.sortText = createCompletionSortText(property.fullName, String(completionItem.label));
-      return completionItem;
-    })).filter((item) => typeof item !== 'undefined') as DebugProtocol.CompletionItem[];
+      const createFixers = (ahkVersion: AhkVersion, label: string, snippet: string, position: Pick<DebugProtocol.CompletionsArguments, 'line' | 'column'>, triggerCharacter: string): Partial<DebugProtocol.CompletionItem> => {
+        const column_0base = position.column - 1;
+        const fixers: Partial<DebugProtocol.CompletionItem> = {};
+        if ([ '[', '["', `['` ].includes(triggerCharacter)) {
+          if (2 <= ahkVersion.mejor && !label.startsWith('[')) {
+            return fixers;
+          }
 
-    response.body = { targets };
-    this.sendResponse(response);
+          const quote = triggerCharacter === '[' ? '"' : triggerCharacter.slice(1);
+          const afterText = args.text.slice(column_0base);
+          const afterText_masked = maskQuotes(ahkVersion, afterText);
+          const pairIndex_close = searchPair(afterText_masked, '[', ']', 1);
+
+          const openText = triggerCharacter === '[' ? '"' : '';
+          let closeText = triggerCharacter === '[' ? '"]' : `${triggerCharacter.slice(1)}]`;
+          if (pairIndex_close !== -1) {
+            closeText = '';
+
+            const closeQuote = afterText.charAt(pairIndex_close - 1);
+            if (!(closeQuote === '"' || (2 <= ahkVersion.mejor && closeQuote === `'`))) {
+              closeText = quote;
+            }
+          }
+
+          const label_dotNotation = toDotNotation(ahkVersion, label);
+          fixers.text = `${openText}${label_dotNotation}${closeText}`;
+          fixers.label = `[${quote}${label_dotNotation}${quote}]`;
+          fixers.start = triggerCharacter.length;
+          return fixers;
+        }
+        return fixers;
+      };
+
+      const targets = (await this.intellisense!.getSuggestion(args.text.slice(0, args.column - 1), async(property, snippet, triggerCharacter): Promise<DebugProtocol.CompletionItem | undefined> => {
+      // If the trigger is a dot and the completion outputs bracket notation, the dot must be removed. However, the completionsRequest cannot overwrite characters that have already been entered, so they should not be displayed in the completion in such cases
+        if (triggerCharacter === '.' && property.name.startsWith('[')) {
+          return undefined;
+        }
+
+        const label = createCompletionLabel(property.name);
+        const completionItem: DebugProtocol.CompletionItem = {
+          label,
+          detail: await createCompletionDetail(this.session!, property),
+          type: createType(property),
+          sortText: createCompletionSortText(property),
+          ...createFixers(this.session!.ahkVersion, label, snippet, args, triggerCharacter),
+        };
+        completionItem.sortText = createCompletionSortText(property.fullName, String(completionItem.label));
+        return completionItem;
+      })).filter((item) => typeof item !== 'undefined') as DebugProtocol.CompletionItem[];
+
+      response.body = { targets };
+      this.sendResponse(response);
+    }).catch((err: unknown) => {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[completionsRequest] ${err.message}`, 'develop');
+      }
+      this.sendResponse(response);
+    });
   }
   // eslint-disable-next-line @typescript-eslint/require-await
   protected async loadedSourcesRequest(response: DebugProtocol.LoadedSourcesResponse, args: DebugProtocol.LoadedSourcesArguments, request?: DebugProtocol.Request): Promise<void> {
-    this.traceLogger.log('loadedSourcesRequest');
+    return asyncLock.acquire('loadedSourcesRequest', async() => {
+      this.traceLogger.log('loadedSourcesRequest');
 
-    if (!this.config.useLoadedScripts) {
-      this.sendResponse(response);
-      return;
-    }
-    const loadedScriptPathList = await this.getAllLoadedSourcePath();
+      if (!this.config.useLoadedScripts) {
+        this.sendResponse(response);
+        return;
+      }
+      const loadedScriptPathList = await this.getAllLoadedSourcePath();
 
-    const sources: DebugProtocol.Source[] = [];
-    await Promise.all(loadedScriptPathList.map(async(filePath): Promise<void> => {
-      return new Promise((resolve) => {
-        stat(filePath, (err, stats) => {
-          if (err) {
-            // sources.push({ name: 'Failed to read' });
+      const sources: DebugProtocol.Source[] = [];
+      await Promise.all(loadedScriptPathList.map(async(filePath): Promise<void> => {
+        return new Promise((resolve) => {
+          stat(filePath, (err, stats) => {
+            if (err) {
+              // sources.push({ name: 'Failed to read' });
+              resolve();
+              return;
+            }
+
+            if (stats.isFile()) {
+              sources.push({ name: path.basename(filePath), path: filePath });
+            }
             resolve();
-            return;
-          }
-
-          if (stats.isFile()) {
-            sources.push({ name: path.basename(filePath), path: filePath });
-          }
-          resolve();
+          });
         });
-      });
-    }));
+      }));
 
-    response.body = { sources };
-    this.sendResponse(response);
+      response.body = { sources };
+      this.sendResponse(response);
+    }).catch((err: unknown) => {
+      if (err instanceof Error) {
+        this.sendAnnounce(`[loadedSourcesRequest] ${err.message}`, 'develop');
+      }
+      this.sendResponse(response);
+    });
   }
   private initSymbols(): void {
     if (this.symbols) {
@@ -1817,8 +1980,8 @@ export class AhkDebugSession extends LoggingDebugSession {
       variablesReference: 0,
     };
   }
-  private sendAnnounce(message: string, category: 'stdout' | 'stderr' | 'console' = 'console', level?: AnnounceLevel): void {
-    const announceLevelOrder = [ false, 'error', true, 'detail' ];
+  private sendAnnounce(message: string, category: 'stdout' | 'stderr' | 'console' | 'develop' = 'console', level?: AnnounceLevel): void {
+    const announceLevelOrder = [ false, 'error', true, 'detail', 'develop' ];
     if (this.config.useAnnounce === false) {
       return;
     }
