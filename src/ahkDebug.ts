@@ -353,7 +353,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[launchRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[launchRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -410,7 +410,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[attachRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[attachRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -443,7 +443,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
         const registeredBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData).catch((err: unknown) => {
           if (err instanceof Error) {
-            this.sendAnnounce(`An attempt to set a breakpoint at \`${filePath}:${line}\` failed for the following reasons.\n => ${err.message}`, 'develop');
+            this.sendAnnounce(`An attempt to set a breakpoint at \`${filePath}:${line}\` failed for the following reasons.\n => ${err.message}`, 'stderr', 'develop');
           }
         });
 
@@ -468,7 +468,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
     }).catch((err: unknown) => {
       if (err instanceof Error) {
-        this.sendAnnounce(`[setBreakPointsRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[setBreakPointsRequest] ${err.message}`, 'stderr', 'develop');
       }
       this.sendResponse(response);
     });
@@ -487,7 +487,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           if (hiddenBreakpointWithUI) {
             await this.registerHiddenBreakpointsWithUI(hiddenBreakpointWithUI).catch((err: unknown) => {
               if (err instanceof Error) {
-                this.sendAnnounce(`An attempt to set a hidden breakpoint with the label set to \`${hiddenBreakpointWithUI.label}\` failed for the following reasons.\n => ${err.message}`, 'develop');
+                this.sendAnnounce(`An attempt to set a hidden breakpoint with the label set to \`${hiddenBreakpointWithUI.label}\` failed for the following reasons.\n => ${err.message}`, 'stderr', 'develop');
               }
             });
           }
@@ -496,7 +496,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
     }).catch((err: unknown) => {
       if (err instanceof Error) {
-        this.sendAnnounce(`[setExceptionBreakPointsRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[setExceptionBreakPointsRequest] ${err.message}`, 'stderr', 'develop');
       }
       this.sendResponse(response);
     });
@@ -530,7 +530,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
     }).catch((err: unknown) => {
       if (err instanceof Error) {
-        this.sendAnnounce(`[exceptionInfoRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[exceptionInfoRequest] ${err.message}`, 'stderr', 'develop');
       }
       this.sendResponse(response);
     });
@@ -579,7 +579,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
     }).catch((err: unknown) => {
       if (err instanceof Error) {
-        this.sendAnnounce(`[setFunctionBreakPointsRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[setFunctionBreakPointsRequest] ${err.message}`, 'stderr', 'develop');
       }
       this.sendResponse(response);
     });
@@ -604,7 +604,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[configurationDoneRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[configurationDoneRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -629,7 +629,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[continueRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[continueRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -654,7 +654,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[nextRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[nextRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -679,7 +679,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[stepInRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[stepInRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -724,7 +724,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[stepOutRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[stepOutRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -769,7 +769,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[pauseRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[pauseRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -810,7 +810,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[stackTraceRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[stackTraceRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -841,7 +841,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[scopesRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[scopesRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -952,7 +952,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
     catch (err: unknown) {
       if (err instanceof Error) {
-        this.sendAnnounce(`[variablesRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[variablesRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
 
@@ -1017,7 +1017,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }).catch((err: unknown) => {
       if (err instanceof Error) {
-        this.sendAnnounce(`[setVariableRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[setVariableRequest] ${err.message}`, 'stderr', 'develop');
       }
       this.sendResponse(response);
     });
@@ -1117,7 +1117,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }).catch((err: unknown) => {
       if (err instanceof Error) {
-        this.sendAnnounce(`[evaluateRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[evaluateRequest] ${err.message}`, 'stderr', 'develop');
       }
       this.sendResponse(response);
     });
@@ -1154,7 +1154,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }).catch((err: unknown) => {
       if (err instanceof Error) {
-        this.sendAnnounce(`[setExpressionRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[setExpressionRequest] ${err.message}`, 'stderr', 'develop');
       }
       this.sendResponse(response);
     });
@@ -1238,7 +1238,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
     }).catch((err: unknown) => {
       if (err instanceof Error) {
-        this.sendAnnounce(`[completionsRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[completionsRequest] ${err.message}`, 'stderr', 'develop');
       }
       this.sendResponse(response);
     });
@@ -1276,7 +1276,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.sendResponse(response);
     }).catch((err: unknown) => {
       if (err instanceof Error) {
-        this.sendAnnounce(`[loadedSourcesRequest] ${err.message}`, 'develop');
+        this.sendAnnounce(`[loadedSourcesRequest] ${err.message}`, 'stderr', 'develop');
       }
       this.sendResponse(response);
     });
@@ -1980,7 +1980,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       variablesReference: 0,
     };
   }
-  private sendAnnounce(message: string, category: 'stdout' | 'stderr' | 'console' | 'develop' = 'console', level?: AnnounceLevel): void {
+  private sendAnnounce(message: string, category: 'stdout' | 'stderr' | 'console' = 'console', level?: AnnounceLevel): void {
     const announceLevelOrder = [ false, 'error', true, 'detail', 'develop' ];
     if (this.config.useAnnounce === false) {
       return;

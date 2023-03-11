@@ -531,7 +531,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
 
     // init useAnnounce
     ((): void => {
-      if (!(typeof config.useAnnounce === 'boolean' || [ 'error', 'detail' ].includes(config.useAnnounce))) {
+      if (!(typeof config.useAnnounce === 'boolean' || [ 'error', 'detail', 'develop' ].includes(config.useAnnounce))) {
         throw Error('`useAnnounce` must be a boolean, "error" or "detail".');
       }
     })();
