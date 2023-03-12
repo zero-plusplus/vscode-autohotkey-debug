@@ -255,6 +255,26 @@
             "trace": false,
         },
         {
+            "name": "Runtime Auto Select",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${file}",
+        },
+        {
+            "name": "Runtime Auto Select (ERROR in v2)",
+            "type": "autohotkey",
+            "request": "launch",
+            "runtime_v2": "AutoHotkey.exe",
+            "program": "${file}",
+        },
+        {
+            "name": "Runtime Auto Select (Portable)",
+            "type": "autohotkey",
+            "request": "launch",
+            "program": "${file}",
+            "runtime": "C:/AutoHotkey", // If you want to test it, copy it from `C:\Program Files\AutoHotkey`.
+        },
+        {
             "name": "AutoHotkey Selected Attach",
             "type": "autohotkey",
             "request": "attach",

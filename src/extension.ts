@@ -8,7 +8,6 @@ import * as vscode from 'vscode';
 import JSONC from 'jsonc-parser';
 import { defaults, groupBy, isString, range } from 'lodash';
 import tcpPortUsed from 'tcp-port-used';
-import { getAhkVersion } from './util/getAhkVersion';
 import { completionItemProvider } from './CompletionItemProvider';
 import { AhkDebugSession, LaunchRequestArguments } from './ahkDebug';
 import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
@@ -19,6 +18,7 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isDirectory, reverseSearchPair, searchPair, toArray } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { ExpressionExtractor } from './util/ExpressionExtractor';
+import { defaultAutoHotkeyInstallDir, getAhkVersion, getAutohotkeyUxRuntimePath, getLaunchInfoByLauncher } from './util/AutoHotkeyLuncher';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -153,8 +153,6 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
       name: 'AutoHotkey Debug',
       type: 'autohotkey',
       request: 'launch',
-      runtime_v1: 'AutoHotkey.exe',
-      runtime_v2: 'v2/AutoHotkey.exe',
       hostname: 'localhost',
       port: 9002,
       program: config.request === 'launch' || !config.request ? '${file}' : undefined,
@@ -175,6 +173,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
       trace: false,
       // The following is not a configuration, but is set to pass data to the debug adapter.
       cancelReason: undefined,
+      autohotkeyInstallDirectory: defaultAutoHotkeyInstallDir,
     });
 
     if (config.openFileOnExit === '${file}' && !vscode.window.activeTextEditor) {
@@ -183,6 +182,11 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
     return config;
   }
   public async resolveDebugConfigurationWithSubstitutedVariables(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): Promise<vscode.DebugConfiguration> {
+    if (isDirectory(config.runtime)) {
+      config.autohotkeyInstallDirectory = config.runtime;
+      config.runtime = undefined;
+    }
+
     // init request
     ((): void => {
       if (config.request === 'launch') {
@@ -197,11 +201,31 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
 
     // init runtime
     await (async(): Promise<void> => {
-      if (typeof config.runtime === 'undefined') {
+      if (config.runtime === undefined) {
         const doc = await vscode.workspace.openTextDocument(config.program ?? vscode.window.activeTextEditor?.document.uri.fsPath);
-        config.runtime = doc.languageId.toLowerCase() === 'ahk'
+        const languageId = doc.languageId.toLowerCase();
+        config.runtime = languageId === 'ahk'
           ? config.runtime_v1
           : config.runtime_v2; // ahk2 or ah2
+
+        const defaultRuntime = path.resolve(path.dirname(config.program), `${path.parse(config.program).name}.exe`);
+        if (config.runtime === undefined && existsSync(defaultRuntime)) {
+          config.runtime = defaultRuntime;
+        }
+
+        if (config.runtime === undefined && existsSync(getAutohotkeyUxRuntimePath(config.autohotkeyInstallDirectory))) {
+          const info = getLaunchInfoByLauncher(config.program, config.autohotkeyInstallDirectory);
+          if (info) {
+            config.runtime = info.runtime;
+            config.runtimeArgs = Array.isArray(config.runtimeArgs) ? [ ...info.args, ...config.runtimeArgs ] : info.args;
+          }
+        }
+
+        if (config.runtime === undefined) {
+          config.runtime = languageId === 'ahk'
+            ? 'AutoHotkey.exe'
+            : 'v2/AutoHotkey.exe'; // ahk2 or ah2
+        }
       }
 
       if (!isString(config.runtime)) {

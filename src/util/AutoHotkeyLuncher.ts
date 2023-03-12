@@ -1,14 +1,59 @@
-import { spawn, spawnSync } from 'child_process';
-import { EventEmitter } from 'events';
 import * as path from 'path';
+import { existsSync } from 'fs';
+import { SpawnSyncOptions, spawn, spawnSync } from 'child_process';
+import { EventEmitter } from 'events';
 import { LaunchRequestArguments } from '../ahkDebug';
-import { getAhkVersion } from './getAhkVersion';
 import { escapePcreRegExEscape } from './stringUtils';
+import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 
 export type AutoHotkeyProcess = {
   command: string;
   event: EventEmitter;
   close: () => void;
+};
+
+export const defaultAutoHotkeyInstallDir = `${String(process.env.PROGRAMFILES)}/AutoHotkey`;
+export const getAutohotkeyUxRuntimePath = (installDir = defaultAutoHotkeyInstallDir): string => {
+  return path.resolve(`${installDir}/UX/AutoHotkeyUX.exe`);
+};
+export const getAutohotkeyLauncherPath = (installDir = defaultAutoHotkeyInstallDir): string => {
+  return path.resolve(`${installDir}/UX/launcher.ahk`);
+};
+export const getAhkVersion = (ahkRuntime: string, options?: SpawnSyncOptions): AhkVersion | undefined => {
+  const ahkCode = 'FileOpen("*", "w", "CP65001").write(A_AhkVersion)';
+  const result = spawnSync(ahkRuntime, [ '/ErrorStdOut', '*' ], { ...options, input: ahkCode });
+  if (result.error) {
+    return undefined;
+  }
+  const version = result.stdout.toString();
+  return new AhkVersion(version);
+};
+
+export interface LaunchInfo {
+  requires: string;
+  runtime: string;
+  args: string[];
+}
+export const getLaunchInfoByLauncher = (program: string, installDir = `${String(process.env.PROGRAMFILES)}/AutoHotkey/UX`): LaunchInfo | undefined => {
+  const autohotkeyUxRuntimePath = getAutohotkeyUxRuntimePath(installDir);
+  const autohotkeyLauncherPath = getAutohotkeyLauncherPath(installDir);
+  if (!existsSync(autohotkeyUxRuntimePath)) {
+    return undefined;
+  }
+  if (!existsSync(autohotkeyLauncherPath)) {
+    return undefined;
+  }
+  if (!existsSync(program)) {
+    return undefined;
+  }
+
+  const result = spawnSync(autohotkeyUxRuntimePath, [ autohotkeyLauncherPath, '/Which', program ]);
+  if (result.error) {
+    return undefined;
+  }
+
+  const [ requires, runtime, ...args ] = result.stdout.toString().split(/\r\n|\n/u);
+  return { requires, runtime, args: args.filter((arg) => arg !== '') };
 };
 
 export class AutoHotkeyLauncher {
@@ -53,6 +98,7 @@ export class AutoHotkeyLauncher {
   }
   public launchByCmd(): AutoHotkeyProcess {
     const { noDebug, runtime, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
+
     const _runtimeArgs = runtimeArgs.filter((arg) => arg.toLowerCase() !== '/errorstdout');
     const launchArgs = [
       ...(noDebug ? [] : [ `/Debug=${hostname}:${port}` ]),
