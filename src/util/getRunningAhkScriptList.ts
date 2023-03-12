@@ -1,5 +1,5 @@
 import { SpawnSyncOptions, spawnSync } from 'child_process';
-import { getAhkVersion } from './getAhkVersion';
+import { getAhkVersion } from './AutoHotkeyLuncher';
 
 export const getRunningAhkScriptList = (ahkRuntime: string, options?: SpawnSyncOptions): string[] => {
   const version = getAhkVersion(ahkRuntime);

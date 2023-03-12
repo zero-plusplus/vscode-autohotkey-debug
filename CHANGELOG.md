@@ -33,6 +33,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#225](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/225) Remove escape process of output text in debug directives
 * [#238](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/238) Change breakpoint directive to break regardless of output
 * [#239](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/239) Raise the supported vscode version from `1.49.0` to `1.63.0` for using the pre-release
+* [#241](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/241) Change so that a more suitable runtime can be selected without specifying `runtime`
 * [#244](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/244) Implement format specifiers at log points, etc.
 * [#261](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/261) Support the expression in watch expression
 * [#269](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/269) Support the expression evaluate in debug console

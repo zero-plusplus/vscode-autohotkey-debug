@@ -33,7 +33,7 @@ import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
 import { completionItemProvider, createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
-import { AutoHotkeyLauncher, AutoHotkeyProcess } from './util/AutoHotkeyLuncher';
+import { AutoHotkeyLauncher, AutoHotkeyProcess, getAhkVersion } from './util/AutoHotkeyLuncher';
 import { now, readFileCache, readFileCacheSync, searchPair, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
 import { Categories, Category, MetaVariable, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
@@ -48,7 +48,6 @@ import { maskQuotes } from './util/ExpressionExtractor';
 import { DebugDirectiveParser } from './util/DebugDirectiveParser';
 import { LogData, LogEvaluator } from './util/evaluator/LogEvaluator';
 import { ActionLogPrefixData, CategoryLogPrefixData, GroupLogPrefixData } from './util/evaluator/LogParser';
-import { getAhkVersion } from './util/getAhkVersion';
 
 export type AnnounceLevel = boolean | 'error' | 'detail' | 'develop';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -125,6 +124,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   // The following is not a configuration, but is set to pass data to the debug adapter.
   cancelReason?: string;
   extensionContext: vscode.ExtensionContext;
+  autohotkeyInstallDirectory: string;
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
@@ -345,6 +345,7 @@ export class AhkDebugSession extends LoggingDebugSession {
           this.errorMessage = this.fixPathOfRuntimeError(message);
           this.sendOutputDebug(this.errorMessage);
         });
+
       this.sendAnnounce(`${this.ahkProcess.command}`);
       await this.createServer(args).catch(() => {
         this.sendAnnounce('Force debugging to terminate because the debug server creation failed.', 'stderr');
