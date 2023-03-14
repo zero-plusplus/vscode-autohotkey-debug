@@ -41,6 +41,11 @@
       "command": "npm run build"
     },
     {
+      "label": "subtask:rebuild",
+      "type": "shell",
+      "command": "npm run rebuild"
+    },
+    {
       "label": "subtask:build:without-lint",
       "type": "shell",
       "command": "npm run build:without-lint"

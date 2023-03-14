@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "ts-node task/build.ts",
+    "rebuild": "npm run clean && npm run build",
     "watch": "ts-node task/watch.ts",
     "clean": "ts-node task/clean.ts",
     "test": "jest --runInBand --detectOpenHandles",
