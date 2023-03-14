@@ -17,6 +17,7 @@ export const esbuildOptions: esbuild.BuildOptions = {
   external: [
     'vscode-uri',
     'vscode',
+    'jsonc-parser',
   ],
 };
 
