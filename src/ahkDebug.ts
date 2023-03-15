@@ -624,17 +624,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.pauseRequested = false;
       this.isPaused = false;
 
+      this.sendResponse(response);
       this.clearPerfTipsDecorations();
       const result = await this.session!.sendContinuationCommand('run');
-      this.checkContinuationStatus(result);
+      await this.checkContinuationStatus(result);
     }
     catch (err: unknown) {
       if (err instanceof Error) {
         this.sendAnnounce(`[continueRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('nextRequest');
@@ -649,17 +648,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.pauseRequested = false;
       this.isPaused = false;
 
+      this.sendResponse(response);
       this.clearPerfTipsDecorations();
       const result = await this.session!.sendContinuationCommand('step_over');
-      this.checkContinuationStatus(result);
+      await this.checkContinuationStatus(result);
     }
     catch (err: unknown) {
       if (err instanceof Error) {
         this.sendAnnounce(`[nextRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('stepInRequest');
@@ -674,17 +672,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.pauseRequested = false;
       this.isPaused = false;
 
+      this.sendResponse(response);
       this.clearPerfTipsDecorations();
       const result = await this.session!.sendContinuationCommand('step_into');
-      this.checkContinuationStatus(result);
+      await this.checkContinuationStatus(result);
     }
     catch (err: unknown) {
       if (err instanceof Error) {
         this.sendAnnounce(`[stepInRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('stepOutRequest');
@@ -695,6 +692,8 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     try {
+      this.sendResponse(response);
+
       let runToEndOfFunctionBreakpoint: Breakpoint | undefined;
       if (enableRunToEndOfFunction) {
         this.initSymbols();
@@ -728,8 +727,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendAnnounce(`[stepOutRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('pauseRequest');
@@ -743,6 +740,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.pauseRequested = false;
       this.isPaused = false;
 
+      this.sendResponse(response);
       if (this.autoExecuting) {
         this.pauseRequested = true;
 
@@ -773,8 +771,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendAnnounce(`[pauseRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     this.traceLogger.log('threadsRequest');
