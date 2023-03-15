@@ -154,7 +154,8 @@ export class AhkDebugSession extends LoggingDebugSession {
   private pauseRequested = false;
   private isPaused = false;
   private isTerminateRequested = false;
-  private configOrProvider?: DebugConfig | DebugConfigProvider;
+  private _config!: DebugConfig;
+  private readonly preconfig?: DebugConfig;
   private symbolFinder?: sym.SymbolFinder;
   private symbols?: sym.NamedNode[];
   private callableSymbols?: sym.NamedNode[];
@@ -183,11 +184,11 @@ export class AhkDebugSession extends LoggingDebugSession {
   // The warning message is processed earlier than the server initialization, so it needs to be delayed.
   private readonly delayedWarningMessages: string[] = [];
   private _logEvalutor?: LogEvaluator;
-  constructor(configOrProvider?: DebugConfig | DebugConfigProvider, extraFeatures?: ExtraFeatures) {
+  constructor(preconfig?: DebugConfig | DebugConfigProvider, extraFeatures?: ExtraFeatures) {
     super('autohotkey-debug.txt');
 
     this.extraFeatures = extraFeatures;
-    this.configOrProvider = configOrProvider;
+    this.preconfig = (preconfig && 'config' in preconfig) ? preconfig.config : preconfig as DebugConfig;
     this.traceLogger = new TraceLogger((e): void => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       this.sendEvent(e);
@@ -197,10 +198,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.setDebuggerPathFormat('uri');
   }
   public get config(): DebugConfig {
-    if ('config' in this.configOrProvider!) {
-      return this.configOrProvider.config!;
-    }
-    return this.configOrProvider as DebugConfig;
+    return this._config;
   }
   public get isSessionTerminated(): boolean {
     return this.isTerminateRequested;
@@ -230,10 +228,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportTerminateDebuggee: true,
     };
 
-    const config = this.configOrProvider === undefined ? undefined : this.config;
-    if (config?.setHiddenBreakpoints) {
-      this.hiddenBreakpoints = config.setHiddenBreakpoints.filter((hiddenBreakpoint) => !('label' in hiddenBreakpoint)) as HiddenBreakpoint[];
-      this.hiddenBreakpointsWithUI = config.setHiddenBreakpoints.filter((hiddenBreakpoint) => 'label' in hiddenBreakpoint) as HiddenBreakpointWithUI[];
+    if (this.preconfig?.setHiddenBreakpoints) {
+      this.hiddenBreakpoints = this.preconfig.setHiddenBreakpoints.filter((hiddenBreakpoint) => !('label' in hiddenBreakpoint)) as HiddenBreakpoint[];
+      this.hiddenBreakpointsWithUI = this.preconfig.setHiddenBreakpoints.filter((hiddenBreakpoint) => 'label' in hiddenBreakpoint) as HiddenBreakpointWithUI[];
 
       response.body.exceptionBreakpointFilters = Array.isArray(response.body.exceptionBreakpointFilters)
         ? response.body.exceptionBreakpointFilters
@@ -249,7 +246,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }));
     }
 
-    if (config?.useExceptionBreakpoint) {
+    if (this.preconfig?.useExceptionBreakpoint) {
       response.body.supportsExceptionOptions = true;
       response.body.supportsExceptionFilterOptions = true;
       response.body.supportsExceptionInfoRequest = true;
@@ -337,7 +334,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async launchRequest(response: DebugProtocol.LaunchResponse, args: DebugConfig): Promise<void> {
     this.traceLogger.enable = args.trace;
     this.traceLogger.log('launchRequest');
-    this.configOrProvider = args;
+    this._config = args;
 
     try {
       this.ahkProcess = new AutoHotkeyLauncher(this.config).launch();
@@ -387,7 +384,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   protected async attachRequest(response: DebugProtocol.AttachResponse, args: DebugConfig, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.enable = args.trace;
     this.traceLogger.log('attachRequest');
-    this.configOrProvider = args;
+    this._config = args;
 
     try {
       if (this.config.cancelReason) {
