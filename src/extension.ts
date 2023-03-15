@@ -8,17 +8,20 @@ import * as vscode from 'vscode';
 import JSONC from 'jsonc-parser';
 import { defaults, groupBy, isString, range } from 'lodash';
 import tcpPortUsed from 'tcp-port-used';
-import { completionItemProvider } from './CompletionItemProvider';
-import { AhkDebugSession, LaunchRequestArguments } from './ahkDebug';
+import { CompletionItemProvider } from './CompletionItemProvider';
+import { AhkDebugSession, DebugConfig, ExtraFeatures, PerfTipsConfig } from './ahkDebug';
 import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
 import normalizeToUnix from 'normalize-path';
 import glob from 'fast-glob';
-import { registerCommands } from './commands';
+import { enableRunToEndOfFunction, registerCommands, setEnableRunToEndOfFunction } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isDirectory, reverseSearchPair, searchPair, toArray } from './util/util';
+import { isDirectory, reverseSearchPair, searchPair, timeoutPromise, toArray } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { ExpressionExtractor } from './util/ExpressionExtractor';
 import { defaultAutoHotkeyInstallDir, getAhkVersion, getAutohotkeyUxRuntimePath, getLaunchInfoByLauncher } from './util/AutoHotkeyLuncher';
+import { CategoriesData, CategoryData, StackFrame } from './util/VariableManager';
+import * as dbgp from './dbgpSession';
+import { sync as pathExistsSync } from 'path-exists';
 
 const ahkPathResolve = (filePath: string, cwd?: string): string => {
   let _filePath = filePath;
@@ -31,27 +34,6 @@ const ahkPathResolve = (filePath: string, cwd?: string): string => {
   return _filePath;
 };
 const normalizePath = (filePath: string): string => (filePath ? path.normalize(filePath) : filePath); // If pass in an empty string, path.normalize returns '.'
-
-export type ScopeName = 'Local' | 'Static' | 'Global';
-export type ScopeSelector = '*' | ScopeName;
-export type MatcherData = {
-  method?: 'include' | 'exclude';
-  ignorecase?: boolean;
-  pattern?: string;
-  static?: boolean;
-  builtin?: boolean;
-  type?: string;
-  className?: string;
-};
-export type CategoryData = {
-  label: string;
-  source: ScopeSelector | ScopeName[];
-  hidden?: boolean | 'auto';
-  noduplicate?: boolean;
-  matchers?: MatcherData[];
-};
-export type CategoriesData = 'recommend' | Array<ScopeSelector | CategoryData>;
-
 const normalizeCategories = (categories?: CategoriesData): CategoryData[] | undefined => {
   if (!categories) {
     return undefined;
@@ -133,7 +115,7 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
 };
 
 export class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
-  public config?: LaunchRequestArguments;
+  public config?: DebugConfig;
   public resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
     if (config.extends) {
       const launch = folder
@@ -649,29 +631,141 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
       }
     })();
 
-    this.config = config as unknown as LaunchRequestArguments;
+    this.config = config as unknown as DebugConfig;
     return config;
   }
 }
-class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
+export class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
   public readonly provider: AhkConfigurationProvider;
+  public session?: AhkDebugSession;
   constructor(provider: AhkConfigurationProvider) {
     this.provider = provider;
   }
   public createDebugAdapterDescriptor(_session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-    return new vscode.DebugAdapterInlineImplementation(new AhkDebugSession(this.provider));
+    const perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
+    const extraCommands: ExtraFeatures = {
+      init: (session: AhkDebugSession): void => {
+        this.session = session;
+      },
+      async runToEndOfFunctionBreakpoint(behavior): Promise<dbgp.ContinuationResponse | undefined> {
+        if (!enableRunToEndOfFunction) {
+          return undefined;
+        }
+
+        const result = behavior();
+        setEnableRunToEndOfFunction(false);
+        return result;
+      },
+      async displayPerfTips(session: AhkDebugSession, stackFrame: StackFrame, config: PerfTipsConfig) {
+        if (!session.logEvalutor) {
+          return;
+        }
+
+        const { source, line } = stackFrame;
+        const document = await vscode.workspace.openTextDocument(source.path);
+        let line_0base = line - 1;
+        if (line_0base === document.lineCount) {
+          line_0base--; // I don't know about the details, but if the script stops at the end of the file and it's not a blank line, then line_0base will be the value of `document.lineCount + 1`, so we'll compensate for that
+        }
+
+        const { format, fontColor, fontStyle } = config;
+        const logDataList = await timeoutPromise(session.logEvalutor.eval(format), 5000);
+        if (!logDataList || logDataList.length === 0 || logDataList[0].type === 'object') {
+          return;
+        }
+
+        const message = String(logDataList[0].value);
+        const decorationType = vscode.window.createTextEditorDecorationType({
+          after: {
+            fontStyle,
+            color: fontColor,
+            contentText: ` ${message}`,
+          },
+        });
+        perfTipsDecorationTypes.push(decorationType);
+
+        const textLine = document.lineAt(line_0base);
+        const startPosition = textLine.range.end;
+        const endPosition = new vscode.Position(line_0base, textLine.range.end.character + message.length - 1);
+        const decoration = { range: new vscode.Range(startPosition, endPosition) } as vscode.DecorationOptions;
+
+        const editor = await vscode.window.showTextDocument(document);
+        if (session.isSessionTerminated) {
+          return; // If debugging terminated while the step is running, the decorations may remain display
+        }
+        editor.setDecorations(decorationType, [ decoration ]);
+      },
+      clearPerfTips(): void {
+        for (const editor of vscode.window.visibleTextEditors) {
+          for (const decorationType of perfTipsDecorationTypes) {
+            editor.setDecorations(decorationType, []);
+          }
+        }
+      },
+      async clearDebugConsole(): Promise<void> {
+        // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
+        await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+        await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+        await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+      },
+      async showErrorMessage(message: string): Promise<void> {
+        await vscode.window.showErrorMessage(message);
+      },
+      async jumpToError(errorMessage: string): Promise<boolean> {
+        const match = errorMessage.match(/^(?<filePath>.+):(?<line>\d+)(?=\s:\s==>)/u);
+        if (!match?.groups) {
+          return false;
+        }
+
+        const { filePath, line } = match.groups;
+        const _line = parseInt(line, 10) - 1;
+
+        const doc = await vscode.workspace.openTextDocument(filePath);
+        const lineRange = doc.lineAt(_line).range;
+        const lineText = doc.getText(lineRange);
+        const leadingSpace = lineText.match(/^(?<space>\s*)/u)?.groups?.space ?? '';
+        const trailingSpace = lineText.match(/(?<space>\s+)$/u)?.groups?.space ?? '';
+        const startPosition = new vscode.Position(_line, leadingSpace.length);
+        const endPosition = new vscode.Position(_line, lineText.length - trailingSpace.length);
+        const editor = await vscode.window.showTextDocument(doc, {
+          selection: new vscode.Range(startPosition, startPosition),
+        });
+
+        const decorationType = vscode.window.createTextEditorDecorationType({
+          backgroundColor: new vscode.ThemeColor('editor.symbolHighlightBackground'),
+        });
+        const decoration: vscode.DecorationOptions = { range: new vscode.Range(startPosition, endPosition) };
+        editor.setDecorations(decorationType, [ decoration ]);
+        setTimeout(() => {
+          editor.setDecorations(decorationType, []);
+        }, 500);
+
+        return true;
+      },
+      async openFileOnExit(filePath) {
+        if (!pathExistsSync(filePath)) {
+          await this.showErrorMessage(`File not found. Value of \`openFileOnExit\` in launch.json: \`${filePath}\``);
+        }
+
+        const doc = await vscode.workspace.openTextDocument(filePath);
+        await vscode.window.showTextDocument(doc);
+      },
+    };
+
+    return new vscode.DebugAdapterInlineImplementation(new AhkDebugSession(this.provider as { config: DebugConfig }, extraCommands));
   }
 }
 
 export const activate = (context: vscode.ExtensionContext): void => {
   const provider = new AhkConfigurationProvider();
+  const factory = new InlineDebugAdapterFactory(provider);
 
   registerCommands(context);
 
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('ahk', provider));
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('autohotkey', provider));
-  context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory(provider)));
-  context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], completionItemProvider, '.'));
+  context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', factory));
+  context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], new CompletionItemProvider(factory), '.'));
 
   const findExpressionRange = (expressionExtractor: ExpressionExtractor, document: vscode.TextDocument, position: vscode.Position, offset = 0): vscode.Range | undefined => {
     const range = document.getWordRangeAtPosition(position) ?? new vscode.Range(position, position);

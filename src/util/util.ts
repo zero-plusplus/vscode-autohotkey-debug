@@ -55,12 +55,14 @@ export const isIntegerLike = (value: any): boolean => {
 export const toArray = <T>(value: any): T[] => {
   return (Array.isArray(value) ? value : [ value ]) as T[];
 };
+export class TimeoutError extends Error {
+}
 export const timeoutPromise = async<T>(promise: Promise<T>, timeout: number): Promise<T | void> => {
   return Promise.race([
     promise, new Promise<void>((resolve, reject) => {
       const id = setTimeout(() => {
         clearTimeout(id);
-        reject(new Error('timeout'));
+        reject(new TimeoutError('timeout'));
       }, timeout);
     }),
   ]);
