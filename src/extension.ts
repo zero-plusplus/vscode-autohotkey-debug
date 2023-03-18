@@ -23,10 +23,10 @@ import { CategoriesData, CategoryData, StackFrame } from './util/VariableManager
 import * as dbgp from './dbgpSession';
 import { sync as pathExistsSync } from 'path-exists';
 
-const ahkPathResolve = (filePath: string, cwd?: string): string => {
+const ahkPathResolve = (filePath: string, autohotkeyInstallDir?: string): string => {
   let _filePath = filePath;
   if (!path.isAbsolute(filePath)) {
-    _filePath = path.resolve(cwd ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey`, filePath);
+    _filePath = path.resolve(autohotkeyInstallDir ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey`, filePath);
   }
   if (path.extname(_filePath) === '') {
     _filePath += '.exe';
@@ -198,8 +198,18 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         if (config.runtime === undefined && existsSync(getAutohotkeyUxRuntimePath(config.autohotkeyInstallDirectory))) {
           const info = getLaunchInfoByLauncher(config.program, config.autohotkeyInstallDirectory);
           if (info) {
-            config.runtime = info.runtime;
             config.runtimeArgs = Array.isArray(config.runtimeArgs) ? [ ...info.args, ...config.runtimeArgs ] : info.args;
+            if (info.runtime === '') {
+              // The requires version can be obtained, but for some reason the runtime may be an empty character. In that case, set the default value
+              if (info.requires) {
+                config.runtime = info.requires === '2'
+                  ? 'v2/AutoHotkey.exe'
+                  : 'Autohotkey.exe';
+              }
+            }
+            else {
+              config.runtime = info.runtime;
+            }
           }
         }
 
@@ -214,7 +224,8 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         throw Error('`runtime` must be a string.');
       }
       if (config.runtime) {
-        config.runtime = ahkPathResolve(config.runtime);
+        const autohotkeyInstallDir = isDirectory(config.runtime) ? config.runtime : defaultAutoHotkeyInstallDir;
+        config.runtime = ahkPathResolve(config.runtime, autohotkeyInstallDir);
       }
 
       if (!existsSync(config.runtime)) {
