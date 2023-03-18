@@ -18,7 +18,7 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isDirectory, reverseSearchPair, searchPair, timeoutPromise, toArray } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { ExpressionExtractor } from './util/ExpressionExtractor';
-import { defaultAutoHotkeyInstallDir, getAhkVersion, getAutohotkeyUxRuntimePath, getLaunchInfoByLauncher } from './util/AutoHotkeyLuncher';
+import { LaunchInfo, defaultAutoHotkeyInstallDir, getAhkVersion, getAutohotkeyUxRuntimePath, getLaunchInfoByLauncher } from './util/AutoHotkeyLuncher';
 import { CategoriesData, CategoryData, StackFrame } from './util/VariableManager';
 import * as dbgp from './dbgpSession';
 import { sync as pathExistsSync } from 'path-exists';
@@ -182,6 +182,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
     })();
 
     // init runtime
+    let infoByLauncher: LaunchInfo | undefined;
     await (async(): Promise<void> => {
       if (config.runtime === undefined) {
         const doc = await vscode.workspace.openTextDocument(config.program ?? vscode.window.activeTextEditor?.document.uri.fsPath);
@@ -196,19 +197,18 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         }
 
         if (config.runtime === undefined && existsSync(getAutohotkeyUxRuntimePath(config.autohotkeyInstallDirectory))) {
-          const info = getLaunchInfoByLauncher(config.program, config.autohotkeyInstallDirectory);
-          if (info) {
-            config.runtimeArgs = Array.isArray(config.runtimeArgs) ? [ ...info.args, ...config.runtimeArgs ] : info.args;
-            if (info.runtime === '') {
+          infoByLauncher = getLaunchInfoByLauncher(config.program, config.autohotkeyInstallDirectory);
+          if (infoByLauncher) {
+            if (infoByLauncher.runtime === '') {
               // The requires version can be obtained, but for some reason the runtime may be an empty character. In that case, set the default value
-              if (info.requires) {
-                config.runtime = info.requires === '2'
+              if (infoByLauncher.requires) {
+                config.runtime = infoByLauncher.requires === '2'
                   ? 'v2/AutoHotkey.exe'
                   : 'Autohotkey.exe';
               }
             }
             else {
-              config.runtime = info.runtime;
+              config.runtime = infoByLauncher.runtime;
             }
           }
         }
@@ -246,36 +246,38 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         if (!config.runtimeArgs) {
           config.runtimeArgs = [];
         }
-        return;
       }
-      else if (typeof config.runtimeArgs === 'undefined') {
+      else if (config.runtimeArgs === undefined) {
         const ahkVersion = getAhkVersion(config.runtime, { env: config.env });
         if (!ahkVersion) {
           throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);
         }
 
-        if (typeof config.runtimeArgs_v1 === 'undefined') {
-          config.runtimeArgs_v1 = ahkVersion.mejor <= 1.1 && ahkVersion.minor === 1 && 33 <= ahkVersion.patch
-            ? [ '/ErrorStdOut=UTF-8' ]
-            : [ '/ErrorStdOut' ];
-        }
-        if (typeof config.runtimeArgs_v2 === 'undefined') {
-          config.runtimeArgs_v2 = 112 <= (ahkVersion.alpha ?? 0) || 0 < (ahkVersion.beta ?? 0)
-            ? [ '/ErrorStdOut=UTF-8' ]
-            : [ '/ErrorStdOut' ];
-        }
-
-        const doc = await vscode.workspace.openTextDocument(config.program);
-        config.runtimeArgs = doc.languageId.toLowerCase() === 'ahk'
+        config.runtimeArgs = infoByLauncher?.requires === '1' || (await vscode.workspace.openTextDocument(config.program)).languageId.toLowerCase() === 'ahk'
           ? config.runtimeArgs_v1
           : config.runtimeArgs_v2; // ahk2 or ah2
-
-        config.runtimeArgs = config.runtimeArgs.filter((arg) => arg.search(/\/debug/ui) === -1);
-        config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
       }
 
       if (!Array.isArray(config.runtimeArgs)) {
         throw Error('`runtimeArgs` must be a array.');
+      }
+
+      config.runtimeArgs = [
+        ...(infoByLauncher?.args ?? []),
+        ...config.runtimeArgs,
+      ].filter((arg): boolean => {
+        if (arg === '') {
+          return false;
+        }
+        if (arg.toLowerCase().startsWith('/Debug')) {
+          return false;
+        }
+        return true;
+      });
+
+      if (!config.runtimeArgs.some((arg) => String(arg).toLowerCase().startsWith('/ErrorStdOut'))) {
+        const isUtf8Mode = config.runtimeArgs.some((arg) => equalsIgnoreCase(arg, '/CP65001'));
+        config.runtimeArgs.push(isUtf8Mode ? '/ErrorStdOut=UTF-8' : '/ErrorStdOut');
       }
     })();
 
