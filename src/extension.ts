@@ -242,12 +242,11 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
 
     // init runtimeArgs
     await (async(): Promise<void> => {
-      if (config.useUIAVersion) {
-        if (!config.runtimeArgs) {
-          config.runtimeArgs = [];
-        }
+      if (config.runtimeArgs === undefined) {
+        config.runtimeArgs = [];
       }
-      else if (config.runtimeArgs === undefined) {
+
+      if (!config.useUIAVersion && config.runtimeArgs === undefined) {
         const ahkVersion = getAhkVersion(config.runtime, { env: config.env });
         if (!ahkVersion) {
           throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);
