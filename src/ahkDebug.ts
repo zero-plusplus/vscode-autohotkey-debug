@@ -123,7 +123,7 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
-type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause' | 'exception' | 'error';
+type StopReason = 'entry' | 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause' | 'exception' | 'error';
 export const serializePromise = async(promises: Array<Promise<void>>): Promise<void> => {
   await promises.reduce(async(prev, current): Promise<void> => {
     return prev.then(async() => current);
@@ -276,7 +276,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.sendResponse(response);
   }
-  protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
+  protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args?: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('disconnectRequest');
     this.clearPerfTipsDecorations();
 
@@ -286,10 +286,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     };
 
     if (this.session?.socketWritable) {
-      if (args.restart && this.config.request === 'attach') {
+      if (args?.restart && this.config.request === 'attach') {
         await timeoutPromise(this.session.sendDetachCommand(), 500).catch(catchProcess);
       }
-      else if (args.terminateDebuggee === undefined || args.terminateDebuggee) {
+      else if (args?.terminateDebuggee === undefined || args.terminateDebuggee) {
         await timeoutPromise(this.session.sendStopCommand(), 500).catch(catchProcess);
       }
       else {
@@ -297,7 +297,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    if (!args.restart && !this.isTimeout) {
+    if (!args?.restart && !this.isTimeout) {
       if (this.raisedCriticalError) {
         this.sendAnnounce('Debugging stopped');
       }
@@ -305,10 +305,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
         this.sendAnnounce('Debugging stopped');
       }
-      else if (args.terminateDebuggee === true && !this.config.cancelReason) {
+      else if (args?.terminateDebuggee === true && !this.config.cancelReason) {
         this.sendAnnounce(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.');
       }
-      else if (args.terminateDebuggee === false && !this.config.cancelReason) {
+      else if (args?.terminateDebuggee === false && !this.config.cancelReason) {
         this.sendAnnounce('Debugging disconnected. AutoHotkey script is continued.');
       }
       else if (this.config.request === 'attach' && this.ahkProcess) {
@@ -619,10 +619,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       await this.registerDebugDirective();
       await this.registerHiddenBreakpoints();
 
-      const result = this.config.stopOnEntry
-        ? await this.session!.sendContinuationCommand('step_into')
-        : await this.session!.sendContinuationCommand('run');
-      this.checkContinuationStatus(result);
+      if (this.config.stopOnEntry) {
+        await this.session!.sendContinuationCommand('step_into');
+        this.sendStoppedEvent('entry');
+      }
+      else {
+        const result = await this.session!.sendContinuationCommand('run');
+        this.checkContinuationStatus(result);
+      }
     }
     catch (err: unknown) {
       if (err instanceof Error) {
