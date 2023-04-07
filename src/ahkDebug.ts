@@ -1674,7 +1674,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         if (typeof condition === 'undefined' || condition === '') {
           return false;
         }
-        const rawResult = await this.evaluator.eval(condition);
+        const rawResult = await this.evaluator.eval(condition, this.currentStackFrames?.[0].dbgpStackFrame);
         return toJavaScriptBoolean(rawResult);
       };
 
@@ -1737,7 +1737,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.currentMetaVariableMap.set('elapsedTime_ns', -1);
       this.currentMetaVariableMap.set('elapsedTime_ms', -1);
       this.currentMetaVariableMap.set('elapsedTime_s', -1);
-      await this.processActionpoint(lineBreakpoints);
+      if (lineBreakpoints) {
+        await this.processActionpoint(lineBreakpoints);
+      }
       await this.sendStoppedEvent('pause');
       return;
     }
@@ -1749,7 +1751,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     // Paused on breakpoint
-    await this.processActionpoint(lineBreakpoints);
+    if (lineBreakpoints) {
+      await this.processActionpoint(lineBreakpoints);
+    }
     const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
     if (matchedBreakpoint) {
       this.currentMetaVariableMap.set('hitCount', String(matchedBreakpoint.hitCount));
@@ -1779,8 +1783,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.checkContinuationStatus(result);
   }
   private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints?: LineBreakpoints): Promise<void> {
-    const thrownException = typeof lineBreakpoints === 'undefined';
-
     if (this.currentStackFrames?.isIdleMode) {
       throw Error(`This message shouldn't appear.`);
     }
@@ -1814,15 +1816,12 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
     }
-    else {
+    else if (lineBreakpoints) {
       await this.processActionpoint(lineBreakpoints);
     }
 
     // step_into is always stop
     if (stepType === 'step_into') {
-      if (thrownException) {
-        await this.session!.sendContinuationCommand('step_into');
-      }
       await this.sendStoppedEvent(stopReason);
       return;
     }
@@ -1830,7 +1829,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const executeByUser = !this.stackFramesWhenStepOut && !this.stackFramesWhenStepOver;
     if (executeByUser) {
       // Normal step
-      if (!thrownException) {
+      if (!lineBreakpoints) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
@@ -1920,12 +1919,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     const result = await this.session!.sendContinuationCommand('step_out');
     await this.checkContinuationStatus(result);
   }
-  private async processActionpoint(lineBreakpoints?: LineBreakpoints): Promise<void> {
+  private async processActionpoint(lineBreakpoints: LineBreakpoints): Promise<void> {
     if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
       throw Error(`This message shouldn't appear.`);
-    }
-    if (!lineBreakpoints) {
-      return;
     }
     if (!lineBreakpoints.hasAdvancedBreakpoint()) {
       return;
@@ -2106,7 +2102,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       let conditionResult = false, hitConditionResult = false;
       if (condition) {
-        const rawResult = await this.evaluator.eval(condition);
+        const rawResult = await this.evaluator.eval(condition, this.currentStackFrames?.[0].dbgpStackFrame);
         conditionResult = toJavaScriptBoolean(rawResult);
       }
       if (hitCondition) {
