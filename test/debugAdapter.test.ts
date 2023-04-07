@@ -94,5 +94,24 @@ describe('Debug Adapter for AutoHotkey v1', () => {
         ]);
       });
     });
+    test('condition breakpoint test', async() => {
+      const testCode = dedent`
+        a := 1
+        b := 2
+        return
+      `;
+      return createAutoHotkeyTestFile(testCode, async(program) => {
+        await debugClient.launch({
+          ...defaultDebugConfig,
+          runtime: ahkRuntime_v1,
+          program,
+          port: await getDebugPort(),
+          stopOnEntry: true,
+        });
+        await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 3, condition: 'a + b == 3' } ] });
+        await debugClient.continueRequest({ threadId: 1 });
+        await debugClient.assertStoppedLocation('breakpoint', { path: program, line: 3 });
+      });
+    });
   });
 });
