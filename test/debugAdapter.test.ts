@@ -113,22 +113,23 @@ describe('Debug Adapter for AutoHotkey v1', () => {
         await debugClient.assertStoppedLocation('breakpoint', { path: program, line: 3 });
       });
     });
-    describe('Conditional breakpoint through processing test', () => {
-      const stepOutTest = async(callback: (program: string) => Promise<void>): Promise<void> => {
-        const testCode = dedent`
-          a()
+    describe('Conditional breakpoint skip processing test', () => {
+      const testCode = dedent`
+        a()
+        return
+        a() {
+          a := ""
+          b()
           return
-          a() {
-            a := ""
-            b()
-            return
-          }
-          b() {
-            b := ""
-            return
-          }
+        }
+        b() {
+          b := ""
           return
-        `;
+        }
+        return
+      `;
+
+      test('step-out -> skip (a()) -> AutoExec-Section', async() => {
         return createAutoHotkeyTestFile(testCode, async(program) => {
           await debugClient.launch({
             ...defaultDebugConfig,
@@ -137,18 +138,72 @@ describe('Debug Adapter for AutoHotkey v1', () => {
             port: await getDebugPort(),
             stopOnEntry: true,
           });
-          await callback(program);
-        });
-      };
 
-      test('step out', async() => {
-        await stepOutTest(async(program) => {
           await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 4 } ] });
           await debugClient.continueRequest({ threadId: 1 });
           await debugClient.assertStoppedLocation('breakpoint', { path: program, line: 4 });
 
           await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 5, condition: 'false' } ] });
           await debugClient.stepOutRequest({ threadId: 1 });
+          await debugClient.assertStoppedLocation('step', { path: program, line: 2 });
+        });
+      });
+
+      test('step-out -> skip (a()) -> skip (b()) -> stop (AutoExec-Section)', async() => {
+        return createAutoHotkeyTestFile(testCode, async(program) => {
+          await debugClient.launch({
+            ...defaultDebugConfig,
+            runtime: ahkRuntime_v1,
+            program,
+            port: await getDebugPort(),
+            stopOnEntry: true,
+          });
+          await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 4 } ] });
+          await debugClient.continueRequest({ threadId: 1 });
+          await debugClient.assertStoppedLocation('breakpoint', { path: program, line: 4 });
+
+          await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 9, condition: 'false' } ] });
+          await debugClient.stepOutRequest({ threadId: 1 });
+          await debugClient.assertStoppedLocation('step', { path: program, line: 2 });
+        });
+      });
+
+      test('step-over -> skip (b()) -> stop (a())', async() => {
+        return createAutoHotkeyTestFile(testCode, async(program) => {
+          await debugClient.launch({
+            ...defaultDebugConfig,
+            runtime: ahkRuntime_v1,
+            program,
+            port: await getDebugPort(),
+            stopOnEntry: true,
+          });
+          await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 5 } ] });
+          await debugClient.continueRequest({ threadId: 1 });
+          await debugClient.assertStoppedLocation('breakpoint', { path: program, line: 5 });
+
+          await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 5, condition: 'false' } ] });
+          await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 9, condition: 'false' } ] });
+          await debugClient.nextRequest({ threadId: 1 });
+          await debugClient.assertStoppedLocation('step', { path: program, line: 6 });
+        });
+      });
+
+      test('step-over -> skip (a()) -> skip (b()) -> stop (AutoExec-Section)', async() => {
+        return createAutoHotkeyTestFile(testCode, async(program) => {
+          await debugClient.launch({
+            ...defaultDebugConfig,
+            runtime: ahkRuntime_v1,
+            program,
+            port: await getDebugPort(),
+            stopOnEntry: true,
+          });
+          await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 1 } ] });
+          await debugClient.continueRequest({ threadId: 1 });
+          await debugClient.assertStoppedLocation('breakpoint', { path: program, line: 1 });
+
+          await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 4, condition: 'false' } ] });
+          await debugClient.setBreakpointsRequest({ source: { path: program }, breakpoints: [ { line: 9, condition: 'false' } ] });
+          await debugClient.nextRequest({ threadId: 1 });
           await debugClient.assertStoppedLocation('step', { path: program, line: 2 });
         });
       });
