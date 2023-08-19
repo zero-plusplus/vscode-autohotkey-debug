@@ -14,12 +14,13 @@
   },
   "scripts": {
     "build": "ts-node task/build.ts",
+    "rebuild": "npm run clean && npm run build",
     "watch": "ts-node task/watch.ts",
     "clean": "ts-node task/clean.ts",
     "test": "jest --runInBand --detectOpenHandles",
     "test:sandbox": "npm run package && ts-node task/sandbox.ts",
     "lint": "ts-node task/lint.ts",
-    "package": "npm run clean && npm run lint && vsce package",
+    "package": "npm run clean && npm run lint && node ./node_modules/@vscode/vsce/vsce package",
     "vscode:prepublish": "npm run build"
   },
   "publisher": "zero-plusplus",
@@ -1541,6 +1542,7 @@
     "@types/vscode": "^1.63.0",
     "@vscode/debugadapter": "^1.56.1",
     "@vscode/debugprotocol": "^1.56.1",
+    "@vscode/vsce": "^2.18.0",
     "@zero-plusplus/eslint-my-rules": "github:zero-plusplus/eslint-my-rules",
     "del": "^6.0.0",
     "esbuild": "^0.14.1",
@@ -1551,7 +1553,6 @@
     "ts-jest": "^29.0.3",
     "ts-node": "^8.9.0",
     "typescript": "^4.9.4",
-    "vsce": "^2.9.1",
     "vscode-debugadapter-testsupport": "^1.40.3"
   }
 }

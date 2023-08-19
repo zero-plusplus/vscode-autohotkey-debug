@@ -7,9 +7,28 @@ import { rtrim } from 'underscore.string';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isNumberLike, isPrimitive, toArray, toFileUri } from './util';
 import { equalsIgnoreCase } from './stringUtils';
-import { CategoryData, MatcherData, ScopeSelector } from '../extension';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 import { AhkDebugSession } from '../ahkDebug';
+
+export type ScopeName = 'Local' | 'Static' | 'Global';
+export type ScopeSelector = '*' | ScopeName;
+export type MatcherData = {
+  method?: 'include' | 'exclude';
+  ignorecase?: boolean;
+  pattern?: string;
+  static?: boolean;
+  builtin?: boolean;
+  type?: string;
+  className?: string;
+};
+export type CategoryData = {
+  label: string;
+  source: ScopeSelector | ScopeName[];
+  hidden?: boolean | 'auto';
+  noduplicate?: boolean;
+  matchers?: MatcherData[];
+};
+export type CategoriesData = 'recommend' | Array<ScopeSelector | CategoryData>;
 
 export const escapeAhk = (str: string, ahkVersion?: AhkVersion): string => {
   return str

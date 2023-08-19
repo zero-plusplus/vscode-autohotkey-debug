@@ -2,7 +2,7 @@ import * as path from 'path';
 import { existsSync } from 'fs';
 import { SpawnSyncOptions, spawn, spawnSync } from 'child_process';
 import { EventEmitter } from 'events';
-import { LaunchRequestArguments } from '../ahkDebug';
+import { DebugConfig } from '../ahkDebug';
 import { escapePcreRegExEscape } from './stringUtils';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 
@@ -57,18 +57,18 @@ export const getLaunchInfoByLauncher = (program: string, installDir = `${String(
 };
 
 export class AutoHotkeyLauncher {
-  private readonly launchRequest: LaunchRequestArguments;
-  constructor(launchRequest: LaunchRequestArguments) {
-    this.launchRequest = launchRequest;
+  private readonly debugConfig: DebugConfig;
+  constructor(launchRequest: DebugConfig) {
+    this.debugConfig = launchRequest;
   }
   public launch(): AutoHotkeyProcess {
-    if (this.launchRequest.useUIAVersion) {
+    if (this.debugConfig.useUIAVersion) {
       return this.launchByCmd();
     }
     return this.launchByNode();
   }
   public launchByNode(): AutoHotkeyProcess {
-    const { noDebug, runtime, cwd, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
+    const { noDebug, runtime, cwd, hostname, port, runtimeArgs, program, args, env } = this.debugConfig;
 
     const launchArgs = [
       ...(noDebug ? [] : [ `/Debug=${hostname}:${port}` ]),
@@ -97,7 +97,7 @@ export class AutoHotkeyLauncher {
     };
   }
   public launchByCmd(): AutoHotkeyProcess {
-    const { noDebug, runtime, hostname, port, runtimeArgs, program, args, env } = this.launchRequest;
+    const { noDebug, runtime, hostname, port, runtimeArgs, program, args, env } = this.debugConfig;
 
     const _runtimeArgs = runtimeArgs.filter((arg) => arg.toLowerCase() !== '/errorstdout');
     const launchArgs = [
@@ -127,7 +127,7 @@ export class AutoHotkeyLauncher {
     };
   }
   public attach(): AutoHotkeyProcess | false {
-    const { runtime, program, hostname, port } = this.launchRequest;
+    const { runtime, program, hostname, port } = this.debugConfig;
 
     const version = getAhkVersion(runtime);
     if (!version) {

@@ -5,6 +5,7 @@ demo/
 image/
 node_modules/
 !node_modules/vscode-uri
+!node_modules/jsonc-parser
 src/
 task/
 test/

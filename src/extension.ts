@@ -8,22 +8,25 @@ import * as vscode from 'vscode';
 import JSONC from 'jsonc-parser';
 import { defaults, groupBy, isString, range } from 'lodash';
 import tcpPortUsed from 'tcp-port-used';
-import { completionItemProvider } from './CompletionItemProvider';
-import { AhkDebugSession, LaunchRequestArguments } from './ahkDebug';
+import { CompletionItemProvider } from './CompletionItemProvider';
+import { AhkDebugSession, DebugConfig, ExtraFeatures, PerfTipsConfig } from './ahkDebug';
 import { getRunningAhkScriptList } from './util/getRunningAhkScriptList';
 import normalizeToUnix from 'normalize-path';
 import glob from 'fast-glob';
-import { registerCommands } from './commands';
+import { enableRunToEndOfFunction, registerCommands, setEnableRunToEndOfFunction } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isDirectory, reverseSearchPair, searchPair, toArray } from './util/util';
+import { isDirectory, reverseSearchPair, searchPair, timeoutPromise, toArray } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { ExpressionExtractor } from './util/ExpressionExtractor';
-import { defaultAutoHotkeyInstallDir, getAhkVersion, getAutohotkeyUxRuntimePath, getLaunchInfoByLauncher } from './util/AutoHotkeyLuncher';
+import { LaunchInfo, defaultAutoHotkeyInstallDir, getAhkVersion, getAutohotkeyUxRuntimePath, getLaunchInfoByLauncher } from './util/AutoHotkeyLuncher';
+import { CategoriesData, CategoryData, StackFrame } from './util/VariableManager';
+import * as dbgp from './dbgpSession';
+import { sync as pathExistsSync } from 'path-exists';
 
-const ahkPathResolve = (filePath: string, cwd?: string): string => {
+const ahkPathResolve = (filePath: string, autohotkeyInstallDir?: string): string => {
   let _filePath = filePath;
   if (!path.isAbsolute(filePath)) {
-    _filePath = path.resolve(cwd ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey`, filePath);
+    _filePath = path.resolve(autohotkeyInstallDir ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey`, filePath);
   }
   if (path.extname(_filePath) === '') {
     _filePath += '.exe';
@@ -31,27 +34,6 @@ const ahkPathResolve = (filePath: string, cwd?: string): string => {
   return _filePath;
 };
 const normalizePath = (filePath: string): string => (filePath ? path.normalize(filePath) : filePath); // If pass in an empty string, path.normalize returns '.'
-
-export type ScopeName = 'Local' | 'Static' | 'Global';
-export type ScopeSelector = '*' | ScopeName;
-export type MatcherData = {
-  method?: 'include' | 'exclude';
-  ignorecase?: boolean;
-  pattern?: string;
-  static?: boolean;
-  builtin?: boolean;
-  type?: string;
-  className?: string;
-};
-export type CategoryData = {
-  label: string;
-  source: ScopeSelector | ScopeName[];
-  hidden?: boolean | 'auto';
-  noduplicate?: boolean;
-  matchers?: MatcherData[];
-};
-export type CategoriesData = 'recommend' | Array<ScopeSelector | CategoryData>;
-
 const normalizeCategories = (categories?: CategoriesData): CategoryData[] | undefined => {
   if (!categories) {
     return undefined;
@@ -133,7 +115,7 @@ const normalizeCategories = (categories?: CategoriesData): CategoryData[] | unde
 };
 
 export class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
-  public config?: LaunchRequestArguments;
+  public config?: DebugConfig;
   public resolveDebugConfiguration(folder: vscode.WorkspaceFolder | undefined, config: vscode.DebugConfiguration, token?: vscode.CancellationToken): vscode.ProviderResult<vscode.DebugConfiguration> {
     if (config.extends) {
       const launch = folder
@@ -200,6 +182,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
     })();
 
     // init runtime
+    let infoByLauncher: LaunchInfo | undefined;
     await (async(): Promise<void> => {
       if (config.runtime === undefined) {
         const doc = await vscode.workspace.openTextDocument(config.program ?? vscode.window.activeTextEditor?.document.uri.fsPath);
@@ -214,10 +197,19 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         }
 
         if (config.runtime === undefined && existsSync(getAutohotkeyUxRuntimePath(config.autohotkeyInstallDirectory))) {
-          const info = getLaunchInfoByLauncher(config.program, config.autohotkeyInstallDirectory);
-          if (info) {
-            config.runtime = info.runtime;
-            config.runtimeArgs = Array.isArray(config.runtimeArgs) ? [ ...info.args, ...config.runtimeArgs ] : info.args;
+          infoByLauncher = getLaunchInfoByLauncher(config.program, config.autohotkeyInstallDirectory);
+          if (infoByLauncher) {
+            if (infoByLauncher.runtime === '') {
+              // The requires version can be obtained, but for some reason the runtime may be an empty character. In that case, set the default value
+              if (infoByLauncher.requires) {
+                config.runtime = infoByLauncher.requires === '2'
+                  ? 'v2/AutoHotkey.exe'
+                  : 'Autohotkey.exe';
+              }
+            }
+            else {
+              config.runtime = infoByLauncher.runtime;
+            }
           }
         }
 
@@ -232,7 +224,8 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         throw Error('`runtime` must be a string.');
       }
       if (config.runtime) {
-        config.runtime = ahkPathResolve(config.runtime);
+        const autohotkeyInstallDir = isDirectory(config.runtime) ? config.runtime : defaultAutoHotkeyInstallDir;
+        config.runtime = ahkPathResolve(config.runtime, autohotkeyInstallDir);
       }
 
       if (!existsSync(config.runtime)) {
@@ -249,40 +242,41 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
 
     // init runtimeArgs
     await (async(): Promise<void> => {
-      if (config.useUIAVersion) {
-        if (!config.runtimeArgs) {
-          config.runtimeArgs = [];
-        }
-        return;
+      if (config.runtimeArgs === undefined) {
+        config.runtimeArgs = [];
       }
-      else if (typeof config.runtimeArgs === 'undefined') {
+
+      if (!config.useUIAVersion && config.runtimeArgs === undefined) {
         const ahkVersion = getAhkVersion(config.runtime, { env: config.env });
         if (!ahkVersion) {
           throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);
         }
 
-        if (typeof config.runtimeArgs_v1 === 'undefined') {
-          config.runtimeArgs_v1 = ahkVersion.mejor <= 1.1 && ahkVersion.minor === 1 && 33 <= ahkVersion.patch
-            ? [ '/ErrorStdOut=UTF-8' ]
-            : [ '/ErrorStdOut' ];
-        }
-        if (typeof config.runtimeArgs_v2 === 'undefined') {
-          config.runtimeArgs_v2 = 112 <= (ahkVersion.alpha ?? 0) || 0 < (ahkVersion.beta ?? 0)
-            ? [ '/ErrorStdOut=UTF-8' ]
-            : [ '/ErrorStdOut' ];
-        }
-
-        const doc = await vscode.workspace.openTextDocument(config.program);
-        config.runtimeArgs = doc.languageId.toLowerCase() === 'ahk'
+        config.runtimeArgs = infoByLauncher?.requires === '1' || (await vscode.workspace.openTextDocument(config.program)).languageId.toLowerCase() === 'ahk'
           ? config.runtimeArgs_v1
           : config.runtimeArgs_v2; // ahk2 or ah2
-
-        config.runtimeArgs = config.runtimeArgs.filter((arg) => arg.search(/\/debug/ui) === -1);
-        config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
       }
 
       if (!Array.isArray(config.runtimeArgs)) {
         throw Error('`runtimeArgs` must be a array.');
+      }
+
+      config.runtimeArgs = [
+        ...(infoByLauncher?.args ?? []),
+        ...config.runtimeArgs,
+      ].filter((arg): boolean => {
+        if (arg === '') {
+          return false;
+        }
+        if (arg.toLowerCase().startsWith('/Debug')) {
+          return false;
+        }
+        return true;
+      });
+
+      if (!config.runtimeArgs.some((arg) => String(arg).toLowerCase().startsWith('/ErrorStdOut'))) {
+        const isUtf8Mode = config.runtimeArgs.some((arg) => equalsIgnoreCase(arg, '/CP65001'));
+        config.runtimeArgs.push(isUtf8Mode ? '/ErrorStdOut=UTF-8' : '/ErrorStdOut');
       }
     })();
 
@@ -649,29 +643,141 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
       }
     })();
 
-    this.config = config as unknown as LaunchRequestArguments;
+    this.config = config as unknown as DebugConfig;
     return config;
   }
 }
-class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
+export class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
   public readonly provider: AhkConfigurationProvider;
+  public session?: AhkDebugSession;
   constructor(provider: AhkConfigurationProvider) {
     this.provider = provider;
   }
   public createDebugAdapterDescriptor(_session: vscode.DebugSession): vscode.ProviderResult<vscode.DebugAdapterDescriptor> {
-    return new vscode.DebugAdapterInlineImplementation(new AhkDebugSession(this.provider));
+    const perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
+    const extraCommands: ExtraFeatures = {
+      init: (session: AhkDebugSession): void => {
+        this.session = session;
+      },
+      async runToEndOfFunctionBreakpoint(behavior): Promise<dbgp.ContinuationResponse | undefined> {
+        if (!enableRunToEndOfFunction) {
+          return undefined;
+        }
+
+        const result = behavior();
+        setEnableRunToEndOfFunction(false);
+        return result;
+      },
+      async displayPerfTips(session: AhkDebugSession, stackFrame: StackFrame, config: PerfTipsConfig) {
+        if (!session.logEvalutor) {
+          return;
+        }
+
+        const { source, line } = stackFrame;
+        const document = await vscode.workspace.openTextDocument(source.path);
+        let line_0base = line - 1;
+        if (line_0base === document.lineCount) {
+          line_0base--; // I don't know about the details, but if the script stops at the end of the file and it's not a blank line, then line_0base will be the value of `document.lineCount + 1`, so we'll compensate for that
+        }
+
+        const { format, fontColor, fontStyle } = config;
+        const logDataList = await timeoutPromise(session.logEvalutor.eval(format), 5000);
+        if (!logDataList || logDataList.length === 0 || logDataList[0].type === 'object') {
+          return;
+        }
+
+        const message = String(logDataList[0].value);
+        const decorationType = vscode.window.createTextEditorDecorationType({
+          after: {
+            fontStyle,
+            color: fontColor,
+            contentText: ` ${message}`,
+          },
+        });
+        perfTipsDecorationTypes.push(decorationType);
+
+        const textLine = document.lineAt(line_0base);
+        const startPosition = textLine.range.end;
+        const endPosition = new vscode.Position(line_0base, textLine.range.end.character + message.length - 1);
+        const decoration = { range: new vscode.Range(startPosition, endPosition) } as vscode.DecorationOptions;
+
+        const editor = await vscode.window.showTextDocument(document);
+        if (session.isSessionTerminated) {
+          return; // If debugging terminated while the step is running, the decorations may remain display
+        }
+        editor.setDecorations(decorationType, [ decoration ]);
+      },
+      clearPerfTips(): void {
+        for (const editor of vscode.window.visibleTextEditors) {
+          for (const decorationType of perfTipsDecorationTypes) {
+            editor.setDecorations(decorationType, []);
+          }
+        }
+      },
+      async clearDebugConsole(): Promise<void> {
+        // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
+        await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+        await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+        await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
+      },
+      async showErrorMessage(message: string): Promise<void> {
+        await vscode.window.showErrorMessage(message);
+      },
+      async jumpToError(errorMessage: string): Promise<boolean> {
+        const match = errorMessage.match(/^(?<filePath>.+):(?<line>\d+)(?=\s:\s==>)/u);
+        if (!match?.groups) {
+          return false;
+        }
+
+        const { filePath, line } = match.groups;
+        const _line = parseInt(line, 10) - 1;
+
+        const doc = await vscode.workspace.openTextDocument(filePath);
+        const lineRange = doc.lineAt(_line).range;
+        const lineText = doc.getText(lineRange);
+        const leadingSpace = lineText.match(/^(?<space>\s*)/u)?.groups?.space ?? '';
+        const trailingSpace = lineText.match(/(?<space>\s+)$/u)?.groups?.space ?? '';
+        const startPosition = new vscode.Position(_line, leadingSpace.length);
+        const endPosition = new vscode.Position(_line, lineText.length - trailingSpace.length);
+        const editor = await vscode.window.showTextDocument(doc, {
+          selection: new vscode.Range(startPosition, startPosition),
+        });
+
+        const decorationType = vscode.window.createTextEditorDecorationType({
+          backgroundColor: new vscode.ThemeColor('editor.symbolHighlightBackground'),
+        });
+        const decoration: vscode.DecorationOptions = { range: new vscode.Range(startPosition, endPosition) };
+        editor.setDecorations(decorationType, [ decoration ]);
+        setTimeout(() => {
+          editor.setDecorations(decorationType, []);
+        }, 500);
+
+        return true;
+      },
+      async openFileOnExit(filePath) {
+        if (!pathExistsSync(filePath)) {
+          await this.showErrorMessage(`File not found. Value of \`openFileOnExit\` in launch.json: \`${filePath}\``);
+        }
+
+        const doc = await vscode.workspace.openTextDocument(filePath);
+        await vscode.window.showTextDocument(doc);
+      },
+    };
+
+    return new vscode.DebugAdapterInlineImplementation(new AhkDebugSession(this.provider as { config: DebugConfig }, extraCommands));
   }
 }
 
 export const activate = (context: vscode.ExtensionContext): void => {
   const provider = new AhkConfigurationProvider();
+  const factory = new InlineDebugAdapterFactory(provider);
 
   registerCommands(context);
 
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('ahk', provider));
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('autohotkey', provider));
-  context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory(provider)));
-  context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], completionItemProvider, '.'));
+  context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', factory));
+  context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], new CompletionItemProvider(factory), '.'));
 
   const findExpressionRange = (expressionExtractor: ExpressionExtractor, document: vscode.TextDocument, position: vscode.Position, offset = 0): vscode.Range | undefined => {
     const range = document.getWordRangeAtPosition(position) ?? new vscode.Range(position, position);

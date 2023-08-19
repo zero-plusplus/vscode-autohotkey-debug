@@ -3,8 +3,6 @@ import * as net from 'net';
 import { stat } from 'fs';
 import wildcard from 'wildcard-match';
 import * as sym from './util/SymbolFinder';
-
-import * as vscode from 'vscode';
 import {
   InitializedEvent,
   LoggingDebugSession,
@@ -16,7 +14,6 @@ import {
 } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { URI } from 'vscode-uri';
-import { sync as pathExistsSync } from 'path-exists';
 import AsyncLock from 'async-lock';
 import { chunk, range } from 'lodash';
 import LazyPromise from 'lazy-promise';
@@ -31,23 +28,21 @@ import {
 import { toFixed } from './util/numberUtils';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
-import { completionItemProvider, createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from './CompletionItemProvider';
 import * as dbgp from './dbgpSession';
 import { AutoHotkeyLauncher, AutoHotkeyProcess, getAhkVersion } from './util/AutoHotkeyLuncher';
-import { now, readFileCache, readFileCacheSync, searchPair, timeoutPromise, toFileUri } from './util/util';
+import { TimeoutError, now, readFileCache, readFileCacheSync, searchPair, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
-import { Categories, Category, MetaVariable, MetaVariableValueMap, Scope, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
-import { AhkConfigurationProvider, CategoryData } from './extension';
+import { Categories, Category, CategoryData, MetaVariable, MetaVariableValueMap, Scope, StackFrame, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
 import { version as debuggerAdapterVersion } from '../package.json';
 import { SymbolFinder } from './util/SymbolFinder';
 import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from './util/evaluator/ExpressionEvaluator';
-import { enableRunToEndOfFunction, setEnableRunToEndOfFunction } from './commands';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
 import { IntelliSense } from './util/IntelliSense';
 import { maskQuotes } from './util/ExpressionExtractor';
 import { DebugDirectiveParser } from './util/DebugDirectiveParser';
 import { LogData, LogEvaluator } from './util/evaluator/LogEvaluator';
 import { ActionLogPrefixData, CategoryLogPrefixData, GroupLogPrefixData } from './util/evaluator/LogParser';
+import { createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from './util/completionUtils';
 
 export type AnnounceLevel = boolean | 'error' | 'detail' | 'develop';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };
@@ -80,7 +75,12 @@ export interface HiddenBreakpointWithUI {
   breakpoints: HiddenBreakpoint[];
 }
 
-export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
+export interface PerfTipsConfig {
+  fontColor: string;
+  fontStyle: string;
+  format: string;
+}
+export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   name: string;
   program: string;
   request: 'launch' | 'attach';
@@ -93,11 +93,7 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   hostname: string;
   port: number;
   maxChildren: number;
-  usePerfTips: false | {
-    fontColor: string;
-    fontStyle: string;
-    format: string;
-  };
+  usePerfTips: false | PerfTipsConfig;
   useIntelliSenseInDebugging: boolean;
   useDebugDirective: false | {
     useBreakpointDirective: boolean;
@@ -123,29 +119,43 @@ export interface LaunchRequestArguments extends DebugProtocol.LaunchRequestArgum
   setHiddenBreakpoints?: Array<HiddenBreakpoint | HiddenBreakpointWithUI>;
   // The following is not a configuration, but is set to pass data to the debug adapter.
   cancelReason?: string;
-  extensionContext: vscode.ExtensionContext;
   autohotkeyInstallDirectory: string;
 }
 
 type LogCategory = 'console' | 'stdout' | 'stderr';
-type StopReason = 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause' | 'exception' | 'error';
+type StopReason = 'entry' | 'step' | 'breakpoint' | 'hidden breakpoint' | 'pause' | 'exception' | 'error';
 export const serializePromise = async(promises: Array<Promise<void>>): Promise<void> => {
   await promises.reduce(async(prev, current): Promise<void> => {
     return prev.then(async() => current);
   }, Promise.resolve());
 };
 
+export interface ExtraFeatures {
+  init: (session: AhkDebugSession) => void;
+  runToEndOfFunctionBreakpoint: (behavior: () => Promise<dbgp.ContinuationResponse>) => Promise<dbgp.ContinuationResponse | undefined>;
+  displayPerfTips: (session: AhkDebugSession, stackFram: StackFrame, config: PerfTipsConfig) => Promise<void>;
+  clearPerfTips: () => void;
+  clearDebugConsole?: () => Promise<void>;
+  showErrorMessage: (message: string) => Promise<void>;
+  jumpToError: (errorMessage: string) => Promise<boolean>;
+  openFileOnExit: (filePath: string) => Promise<void>;
+}
+export interface DebugConfigProvider {
+  config?: DebugConfig;
+}
+
 const asyncLock = new AsyncLock();
 export class AhkDebugSession extends LoggingDebugSession {
+  public readonly extraFeatures?: ExtraFeatures;
   public session?: dbgp.Session;
-  public config!: LaunchRequestArguments;
   private readonly traceLogger: TraceLogger;
   private errorCounter = 0;
   private autoExecuting = false;
   private pauseRequested = false;
   private isPaused = false;
   private isTerminateRequested = false;
-  private readonly configProvider: AhkConfigurationProvider;
+  private _config!: DebugConfig;
+  private readonly preconfig?: DebugConfig;
   private symbolFinder?: sym.SymbolFinder;
   private symbols?: sym.NamedNode[];
   private callableSymbols?: sym.NamedNode[];
@@ -160,13 +170,12 @@ export class AhkDebugSession extends LoggingDebugSession {
   private breakpointManager?: BreakpointManager;
   private readonly registeredFunctionBreakpoints: Breakpoint[] = [];
   private evaluator!: ExpressionEvaluator;
-  private intellisense?: IntelliSense;
+  private _intellisense?: IntelliSense;
   private prevStackFrames?: StackFrames;
   private currentStackFrames?: StackFrames;
   private readonly currentMetaVariableMap = new MetaVariableValueMap();
   private stackFramesWhenStepOut?: StackFrames;
   private stackFramesWhenStepOver?: StackFrames;
-  private readonly perfTipsDecorationTypes: vscode.TextEditorDecorationType[] = [];
   private readonly loadedSources: string[] = [];
   private errorMessage = '';
   private isTimeout = false;
@@ -174,11 +183,12 @@ export class AhkDebugSession extends LoggingDebugSession {
   private raisedCriticalError?: boolean;
   // The warning message is processed earlier than the server initialization, so it needs to be delayed.
   private readonly delayedWarningMessages: string[] = [];
-  private logEvalutor?: LogEvaluator;
-  constructor(provider: AhkConfigurationProvider) {
+  private _logEvalutor?: LogEvaluator;
+  constructor(preconfig?: DebugConfig | DebugConfigProvider, extraFeatures?: ExtraFeatures) {
     super('autohotkey-debug.txt');
 
-    this.configProvider = provider;
+    this.extraFeatures = extraFeatures;
+    this.preconfig = (preconfig && 'config' in preconfig) ? preconfig.config : preconfig as DebugConfig;
     this.traceLogger = new TraceLogger((e): void => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       this.sendEvent(e);
@@ -186,6 +196,18 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.setDebuggerColumnsStartAt1(true);
     this.setDebuggerLinesStartAt1(true);
     this.setDebuggerPathFormat('uri');
+  }
+  public get config(): DebugConfig {
+    return this._config;
+  }
+  public get isSessionTerminated(): boolean {
+    return this.isTerminateRequested;
+  }
+  public get logEvalutor(): LogEvaluator | undefined {
+    return this._logEvalutor;
+  }
+  public get intellisense(): IntelliSense | undefined {
+    return this._intellisense;
   }
   private get isClosedSession(): boolean {
     return this.session!.socketClosed || this.isTerminateRequested;
@@ -206,10 +228,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportTerminateDebuggee: true,
     };
 
-    const config = this.configProvider.config;
-    if (config?.setHiddenBreakpoints) {
-      this.hiddenBreakpoints = config.setHiddenBreakpoints.filter((hiddenBreakpoint) => !('label' in hiddenBreakpoint)) as HiddenBreakpoint[];
-      this.hiddenBreakpointsWithUI = config.setHiddenBreakpoints.filter((hiddenBreakpoint) => 'label' in hiddenBreakpoint) as HiddenBreakpointWithUI[];
+    if (this.preconfig?.setHiddenBreakpoints) {
+      this.hiddenBreakpoints = this.preconfig.setHiddenBreakpoints.filter((hiddenBreakpoint) => !('label' in hiddenBreakpoint)) as HiddenBreakpoint[];
+      this.hiddenBreakpointsWithUI = this.preconfig.setHiddenBreakpoints.filter((hiddenBreakpoint) => 'label' in hiddenBreakpoint) as HiddenBreakpointWithUI[];
 
       response.body.exceptionBreakpointFilters = Array.isArray(response.body.exceptionBreakpointFilters)
         ? response.body.exceptionBreakpointFilters
@@ -225,7 +246,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }));
     }
 
-    if (config?.useExceptionBreakpoint) {
+    if (this.preconfig?.useExceptionBreakpoint) {
       response.body.supportsExceptionOptions = true;
       response.body.supportsExceptionFilterOptions = true;
       response.body.supportsExceptionInfoRequest = true;
@@ -255,7 +276,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.sendResponse(response);
   }
-  protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
+  protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args?: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('disconnectRequest');
     this.clearPerfTipsDecorations();
 
@@ -265,10 +286,10 @@ export class AhkDebugSession extends LoggingDebugSession {
     };
 
     if (this.session?.socketWritable) {
-      if (args.restart && this.config.request === 'attach') {
+      if (args?.restart && this.config.request === 'attach') {
         await timeoutPromise(this.session.sendDetachCommand(), 500).catch(catchProcess);
       }
-      else if (args.terminateDebuggee === undefined || args.terminateDebuggee) {
+      else if (args?.terminateDebuggee === undefined || args.terminateDebuggee) {
         await timeoutPromise(this.session.sendStopCommand(), 500).catch(catchProcess);
       }
       else {
@@ -276,7 +297,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    if (!args.restart && !this.isTimeout) {
+    if (!args?.restart && !this.isTimeout) {
       if (this.raisedCriticalError) {
         this.sendAnnounce('Debugging stopped');
       }
@@ -284,10 +305,10 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendAnnounce(`AutoHotkey closed for the following exit code: ${this.exitCode}`, this.exitCode === 0 ? 'console' : 'stderr', this.exitCode === 0 ? 'detail' : 'error');
         this.sendAnnounce('Debugging stopped');
       }
-      else if (args.terminateDebuggee === true && !this.config.cancelReason) {
+      else if (args?.terminateDebuggee === true && !this.config.cancelReason) {
         this.sendAnnounce(this.config.request === 'launch' ? 'Debugging stopped.' : 'Attaching and AutoHotkey stopped.');
       }
-      else if (args.terminateDebuggee === false && !this.config.cancelReason) {
+      else if (args?.terminateDebuggee === false && !this.config.cancelReason) {
         this.sendAnnounce('Debugging disconnected. AutoHotkey script is continued.');
       }
       else if (this.config.request === 'attach' && this.ahkProcess) {
@@ -310,10 +331,10 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.sendResponse(response);
   }
-  protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): Promise<void> {
+  protected async launchRequest(response: DebugProtocol.LaunchResponse, args: DebugConfig): Promise<void> {
     this.traceLogger.enable = args.trace;
     this.traceLogger.log('launchRequest');
-    this.config = args;
+    this._config = args;
 
     try {
       this.ahkProcess = new AutoHotkeyLauncher(this.config).launch();
@@ -360,10 +381,10 @@ export class AhkDebugSession extends LoggingDebugSession {
 
     this.sendResponse(response);
   }
-  protected async attachRequest(response: DebugProtocol.AttachResponse, args: LaunchRequestArguments, request?: DebugProtocol.Request): Promise<void> {
+  protected async attachRequest(response: DebugProtocol.AttachResponse, args: DebugConfig, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.enable = args.trace;
     this.traceLogger.log('attachRequest');
-    this.config = args;
+    this._config = args;
 
     try {
       if (this.config.cancelReason) {
@@ -598,10 +619,14 @@ export class AhkDebugSession extends LoggingDebugSession {
       await this.registerDebugDirective();
       await this.registerHiddenBreakpoints();
 
-      const result = this.config.stopOnEntry
-        ? await this.session!.sendContinuationCommand('step_into')
-        : await this.session!.sendContinuationCommand('run');
-      this.checkContinuationStatus(result);
+      if (this.config.stopOnEntry) {
+        await this.session!.sendContinuationCommand('step_into');
+        this.sendStoppedEvent('entry');
+      }
+      else {
+        const result = await this.session!.sendContinuationCommand('run');
+        this.checkContinuationStatus(result);
+      }
     }
     catch (err: unknown) {
       if (err instanceof Error) {
@@ -624,17 +649,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.pauseRequested = false;
       this.isPaused = false;
 
+      this.sendResponse(response);
       this.clearPerfTipsDecorations();
       const result = await this.session!.sendContinuationCommand('run');
-      this.checkContinuationStatus(result);
+      await this.checkContinuationStatus(result);
     }
     catch (err: unknown) {
       if (err instanceof Error) {
         this.sendAnnounce(`[continueRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('nextRequest');
@@ -649,17 +673,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.pauseRequested = false;
       this.isPaused = false;
 
+      this.sendResponse(response);
       this.clearPerfTipsDecorations();
       const result = await this.session!.sendContinuationCommand('step_over');
-      this.checkContinuationStatus(result);
+      await this.checkContinuationStatus(result);
     }
     catch (err: unknown) {
       if (err instanceof Error) {
         this.sendAnnounce(`[nextRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('stepInRequest');
@@ -674,17 +697,16 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.pauseRequested = false;
       this.isPaused = false;
 
+      this.sendResponse(response);
       this.clearPerfTipsDecorations();
       const result = await this.session!.sendContinuationCommand('step_into');
-      this.checkContinuationStatus(result);
+      await this.checkContinuationStatus(result);
     }
     catch (err: unknown) {
       if (err instanceof Error) {
         this.sendAnnounce(`[stepInRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('stepOutRequest');
@@ -695,41 +717,26 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     try {
-      let runToEndOfFunctionBreakpoint: Breakpoint | undefined;
-      if (enableRunToEndOfFunction) {
-        this.initSymbols();
-
-        const filePath = this.currentStackFrames?.[0].source.path;
-        const funcName = this.currentStackFrames?.[0].name;
-        if (filePath && funcName?.includes('()')) {
-          const symbol = this.callableSymbols?.find((symbol) => funcName.match(new RegExp(`^${symbol.fullname}()$`, 'iu')));
-          if (symbol?.location.endIndex) {
-            const fileUri = toFileUri(filePath);
-            const line = sym.getLine(symbol, symbol.location.endIndex);
-            runToEndOfFunctionBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, { group: 'runToEndOfFunction' });
-          }
-        }
-      }
+      this.sendResponse(response);
 
       this.currentMetaVariableMap.clear();
       this.pauseRequested = false;
       this.isPaused = false;
 
       this.clearPerfTipsDecorations();
-      const result = await this.session!.sendContinuationCommand('step_out');
-      if (runToEndOfFunctionBreakpoint) {
-        await this.breakpointManager!.unregisterBreakpoint(runToEndOfFunctionBreakpoint);
-        setEnableRunToEndOfFunction(false);
+      const isExecuted = await this.tryRunToEndOfFunctionBreakpoint();
+      if (isExecuted) {
+        return;
       }
-      this.checkContinuationStatus(result);
+
+      const result = await this.session!.sendContinuationCommand('step_out');
+      await this.checkContinuationStatus(result);
     }
     catch (err: unknown) {
       if (err instanceof Error) {
         this.sendAnnounce(`[stepOutRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request): Promise<void> {
     this.traceLogger.log('pauseRequest');
@@ -743,6 +750,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.pauseRequested = false;
       this.isPaused = false;
 
+      this.sendResponse(response);
       if (this.autoExecuting) {
         this.pauseRequested = true;
 
@@ -759,8 +767,6 @@ export class AhkDebugSession extends LoggingDebugSession {
             });
           }
         }, 100);
-
-        this.sendResponse(response);
         return;
       }
 
@@ -773,8 +779,6 @@ export class AhkDebugSession extends LoggingDebugSession {
         this.sendAnnounce(`[pauseRequest] ${err.message}`, 'stderr', 'develop');
       }
     }
-
-    this.sendResponse(response);
   }
   protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request): void {
     this.traceLogger.log('threadsRequest');
@@ -1146,11 +1150,11 @@ export class AhkDebugSession extends LoggingDebugSession {
         }
         else if (e instanceof ParseError) {
           const message = `Failed to parse the value to be written to \`${args.expression}\` in watch expression.`;
-          vscode.window.showErrorMessage(message);
+          await this.showErrorMessage(message);
         }
         else if (e instanceof Error) {
           const message = `Failed to write \`${args.expression}\` in watch expression. ${e.message}`;
-          vscode.window.showErrorMessage(message);
+          await this.showErrorMessage(message);
         }
       }
     }).catch((err: unknown) => {
@@ -1318,12 +1322,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     catch (e: unknown) {
     }
   }
-  private async clearDebugConsole(): Promise<void> {
-    // There is a lag between the execution of a command and the console being cleared. This lag can be eliminated by executing the command multiple times.
-    await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-    await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-    await vscode.commands.executeCommand('workbench.debug.panel.action.clearReplAction');
-  }
   private async registerDebugDirective(): Promise<void> {
     if (!this.session) {
       return;
@@ -1337,12 +1335,12 @@ export class AhkDebugSession extends LoggingDebugSession {
     const filePathListChunked = chunk(await this.getAllLoadedSourcePath(), 50); // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/203
     for await (const filePathList of filePathListChunked) {
       await Promise.all(filePathList.map(async(filePath) => {
-        const document = await vscode.workspace.openTextDocument(filePath);
+        const source = await readFileCache(filePath);
         const fileUri = toFileUri(filePath);
 
-        await Promise.all(range(document.lineCount).map(async(line_0base) => {
-          const textLine = document.lineAt(line_0base);
-          const parsed = parser.parse(textLine.text);
+        const sourceLines = source.split(/\r\n|\n/u);
+        await Promise.all(sourceLines.map(async(textLine, line_0base) => {
+          const parsed = parser.parse(textLine);
           if (!parsed) {
             return;
           }
@@ -1676,7 +1674,7 @@ export class AhkDebugSession extends LoggingDebugSession {
         if (typeof condition === 'undefined' || condition === '') {
           return false;
         }
-        const rawResult = await this.evaluator.eval(condition);
+        const rawResult = await this.evaluator.eval(condition, this.currentStackFrames?.[0].dbgpStackFrame);
         return toJavaScriptBoolean(rawResult);
       };
 
@@ -1739,7 +1737,9 @@ export class AhkDebugSession extends LoggingDebugSession {
       this.currentMetaVariableMap.set('elapsedTime_ns', -1);
       this.currentMetaVariableMap.set('elapsedTime_ms', -1);
       this.currentMetaVariableMap.set('elapsedTime_s', -1);
-      await this.processActionpoint(lineBreakpoints);
+      if (lineBreakpoints) {
+        await this.processActionpoint(lineBreakpoints);
+      }
       await this.sendStoppedEvent('pause');
       return;
     }
@@ -1751,7 +1751,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     }
 
     // Paused on breakpoint
-    await this.processActionpoint(lineBreakpoints);
+    if (lineBreakpoints) {
+      await this.processActionpoint(lineBreakpoints);
+    }
     const matchedBreakpoint = await this.findMatchedBreakpoint(lineBreakpoints);
     if (matchedBreakpoint) {
       this.currentMetaVariableMap.set('hitCount', String(matchedBreakpoint.hitCount));
@@ -1781,8 +1783,6 @@ export class AhkDebugSession extends LoggingDebugSession {
     await this.checkContinuationStatus(result);
   }
   private async processStepExecution(stepType: dbgp.StepCommandName, lineBreakpoints?: LineBreakpoints): Promise<void> {
-    const thrownException = typeof lineBreakpoints === 'undefined';
-
     if (this.currentStackFrames?.isIdleMode) {
       throw Error(`This message shouldn't appear.`);
     }
@@ -1816,15 +1816,12 @@ export class AhkDebugSession extends LoggingDebugSession {
         return;
       }
     }
-    else {
+    else if (lineBreakpoints) {
       await this.processActionpoint(lineBreakpoints);
     }
 
     // step_into is always stop
     if (stepType === 'step_into') {
-      if (thrownException) {
-        await this.session!.sendContinuationCommand('step_into');
-      }
       await this.sendStoppedEvent(stopReason);
       return;
     }
@@ -1832,7 +1829,7 @@ export class AhkDebugSession extends LoggingDebugSession {
     const executeByUser = !this.stackFramesWhenStepOut && !this.stackFramesWhenStepOver;
     if (executeByUser) {
       // Normal step
-      if (!thrownException) {
+      if (!lineBreakpoints) {
         await this.sendStoppedEvent(stopReason);
         return;
       }
@@ -1922,12 +1919,9 @@ export class AhkDebugSession extends LoggingDebugSession {
     const result = await this.session!.sendContinuationCommand('step_out');
     await this.checkContinuationStatus(result);
   }
-  private async processActionpoint(lineBreakpoints?: LineBreakpoints): Promise<void> {
+  private async processActionpoint(lineBreakpoints: LineBreakpoints): Promise<void> {
     if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
       throw Error(`This message shouldn't appear.`);
-    }
-    if (!lineBreakpoints) {
-      return;
     }
     if (!lineBreakpoints.hasAdvancedBreakpoint()) {
       return;
@@ -2108,7 +2102,7 @@ export class AhkDebugSession extends LoggingDebugSession {
 
       let conditionResult = false, hitConditionResult = false;
       if (condition) {
-        const rawResult = await this.evaluator.eval(condition);
+        const rawResult = await this.evaluator.eval(condition, this.currentStackFrames?.[0].dbgpStackFrame);
         conditionResult = toJavaScriptBoolean(rawResult);
       }
       if (hitCondition) {
@@ -2260,6 +2254,57 @@ export class AhkDebugSession extends LoggingDebugSession {
     this.sendAnnounce(fixedMessage, 'stderr');
     this.sendTerminateEvent();
   }
+  private async showErrorMessage(message: string): Promise<void> {
+    if (!this.extraFeatures?.showErrorMessage) {
+      this.sendAnnounce(message, 'stderr', 'error');
+      return;
+    }
+
+    await this.extraFeatures.showErrorMessage(message);
+  }
+  private async clearDebugConsole(): Promise<void> {
+    if (this.extraFeatures?.clearDebugConsole === undefined) {
+      this.sendAnnounce('', 'console', 'develop');
+      return;
+    }
+
+    await this.extraFeatures.clearDebugConsole();
+  }
+  private async tryRunToEndOfFunctionBreakpoint(): Promise<boolean> {
+    if (!this.extraFeatures?.runToEndOfFunctionBreakpoint) {
+      return false;
+    }
+
+    const result = await this.extraFeatures.runToEndOfFunctionBreakpoint(async() => {
+      let runToEndOfFunctionBreakpoint: Breakpoint | undefined;
+      this.initSymbols();
+
+      const filePath = this.currentStackFrames?.[0].source.path;
+      const funcName = this.currentStackFrames?.[0].name;
+      if (filePath && funcName?.includes('()')) {
+        const symbol = this.callableSymbols?.find((symbol) => funcName.match(new RegExp(`^${symbol.fullname}()$`, 'iu')));
+        if (symbol?.location.endIndex) {
+          const fileUri = toFileUri(filePath);
+          const line = sym.getLine(symbol, symbol.location.endIndex);
+          runToEndOfFunctionBreakpoint = await this.breakpointManager!.registerBreakpoint(fileUri, line, { group: 'runToEndOfFunction' });
+        }
+      }
+
+      this.clearPerfTipsDecorations();
+      const result = await this.session!.sendContinuationCommand('step_out');
+      if (runToEndOfFunctionBreakpoint) {
+        await this.breakpointManager!.unregisterBreakpoint(runToEndOfFunctionBreakpoint);
+      }
+      return result;
+    });
+
+    if (result) {
+      await this.checkContinuationStatus(result);
+      return true;
+    }
+
+    return false;
+  }
   private async displayPerfTips(metaVariableMap: MetaVariableValueMap): Promise<void> {
     if (!this.config.usePerfTips) {
       return;
@@ -2267,72 +2312,59 @@ export class AhkDebugSession extends LoggingDebugSession {
     if (!this.currentStackFrames || this.currentStackFrames.length === 0) {
       return;
     }
+    if (!this.extraFeatures?.displayPerfTips) {
+      return;
+    }
 
-    try {
-      const { source, line } = this.currentStackFrames[0];
-      const document = await vscode.workspace.openTextDocument(source.path);
-      let line_0base = line - 1;
-      if (line_0base === document.lineCount) {
-        line_0base--; // I don't know about the details, but if the script stops at the end of the file and it's not a blank line, then line_0base will be the value of `document.lineCount + 1`, so we'll compensate for that
-      }
-
-      const { format } = this.config.usePerfTips;
-      const logDataList = await timeoutPromise(this.logEvalutor!.eval(format), 5000).catch((e: unknown) => {
-        if (e instanceof dbgp.DbgpCriticalError) {
-          this.criticalError(e.message);
-          return;
-        }
-
+    const stackFrame = this.currentStackFrames[0];
+    const { format } = this.config.usePerfTips;
+    await this.extraFeatures.displayPerfTips(this, stackFrame, this.config.usePerfTips).catch((err) => {
+      if (err instanceof TimeoutError) {
         // If the message is output in disconnectRequest, it may not be displayed, so output it here
         this.isTimeout = true;
         this.sendAnnounce('Debugging stopped for the following reasons: Timeout occurred in communication with the debugger when the following perftips was output.', 'stderr');
-        this.sendAnnounce(`[${source.path}:${line}] ${format}`, 'stderr');
+        this.sendAnnounce(`[${stackFrame.source.path}:${stackFrame.line}] ${format}`, 'stderr');
         this.sendTerminateEvent();
-      });
-
-      if (!logDataList || logDataList.length === 0 || logDataList[0].type === 'object') {
-        return;
       }
-
-      const message = String(logDataList[0].value);
-      const decorationType = vscode.window.createTextEditorDecorationType({
-        after: {
-          fontStyle: this.config.usePerfTips.fontStyle,
-          color: this.config.usePerfTips.fontColor,
-          contentText: ` ${message}`,
-        },
-      });
-      this.perfTipsDecorationTypes.push(decorationType);
-
-      const textLine = document.lineAt(line_0base);
-      const startPosition = textLine.range.end;
-      const endPosition = new vscode.Position(line_0base, textLine.range.end.character + message.length - 1);
-      const decoration = { range: new vscode.Range(startPosition, endPosition) } as vscode.DecorationOptions;
-
-      const editor = await vscode.window.showTextDocument(document);
-      if (this.isTerminateRequested) {
-        return; // If debugging terminated while the step is running, the decorations may remain display
+      else if (err instanceof dbgp.DbgpCriticalError) {
+        this.criticalError(err.message);
       }
-      editor.setDecorations(decorationType, [ decoration ]);
-    }
-    catch (e: unknown) {
-      if (e instanceof dbgp.DbgpCriticalError) {
-        this.criticalError(e.message);
-      }
-    }
+    });
   }
   private clearPerfTipsDecorations(): void {
     if (!this.config.usePerfTips) {
       return;
     }
-
-    for (const editor of vscode.window.visibleTextEditors) {
-      for (const decorationType of this.perfTipsDecorationTypes) {
-        editor.setDecorations(decorationType, []);
-      }
+    if (!this.extraFeatures?.clearPerfTips) {
+      return;
     }
+
+    this.extraFeatures.clearPerfTips();
   }
-  private async createServer(args: LaunchRequestArguments): Promise<void> {
+  private async jumpToError(): Promise<boolean> {
+    if (!this.config.useAutoJumpToError) {
+      return false;
+    }
+    if (!this.errorMessage) {
+      return false;
+    }
+    if (!this.extraFeatures?.jumpToError) {
+      return false;
+    }
+
+    return this.extraFeatures.jumpToError(this.errorMessage);
+  }
+  private async openFileOnExit(): Promise<void> {
+    if (!this.config.openFileOnExit) {
+      return;
+    }
+    if (!this.extraFeatures?.openFileOnExit) {
+      return;
+    }
+
+    await this.extraFeatures.openFileOnExit(this.config.openFileOnExit);
+  }
+  private async createServer(args: DebugConfig): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       this.server = net.createServer()
         .listen(args.port, args.hostname)
@@ -2353,10 +2385,9 @@ export class AhkDebugSession extends LoggingDebugSession {
                 }
 
                 this.evaluator = new ExpressionEvaluator(this.session, { metaVariableMap: this.currentMetaVariableMap });
-                this.logEvalutor = new LogEvaluator(this.session, { metaVariableMap: this.currentMetaVariableMap });
-                this.intellisense = new IntelliSense(this.session);
-                completionItemProvider.useIntelliSenseInDebugging = this.config.useIntelliSenseInDebugging;
-                completionItemProvider.intellisense = this.intellisense;
+                this._logEvalutor = new LogEvaluator(this.session, { metaVariableMap: this.currentMetaVariableMap });
+                this._intellisense = new IntelliSense(this.session);
+                this.extraFeatures?.init(this);
                 this.symbolFinder = new SymbolFinder(this.session.ahkVersion, readFileCacheSync);
                 this.sendEvent(new InitializedEvent());
               })
@@ -2398,55 +2429,5 @@ export class AhkDebugSession extends LoggingDebugSession {
           }
         });
     });
-  }
-  private async jumpToError(): Promise<boolean> {
-    if (this.config.useAutoJumpToError && this.errorMessage) {
-      const match = this.errorMessage.match(/^(?<filePath>.+):(?<line>\d+)(?=\s:\s==>)/u);
-      if (match?.groups) {
-        const { filePath, line } = match.groups;
-        const _line = parseInt(line, 10) - 1;
-
-        const doc = await vscode.workspace.openTextDocument(filePath);
-        const lineRange = doc.lineAt(_line).range;
-        const lineText = doc.getText(lineRange);
-        const leadingSpace = lineText.match(/^(?<space>\s*)/u)?.groups?.space ?? '';
-        const trailingSpace = lineText.match(/(?<space>\s+)$/u)?.groups?.space ?? '';
-        const startPosition = new vscode.Position(_line, leadingSpace.length);
-        const endPosition = new vscode.Position(_line, lineText.length - trailingSpace.length);
-        const editor = await vscode.window.showTextDocument(doc, {
-          selection: new vscode.Range(startPosition, startPosition),
-        });
-
-        const decorationType = vscode.window.createTextEditorDecorationType({
-          backgroundColor: new vscode.ThemeColor('editor.symbolHighlightBackground'),
-        });
-        const decoration: vscode.DecorationOptions = { range: new vscode.Range(startPosition, endPosition) };
-        editor.setDecorations(decorationType, [ decoration ]);
-        setTimeout(() => {
-          editor.setDecorations(decorationType, []);
-        }, 500);
-
-        return true;
-      }
-    }
-    return false;
-  }
-  private async openFileOnExit(): Promise<void> {
-    if (!this.config.openFileOnExit) {
-      return;
-    }
-    if (pathExistsSync(this.config.openFileOnExit)) {
-      const doc = await vscode.workspace.openTextDocument(this.config.openFileOnExit);
-      vscode.window.showTextDocument(doc);
-    }
-    else {
-      const message = {
-        id: 1,
-        format: `File not found. Value of \`openFileOnExit\` in launch.json: \`${this.config.openFileOnExit}\``,
-      } as DebugProtocol.Message;
-      // For some reason, the error message could not be displayed by the following method.
-      // this.sendErrorResponse(response, message);
-      vscode.window.showErrorMessage(message.format);
-    }
   }
 }

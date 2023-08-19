@@ -1,54 +1,13 @@
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import * as vscode from 'vscode';
 import * as dbgp from './dbgpSession';
-import { fetchBasePropertyName } from './util/evaluator/ExpressionEvaluator';
 import { AccessOperator, maskQuotes } from './util/ExpressionExtractor';
-import { IntelliSense } from './util/IntelliSense';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { searchPair } from './util/util';
+import { createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from './util/completionUtils';
+import { InlineDebugAdapterFactory } from './extension';
+import { IntelliSense } from './util/IntelliSense';
 
-export interface CompletionItemProvider extends vscode.CompletionItemProvider {
-  useIntelliSenseInDebugging: boolean;
-  intellisense?: IntelliSense;
-}
-
-export const toDotNotation = (ahkVersion: AhkVersion, name: string): string => {
-  if (name.startsWith('[')) {
-    const fixQuote = (str: string): string => str.replace(/""/gu, '`"');
-
-    if (2 <= ahkVersion.mejor) {
-      const fixedLabel = name.replace(/^\[("|')?/u, '').replace(/("|')?\]$/u, '');
-      return fixQuote(fixedLabel);
-    }
-    const fixedLabel = name.replace(/^\[(")?/u, '').replace(/(")?\]$/u, '');
-    return fixedLabel;
-  }
-  return name;
-};
-export const createCompletionLabel = (propertyName: string): string => {
-  const label = propertyName;
-  if (propertyName === '<base>') {
-    return 'base';
-  }
-  return label;
-};
-export const createCompletionDetail = async(session: dbgp.Session, property: dbgp.Property): Promise<string> => {
-  const isChildProperty = property.fullName.includes('.') || property.fullName.includes('[');
-  const context = isChildProperty ? `[${property.context.name}]` : '';
-
-  const fullName = property.fullName.replaceAll('<base>', 'base');
-  if (property instanceof dbgp.ObjectProperty) {
-    if (property.name === '<base>') {
-      const basePropertyName = await fetchBasePropertyName(session, undefined, property, '__CLASS');
-      if (basePropertyName) {
-        return `${context} ${fullName}: ${basePropertyName}`;
-      }
-    }
-    return `${context} ${fullName}: ${property.className}`;
-  }
-
-  return `${context} ${fullName}: ${property.type}`;
-};
 export const createCompletionKind = (property: dbgp.Property): vscode.CompletionItemKind => {
   if (property instanceof dbgp.ObjectProperty) {
     if (equalsIgnoreCase(property.name, '__NEW')) {
@@ -69,14 +28,6 @@ export const createCompletionKind = (property: dbgp.Property): vscode.Completion
   return property.fullName.includes('.')
     ? vscode.CompletionItemKind.Field
     : vscode.CompletionItemKind.Variable;
-};
-export const createCompletionSortText = (...params: [ dbgp.Property ] | [ string, string ]): string => {
-  // const fullName = createCompletionLabel(params.length === 1 ? params[0].fullName : params[0]);
-  const name = params.length === 1 ? params[0].name : params[1];
-
-  // const depth = [ ...fullName.matchAll(/\[[^\]]+\]|\./gu) ].length;
-  const orderPriority = name.match(/^(\[")?([_]*)/u)?.[0].length;
-  return `@:${orderPriority ?? 0}:${name}`;
 };
 export const createCompletionFixers = (ahkVersion: AhkVersion, document: vscode.TextDocument, position: vscode.Position, label: string, snippet: string, triggerCharacter: AccessOperator): Partial<vscode.CompletionItem> => {
   const fixers: Partial<vscode.CompletionItem> = {};
@@ -116,11 +67,18 @@ export const createCompletionFixers = (ahkVersion: AhkVersion, document: vscode.
   }
   return fixers;
 };
-
-export const completionItemProvider = {
-  useIntelliSenseInDebugging: true,
-  intellisense: undefined,
-  async provideCompletionItems(document, position, token, context) {
+export class CompletionItemProvider implements vscode.CompletionItemProvider {
+  private readonly factory: InlineDebugAdapterFactory;
+  constructor(factory: InlineDebugAdapterFactory) {
+    this.factory = factory;
+  }
+  public get useIntelliSenseInDebugging(): boolean {
+    return this.factory.session?.config.useIntelliSenseInDebugging ?? false;
+  }
+  public get intellisense(): IntelliSense | undefined {
+    return this.factory.session?.intellisense;
+  }
+  public async provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, context: vscode.CompletionContext): Promise<vscode.CompletionItem[]> {
     if (!this.useIntelliSenseInDebugging) {
       return [];
     }
@@ -128,7 +86,6 @@ export const completionItemProvider = {
       return [];
     }
     else if (this.intellisense.evaluator.session.socketClosed) {
-      this.intellisense = undefined;
       return [];
     }
 
@@ -148,5 +105,5 @@ export const completionItemProvider = {
     })).filter((item) => typeof item.label === 'string' && !item.label.toLocaleLowerCase().startsWith('<'));
 
     return suggestList;
-  },
-} as CompletionItemProvider;
+  }
+}
