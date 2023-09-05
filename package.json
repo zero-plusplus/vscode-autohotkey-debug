@@ -1501,6 +1501,7 @@
     ]
   },
   "dependencies": {
+    "@types/dedent": "^0.7.0",
     "@types/semver": "^7.3.12",
     "@zero-plusplus/autohotkey-utilities": "github:zero-plusplus/node-autohotkey-utilities#develop",
     "async-lock": "^1.2.8",
