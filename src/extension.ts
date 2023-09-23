@@ -1,5 +1,5 @@
 /* eslint-disable require-atomic-updates */
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, lstatSync, readFileSync } from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { isArray, isBoolean, isPlainObject } from 'ts-predicates';
@@ -27,6 +27,16 @@ const ahkPathResolve = (filePath: string, cwd?: string): string => {
   return _filePath;
 };
 const normalizePath = (filePath: string): string => (filePath ? path.normalize(filePath) : filePath); // If pass in an empty string, path.normalize returns '.'
+const commandExistsSync = require('command-exists').sync;
+const existsSyncEx = (path: string): boolean => {
+  try {
+    lstatSync(path); 
+  }
+  catch (err) {
+    if ((err as any)?.code === 'ENOENT') return false;
+  }
+  return true;
+};
 
 export type ScopeName = 'Local' | 'Static' | 'Global';
 export type ScopeSelector = '*' | ScopeName;
@@ -208,7 +218,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
         config.runtime = ahkPathResolve(config.runtime);
       }
 
-      if (!existsSync(config.runtime)) {
+      if (!existsSyncEx(config.runtime) && !commandExistsSync(config.runtime)) {
         throw Error(`\`runtime\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.runtime))}"`);
       }
     })();
@@ -356,7 +366,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (!isString(config.program)) {
         throw Error('`program` must be a string.');
       }
-      if (config.request === 'launch' && !existsSync(config.program)) {
+      if (config.request === 'launch' && !existsSyncEx(config.program) && !commandExistsSync(config.program)) {
         throw Error(`\`program\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.program))}"`);
       }
       if (config.program) {
@@ -424,7 +434,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (!isString(config.openFileOnExit)) {
         throw Error('`openFileOnExit` must be a string.');
       }
-      if (!existsSync(config.openFileOnExit)) {
+      if (!existsSyncEx(config.openFileOnExit) && !commandExistsSync(config.openFileOnExit)) {
         throw Error(`\`openFileOnExit\` must be a file path that exists.\nSpecified: "${String(normalizePath(config.openFileOnExit))}"`);
       }
     })();
