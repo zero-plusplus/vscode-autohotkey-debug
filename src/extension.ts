@@ -15,7 +15,7 @@ import normalizeToUnix from 'normalize-path';
 import glob from 'fast-glob';
 import { enableRunToEndOfFunction, registerCommands, setEnableRunToEndOfFunction } from './commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isDirectory, reverseSearchPair, searchPair, timeoutPromise, toArray } from './util/util';
+import { isDirectory, isValidFileName, reverseSearchPair, searchPair, timeoutPromise, toArray, whereCommand } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { ExpressionExtractor } from './util/ExpressionExtractor';
 import { LaunchInfo, defaultAutoHotkeyInstallDir, getAhkVersion, getAutohotkeyUxRuntimePath, getLaunchInfoByLauncher } from './util/AutoHotkeyLuncher';
@@ -24,14 +24,23 @@ import * as dbgp from './dbgpSession';
 import { sync as pathExistsSync } from 'path-exists';
 
 const ahkPathResolve = (filePath: string, autohotkeyInstallDir?: string): string => {
-  let _filePath = filePath;
-  if (!path.isAbsolute(filePath)) {
-    _filePath = path.resolve(autohotkeyInstallDir ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey`, filePath);
+  let resolvedFilePath = filePath;
+
+  // Search for exe files in directories registered in the environment path
+  if (isValidFileName(resolvedFilePath)) {
+    const runtimePath = whereCommand(resolvedFilePath);
+    if (runtimePath) {
+      resolvedFilePath = runtimePath;
+    }
   }
-  if (path.extname(_filePath) === '') {
-    _filePath += '.exe';
+
+  if (!path.isAbsolute(resolvedFilePath)) {
+    resolvedFilePath = path.resolve(autohotkeyInstallDir ?? `${String(process.env.PROGRAMFILES)}/AutoHotkey`, resolvedFilePath);
   }
-  return _filePath;
+  if (path.extname(resolvedFilePath) === '') {
+    resolvedFilePath += '.exe';
+  }
+  return resolvedFilePath;
 };
 const normalizePath = (filePath: string): string => (filePath ? path.normalize(filePath) : filePath); // If pass in an empty string, path.normalize returns '.'
 const normalizeCategories = (categories?: CategoriesData): CategoryData[] | undefined => {
