@@ -5,6 +5,7 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { range } from 'lodash';
 import tcpPortUsed from 'tcp-port-used';
 import { URI } from 'vscode-uri';
+import { spawnSync } from 'child_process';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 
 export const isDirectory = (dirPath: string): boolean => {
@@ -254,4 +255,29 @@ export const reverseSearchPair = (text: string, open: string, close: string, ini
     return -1;
   }
   return text.length - index;
+};
+export const isValidFileName = (name: string): boolean => {
+  const regex = /^[^\\/:*?"<>|]+$/u;
+  return regex.test(name);
+};
+export const whereCommand = (name: string): string | undefined => {
+  if (!isValidFileName(name)) {
+    return undefined;
+  }
+
+  const result = spawnSync(`where`, [ name ]);
+  if (result.error) {
+    return undefined;
+  }
+
+  const filePathList = result.stdout.toString().split('\r\n');
+  if (filePathList.length === 0) {
+    return undefined;
+  }
+
+  const filePath = filePathList[0];
+  if (path.isAbsolute(filePath)) {
+    return path.resolve(filePath);
+  }
+  return undefined;
 };

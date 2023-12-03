@@ -33,7 +33,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
     * Changed: [#275](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/275) Change the syntax of debug directive
     * Changed: [#288](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/288) Change the labelling process when outputting objects to the log
     * Changed: [#293](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/293) Change to allow child element to be retrieved even in bracketed notation
-
+    * Changed: [#307](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/307) Change so that if a file name without extension is specified in the `runtime` attribute of launch.json, it finds the file in the directory registered in the environment variable before finding the AutoHotkey installation directory
     * Fixed: [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings
     * Fixed: [#212](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/212) Some errors were not detected and raw error messages were output. This caused `useAutoJumpToError` to not work in some cases
     * Fixed: [#215](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/215) The list of running AutoHotkey processes displayed before attaching does not display correctly when it contains multibyte strings

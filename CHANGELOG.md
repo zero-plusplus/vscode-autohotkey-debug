@@ -41,6 +41,7 @@ Also want to check the development status, check the [commit history](https://gi
 * [#275](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/275) Change the syntax of debug directive
 * [#288](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/288) Change the labelling process when outputting objects to the log
 * [#293](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/293) Change to allow child element to be retrieved even in bracketed notation
+* [#307](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/307) Change so that if a file name without extension is specified in the `runtime` attribute of launch.json, it finds the file in the directory registered in the environment variable before finding the AutoHotkey installation directory
 
 ### Fixed
 * [#207](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/207) Attach fails if file path contains multibyte strings

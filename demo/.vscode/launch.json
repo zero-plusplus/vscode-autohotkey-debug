@@ -29,6 +29,14 @@
             "variableCategories": "recommend"
         },
         {
+            "name": "Runtime tests in directories registered in environment variables",
+            "type": "autohotkey",
+            "request": "launch",
+            "runtime": "autohotkey",
+            "program": "${file}",
+            "args": []
+        },
+        {
             "name": "pinnedFile Test",
             "type": "autohotkey",
             "request": "launch",
