@@ -280,7 +280,7 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
         if (arg === '') {
           return false;
         }
-        if (arg.toLowerCase().startsWith('/Debug')) {
+        if (equalsIgnoreCase(arg, '/Debug')) {
           return false;
         }
         return true;
