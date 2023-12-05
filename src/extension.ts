@@ -261,9 +261,12 @@ export class AhkConfigurationProvider implements vscode.DebugConfigurationProvid
           throw Error(`\`runtime\` is not AutoHotkey runtime.\nSpecified: "${String(normalizePath(config.runtime))}"`);
         }
 
-        config.runtimeArgs = infoByLauncher?.requires === '1' || (await vscode.workspace.openTextDocument(config.program)).languageId.toLowerCase() === 'ahk'
+        const runtimeArgs = ahkVersion.mejor < 2 || (await vscode.workspace.openTextDocument(config.program)).languageId.toLowerCase() === 'ahk'
           ? config.runtimeArgs_v1
           : config.runtimeArgs_v2; // ahk2 or ah2
+        if (runtimeArgs === undefined) {
+          config.runtimeArgs = [ '/ErrorStdOut' ];
+        }
       }
 
       if (!Array.isArray(config.runtimeArgs)) {
