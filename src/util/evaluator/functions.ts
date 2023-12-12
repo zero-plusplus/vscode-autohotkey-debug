@@ -755,13 +755,13 @@ imcopatibleFunctions_for_v2.set('ToJsonString', toJsonString);
 formatSpecifiers_v1.set('J', toJsonString);
 formatSpecifiers_v2.set('J', toJsonString);
 
-export const toOnlineJsonString: LibraryFunc = async(session, stackFrame, value, limit = dumpLimit) => {
+export const toOnelineJsonString: LibraryFunc = async(session, stackFrame, value, limit = dumpLimit) => {
   return toJsonString(session, stackFrame, value, 0, limit);
 };
-imcopatibleFunctions_for_v1.set('ToOneLineJsonString', toOnlineJsonString);
-imcopatibleFunctions_for_v2.set('ToOneLineJsonString', toOnlineJsonString);
-formatSpecifiers_v1.set('Jo', toOnlineJsonString);
-formatSpecifiers_v2.set('Jo', toOnlineJsonString);
+imcopatibleFunctions_for_v1.set('ToOneLineJsonString', toOnelineJsonString);
+imcopatibleFunctions_for_v2.set('ToOneLineJsonString', toOnelineJsonString);
+formatSpecifiers_v1.set('Jo', toOnelineJsonString);
+formatSpecifiers_v2.set('Jo', toOnelineJsonString);
 // #endregion
 
 export const allFunctions_for_v1 = new CaseInsensitiveMap([
