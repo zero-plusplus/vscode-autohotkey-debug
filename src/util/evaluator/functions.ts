@@ -435,6 +435,19 @@ copatibleFunctions_for_v2.set('IsLower', isLower);
 // #endregion Compatibility functions with AutoHotkey
 
 // #region Incompatible functions with AutoHotkey
+const kindOf: LibraryFunc = async(session, stackFrame, object) => {
+  if (typeof object !== 'object') {
+    return '';
+  }
+
+  if (!(object instanceof dbgp.ObjectProperty)) {
+    return '';
+  }
+  return Promise.resolve(object.className);
+};
+imcopatibleFunctions_for_v1.set('KindOf', kindOf);
+imcopatibleFunctions_for_v2.set('KindOf', kindOf);
+
 const instanceOf: LibraryFunc = async(session, stackFrame, object, superClass) => {
   if (typeof object !== 'object' || typeof superClass !== 'object') {
     return '';
