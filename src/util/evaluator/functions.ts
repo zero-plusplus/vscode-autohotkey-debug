@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { promises as fs } from 'fs';
 import * as dbgp from '../../dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
@@ -205,8 +206,23 @@ const ln = createMathFunction('log', returnBlank);
 copatibleFunctions_for_v1.set('Ln', ln);
 copatibleFunctions_for_v2.set('Ln', ln);
 
-copatibleFunctions_for_v1.set('Round', createMathFunction('round', returnZero));
-copatibleFunctions_for_v2.set('Round', createMathFunction('round', returnBlank));
+const round: LibraryFunc = async(session, stackFrame, num, decimalPlaces) => {
+  const target = Number(num);
+  const n = Math.floor(decimalPlaces ? Number(decimalPlaces) : 0);
+  if (isNaN(target) || isNaN(n)) {
+    return 2 <= session.ahkVersion.mejor ? '' : 0;
+  }
+
+  if (n === 0) {
+    return Math.round(target);
+  }
+
+  const factor = 10 ** 10;
+  const result = Math.round(target * factor) / factor;
+  return result;
+};
+copatibleFunctions_for_v1.set('Round', round);
+copatibleFunctions_for_v2.set('Round', round);
 
 copatibleFunctions_for_v1.set('Sqrt', createMathFunction('sqrt', returnZero));
 copatibleFunctions_for_v2.set('Sqrt', createMathFunction('sqrt', returnBlank));
