@@ -1,6 +1,6 @@
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import * as dbgp from '../dap/dbgpSession';
-import { fetchBasePropertyName } from './evaluator/ExpressionEvaluator';
+import { fetchBasePropertyName } from '../dap/tools/AELL';
 
 export const toDotNotation = (ahkVersion: AhkVersion, name: string): string => {
   if (name.startsWith('[')) {

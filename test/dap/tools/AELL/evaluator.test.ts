@@ -3,12 +3,14 @@ import assert from 'assert';
 import * as net from 'net';
 import { ChildProcess } from 'child_process';
 import * as path from 'path';
-import * as dbgp from '../../src/dap/dbgpSession';
-import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
-import { getFalse, getTrue } from '../../src/util/evaluator/functions';
-import { MetaVariableValueMap } from '../../src/util/VariableManager';
-import { closeSession, launchDebug } from '../util';
-import { isFloat } from '../../src/util/util';
+import * as dbgp from '../../../../src/dap/dbgpSession';
+import { EvaluatedValue, ExpressionEvaluator } from '../../../../src/dap/tools/AELL';
+import { getFalse, getTrue } from '../../../../src/dap/tools/AELL/functions';
+import { MetaVariableValueMap } from '../../../../src/util/VariableManager';
+import { closeSession, launchDebug } from '../../../util';
+import { isFloat } from '../../../../src/util/util';
+import { fixturesDataDirectory } from '../../../config';
+
 
 type ApiTester = (expression: string) => Promise<[ string | number, string | number, string ]>;
 const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
@@ -40,7 +42,7 @@ const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {
   };
 };
 
-const sampleDir = path.resolve(__dirname, 'ahk');
+const sampleDir = path.resolve(fixturesDataDirectory, 'tools', 'AELL');
 const hostname = '127.0.0.1';
 describe('ExpressionEvaluator for AutoHotkey-v1', (): void => {
   let testApi: ApiTester;

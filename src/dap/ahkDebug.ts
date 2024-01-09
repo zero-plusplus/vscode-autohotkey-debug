@@ -35,13 +35,13 @@ import matcher from 'matcher';
 import { Categories, Category, CategoryData, MetaVariable, MetaVariableValueMap, Scope, StackFrame, StackFrames, Variable, VariableManager, formatProperty } from '../util/VariableManager';
 import { version as debuggerAdapterVersion } from '../../package.json';
 import { SymbolFinder } from '../util/SymbolFinder';
-import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from '../util/evaluator/ExpressionEvaluator';
+import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from './tools/AELL';
 import { CaseInsensitiveMap } from '../util/CaseInsensitiveMap';
 import { IntelliSense } from '../util/IntelliSense';
 import { maskQuotes } from '../util/ExpressionExtractor';
 import { DebugDirectiveParser } from '../util/DebugDirectiveParser';
-import { LogData, LogEvaluator } from '../util/evaluator/LogEvaluator';
-import { ActionLogPrefixData, CategoryLogPrefixData, GroupLogPrefixData } from '../util/evaluator/LogParser';
+import { LogData, LogEvaluator } from './tools/LogMessageFormatter';
+import { ActionLogPrefixData, CategoryLogPrefixData, GroupLogPrefixData } from './tools/LogMessageFormatter/parser';
 import { createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from '../util/completionUtils';
 
 export type AnnounceLevel = boolean | 'error' | 'detail' | 'develop';

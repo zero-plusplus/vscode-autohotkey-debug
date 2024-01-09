@@ -2,11 +2,12 @@ import * as net from 'net';
 import { ChildProcess } from 'child_process';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
-import * as dbgp from '../../src/dap/dbgpSession';
-import { closeSession, launchDebug } from '../util';
-import { LogData, LogEvaluator } from '../../src/util/evaluator/LogEvaluator';
+import * as dbgp from '../../../../src/dap/dbgpSession';
+import { closeSession, launchDebug } from '../../../util';
+import { LogData, LogEvaluator } from '../../../../src/dap/tools/LogMessageFormatter';
+import { fixturesDataDirectory } from '../../../config';
 
-const sampleDir = path.resolve(__dirname, 'ahk');
+const sampleDir = path.resolve(fixturesDataDirectory, 'tools', 'AELL');
 const hostname = '127.0.0.1';
 
 const simplifyDataList = (dataList: LogData[]): any => {
@@ -32,7 +33,7 @@ const simplifyDataList = (dataList: LogData[]): any => {
   });
 };
 
-describe('LogEvaluator for AutoHotkey-v1', (): void => {
+describe('evaluator for AutoHotkey v1', (): void => {
   let process: ChildProcess;
   let server: net.Server | undefined;
   let session: dbgp.Session;
@@ -79,7 +80,7 @@ describe('LogEvaluator for AutoHotkey-v1', (): void => {
     ]);
   });
 
-  test('Expression_comma_sequence', async(): Promise<void> => {
+  test('format specifiers', async(): Promise<void> => {
     expect(simplifyDataList(await evaluator.eval(`{123, b}`))).toEqual([ { type: 'primitive', prefixes: [], value: '1111011' } ]);
     expect(simplifyDataList(await evaluator.eval(`{123, d}`))).toEqual([ { type: 'primitive', prefixes: [], value: '123' } ]);
     expect(simplifyDataList(await evaluator.eval(`{0x123, d}`))).toEqual([ { type: 'primitive', prefixes: [], value: '291' } ]);

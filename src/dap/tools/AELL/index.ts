@@ -3,12 +3,12 @@
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
 import { FormatSpecifyMap, FunctionMap, ahkRegexMatch, allFunctions_for_v1, allFunctions_for_v2, toNumber } from './functions';
-import * as dbgp from '../../dap/dbgpSession';
-import { equalsIgnoreCase } from '../stringUtils';
-import { ExpressionParser } from './ExpressionParser';
-import { MetaVariable, MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';
+import * as dbgp from '../../dbgpSession';
+import { equalsIgnoreCase } from '../../../util/stringUtils';
+import { ExpressionParser } from './parser';
+import { MetaVariable, MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../../../util/VariableManager';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { isFloat, isNumberLike, isPrimitive } from '../util';
+import { isFloat, isNumberLike, isPrimitive } from '../../../util/util';
 import { uniqBy } from 'lodash';
 
 export type Node =

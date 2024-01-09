@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { promises as fs } from 'fs';
-import * as dbgp from '../../dap/dbgpSession';
-import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
-import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyOwnChildren, includesPropertyChild, isInfinite } from './ExpressionEvaluator';
-import * as util from '../util';
-import { MetaVariable } from '../VariableManager';
+import * as dbgp from '../../dbgpSession';
+import { CaseInsensitiveMap } from '../../../util/CaseInsensitiveMap';
+import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyOwnChildren, includesPropertyChild, isInfinite } from '.';
+import * as util from '../../../util/util';
+import { MetaVariable } from '../../../util/VariableManager';
 
 export const getTrue = async(session: dbgp.Session, stackFrame?: dbgp.StackFrame): Promise<EvaluatedValue> => {
   return fetchGlobalProperty(session, 'true', stackFrame);

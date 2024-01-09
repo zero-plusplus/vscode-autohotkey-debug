@@ -1,9 +1,9 @@
-import * as dbgp from '../../dap/dbgpSession';
-import { maskQuotes } from '../ExpressionExtractor';
-import { searchPair } from '../util';
-import { EvaluatedObjectValue, EvaluatedPrimitiveValue, EvaluatedValue, ExpressionEvaluator, ExpressionEvaluatorConfig } from './ExpressionEvaluator';
-import { copatibleFunctions_for_v1, copatibleFunctions_for_v2, formatSpecifiers_v1, formatSpecifiers_v2 } from './functions';
-import { LogParser, LogPrefixData } from './LogParser';
+import * as dbgp from '../../dbgpSession';
+import { maskQuotes } from '../../../util/ExpressionExtractor';
+import { searchPair } from '../../../util/util';
+import { EvaluatedObjectValue, EvaluatedPrimitiveValue, EvaluatedValue, ExpressionEvaluator, ExpressionEvaluatorConfig } from '../AELL';
+import { copatibleFunctions_for_v1, copatibleFunctions_for_v2, formatSpecifiers_v1, formatSpecifiers_v2 } from '../AELL/functions';
+import { LogParser, LogPrefixData } from './parser';
 
 export type LogData = PrimitiveLogData | ObjectLogData;
 export interface LogDataBase {

@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { LogParser, ParsedLogData } from '../../src/util/evaluator/LogParser';
+import { LogParser, ParsedLogData } from '../../../../src/dap/tools/LogMessageFormatter/parser';
 
 const simplifyDataList = (dataList: ParsedLogData[]): any => {
   return dataList.map((data) => {
@@ -12,7 +12,7 @@ const simplifyDataList = (dataList: ParsedLogData[]): any => {
   });
 };
 
-describe('LogParser', () => {
+describe('parser', () => {
   const parser = new LogParser();
 
   test('parse', () => {
