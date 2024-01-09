@@ -5,7 +5,7 @@ import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { reverseSearchPair, searchPair } from './util/util';
 import { ExpressionExtractor } from './util/ExpressionExtractor';
 import { AhkConfigurationProvider } from './dap/ConfigurationProvider';
-import { InlineDebugAdapterFactory } from './dap/DebugAdapter';
+import { InlineDebugAdapterFactory } from './editors/vscode/DebugAdapterFactory';
 
 export const activate = (context: vscode.ExtensionContext): void => {
   const provider = new AhkConfigurationProvider();

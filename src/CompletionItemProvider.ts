@@ -5,7 +5,7 @@ import { AccessOperator, maskQuotes } from './util/ExpressionExtractor';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { searchPair } from './util/util';
 import { createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from './util/completionUtils';
-import { InlineDebugAdapterFactory } from './dap/DebugAdapter';
+import { InlineDebugAdapterFactory } from './editors/vscode/DebugAdapterFactory';
 import { IntelliSense } from './util/IntelliSense';
 
 export const createCompletionKind = (property: dbgp.Property): vscode.CompletionItemKind => {
