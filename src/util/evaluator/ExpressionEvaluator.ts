@@ -3,7 +3,7 @@
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
 import { FormatSpecifyMap, FunctionMap, ahkRegexMatch, allFunctions_for_v1, allFunctions_for_v2, toNumber } from './functions';
-import * as dbgp from '../../dbgpSession';
+import * as dbgp from '../../dap/dbgpSession';
 import { equalsIgnoreCase } from '../stringUtils';
 import { ExpressionParser } from './ExpressionParser';
 import { MetaVariable, MetaVariableValueMap, singleToDoubleString, unescapeAhk } from '../VariableManager';

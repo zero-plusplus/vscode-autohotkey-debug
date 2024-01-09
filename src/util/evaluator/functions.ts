@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { promises as fs } from 'fs';
-import * as dbgp from '../../dbgpSession';
+import * as dbgp from '../../dap/dbgpSession';
 import { CaseInsensitiveMap } from '../CaseInsensitiveMap';
 import { EvaluatedValue, fetchGlobalProperty, fetchProperty, fetchPropertyChild, fetchPropertyOwnChildren, includesPropertyChild, isInfinite } from './ExpressionEvaluator';
 import * as util from '../util';

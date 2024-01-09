@@ -2,13 +2,13 @@ import * as path from 'path';
 import * as DebugAdapter from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { URI } from 'vscode-uri';
-import * as dbgp from '../dbgpSession';
+import * as dbgp from '../dap/dbgpSession';
 import { rtrim } from 'underscore.string';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { isNumberLike, isPrimitive, toArray, toFileUri } from './util';
 import { equalsIgnoreCase } from './stringUtils';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
-import { AhkDebugSession } from '../ahkDebug';
+import { AhkDebugSession } from '../dap/ahkDebug';
 
 export type ScopeName = 'Local' | 'Static' | 'Global';
 export type ScopeSelector = '*' | ScopeName;

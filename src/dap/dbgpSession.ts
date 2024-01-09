@@ -5,11 +5,11 @@ import * as parser from 'fast-xml-parser';
 import * as he from 'he';
 import convertHrTime from 'convert-hrtime';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { joinVariablePathArray, splitVariablePath, toFileUri } from './util/util';
-import { equalsIgnoreCase } from './util/stringUtils';
-import { TraceLogger } from './util/TraceLogger';
-import { isComObject, unescapeAhk } from './util/VariableManager';
+import { CaseInsensitiveMap } from '../util/CaseInsensitiveMap';
+import { joinVariablePathArray, splitVariablePath, toFileUri } from '../util/util';
+import { equalsIgnoreCase } from '../util/stringUtils';
+import { TraceLogger } from '../util/TraceLogger';
+import { isComObject, unescapeAhk } from '../util/VariableManager';
 
 export interface XmlDocument {
   init?: XmlNode;

@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 import JSONC from 'jsonc-parser';
 import { defaults, groupBy, isString, range } from 'lodash';
 import tcpPortUsed from 'tcp-port-used';
-import { DebugConfig } from '../ahkDebug';
+import { DebugConfig } from './ahkDebug';
 import { getRunningAhkScriptList } from '../util/getRunningAhkScriptList';
 import normalizeToUnix from 'normalize-path';
 import glob from 'fast-glob';

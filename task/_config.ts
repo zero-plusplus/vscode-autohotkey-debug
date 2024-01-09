@@ -9,8 +9,8 @@ const esbuildCommonOptions: esbuild.BuildOptions = {
 };
 export const esbuildOptions: esbuild.BuildOptions = {
   ...esbuildCommonOptions,
-  entryPoints: [ `${rootDir}/src/extension.ts` ],
-  outfile: `${rootDir}/build/extension.js`,
+  entryPoints: [ `${rootDir}/src/editors/vscode/extension.ts` ],
+  outfile: `${rootDir}/build/editors/vscode/extension.js`,
   bundle: true,
   minify: true,
   treeShaking: true,

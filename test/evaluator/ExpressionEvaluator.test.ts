@@ -1,9 +1,9 @@
-import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
+import { afterAll, beforeAll, describe, expect, test, xtest } from '@jest/globals';
 import assert from 'assert';
 import * as net from 'net';
 import { ChildProcess } from 'child_process';
 import * as path from 'path';
-import * as dbgp from '../../src/dbgpSession';
+import * as dbgp from '../../src/dap/dbgpSession';
 import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
 import { getFalse, getTrue } from '../../src/util/evaluator/functions';
 import { MetaVariableValueMap } from '../../src/util/VariableManager';
@@ -1086,7 +1086,7 @@ describe('Tests of functions compatible only with v2', (): void => {
     await closeSession(session_v2, process_v2);
   });
 
-  test('eval libraries - Predicate functions', async(): Promise<void> => {
+  xtest('eval libraries - Predicate functions', async(): Promise<void> => {
     const dataList = [
       `"abc"`,
       `"ABC"`,

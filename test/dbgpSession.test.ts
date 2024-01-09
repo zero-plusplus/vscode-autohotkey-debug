@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
-import * as dbgp from '../src/dbgpSession';
+import * as dbgp from '../src/dap/dbgpSession';
 import * as net from 'net';
 
 const hostname = '127.0.0.1';

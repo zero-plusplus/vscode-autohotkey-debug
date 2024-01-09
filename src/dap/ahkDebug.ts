@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as net from 'net';
 import { stat } from 'fs';
 import wildcard from 'wildcard-match';
-import * as sym from './util/SymbolFinder';
+import * as sym from '../util/SymbolFinder';
 import {
   InitializedEvent,
   LoggingDebugSession,
@@ -24,25 +24,25 @@ import {
   BreakpointAdvancedData,
   BreakpointManager,
   LineBreakpoints,
-} from './util/BreakpointManager';
-import { toFixed } from './util/numberUtils';
-import { equalsIgnoreCase } from './util/stringUtils';
-import { TraceLogger } from './util/TraceLogger';
+} from '../util/BreakpointManager';
+import { toFixed } from '../util/numberUtils';
+import { equalsIgnoreCase } from '../util/stringUtils';
+import { TraceLogger } from '../util/TraceLogger';
 import * as dbgp from './dbgpSession';
-import { AutoHotkeyLauncher, AutoHotkeyProcess, getAhkVersion } from './util/AutoHotkeyLuncher';
-import { TimeoutError, now, readFileCache, readFileCacheSync, searchPair, timeoutPromise, toFileUri } from './util/util';
+import { AutoHotkeyLauncher, AutoHotkeyProcess, getAhkVersion } from '../util/AutoHotkeyLuncher';
+import { TimeoutError, now, readFileCache, readFileCacheSync, searchPair, timeoutPromise, toFileUri } from '../util/util';
 import matcher from 'matcher';
-import { Categories, Category, CategoryData, MetaVariable, MetaVariableValueMap, Scope, StackFrame, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
-import { version as debuggerAdapterVersion } from '../package.json';
-import { SymbolFinder } from './util/SymbolFinder';
-import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from './util/evaluator/ExpressionEvaluator';
-import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { IntelliSense } from './util/IntelliSense';
-import { maskQuotes } from './util/ExpressionExtractor';
-import { DebugDirectiveParser } from './util/DebugDirectiveParser';
-import { LogData, LogEvaluator } from './util/evaluator/LogEvaluator';
-import { ActionLogPrefixData, CategoryLogPrefixData, GroupLogPrefixData } from './util/evaluator/LogParser';
-import { createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from './util/completionUtils';
+import { Categories, Category, CategoryData, MetaVariable, MetaVariableValueMap, Scope, StackFrame, StackFrames, Variable, VariableManager, formatProperty } from '../util/VariableManager';
+import { version as debuggerAdapterVersion } from '../../package.json';
+import { SymbolFinder } from '../util/SymbolFinder';
+import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from '../util/evaluator/ExpressionEvaluator';
+import { CaseInsensitiveMap } from '../util/CaseInsensitiveMap';
+import { IntelliSense } from '../util/IntelliSense';
+import { maskQuotes } from '../util/ExpressionExtractor';
+import { DebugDirectiveParser } from '../util/DebugDirectiveParser';
+import { LogData, LogEvaluator } from '../util/evaluator/LogEvaluator';
+import { ActionLogPrefixData, CategoryLogPrefixData, GroupLogPrefixData } from '../util/evaluator/LogParser';
+import { createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from '../util/completionUtils';
 
 export type AnnounceLevel = boolean | 'error' | 'detail' | 'develop';
 export type FunctionBreakPointAdvancedData = { name: string; condition?: string; hitCondition?: string; logPoint?: string };

@@ -1,4 +1,4 @@
-import * as dbgp from '../dbgpSession';
+import * as dbgp from '../dap/dbgpSession';
 import { URI } from 'vscode-uri';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 import { equalsIgnoreCase } from './stringUtils';

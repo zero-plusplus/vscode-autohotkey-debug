@@ -1,5 +1,5 @@
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import * as dbgp from '../dbgpSession';
+import * as dbgp from '../dap/dbgpSession';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 import { ExpressionEvaluator, fetchInheritedProperties, getContexts } from './evaluator/ExpressionEvaluator';
 import { copatibleFunctions_for_v1, copatibleFunctions_for_v2 } from './evaluator/functions';

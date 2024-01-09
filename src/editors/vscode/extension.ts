@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import { CompletionItemProvider } from './CompletionItemProvider';
-import { registerCommands } from './commands';
+import { registerCommands } from '../../commands';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { reverseSearchPair, searchPair } from './util/util';
-import { ExpressionExtractor } from './util/ExpressionExtractor';
-import { AhkConfigurationProvider } from './dap/ConfigurationProvider';
-import { InlineDebugAdapterFactory } from './editors/vscode/DebugAdapterFactory';
+import { reverseSearchPair, searchPair } from '../../util/util';
+import { ExpressionExtractor } from '../../util/ExpressionExtractor';
+import { AhkConfigurationProvider } from '../../dap/ConfigurationProvider';
+import { InlineDebugAdapterFactory } from './DebugAdapterFactory';
 
 export const activate = (context: vscode.ExtensionContext): void => {
   const provider = new AhkConfigurationProvider();

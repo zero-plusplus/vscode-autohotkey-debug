@@ -1,4 +1,4 @@
-import { describe, expect } from '@jest/globals';
+import { describe, expect, test } from '@jest/globals';
 import { LogParser, ParsedLogData } from '../../src/util/evaluator/LogParser';
 
 const simplifyDataList = (dataList: ParsedLogData[]): any => {

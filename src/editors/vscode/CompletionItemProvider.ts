@@ -1,12 +1,12 @@
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import * as vscode from 'vscode';
-import * as dbgp from './dbgpSession';
-import { AccessOperator, maskQuotes } from './util/ExpressionExtractor';
-import { equalsIgnoreCase } from './util/stringUtils';
-import { searchPair } from './util/util';
-import { createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from './util/completionUtils';
-import { InlineDebugAdapterFactory } from './editors/vscode/DebugAdapterFactory';
-import { IntelliSense } from './util/IntelliSense';
+import * as dbgp from '../../dap/dbgpSession';
+import { AccessOperator, maskQuotes } from '../../util/ExpressionExtractor';
+import { equalsIgnoreCase } from '../../util/stringUtils';
+import { searchPair } from '../../util/util';
+import { createCompletionDetail, createCompletionLabel, createCompletionSortText, toDotNotation } from '../../util/completionUtils';
+import { InlineDebugAdapterFactory } from './DebugAdapterFactory';
+import { IntelliSense } from '../../util/IntelliSense';
 
 export const createCompletionKind = (property: dbgp.Property): vscode.CompletionItemKind => {
   if (property instanceof dbgp.ObjectProperty) {

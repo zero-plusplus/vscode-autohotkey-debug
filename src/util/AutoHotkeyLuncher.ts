@@ -2,7 +2,7 @@ import * as path from 'path';
 import { existsSync } from 'fs';
 import { SpawnSyncOptions, spawn, spawnSync } from 'child_process';
 import { EventEmitter } from 'events';
-import { DebugConfig } from '../ahkDebug';
+import { DebugConfig } from '../dap/ahkDebug';
 import { escapePcreRegExEscape } from './stringUtils';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 

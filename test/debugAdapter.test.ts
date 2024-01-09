@@ -39,7 +39,7 @@ export type EventType =
 describe('Debug Adapter for AutoHotkey v1', () => {
   const rootDirPath = path.resolve(__dirname, '../');
   const buildDirPath = path.resolve(rootDirPath, 'build');
-  const debugAdapterPath = path.resolve(buildDirPath, 'debugAdapter.js');
+  const debugAdapterPath = path.resolve(buildDirPath, 'dap', 'main.js');
 
   let debugClient: DebugClient;
   beforeAll(async() => {

@@ -2,7 +2,7 @@ import * as net from 'net';
 import { ChildProcess } from 'child_process';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
-import * as dbgp from '../../src/dbgpSession';
+import * as dbgp from '../../src/dap/dbgpSession';
 import { closeSession, launchDebug } from '../util';
 import { LogData, LogEvaluator } from '../../src/util/evaluator/LogEvaluator';
 

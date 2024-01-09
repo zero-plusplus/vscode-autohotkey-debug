@@ -3,7 +3,7 @@ import * as net from 'net';
 import { ChildProcess, spawn, spawnSync } from 'child_process';
 import * as path from 'path';
 import { file } from 'tmp';
-import * as dbgp from '../src/dbgpSession';
+import * as dbgp from '../src/dap/dbgpSession';
 import { getUnusedPort, timeoutPromise, toFileUri } from '../src/util/util';
 
 export const runAutoHotkeyWithDebug = (file: string, runtime?: string, port = 9000, hostname = 'localhost'): ChildProcess => {

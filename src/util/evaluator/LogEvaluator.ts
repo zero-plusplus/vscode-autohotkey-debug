@@ -1,4 +1,4 @@
-import * as dbgp from '../../dbgpSession';
+import * as dbgp from '../../dap/dbgpSession';
 import { maskQuotes } from '../ExpressionExtractor';
 import { searchPair } from '../util';
 import { EvaluatedObjectValue, EvaluatedPrimitiveValue, EvaluatedValue, ExpressionEvaluator, ExpressionEvaluatorConfig } from './ExpressionEvaluator';
