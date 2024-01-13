@@ -27,7 +27,7 @@ export type RunState
   | 'stopped'  // > IDE is detached from process, no further interaction is possible.
   | 'running'  // > code is currently executing. Note that this state would only be seen with async support turned on, otherwise the typical state during IDE/debugger interaction would be 'break'
   | 'break';    // > code execution is paused, for whatever reason (see below), and the IDE/debugger can pass information back and forth.
-export type Reason = 'ok' | 'error' | 'aborted' | 'exception';
+export type StatusReason = 'ok' | 'error' | 'aborted' | 'exception';
 // #endregion Status
 
 // #region Command
@@ -141,6 +141,7 @@ export interface BreakpointBase {
 export type Breakpoint
   = LineBreakpoint
   | CallBreakpoint
+  | FunctionBreakpoint
   | ReturnBreakpoint
   | ExceptionBreakpoint
   | ConditionalBreakpoint
@@ -369,7 +370,7 @@ export interface CommandResponseBase {
 // https://xdebug.org/docs/dbgp#status
 export interface StatusResponse extends CommandResponseBase {
   status: RunState;
-  reason: Reason;
+  reason: StatusReason;
 }
 
 // https://xdebug.org/docs/dbgp#feature-get
