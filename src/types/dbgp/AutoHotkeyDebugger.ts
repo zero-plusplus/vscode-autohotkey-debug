@@ -170,14 +170,22 @@ export interface Context {
 }
 // #endregion Context
 
+// #region TypeMap
+export type DataTypeName = string;
+export type DataType = 'undefined' | 'string' | 'integer' | 'float';
+export interface TypeMap {
+  name: DataTypeName;
+  type: DataType;
+}
+// #endregion TypeMap
+
 // #region Property
 export type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll';
-export type PropertyDataType = 'undefined' | 'string' | 'integer' | 'float';
 export type Property = PrimitiveProperty | ObjectProperty;
 export interface PropertyBase {
   name: string;
   fullName: string;
-  type: PropertyDataType;
+  type: DataType;
   constant: boolean;
   facet?: PropertyFacet;
   size: number;
@@ -197,6 +205,15 @@ export interface ObjectProperty extends PropertyBase {
   numChildren?: number;
 }
 // #endregion Property
+
+
+// #region StdOut StdErr
+export type { OutputControl } from './dbgp';
+// #endregion StdOut StdErr
+
+// #region StdIn
+// (not support)
+// #endregion StdOut StdErr
 
 // #region SpawnPoint
 // (not support)
@@ -302,7 +319,10 @@ export interface ContextGetResponce extends dbgp.CommandResponseBase {
   command: 'context_get';
   context: Context;
 }
-export type { PropertySetResponse } from './dbgp';
+export type {
+  TypeMapGetResponce,
+  PropertySetResponse,
+} from './dbgp';
 
 export interface PropertyGetResponse extends dbgp.CommandResponseBase {
   command: 'property_get';
@@ -317,3 +337,38 @@ export type {
   BreakResponce,
 } from './dbgp';
 // #endregion Responce
+
+// #region client
+export type CommandSession = RequireCommandSession | ExtendedCommandSession;
+export interface RequireCommandSession {
+  sendStatusCommand: () => Promise<dbgp.StatusResponse>;                                                                                                      // $ status -i TRANSACTION_ID
+  sendFeatureGetCommand: (featureName: FeatureName) => Promise<FeatureSetResponse>;                                                                           // $ feature_get -i TRANSACTION_ID -n FEATURE_NAME
+  sendFeatureSetCommand: (featureName: FeatureName, value: string) => Promise<FeatureSetResponse>;                                                            // $ feature_set -i TRANSACTION_ID -n FEATURE_NAME -v VALUE
+  sendRunCommand: () => Promise<dbgp.ContinuationResponse>;                                                                                                   // $ run -i TRANSACTION_ID
+  sendStepIntoCommand: () => Promise<dbgp.ContinuationResponse>;                                                                                              // $ step_into -i TRANSACTION_ID
+  sendStepOverCommand: () => Promise<dbgp.ContinuationResponse>;                                                                                              // $ step_over -i transaction_id
+  sendStepOutCommand: () => Promise<dbgp.ContinuationResponse>;                                                                                               // $ step_out -i TRANSACTION_ID
+  sendStopCommand: () => Promise<dbgp.ContinuationResponse>;                                                                                                  // $ stop -i TRANSACTION_ID
+  sendDetachCommand: () => Promise<dbgp.ContinuationResponse>;                                                                                                // $ detach -i TRANSACTION_ID
+  sendBreakpointGetCommand: () => Promise<dbgp.BreakpointGetResponce>;                                                                                        // $ breakpoint_get -i TRANSACTION_ID -d BREAKPOINT_ID
+  sendBreakpointSetCommand: (fileName: dbgp.FileName, line: dbgp.LineNumber, condition?: dbgp.Condition) => Promise<dbgp.BreakpointSetResponce>;              // $ breakpoint_set -i TRANSACTION_ID -t "line" -s STATE -f FILE_NAME -n LINE_NUMBER
+  sendExceptionBreakpointSetCommand: (exception: string) => Promise<dbgp.BreakpointSetResponce>;                                                              // $ breakpoint_set -i TRANSACTION_ID -t "exception" -s STATE -x EXCEPTION_NAME
+  sendBreakpointUpdateCommand: (breakpointId: dbgp.BreakpointId) => Promise<dbgp.BreakpointUpdateResponce>;                                                   // $ breakpoint_update -i TRANSACTION_ID -d BREAKPOINT_ID
+  sendBreakpointRemoveCommand: (breakpointId: dbgp.BreakpointId) => Promise<dbgp.BreakpointRemoveResponce>;                                                   // $ breakpoint_remove -i TRANSACTION_ID -d BREAKPOINT_ID
+  sendBreakpointListCommand: () => Promise<dbgp.BreakpointListResponce>;                                                                                      // $ breakpoint_list -i TRANSACTION_ID
+  sendStackDepthCommand: () => Promise<dbgp.StackDepthResponce>;                                                                                              // $ stack_depth -i TRANSACTION_ID
+  sendStackGetCommand: (stackDepth?: number) => Promise<StackGetResponce>;                                                                                    // $ stack_get -i TRANSACTION_ID [ -d STACK_DEPTH ]
+  sendContextNamesCommand: (stackDepth?: number) => Promise<ContextNamesResponce>;                                                                            // $ context_names -i TRANSACTION_ID [ -d STACK_DEPTH ]
+  sendContextGetCommand: (contextId?: dbgp.ContextId, depth?: number) => Promise<ContextGetResponce>;                                                         // $ context_get -i TRANSACTION_ID [ -d STACK_DEPTH -c CONTEXT_NUMBER ]
+  sendTypeMapGetCommand: () => Promise<dbgp.TypeMapGetResponce>;                                                                                              // $ typemap_get -i TRANSACTION_ID
+  sendPropertyGetCommand: (propertyLongName: string, depth?: number) => Promise<dbgp.PropertyGetResponse>;                                                    // $ property_get -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
+  sendPropertySetCommand: (propertyLongName: string, depth?: number) => Promise<dbgp.PropertySetResponse>;                                                    // $ property_set -i TRANSACTION_ID -n PROPERTY_LONG_NAME -l DATA_LENGTH [ -d STACK_DEPTH ] -- DATA
+  sendPropertyValueCommand: (propertyLongName: string, depth?: number) => Promise<dbgp.PropertyValueResponse>;                                                // $ property_value -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
+  sendSourceCommand: (fileName: dbgp.FileName) => Promise<dbgp.SourceResponce>;                                                                               // $ source -i TRANSACTION_ID -f FILEURI
+  sendStdOutCommand: (outputControl: dbgp.OutputControl) => Promise<dbgp.StdOutResponce>;                                                                     // $ stdout -i transaction_id -c OUTPUT_CONTROL
+  sendStdErrCommand: (outputControl: dbgp.OutputControl) => Promise<dbgp.StdOutResponce>;                                                                     // $ stderr -i transaction_id -c OUTPUT_CONTROL
+}
+export interface ExtendedCommandSession {
+  sendBreakCommand: () => Promise<dbgp.BreakResponce>; // $ break -i TRANSACTION_ID
+}
+// #endregion client
