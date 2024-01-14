@@ -329,30 +329,30 @@ export const errorNumbers = [
   ...protocolErrorNumbers,
 ] as const;
 export type ErrorNumber = typeof errorNumbers[number];
-export interface ResponceError {
+export interface ResponseError {
   code: ErrorNumber;
 }
 // #endregion Error
 // #endregion data
 
 // #region Packet
-export type PacketName = 'init' | 'stream' | 'responce';
-export type Packet = InitPacket | StreamPacket | ResponcePacket;
+export type PacketName = 'init' | 'stream' | 'response';
+export type Packet = InitPacket | StreamPacket | ResponsePacket;
 export interface InitPacket {
-  init: InitResponce;
+  init: InitResponse;
 }
 export interface StreamPacket {
-  stream: StreamResponce;
+  stream: StreamResponse;
 }
-export interface ResponcePacket {
-  responce: CommandResponce;
+export interface ResponsePacket {
+  response: CommandResponse;
 }
 // #endregion Packet
 
-// #region Responce
+// #region Response
 // https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L2369C8-L2369C8
 // https://github.com/HotKeyIt/ahkdll/blob/6d186f5f7eced1b252bfc66eb9b361ff03aa3c0c/source/Debugger.cpp#L2300
-export interface InitResponce {
+export interface InitResponse {
   fileName: FileName;
   appId: AppId;
   ideKey: FloatNumber;
@@ -362,35 +362,35 @@ export interface InitResponce {
   language: LanguageName;
   protocolVersion: ProtocolVersion;
 }
-export interface StreamResponce {
+export interface StreamResponse {
   type: StreamType;
   encoding: Encoding;
   data: string;
 }
-export type CommandResponce
+export type CommandResponse
   = StatusResponse
   | FeatureGetResponse
   | FeatureSetResponse
   | ContinuationResponse
-  | BreakpointGetResponce
-  | BreakpointSetResponce
-  | BreakpointUpdateResponce
-  | BreakpointRemoveResponce
-  | BreakpointListResponce
-  | StackDepthResponce
-  | StackGetResponce
-  | ContextNamesResponce
-  | ContextGetResponce
+  | BreakpointGetResponse
+  | BreakpointSetResponse
+  | BreakpointUpdateResponse
+  | BreakpointRemoveResponse
+  | BreakpointListResponse
+  | StackDepthResponse
+  | StackGetResponse
+  | ContextNamesResponse
+  | ContextGetResponse
   | PropertyGetResponse
   | PropertySetResponse
   | PropertyValueResponse
-  | SourceResponce
-  | StdOutResponce
-  | StdErrResponce;
+  | SourceResponse
+  | StdOutResponse
+  | StdErrResponse;
 export interface CommandResponseBase {
   command: CommandName;
   transactionId: number;
-  error?: ResponceError;
+  error?: ResponseError;
 }
 
 export interface StatusResponse extends CommandResponseBase {
@@ -414,42 +414,42 @@ export interface ContinuationResponse extends StatusResponse {
   command: ContinuationCommandName;
   breakpoint?: Breakpoint;
 }
-export interface BreakpointGetResponce extends CommandResponseBase {
+export interface BreakpointGetResponse extends CommandResponseBase {
   command: 'breakpoint_get';
   breakpoint: Breakpoint;
 }
-export interface BreakpointSetResponce extends CommandResponseBase {
+export interface BreakpointSetResponse extends CommandResponseBase {
   command: 'breakpoint_set';
   state: BreakpointState;
   resolved: boolean;
 }
-export interface BreakpointUpdateResponce extends CommandResponseBase {
+export interface BreakpointUpdateResponse extends CommandResponseBase {
   command: 'breakpoint_update';
 }
-export interface BreakpointRemoveResponce extends CommandResponseBase {
+export interface BreakpointRemoveResponse extends CommandResponseBase {
   command: 'breakpoint_remove';
 }
-export interface BreakpointListResponce extends CommandResponseBase {
+export interface BreakpointListResponse extends CommandResponseBase {
   command: 'breakpoint_list';
   breakpoints: Breakpoint[];
 }
-export interface StackDepthResponce extends CommandResponseBase {
+export interface StackDepthResponse extends CommandResponseBase {
   command: 'stack_depth';
   depth: number;
 }
-export interface StackGetResponce extends CommandResponseBase {
+export interface StackGetResponse extends CommandResponseBase {
   command: 'stack_get';
   stacks: Stack[];
 }
-export interface ContextNamesResponce extends CommandResponseBase {
+export interface ContextNamesResponse extends CommandResponseBase {
   command: 'context_names';
   contexts: Context[];
 }
-export interface ContextGetResponce extends CommandResponseBase {
+export interface ContextGetResponse extends CommandResponseBase {
   command: 'context_get';
   context: Context;
 }
-export interface TypeMapGetResponce extends CommandResponseBase {
+export interface TypeMapGetResponse extends CommandResponseBase {
   types: TypeMap[];
 }
 export interface PropertySetResponse extends CommandResponseBase {
@@ -466,24 +466,24 @@ export interface PropertyValueResponse extends CommandResponseBase {
   size: number;
   encoding: Encoding | 'none';
 }
-export interface SourceResponce extends CommandResponseBase {
+export interface SourceResponse extends CommandResponseBase {
   command: 'source';
   success: boolean;
   data: string;
 }
-export interface StdOutResponce extends CommandResponseBase {
+export interface StdOutResponse extends CommandResponseBase {
   command: 'stdout';
   success: boolean;
 }
-export interface StdErrResponce extends CommandResponseBase {
+export interface StdErrResponse extends CommandResponseBase {
   command: 'stderr';
   success: boolean;
 }
-export interface BreakResponce extends CommandResponseBase {
+export interface BreakResponse extends CommandResponseBase {
   command: 'break';
   success: boolean;
 }
-// #endregion Responce
+// #endregion Response
 
 // #region client
 export type CommandSession = RequireCommandSession | ExtendedCommandSession;
@@ -497,25 +497,25 @@ export interface RequireCommandSession {
   sendStepOutCommand: () => Promise<ContinuationResponse>;                                                // $ step_out -i TRANSACTION_ID
   sendStopCommand: () => Promise<ContinuationResponse>;                                                   // $ stop -i TRANSACTION_ID
   sendDetachCommand: () => Promise<ContinuationResponse>;                                                 // $ detach -i TRANSACTION_ID
-  sendBreakpointGetCommand: () => Promise<BreakpointGetResponce>;                                         // $ breakpoint_get -i TRANSACTION_ID -d BREAKPOINT_ID
-  sendBreakpointSetCommand: (fileName: FileName, line: LineNumber) => Promise<BreakpointSetResponce>;     // $ breakpoint_set -i TRANSACTION_ID -t "line" -s STATE -f FILE_NAME -n LINE_NUMBER
-  sendExceptionBreakpointSetCommand: (exception: string) => Promise<BreakpointSetResponce>;               // $ breakpoint_set -i TRANSACTION_ID -t "exception" -s STATE -x EXCEPTION_NAME
-  sendBreakpointUpdateCommand: (breakpointId: BreakpointId) => Promise<BreakpointUpdateResponce>;         // $ breakpoint_update -i TRANSACTION_ID -d BREAKPOINT_ID
-  sendBreakpointRemoveCommand: (breakpointId: BreakpointId) => Promise<BreakpointRemoveResponce>;         // $ breakpoint_remove -i TRANSACTION_ID -d BREAKPOINT_ID
-  sendBreakpointListCommand: () => Promise<BreakpointListResponce>;                                       // $ breakpoint_list -i TRANSACTION_ID
-  sendStackDepthCommand: () => Promise<StackDepthResponce>;                                               // $ stack_depth -i TRANSACTION_ID
-  sendStackGetCommand: (stackDepth?: number) => Promise<StackGetResponce>;                                // $ stack_get -i TRANSACTION_ID [ -d STACK_DEPTH ]
-  sendContextNamesCommand: (stackDepth?: number) => Promise<ContextNamesResponce>;                        // $ context_names -i TRANSACTION_ID [ -d STACK_DEPTH ]
-  sendContextGetCommand: (contextId?: ContextId, depth?: number) => Promise<ContextGetResponce>;          // $ context_get -i TRANSACTION_ID [ -d STACK_DEPTH -c CONTEXT_NUMBER ]
-  sendTypeMapGetCommand: () => Promise<TypeMapGetResponce>;                                               // $ typemap_get -i TRANSACTION_ID
+  sendBreakpointGetCommand: () => Promise<BreakpointGetResponse>;                                         // $ breakpoint_get -i TRANSACTION_ID -d BREAKPOINT_ID
+  sendBreakpointSetCommand: (fileName: FileName, line: LineNumber) => Promise<BreakpointSetResponse>;     // $ breakpoint_set -i TRANSACTION_ID -t "line" -s STATE -f FILE_NAME -n LINE_NUMBER
+  sendExceptionBreakpointSetCommand: (exception: string) => Promise<BreakpointSetResponse>;               // $ breakpoint_set -i TRANSACTION_ID -t "exception" -s STATE -x EXCEPTION_NAME
+  sendBreakpointUpdateCommand: (breakpointId: BreakpointId) => Promise<BreakpointUpdateResponse>;         // $ breakpoint_update -i TRANSACTION_ID -d BREAKPOINT_ID
+  sendBreakpointRemoveCommand: (breakpointId: BreakpointId) => Promise<BreakpointRemoveResponse>;         // $ breakpoint_remove -i TRANSACTION_ID -d BREAKPOINT_ID
+  sendBreakpointListCommand: () => Promise<BreakpointListResponse>;                                       // $ breakpoint_list -i TRANSACTION_ID
+  sendStackDepthCommand: () => Promise<StackDepthResponse>;                                               // $ stack_depth -i TRANSACTION_ID
+  sendStackGetCommand: (stackDepth?: number) => Promise<StackGetResponse>;                                // $ stack_get -i TRANSACTION_ID [ -d STACK_DEPTH ]
+  sendContextNamesCommand: (stackDepth?: number) => Promise<ContextNamesResponse>;                        // $ context_names -i TRANSACTION_ID [ -d STACK_DEPTH ]
+  sendContextGetCommand: (contextId?: ContextId, depth?: number) => Promise<ContextGetResponse>;          // $ context_get -i TRANSACTION_ID [ -d STACK_DEPTH -c CONTEXT_NUMBER ]
+  sendTypeMapGetCommand: () => Promise<TypeMapGetResponse>;                                               // $ typemap_get -i TRANSACTION_ID
   sendPropertyGetCommand: (propertyLongName: string, depth?: number) => Promise<PropertyGetResponse>;     // $ property_get -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
   sendPropertySetCommand: (propertyLongName: string, depth?: number) => Promise<PropertySetResponse>;     // $ property_set -i TRANSACTION_ID -n PROPERTY_LONG_NAME -l DATA_LENGTH [ -d STACK_DEPTH ] -- DATA
   sendPropertyValueCommand: (propertyLongName: string, depth?: number) => Promise<PropertyValueResponse>; // $ property_value -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
-  sendSourceCommand: (fileName: FileName) => Promise<SourceResponce>;                                     // $ source -i TRANSACTION_ID -f FILEURI
-  sendStdOutCommand: (outputControl: OutputControl) => Promise<StdOutResponce>;                           // $ stdout -i transaction_id -c OUTPUT_CONTROL
-  sendStdErrCommand: (outputControl: OutputControl) => Promise<StdOutResponce>;                           // $ stderr -i transaction_id -c OUTPUT_CONTROL
+  sendSourceCommand: (fileName: FileName) => Promise<SourceResponse>;                                     // $ source -i TRANSACTION_ID -f FILEURI
+  sendStdOutCommand: (outputControl: OutputControl) => Promise<StdOutResponse>;                           // $ stdout -i transaction_id -c OUTPUT_CONTROL
+  sendStdErrCommand: (outputControl: OutputControl) => Promise<StdOutResponse>;                           // $ stderr -i transaction_id -c OUTPUT_CONTROL
 }
 export interface ExtendedCommandSession {
-  sendBreakCommand: () => Promise<BreakResponce>;                                                         // $ break -i TRANSACTION_ID
+  sendBreakCommand: () => Promise<BreakResponse>;                                                         // $ break -i TRANSACTION_ID
 }
 // #endregion client
