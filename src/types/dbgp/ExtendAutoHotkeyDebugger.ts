@@ -1,118 +1,251 @@
 /**
  * This file models a virtual debugger that pseudo-extends the features supported by DBGP but not by the AutoHotkey debugger.
  */
-import * as dbgp from './dbgp';
-import * as ahkdbg from './AutoHotkeyDebugger';
 
 // #region data
+// #region Version
+export type DecimalNumber = number;
+export type FloatNumber = number;
+export type MejorVersion = FloatNumber | DecimalNumber;
+export type MinorVersion = DecimalNumber;
+export type PatchVersion = DecimalNumber;
+export type PreReleaseVersion = DecimalNumber;
+export type PreReleaseId = 'alpha' | 'beta' | 'rc';
+// v1: x.x.y.z | v2: x.y.z
+export type AutoHotkeyVersion = `${MejorVersion}.${MinorVersion}.${PatchVersion}` | (string & { ThisIsLiteralUnionTrick: any });
+export interface ParsedAutoHotkeyVersion {
+  full: AutoHotkeyVersion;
+  mejor: MejorVersion;
+  minor: MinorVersion;
+  patch: PatchVersion;
+  preId: PreReleaseId;
+  preRelease: PreReleaseVersion;
+}
+export type ParseAutoHotkeyVersion = (a: AutoHotkeyVersion | ParsedAutoHotkeyVersion, b: AutoHotkeyVersion | ParsedAutoHotkeyVersion) => ParsedAutoHotkeyVersion;
+export type AutoHotkeyVersionCompare = (a: AutoHotkeyVersion | ParsedAutoHotkeyVersion, b: AutoHotkeyVersion | ParsedAutoHotkeyVersion) => number;
+// #endregion Version
+
 // #region FileName
-export type {
-  FileName,
-  FileUri,
-  VirtualFileUri,
-} from './AutoHotkeyDebugger';
+export type FileName = FileUri | VirtualFileUri;
+export type FileUri = `${'file://'}${string}`;
+export type VirtualFileUri = `${'dbgp://'}${string}`;
 // #endregion FileName
 
 // #region Stream
-export type {
-  StreamType,
-  Encoding,
-} from './AutoHotkeyDebugger';
+export type StreamType = 'stdout' | 'stderr';
+export type Encoding = 'base64' | (string & { ThisIsLiteralUnionTrick: any });
 // #endregion Stream
 
 // #region Status
-export type {
-  RunState,
-  StatusReason,
-} from './AutoHotkeyDebugger';
+export type RunState
+  = 'starting'
+  | 'stopping'
+  | 'stopped'
+  | 'running'
+  | 'break';
+export type StatusReason = 'ok' | 'error' | 'aborted' | 'exception';
 // #endregion Status
 
 // #region Command
-export type {
-  CommandName,
-  BreakpointCommandName,
-  StackCommandName,
-  ContextCommandName,
-  PropertyCommandName,
-  ExtendedCommandName,
-  RequireContinuationCommandName,
-  OptionalContinuationCommandName,
-  ContinuationCommandName,
-} from './AutoHotkeyDebugger';
+export type CommandName
+  = ContinuationCommandName
+  | 'status'
+  | StackCommandName
+  | ContextCommandName
+  | PropertyCommandName
+  | 'feature_get'
+  | 'feature_set'
+  | BreakpointCommandName
+  | 'stdout'
+  | 'stderr'
+  | 'typemap_get'
+  | 'source'
+  | ExtendedCommandName;
+
+export type RequireContinuationCommandName
+  = 'run'
+  | 'step_into'
+  | 'step_over'
+  | 'step_out'
+  | 'stop';
+export type OptionalContinuationCommandName = 'detach';
+export type ContinuationCommandName = RequireContinuationCommandName | OptionalContinuationCommandName;
+
+export type BreakpointCommandName
+  = 'breakpoint_set'
+  | 'breakpoint_get'
+  | 'breakpoint_update'
+  | 'breakpoint_remove'
+  | 'breakpoint_list';
+export type StackCommandName
+  = 'stack_depth'
+  | 'stack_get';
+export type ContextCommandName
+  = 'context_names'
+  | 'context_get';
+export type PropertyCommandName
+  = 'property_get'
+  | 'property_set'
+  | 'property_value';
+export type ExtendedCommandName = 'break';
 // #endregion Command
 
 // #region Feature
-export type {
-  AppId,
-  ProtocolVersion,
-  LanguageName,
-  DebuggerParent,
-  FeatureName,
-  Features,
-} from './AutoHotkeyDebugger';
+export type AppId = 'AutoHotkey';
+export type ProtocolVersion = '1.0' | (string & { ThisIsLiteralUnionTrick: any });
+export type LanguageName = AppId;
+export type DebuggerParent = '';
+
+export type FeatureName
+  = 'language_supports_threads'
+  | 'language_name'
+  | 'language_version'
+  | 'encoding'
+  | 'protocol_version'
+  | 'supports_async'
+  | 'breakpoint_types'
+  | 'multiple_sessions'
+  | 'max_children'
+  | 'max_data'
+  | 'max_depth';
+
+export interface FeatureRecord {
+  languageSupportsThreads?: boolean;
+  languageName?: LanguageName;
+  languageVersion?: AutoHotkeyVersion;
+  encoding?: 'UTF-8';
+  protocolVersion?: ProtocolVersion;
+  supportsAsync?: boolean;
+  breakpointTypes?: Record<BreakpointType, boolean>;
+  multipleSessions: boolean;
+  maxData: number;
+  maxChildren: number;
+  maxDepth: number;
+}
 // #endregion Feature
 
 // #region Breakpoint
+export type BreakpointId = DecimalNumber;
 export type BreakpointType = 'line' | 'call' | 'return' | 'exception' | 'conditional';
-export type { BreakpointState } from './AutoHotkeyDebugger';
-export type {
-  Condition,
-  ExpressionCondition,
-  HitConditionOperator,
-  HitCondition,
-} from './dbgp';
+export type BreakpointState = 'enabled' | 'disabled';
+export type Condition = ExpressionCondition | HitCondition | (ExpressionCondition & HitCondition);
+export type ExpressionCondition = { expression: string };
+export type HitConditionOperator = '>=' | '==' | '%';
+export type HitCondition = { operator?: HitConditionOperator; value: string };
+export interface BreakpointBase {
+  type: BreakpointType;
+  id: number;
+  state: BreakpointState;
+  temporary: boolean;
+  readonly resolved: boolean;
+  hitCount?: string;
+  hitValue?: number;
+  hitCondition?: string;
+}
 export type Breakpoint
-  = dbgp.LineBreakpoint
-  | dbgp.FunctionBreakpoint
-  | dbgp.ReturnBreakpoint
-  | dbgp.ExceptionBreakpoint
-  | dbgp.ConditionalBreakpoint;
-export type {
-  LineBreakpoint,
-  FunctionBreakpoint,
-  ReturnBreakpoint,
-  ExceptionBreakpoint,
-  ConditionalBreakpoint,
-} from './dbgp';
+  = LineBreakpoint
+  | FunctionBreakpoint
+  | ReturnBreakpoint
+  | ExceptionBreakpoint
+  | ConditionalBreakpoint;
+export interface LineBreakpoint extends BreakpointBase {
+  type: 'line';
+  line: DecimalNumber;
+  fileName: FileName;
+}
+export interface CallBreakpoint extends BreakpointBase {
+  type: 'call';
+  functionName: string;
+}
+export type FunctionBreakpoint = CallBreakpoint;
+export interface ReturnBreakpoint extends BreakpointBase {
+  type: 'return';
+  functionName: string;
+}
+export interface ExceptionBreakpoint extends BreakpointBase {
+  type: 'exception';
+  exception: string;
+}
+export interface ConditionalBreakpoint extends BreakpointBase {
+  type: 'conditional';
+  fileName: FileName;
+  expressionType: 'conditional';
+  expression: string;
+}
 // #endregion Breakpoint
 
 // #region Stack
-export type {
-  StackType,
-  LineNumber,
-  CharacterNumber,
-  CmdRange,
-  Stack,
-} from './AutoHotkeyDebugger';
+export type StackType = 'file';
+export type LineNumber = DecimalNumber;
+export type CharacterNumber = DecimalNumber;
+export type CmdRange = `${LineNumber}:${CharacterNumber}`;
+export interface Stack {
+  level: number;
+  type: StackType;
+  fileName: FileName;
+  line: number;
+  where?: string;
+  cmdbegin?: CmdRange;
+  cmdend?: CmdRange;
+}
 // #endregion Stack
 
 // #region Context
-export type {
-  ContextNames,
-  Context,
-} from './AutoHotkeyDebugger';
+export const enum ContextId {
+  Local = 0,
+  Global = 1,
+  Static = 2,
+}
+export type ContextNames = 'Local' | 'Global' | 'Static';
+export interface Context {
+  id: ContextId;
+  name: ContextNames;
+}
 // #endregion Context
 
 // #region TypeMap
-export type {
-  DataTypeName,
-  DataType,
-  TypeMap,
-} from './dbgp';
+export type DataTypeName = 'string' | 'integer' | 'float';
+export type DataType = 'string' | 'int' | 'float' | 'object';
+export interface TypeMap {
+  name: DataTypeName;
+  type: DataType;
+}
 // #endregion TypeMap
 
 // #region Property
-export type {
-  UndefinedType,
-  PropertyFacet,
-  Property,
-  PrimitiveProperty,
-  ObjectProperty,
-} from './AutoHotkeyDebugger';
+export type UndefinedType = 'undefined';
+export type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll';
+export type Property = PrimitiveProperty | ObjectProperty;
+export interface PropertyBase {
+  name: string;
+  fullName: string;
+  type: DataType | UndefinedType;
+  constant: boolean;
+  facet?: PropertyFacet;
+  size: number;
+  key?: number;
+  address: number;
+  encoding: Encoding;
+}
+export interface PrimitiveProperty extends PropertyBase {
+  value: string;
+}
+export interface ObjectProperty extends PropertyBase {
+  className: string;
+  page: number;
+  pageSize: number;
+  hasChildren: boolean;
+  children: Property[];
+  numChildren?: number;
+}
 // #endregion Property
 
 // #region StdOut StdErr
-export type { OutputControl } from './dbgp';
+export const enum OutputControl {
+  Disable = 0,
+  Copy = 1,
+  Redirect = 2,
+}
 // #endregion StdOut StdErr
 
 // #region StdIn
@@ -124,123 +257,245 @@ export type { OutputControl } from './dbgp';
 // #endregion SpawnPoint
 
 // #region Error
-export type {
-  ErrorNumber,
-  ResponceError,
-} from './AutoHotkeyDebugger';
+// https://xdebug.org/docs/dbgp#error-codes
+export const commandParsingErrorNumbers = [
+  0,        // > no error
+  1,        // > parse error in command
+  2,        // > duplicate arguments in command
+  3,        // > invalid options (ie, missing a required option, invalid value for a passed option, not supported feature)
+  4,        // > Unimplemented command
+  5,        // > Command not available (Is used for async commands. For instance if the engine is in state "run" then only "break" and "status" are available).
+] as const;
+export const fileRelatedErrorNumbers = [
+  100,      // > can not open file (as a reply to a "source" command if the requested source file can't be opened)
+  101,      // > stream redirect failed
+] as const;
+export const breakpointOrCodeflowErrorNumbers = [
+  200,      // > breakpoint could not be set (for some reason the breakpoint could not be set due to problems registering it)
+  201,      // > breakpoint type not supported (for example I don't support 'watch' yet and thus return this error)
+  202,      // > invalid breakpoint (the IDE tried to set a breakpoint on a line that does not exist in the file (ie "line 0" or lines past the end of the file)
+  203,      // > no code on breakpoint line (the IDE tried to set a breakpoint on a line which does not have any executable code. The debugger engine is NOT required to return this type if it is impossible to determine if there is code on a given location. (For example, in the PHP debugger backend this will only be returned in some special cases where the current scope falls into the scope of the breakpoint to be set)).
+  204,      // > Invalid breakpoint state (using an unsupported breakpoint state was attempted)
+  205,      // > No such breakpoint (used in breakpoint_get etc. to show that there is no breakpoint with the given ID)
+  206,      // > Error evaluating code (use from eval() (or perhaps property_get for a full name get))
+  207,      // > Invalid expression (the expression used for a non-eval() was invalid)
+] as const;
+export const dataErrorNumbers = [
+  300,      // > Can not get property (when the requested property to get did not exist, this is NOT used for an existing but uninitialized property, which just gets the type "uninitialised" (See: PreferredTypeNames)).
+  301,      // > Stack depth invalid (the -d stack depth parameter did not exist (ie, there were less stack elements than the number requested) or the parameter was < 0)
+  302,      // > Context invalid (an non existing context was requested)
+] as const;
+export const protocolErrorNumbers = [
+  900,      // > Encoding not supported
+  998,      // > An internal exception in the debugger occurred
+  999,      // > Unknown error
+] as const;
+export const errorNumbers = [
+  ...commandParsingErrorNumbers,
+  ...fileRelatedErrorNumbers,
+  ...breakpointOrCodeflowErrorNumbers,
+  ...dataErrorNumbers,
+  ...protocolErrorNumbers,
+] as const;
+export type ErrorNumber = typeof errorNumbers[number];
+export interface ResponceError {
+  code: ErrorNumber;
+}
 // #endregion Error
-
-// #region Version
-export type {
-  DecimalNumber,
-  FloatNumber,
-  MejorVersion,
-  MinorVersion,
-  PatchVersion,
-  PreReleaseVersion,
-  PreReleaseId,
-  AutoHotkeyVersion,
-  ParsedAutoHotkeyVersion,
-  ParseAutoHotkeyVersion,
-  AutoHotkeyVersionCompare,
-} from './AutoHotkeyDebugger';
-// #endregion Version
 // #endregion data
 
 // #region Packet
-export type {
-  PacketName,
-  Packet,
-  InitPacket,
-  StreamPacket,
-  ResponcePacket,
-} from './AutoHotkeyDebugger';
+export type PacketName = 'init' | 'stream' | 'responce';
+export type Packet = InitPacket | StreamPacket | ResponcePacket;
+export interface InitPacket {
+  init: InitResponce;
+}
+export interface StreamPacket {
+  stream: StreamResponce;
+}
+export interface ResponcePacket {
+  responce: CommandResponce;
+}
 // #endregion Packet
 
 // #region Responce
-export type {
-  InitResponce,
-  StreamResponce,
-  StatusResponse,
-} from './AutoHotkeyDebugger';
+export interface InitResponce {
+  fileName: FileName;
+  appId: AppId;
+  ideKey: FloatNumber;
+  session: FloatNumber;
+  thread: DecimalNumber;
+  parent: DebuggerParent;
+  language: LanguageName;
+  protocolVersion: ProtocolVersion;
+}
+export interface StreamResponce {
+  type: StreamType;
+  encoding: Encoding;
+  data: string;
+}
+export type CommandResponce
+  = StatusResponse
+  | FeatureGetResponse
+  | FeatureSetResponse
+  | ContinuationResponse
+  | BreakpointGetResponce
+  | BreakpointSetResponce
+  | BreakpointUpdateResponce
+  | BreakpointRemoveResponce
+  | BreakpointListResponce
+  | StackDepthResponce
+  | StackGetResponce
+  | ContextNamesResponce
+  | ContextGetResponce
+  | PropertyGetResponse
+  | PropertySetResponse
+  | PropertyValueResponse
+  | SourceResponce
+  | StdOutResponce
+  | StdErrResponce;
+export interface CommandResponseBase {
+  command: CommandName;
+  transactionId: number;
+  error?: ResponceError;
+}
 
-export type CommandResponce = '';
-export type {
-  FeatureGetResponse,
-  FeatureSetResponse,
-} from './AutoHotkeyDebugger';
+export interface StatusResponse extends CommandResponseBase {
+  status: RunState;
+  reason: StatusReason;
+}
+// https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L482
+export interface FeatureGetResponse extends CommandResponseBase {
+  command: 'feature_get';
+  featureName: FeatureName;
+  supported: boolean;
+}
 
-export interface ContinuationResponse extends ahkdbg.StatusResponse {
-  command: ahkdbg.ContinuationCommandName;
+// https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L538
+export interface FeatureSetResponse extends CommandResponseBase {
+  command: 'feature_set';
+  featureName: FeatureName;
+  success: boolean;
+}
+export interface ContinuationResponse extends StatusResponse {
+  command: ContinuationCommandName;
   breakpoint?: Breakpoint;
 }
-export interface BreakpointGetResponce extends dbgp.CommandResponseBase {
+export interface BreakpointGetResponce extends CommandResponseBase {
   command: 'breakpoint_get';
   breakpoint: Breakpoint;
 }
-
-export type {
-  BreakpointSetResponce,
-  BreakpointUpdateResponce,
-  BreakpointRemoveResponce,
-} from './AutoHotkeyDebugger';
-
-export interface BreakpointListResponce extends dbgp.CommandResponseBase {
+export interface BreakpointSetResponce extends CommandResponseBase {
+  command: 'breakpoint_set';
+  state: BreakpointState;
+  resolved: boolean;
+}
+export interface BreakpointUpdateResponce extends CommandResponseBase {
+  command: 'breakpoint_update';
+}
+export interface BreakpointRemoveResponce extends CommandResponseBase {
+  command: 'breakpoint_remove';
+}
+export interface BreakpointListResponce extends CommandResponseBase {
   command: 'breakpoint_list';
   breakpoints: Breakpoint[];
 }
-
-export type {
-  StackDepthResponce,
-  StackGetResponce,
-  ContextNamesResponce,
-  ContextGetResponce,
-  PropertySetResponse,
-  PropertyGetResponse,
-  PropertyValueResponse,
-  SourceResponce,
-  StdOutResponce,
-  StdErrResponce,
-  BreakResponce,
-} from './AutoHotkeyDebugger';
+export interface StackDepthResponce extends CommandResponseBase {
+  command: 'stack_depth';
+  depth: number;
+}
+export interface StackGetResponce extends CommandResponseBase {
+  command: 'stack_get';
+  stacks: Stack[];
+}
+export interface ContextNamesResponce extends CommandResponseBase {
+  command: 'context_names';
+  contexts: Context[];
+}
+export interface ContextGetResponce extends CommandResponseBase {
+  command: 'context_get';
+  context: Context;
+}
+export interface TypeMapGetResponce extends CommandResponseBase {
+  types: TypeMap[];
+}
+export interface PropertySetResponse extends CommandResponseBase {
+  command: 'property_set';
+  success: boolean;
+}
+export interface PropertyGetResponse extends CommandResponseBase {
+  command: 'property_get';
+  property: Property;
+}
+export interface PropertyValueResponse extends CommandResponseBase {
+  command: 'property_value';
+  data: string;
+  size: number;
+  encoding: Encoding | 'none';
+}
+export interface SourceResponce extends CommandResponseBase {
+  command: 'source';
+  success: boolean;
+  data: string;
+}
+export interface StdOutResponce extends CommandResponseBase {
+  command: 'stdout';
+  success: boolean;
+}
+export interface StdErrResponce extends CommandResponseBase {
+  command: 'stderr';
+  success: boolean;
+}
+export interface BreakResponce extends CommandResponseBase {
+  command: 'break';
+  success: boolean;
+}
 // #endregion Responce
 
 // #region client
-// #region client
+export type MessageHandler<P> = (packet: P[keyof P]) => P;
+export interface MessageHandlers {
+  init: MessageHandler<InitPacket>;
+  stream: MessageHandler<StreamPacket>;
+  responce: MessageHandler<ResponcePacket>;
+}
+export interface Session extends RequireCommandSession, ExtendedCommandSession {
+  new ();
+}
 export type CommandSession = RequireCommandSession | ExtendedCommandSession;
 export interface RequireCommandSession {
-  sendStatusCommand: () => Promise<ahkdbg.StatusResponse>;                                                                                                      // $ status -i TRANSACTION_ID
-  sendFeatureGetCommand: (featureName: ahkdbg.FeatureName) => Promise<ahkdbg.FeatureSetResponse>;                                                               // $ feature_get -i TRANSACTION_ID -n FEATURE_NAME
-  sendFeatureSetCommand: (featureName: ahkdbg.FeatureName, value: string) => Promise<ahkdbg.FeatureSetResponse>;                                                // $ feature_set -i TRANSACTION_ID -n FEATURE_NAME -v VALUE
-  sendRunCommand: () => Promise<ahkdbg.ContinuationResponse>;                                                                                                   // $ run -i TRANSACTION_ID
-  sendStepIntoCommand: () => Promise<ahkdbg.ContinuationResponse>;                                                                                              // $ step_into -i TRANSACTION_ID
-  sendStepOverCommand: () => Promise<ahkdbg.ContinuationResponse>;                                                                                              // $ step_over -i transaction_id
-  sendStepOutCommand: () => Promise<ahkdbg.ContinuationResponse>;                                                                                               // $ step_out -i TRANSACTION_ID
-  sendStopCommand: () => Promise<ahkdbg.ContinuationResponse>;                                                                                                  // $ stop -i TRANSACTION_ID
-  sendDetachCommand: () => Promise<ahkdbg.ContinuationResponse>;                                                                                                // $ detach -i TRANSACTION_ID
-  sendBreakpointGetCommand: () => Promise<ahkdbg.BreakpointGetResponce>;                                                                                        // $ breakpoint_get -i TRANSACTION_ID -d BREAKPOINT_ID
-  sendBreakpointSetCommand: (fileName: ahkdbg.FileName, line: ahkdbg.LineNumber, condition?: dbgp.Condition) => Promise<ahkdbg.BreakpointSetResponce>;          // $ breakpoint_set -i TRANSACTION_ID -t "line" -s STATE -f FILE_NAME -n LINE_NUMBER
-  sendConditionalBreakpointSetCommand: (fileName: ahkdbg.FileName, line: ahkdbg.LineNumber, condition: dbgp.Condition) => Promise<dbgp.BreakpointSetResponce>;  // $ breakpoint_set -i TRANSACTION_ID -t "conditional" -s STATE -f FILE_NAME -n LINE_NUMBER [-h HIT_VALUE -o HIT_CONDITION -- base64(EXPRESSION)]
-  sendCallBreakpointSetCommand: (functionName: string, hitCondition?: dbgp.HitCondition) => Promise<ahkdbg.BreakpointSetResponce>;                              // $ breakpoint_set -i TRANSACTION_ID -t "call" -s STATE -m FUNCTION_NAME [ -h HIT_VALUE -o HIT_CONDITION ]
+  sendStatusCommand: () => Promise<StatusResponse>;                                                                                                      // $ status -i TRANSACTION_ID
+  sendFeatureGetCommand: (featureName: FeatureName) => Promise<FeatureSetResponse>;                                                               // $ feature_get -i TRANSACTION_ID -n FEATURE_NAME
+  sendFeatureSetCommand: (featureName: FeatureName, value: string) => Promise<FeatureSetResponse>;                                                // $ feature_set -i TRANSACTION_ID -n FEATURE_NAME -v VALUE
+  sendRunCommand: () => Promise<ContinuationResponse>;                                                                                                   // $ run -i TRANSACTION_ID
+  sendStepIntoCommand: () => Promise<ContinuationResponse>;                                                                                              // $ step_into -i TRANSACTION_ID
+  sendStepOverCommand: () => Promise<ContinuationResponse>;                                                                                              // $ step_over -i transaction_id
+  sendStepOutCommand: () => Promise<ContinuationResponse>;                                                                                               // $ step_out -i TRANSACTION_ID
+  sendStopCommand: () => Promise<ContinuationResponse>;                                                                                                  // $ stop -i TRANSACTION_ID
+  sendDetachCommand: () => Promise<ContinuationResponse>;                                                                                                // $ detach -i TRANSACTION_ID
+  sendBreakpointGetCommand: () => Promise<BreakpointGetResponce>;                                                                                        // $ breakpoint_get -i TRANSACTION_ID -d BREAKPOINT_ID
+  sendBreakpointSetCommand: (fileName: FileName, line: LineNumber, condition?: Condition) => Promise<BreakpointSetResponce>;          // $ breakpoint_set -i TRANSACTION_ID -t "line" -s STATE -f FILE_NAME -n LINE_NUMBER
+  sendConditionalBreakpointSetCommand: (fileName: FileName, line: LineNumber, condition: Condition) => Promise<BreakpointSetResponce>;  // $ breakpoint_set -i TRANSACTION_ID -t "conditional" -s STATE -f FILE_NAME -n LINE_NUMBER [-h HIT_VALUE -o HIT_CONDITION -- base64(EXPRESSION)]
+  sendCallBreakpointSetCommand: (functionName: string, hitCondition?: HitCondition) => Promise<BreakpointSetResponce>;                              // $ breakpoint_set -i TRANSACTION_ID -t "call" -s STATE -m FUNCTION_NAME [ -h HIT_VALUE -o HIT_CONDITION ]
   sendFunctionBreakpointSetCommand: RequireCommandSession['sendCallBreakpointSetCommand'];                                                                      //
-  sendReturnBreakpointSetCommand: (functionName: string) => Promise<ahkdbg.BreakpointSetResponce>;                                                              // $ breakpoint_set -i TRANSACTION_ID -t "return" -s STATE -m FUNCTION_NAME [ -h HIT_VALUE -o HIT_CONDITION ]
-  sendExceptionBreakpointSetCommand: (exception: string) => Promise<ahkdbg.BreakpointSetResponce>;                                                              // $ breakpoint_set -i TRANSACTION_ID -t "exception" -s STATE -x EXCEPTION_NAME [ -h HIT_VALUE -o HIT_CONDITION ]
-  sendBreakpointUpdateCommand: (breakpointId: ahkdbg.BreakpointId) => Promise<ahkdbg.BreakpointUpdateResponce>;                                                 // $ breakpoint_update -i TRANSACTION_ID -d BREAKPOINT_ID [ -s STATE -n LINE_NUMBER -h HIT_VALUE -o HIT_CONDITION ]
-  sendBreakpointRemoveCommand: (breakpointId: ahkdbg.BreakpointId) => Promise<ahkdbg.BreakpointRemoveResponce>;                                                 // $ breakpoint_remove -i TRANSACTION_ID -d BREAKPOINT_ID
-  sendBreakpointListCommand: () => Promise<ahkdbg.BreakpointListResponce>;                                                                                      // $ breakpoint_list -i TRANSACTION_ID
-  sendStackDepthCommand: () => Promise<ahkdbg.StackDepthResponce>;                                                                                              // $ stack_depth -i TRANSACTION_ID
-  sendStackGetCommand: (stackDepth?: number) => Promise<ahkdbg.StackGetResponce>;                                                                               // $ stack_get -i TRANSACTION_ID [ -d STACK_DEPTH ]
-  sendContextNamesCommand: (stackDepth?: number) => Promise<ahkdbg.ContextNamesResponce>;                                                                       // $ context_names -i TRANSACTION_ID [ -d STACK_DEPTH ]
-  sendContextGetCommand: (contextId?: ahkdbg.ContextId, depth?: number) => Promise<ahkdbg.ContextGetResponce>;                                                  // $ context_get -i TRANSACTION_ID [ -d STACK_DEPTH -c CONTEXT_NUMBER ]
-  sendTypeMapGetCommand: () => Promise<ahkdbg.TypeMapGetResponce>;                                                                                              // $ typemap_get -i TRANSACTION_ID
-  sendPropertyGetCommand: (propertyLongName: string, depth?: number) => Promise<ahkdbg.PropertyGetResponse>;                                                    // $ property_get -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
-  sendPropertySetCommand: (propertyLongName: string, depth?: number) => Promise<ahkdbg.PropertySetResponse>;                                                    // $ property_set -i TRANSACTION_ID -n PROPERTY_LONG_NAME -l DATA_LENGTH [ -d STACK_DEPTH ] -- DATA
-  sendPropertyValueCommand: (propertyLongName: string, depth?: number) => Promise<ahkdbg.PropertyValueResponse>;                                                // $ property_value -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
-  sendSourceCommand: (fileName: ahkdbg.FileName) => Promise<ahkdbg.SourceResponce>;                                                                             // $ source -i TRANSACTION_ID -f FILEURI
-  sendStdOutCommand: (outputControl: ahkdbg.OutputControl) => Promise<ahkdbg.StdOutResponce>;                                                                   // $ stdout -i transaction_id -c OUTPUT_CONTROL
-  sendStdErrCommand: (outputControl: ahkdbg.OutputControl) => Promise<ahkdbg.StdOutResponce>;                                                                   // $ stderr -i transaction_id -c OUTPUT_CONTROL
+  sendReturnBreakpointSetCommand: (functionName: string) => Promise<BreakpointSetResponce>;                                                              // $ breakpoint_set -i TRANSACTION_ID -t "return" -s STATE -m FUNCTION_NAME [ -h HIT_VALUE -o HIT_CONDITION ]
+  sendExceptionBreakpointSetCommand: (exception: string) => Promise<BreakpointSetResponce>;                                                              // $ breakpoint_set -i TRANSACTION_ID -t "exception" -s STATE -x EXCEPTION_NAME [ -h HIT_VALUE -o HIT_CONDITION ]
+  sendBreakpointUpdateCommand: (breakpointId: BreakpointId) => Promise<BreakpointUpdateResponce>;                                                 // $ breakpoint_update -i TRANSACTION_ID -d BREAKPOINT_ID [ -s STATE -n LINE_NUMBER -h HIT_VALUE -o HIT_CONDITION ]
+  sendBreakpointRemoveCommand: (breakpointId: BreakpointId) => Promise<BreakpointRemoveResponce>;                                                 // $ breakpoint_remove -i TRANSACTION_ID -d BREAKPOINT_ID
+  sendBreakpointListCommand: () => Promise<BreakpointListResponce>;                                                                                      // $ breakpoint_list -i TRANSACTION_ID
+  sendStackDepthCommand: () => Promise<StackDepthResponce>;                                                                                              // $ stack_depth -i TRANSACTION_ID
+  sendStackGetCommand: (stackDepth?: number) => Promise<StackGetResponce>;                                                                               // $ stack_get -i TRANSACTION_ID [ -d STACK_DEPTH ]
+  sendContextNamesCommand: (stackDepth?: number) => Promise<ContextNamesResponce>;                                                                       // $ context_names -i TRANSACTION_ID [ -d STACK_DEPTH ]
+  sendContextGetCommand: (contextId?: ContextId, depth?: number) => Promise<ContextGetResponce>;                                                  // $ context_get -i TRANSACTION_ID [ -d STACK_DEPTH -c CONTEXT_NUMBER ]
+  sendTypeMapGetCommand: () => Promise<TypeMapGetResponce>;                                                                                              // $ typemap_get -i TRANSACTION_ID
+  sendPropertyGetCommand: (propertyLongName: string, depth?: number) => Promise<PropertyGetResponse>;                                                    // $ property_get -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
+  sendPropertySetCommand: (propertyLongName: string, depth?: number) => Promise<PropertySetResponse>;                                                    // $ property_set -i TRANSACTION_ID -n PROPERTY_LONG_NAME -l DATA_LENGTH [ -d STACK_DEPTH ] -- DATA
+  sendPropertyValueCommand: (propertyLongName: string, depth?: number) => Promise<PropertyValueResponse>;                                                // $ property_value -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
+  sendSourceCommand: (fileName: FileName) => Promise<SourceResponce>;                                                                             // $ source -i TRANSACTION_ID -f FILEURI
+  sendStdOutCommand: (outputControl: OutputControl) => Promise<StdOutResponce>;                                                                   // $ stdout -i transaction_id -c OUTPUT_CONTROL
+  sendStdErrCommand: (outputControl: OutputControl) => Promise<StdOutResponce>;                                                                   // $ stderr -i transaction_id -c OUTPUT_CONTROL
 }
 export interface ExtendedCommandSession {
-  sendBreakCommand: () => Promise<ahkdbg.BreakResponce>;                                                                                                        // $ break -i TRANSACTION_ID
+  sendBreakCommand: () => Promise<BreakResponce>;                                                                                                        // $ break -i TRANSACTION_ID
 }
 // #endregion client

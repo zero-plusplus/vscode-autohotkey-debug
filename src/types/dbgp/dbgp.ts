@@ -4,8 +4,10 @@
  */
 
 // #region data
+// #region Version
 export type DecimalNumber = number;
 export type FloatNumber = number;
+// #endregion Version
 
 // #region FileName
 export type FileName = FileUri | VirtualFileUri;
@@ -50,6 +52,18 @@ export type CommandName
 | 'stdout'
 | 'stderr'
 | ExtendedCommandName;
+
+// https://xdebug.org/docs/dbgp#continuation-commands
+export type RequireContinuationCommandName
+  = 'run'         // > starts or resumes the script until a new breakpoint is reached, or the end of the script is reached.
+  | 'step_into'   // > steps to the next statement, if there is a function call involved it will break on the first statement in that function
+  | 'step_over'   // > steps to the next statement, if there is a function call on the line from which the step_over is issued then the debugger engine will stop at the statement after the function call in the same scope as from where the command was issued
+  | 'step_out'    // > steps out of the current scope and breaks on the statement after returning from the current function. (Also called 'finish' in GDB)
+  | 'stop';       // > ends execution of the script immediately, the debugger engine may not respond, though if possible should be designed to do so. The script will be terminated right away and be followed by a disconnection of the network connection from the IDE (and debugger engine if required in multi request apache processes).
+export type OptionalContinuationCommandName
+  = 'detach';     // > stops interaction with the debugger engine. Once this command is executed, the IDE will no longer be able to communicate with the debugger engine. This does not end execution of the script as does the stop command above, but rather detaches from debugging. Support of this continuation command is optional, and the IDE should verify support for it via the feature_get command. If the IDE has created stdin/stdout/stderr pipes for execution of the script (eg. an interactive shell or other console to catch script output), it should keep those open and usable by the process until the process has terminated normally.
+export type ContinuationCommandName = RequireContinuationCommandName | OptionalContinuationCommandName;
+
 export type BreakpointCommandName
   = 'breakpoint_set'
   | 'breakpoint_get'
@@ -81,17 +95,6 @@ export type ExtendedCommandName
   | 'break'
   | EvalCommandName
   | SpawnPointCommandName;
-
-// https://xdebug.org/docs/dbgp#continuation-commands
-export type RequireContinuationCommandName
-  = 'run'         // > starts or resumes the script until a new breakpoint is reached, or the end of the script is reached.
-  | 'step_into'   // > steps to the next statement, if there is a function call involved it will break on the first statement in that function
-  | 'step_over'   // > steps to the next statement, if there is a function call on the line from which the step_over is issued then the debugger engine will stop at the statement after the function call in the same scope as from where the command was issued
-  | 'step_out'    // > steps out of the current scope and breaks on the statement after returning from the current function. (Also called 'finish' in GDB)
-  | 'stop';       // > ends execution of the script immediately, the debugger engine may not respond, though if possible should be designed to do so. The script will be terminated right away and be followed by a disconnection of the network connection from the IDE (and debugger engine if required in multi request apache processes).
-export type OptionalContinuationCommandName
-  = 'detach';     // > stops interaction with the debugger engine. Once this command is executed, the IDE will no longer be able to communicate with the debugger engine. This does not end execution of the script as does the stop command above, but rather detaches from debugging. Support of this continuation command is optional, and the IDE should verify support for it via the feature_get command. If the IDE has created stdin/stdout/stderr pipes for execution of the script (eg. an interactive shell or other console to catch script output), it should keep those open and usable by the process until the process has terminated normally.
-export type ContinuationCommandName = RequireContinuationCommandName | OptionalContinuationCommandName;
 // #endregion Command
 
 // #region Feature
@@ -123,6 +126,7 @@ export type FeatureName = RequireContinuationCommandName | OptionalFeatureName;
 
 // #region Breakpoint
 // https://xdebug.org/docs/dbgp#breakpoints
+export type BreakpointId = DecimalNumber;
 export type BreakpointType
   = 'line'              // > break on the given lineno in the given file
   | 'call'              // > break on entry into new stack for function name
@@ -136,14 +140,6 @@ export type Condition = ExpressionCondition | HitCondition | (ExpressionConditio
 export type ExpressionCondition = { expression: string };
 export type HitConditionOperator = '>=' | '==' | '%';
 export type HitCondition = { operator?: HitConditionOperator; value: string };
-
-export type BreakpointId = DecimalNumber;
-export interface BreakpointGetArgument {
-  type: BreakpointType;
-  state: boolean;
-  fileName: FileName;
-  line;
-}
 export interface BreakpointBase {
   type: BreakpointType;
   id: number;
@@ -333,7 +329,7 @@ export interface ResponceError {
 
 // #region Packet
 export type PacketName = 'init' | 'stream' | 'responce' | 'notify';
-export type Packet = InitPacket | StreamPacket | NotifyResponce;
+export type Packet = InitPacket | StreamPacket | ResponcePacket | NotifyResponce;
 
 // https://xdebug.org/docs/dbgp#connection-initialization
 export interface InitPacket {
