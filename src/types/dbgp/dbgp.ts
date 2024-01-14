@@ -131,11 +131,13 @@ export type BreakpointType
   | 'conditional'       // > break when the given expression is true at the given filename and line number or just in given filename
   | 'watch';            // > break on write of the variable or address defined by the expression argument
 export type BreakpointState = 'enabled' | 'disabled';
-export type HitConditionOperator = '>=' | '==' | '%';
-export type ExpressionCondition = { expression: string };
-export type HitCondition = { operator?: HitConditionOperator; value: string };
-export type BreakpointId = DecimalNumber;
+
 export type Condition = ExpressionCondition | HitCondition | (ExpressionCondition & HitCondition);
+export type ExpressionCondition = { expression: string };
+export type HitConditionOperator = '>=' | '==' | '%';
+export type HitCondition = { operator?: HitConditionOperator; value: string };
+
+export type BreakpointId = DecimalNumber;
 export interface BreakpointGetArgument {
   type: BreakpointType;
   state: boolean;

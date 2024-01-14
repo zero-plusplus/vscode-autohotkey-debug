@@ -137,6 +137,7 @@ export interface Features {
 export type BreakpointType = 'line' | 'exception';
 export type {
   BreakpointState,
+  BreakpointId,
   Breakpoint,
   LineBreakpoint,
   FunctionBreakpoint,
@@ -163,6 +164,7 @@ export interface Stack {
 // #endregion Stack
 
 // #region Context
+export type { ContextId } from './dbgp';
 export type ContextNames = 'Local' | 'Global' | 'Static';
 export interface Context {
   id: number;
@@ -171,8 +173,8 @@ export interface Context {
 // #endregion Context
 
 // #region TypeMap
-export type DataTypeName = string;
-export type DataType = 'undefined' | 'string' | 'integer' | 'float';
+export type DataTypeName = 'string' | 'integer' | 'float';
+export type DataType = 'string' | 'int' | 'float' | 'object';
 export interface TypeMap {
   name: DataTypeName;
   type: DataType;
@@ -180,12 +182,13 @@ export interface TypeMap {
 // #endregion TypeMap
 
 // #region Property
+export type UndefinedType = 'undefined';
 export type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll';
 export type Property = PrimitiveProperty | ObjectProperty;
 export interface PropertyBase {
   name: string;
   fullName: string;
-  type: DataType;
+  type: DataType | UndefinedType;
   constant: boolean;
   facet?: PropertyFacet;
   size: number;
@@ -205,7 +208,6 @@ export interface ObjectProperty extends PropertyBase {
   numChildren?: number;
 }
 // #endregion Property
-
 
 // #region StdOut StdErr
 export type { OutputControl } from './dbgp';
@@ -280,6 +282,7 @@ export interface InitResponce {
 export type {
   StreamResponce,
   CommandResponce,
+  StatusResponse,
 } from './dbgp';
 
 // https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L482
