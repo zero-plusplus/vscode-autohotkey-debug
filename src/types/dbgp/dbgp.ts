@@ -209,10 +209,10 @@ export interface Stack {
 // #region Context
 // https://xdebug.org/docs/dbgp#context-get
 export type ContextId = number;
-export type ContextNames = 'Local' | 'Global' | (string & { ThisIsLiteralUnionTrick: any });
+export type ContextName = 'Local' | 'Global' | (string & { ThisIsLiteralUnionTrick: any });
 export interface Context {
   id: ContextId;
-  name: ContextNames;
+  name: ContextName;
 }
 // #endregion Context
 

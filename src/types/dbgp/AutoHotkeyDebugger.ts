@@ -227,10 +227,10 @@ export const enum ContextId {
   Global = 1,
   Static = 2,
 }
-export type ContextNames = 'Local' | 'Global' | 'Static';
+export type ContextName = 'Local' | 'Global' | 'Static';
 export interface Context {
   id: ContextId;
-  name: ContextNames;
+  name: ContextName;
 }
 // #endregion Context
 
