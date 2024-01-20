@@ -1,7 +1,7 @@
 import * as dbgp from '../../dbgpSession';
 import { maskQuotes } from '../../../util/ExpressionExtractor';
 import { searchPair } from '../../../util/util';
-import { EvaluatedObjectValue, EvaluatedPrimitiveValue, EvaluatedValue, ExpressionEvaluator, ExpressionEvaluatorConfig } from '../AELL';
+import { AELL, AELLConfig, EvaluatedObjectValue, EvaluatedPrimitiveValue, EvaluatedValue } from '../AELL';
 import { copatibleFunctions_for_v1, copatibleFunctions_for_v2, formatSpecifiers_v1, formatSpecifiers_v2 } from '../AELL/functions';
 import { LogParser, LogPrefixData } from './parser';
 
@@ -20,16 +20,16 @@ export interface ObjectLogData extends LogDataBase {
 }
 
 export class LogEvaluator {
-  public readonly expressionEvaluator: ExpressionEvaluator;
+  public readonly expressionEvaluator: AELL;
   private readonly parser: LogParser;
-  constructor(session: dbgp.Session, config?: Omit<ExpressionEvaluatorConfig, 'functionMap' | 'enableFormatSpecifiers'>) {
+  constructor(session: dbgp.Session, config?: Omit<AELLConfig, 'functionMap' | 'enableFormatSpecifiers'>) {
     const functionMap = 2 <= session.ahkVersion.mejor
       ? copatibleFunctions_for_v1
       : copatibleFunctions_for_v2;
     const formatSpecifiers = 2.0 <= session.ahkVersion.mejor
       ? formatSpecifiers_v2
       : formatSpecifiers_v1;
-    this.expressionEvaluator = new ExpressionEvaluator(session, { ...config, functionMap, formatSpecifiers });
+    this.expressionEvaluator = new AELL(session, { ...config, functionMap, formatSpecifiers });
     this.parser = new LogParser();
   }
   public async eval(text: string): Promise<LogData[]> {

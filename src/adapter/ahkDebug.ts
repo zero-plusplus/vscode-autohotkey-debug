@@ -35,7 +35,7 @@ import matcher from 'matcher';
 import { Categories, Category, CategoryData, MetaVariable, MetaVariableValueMap, Scope, StackFrame, StackFrames, Variable, VariableManager, formatProperty } from '../util/VariableManager';
 import { version as debuggerAdapterVersion } from '../../package.json';
 import { SymbolFinder } from '../util/SymbolFinder';
-import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from './tools/AELL';
+import { AELL, ParseError, toJavaScriptBoolean, toType } from './tools/AELL';
 import { CaseInsensitiveMap } from '../util/CaseInsensitiveMap';
 import { IntelliSense } from '../util/IntelliSense';
 import { maskQuotes } from '../util/ExpressionExtractor';
@@ -169,7 +169,7 @@ export class AhkDebugSession extends LoggingDebugSession {
   private readonly logObjectsMap = new Map<number, (Variable | Scope | Category | Categories | MetaVariable | undefined)>();
   private breakpointManager?: BreakpointManager;
   private readonly registeredFunctionBreakpoints: Breakpoint[] = [];
-  private evaluator!: ExpressionEvaluator;
+  private evaluator!: AELL;
   private _intellisense?: IntelliSense;
   private prevStackFrames?: StackFrames;
   private currentStackFrames?: StackFrames;
@@ -2384,7 +2384,7 @@ export class AhkDebugSession extends LoggingDebugSession {
                   });
                 }
 
-                this.evaluator = new ExpressionEvaluator(this.session, { metaVariableMap: this.currentMetaVariableMap });
+                this.evaluator = new AELL(this.session, { metaVariableMap: this.currentMetaVariableMap });
                 this._logEvalutor = new LogEvaluator(this.session, { metaVariableMap: this.currentMetaVariableMap });
                 this._intellisense = new IntelliSense(this.session);
                 this.extraFeatures?.init(this);

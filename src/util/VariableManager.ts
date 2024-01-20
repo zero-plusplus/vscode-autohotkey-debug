@@ -9,9 +9,10 @@ import { isNumberLike, isPrimitive, toArray, toFileUri } from './util';
 import { equalsIgnoreCase } from './stringUtils';
 import { CaseInsensitiveMap } from './CaseInsensitiveMap';
 import { AhkDebugSession } from '../dap/ahkDebug';
+import { ContextName } from '../types/dbgp/dbgp';
 
-export type ScopeName = 'Local' | 'Static' | 'Global';
-export type ScopeSelector = '*' | ScopeName;
+
+export type ScopeSelector = '*' | ContextName;
 export type MatcherData = {
   method?: 'include' | 'exclude';
   ignorecase?: boolean;
@@ -23,7 +24,7 @@ export type MatcherData = {
 };
 export type CategoryData = {
   label: string;
-  source: ScopeSelector | ScopeName[];
+  source: ScopeSelector | ContextName[];
   hidden?: boolean | 'auto';
   noduplicate?: boolean;
   matchers?: MatcherData[];
@@ -89,7 +90,7 @@ export const formatProperty = (property: dbgp.Property, ahkVersion?: AhkVersion)
   const maxIndex = objectProperty.maxIndex;
   const isArray = objectProperty.isArray;
   let value = isArray
-    ? `${objectProperty.className}(${maxIndex!}) [`
+    ? `${objectProperty.className}(${maxIndex}) [`
     : `${objectProperty.className} {`;
 
   const children = objectProperty.children.slice(0, 100).filter((property) => property.name !== '<base>');

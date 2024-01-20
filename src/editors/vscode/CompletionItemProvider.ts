@@ -1,6 +1,6 @@
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import * as vscode from 'vscode';
-import * as dbgp from '../../dap/dbgpSession';
+import * as dbgp from '../../adapter/dbgpSession';
 import { AccessOperator, maskQuotes } from '../../util/ExpressionExtractor';
 import { equalsIgnoreCase } from '../../util/stringUtils';
 import { searchPair } from '../../util/util';

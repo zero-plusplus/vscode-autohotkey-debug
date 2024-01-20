@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
-import { AhkDebugSession, DebugConfig, ExtraFeatures, PerfTipsConfig } from '../../dap/ahkDebug';
+import { AhkDebugSession, DebugConfig, ExtraFeatures, PerfTipsConfig } from '../../adapter/ahkDebug';
 import { enableRunToEndOfFunction, setEnableRunToEndOfFunction } from '../../commands';
 import { timeoutPromise } from '../../util/util';
 import { StackFrame } from '../../util/VariableManager';
-import * as dbgp from '../../dap/dbgpSession';
+import * as dbgp from '../../adapter/dbgpSession';
 import { sync as pathExistsSync } from 'path-exists';
-import { AhkConfigurationProvider } from '../../dap/ConfigurationProvider';
+import { AhkConfigurationProvider } from '../../adapter/ConfigurationProvider';
 
 export class InlineDebugAdapterFactory implements vscode.DebugAdapterDescriptorFactory {
   public readonly provider: AhkConfigurationProvider;

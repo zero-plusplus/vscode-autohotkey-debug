@@ -18,14 +18,27 @@ export interface VariableMatcher {
   pattern?: MatchPattern;
   attributes: VariableAttributes;
 }
+export type PatternLiteral
+  = VariablePrefixPatternLiteral
+  | VariableSuffixxPatternLiteral
+  | VariableExactPatternLiteral
+  | VariableRegExPatternLiteral
+  | VariableWildcardPatternLiteral;
+export type VariablePrefixPatternLiteral = `>${string}>`;
+export type VariableSuffixxPatternLiteral = `<${string}<`;
+export type VariableExactPatternLiteral = `>${string}<`;
+export type VariableRegExPatternLiteral = `/${string}/`;
+export type VariableWildcardPatternLiteral = `|${string}|` | string & { ThisIsLiteralUnionTrick: any };
+
 export type MatchPattern
-  = string
+  = PatternLiteral
   | VariableRegExPattern
   | VariablePrefixPattern
   | VariableSuffixPattern
   | VariableExactPattern
-  | VariableRegExPattern;
-export type PatternType = 'partial' | 'prefix' | 'suffix' | 'exact' | 'regex' | 'regexp';
+  | VariableRegExPattern
+  | VariableWildcardPattern;
+export type PatternType = 'partial' | 'prefix' | 'suffix' | 'exact' | 'regex' | 'regexp' | 'wildcard';
 export interface VariablePatternBase {
   patternType: PatternType;
   pattern: string;
@@ -46,6 +59,9 @@ export interface VariableExactPattern extends VariablePatternBase {
 export interface VariableRegExPattern extends VariablePatternBase {
   patternType: 'regex' | 'regexp';
 }
+export interface VariableWildcardPattern extends VariablePatternBase {
+  patternType: 'wildcard';
+}
 export interface VariableAttributes {
   type?: string;
   kindName?: string;
@@ -53,11 +69,12 @@ export interface VariableAttributes {
   isStatic?: boolean;
 }
 
+export type DefinedCategoryName = SourceName | 'Builtin-Global' | 'UserDefined-Global';
 export interface VariableCategory {
   label: string;
   items: CategoryItem[];
   visible?: VisibleCondition;
-  filters?: VariableMatcher[];
+  filters?: DefinedCategoryName | VariableMatcher[];
 }
 export type CategoryItem
   = VariableCategoryItem
@@ -76,5 +93,5 @@ export interface ExpressionCategoryItem extends CategoryItemBase {
 }
 export interface CategoryItemSelector extends CategoryItemBase {
   source: SourceSelector | SourceName[];
-  select?: VariableMatcher;
+  select?: PatternLiteral | VariableMatcher;
 }
