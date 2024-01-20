@@ -3,12 +3,12 @@ import assert from 'assert';
 import * as net from 'net';
 import { ChildProcess } from 'child_process';
 import * as path from 'path';
-import * as dbgp from '../../src/dbgpSession';
-import { EvaluatedValue, ExpressionEvaluator } from '../../src/util/evaluator/ExpressionEvaluator';
-import { getFalse, getTrue } from '../../src/util/evaluator/functions';
-import { MetaVariableValueMap } from '../../src/util/VariableManager';
+import * as dbgp from '../../src/v1-0-0/dbgpSession';
+import { EvaluatedValue, ExpressionEvaluator } from '../../src/v1-0-0/util/evaluator/ExpressionEvaluator';
+import { getFalse, getTrue } from '../../src/v1-0-0/util/evaluator/functions';
+import { MetaVariableValueMap } from '../../src/v1-0-0/util/VariableManager';
 import { closeSession, launchDebug } from '../util';
-import { isFloat } from '../../src/util/util';
+import { isFloat } from '../../src/v1-0-0/util/util';
 
 type ApiTester = (expression: string) => Promise<[ string | number, string | number, string ]>;
 const createTestApi = (evaluator: ExpressionEvaluator): ApiTester => {

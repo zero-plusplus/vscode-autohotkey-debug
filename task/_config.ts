@@ -9,8 +9,8 @@ const esbuildCommonOptions: esbuild.BuildOptions = {
 };
 export const esbuildOptions: esbuild.BuildOptions = {
   ...esbuildCommonOptions,
-  entryPoints: [ `${rootDir}/src/extension.ts` ],
-  outfile: `${rootDir}/build/extension.js`,
+  entryPoints: [ `${rootDir}/src/v1-0-0/extension.ts` ],
+  outfile: `${rootDir}/build/v1-0-0/extension.js`,
   bundle: true,
   minify: true,
   treeShaking: true,
@@ -24,6 +24,6 @@ export const esbuildOptions: esbuild.BuildOptions = {
 export const esbuildDebugOptions: esbuild.BuildOptions = {
   ...esbuildCommonOptions,
   entryPoints: glob.sync(`./src/**/*.ts`),
-  outdir: 'build',
+  outdir: 'build/v1-0-0',
   sourcemap: true,
 };

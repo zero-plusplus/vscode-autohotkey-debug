@@ -33,7 +33,7 @@ import { AutoHotkeyLauncher, AutoHotkeyProcess, getAhkVersion } from './util/Aut
 import { TimeoutError, now, readFileCache, readFileCacheSync, searchPair, timeoutPromise, toFileUri } from './util/util';
 import matcher from 'matcher';
 import { Categories, Category, CategoryData, MetaVariable, MetaVariableValueMap, Scope, StackFrame, StackFrames, Variable, VariableManager, formatProperty } from './util/VariableManager';
-import { version as debuggerAdapterVersion } from '../package.json';
+import { version as debuggerAdapterVersion } from '../../package.json';
 import { SymbolFinder } from './util/SymbolFinder';
 import { ExpressionEvaluator, ParseError, toJavaScriptBoolean, toType } from './util/evaluator/ExpressionEvaluator';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';

@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import { spawn } from 'child_process';
 import del from 'del';
-import { isDirectory } from '../src/util/util';
+import { isDirectory } from '../src/v1-0-0/util/util';
 
 (async(): Promise<void> => {
   const rootDir = path.resolve(__dirname, '..');

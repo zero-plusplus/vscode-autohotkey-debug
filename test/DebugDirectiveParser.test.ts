@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { DebugDirectiveParsedData, DebugDirectiveParser } from '../src/util/DebugDirectiveParser';
+import { DebugDirectiveParsedData, DebugDirectiveParser } from '../src/v1-0-0/util/DebugDirectiveParser';
 
 const createResult = (data: Partial<DebugDirectiveParsedData>): Omit<DebugDirectiveParsedData, 'name'> => {
   return {
