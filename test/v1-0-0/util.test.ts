@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { searchPair } from '../src/v1-0-0/util/util';
+import { searchPair } from '../../src/v1-0-0/util/util';
 
 describe('utils', () => {
   test('searchPair', () => {

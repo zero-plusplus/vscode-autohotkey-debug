@@ -1,6 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
 import * as path from 'path';
-import { NamedNodeBase, SymbolFinder } from '../../src/v1-0-0/util/SymbolFinder';
+import { NamedNodeBase, SymbolFinder } from '../../../src/v1-0-0/util/SymbolFinder';
 
 const sampleDir = path.resolve(`${__dirname}/sample`);
 

@@ -1,8 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import * as path from 'path';
 import * as net from 'net';
-import * as dbgp from '../../src/v1-0-0/dbgpSession';
-import { CompletionItemConverter, IntelliSense } from '../../src/v1-0-0/util/IntelliSense';
+import * as dbgp from '../../../src/v1-0-0/dbgpSession';
+import { CompletionItemConverter, IntelliSense } from '../../../src/v1-0-0/util/IntelliSense';
 import { ChildProcess } from 'child_process';
 import { closeSession, launchDebug } from '../util';
 

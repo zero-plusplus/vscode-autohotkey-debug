@@ -2,9 +2,9 @@ import * as net from 'net';
 import { ChildProcess } from 'child_process';
 import * as path from 'path';
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
-import * as dbgp from '../../src/v1-0-0/dbgpSession';
+import * as dbgp from '../../../src/v1-0-0/dbgpSession';
 import { closeSession, launchDebug } from '../util';
-import { LogData, LogEvaluator } from '../../src/v1-0-0/util/evaluator/LogEvaluator';
+import { LogData, LogEvaluator } from '../../../src/v1-0-0/util/evaluator/LogEvaluator';
 
 const sampleDir = path.resolve(__dirname, 'ahk');
 const hostname = '127.0.0.1';

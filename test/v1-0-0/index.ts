@@ -1,7 +1,7 @@
 import { describe, test } from '@jest/globals';
 import * as assert from 'assert';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
-import { splitVariablePath } from '../src/v1-0-0/util/util';
+import { splitVariablePath } from '../../src/v1-0-0/util/util';
 
 describe('splitVariablePath', () => {
   test('v1', () => {

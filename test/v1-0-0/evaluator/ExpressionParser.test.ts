@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { ExpressionParser } from '../../src/v1-0-0/util/evaluator/ExpressionParser';
+import { ExpressionParser } from '../../../src/v1-0-0/util/evaluator/ExpressionParser';
 
 describe('ExpressionParser', () => {
   const parser = new ExpressionParser('1.1.36.00');

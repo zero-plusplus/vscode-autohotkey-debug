@@ -3,8 +3,8 @@ import { afterEach, beforeAll, beforeEach, describe, test } from '@jest/globals'
 import { DebugClient } from 'vscode-debugadapter-testsupport';
 import dedent from 'dedent';
 import { ahkRuntime_v1, createAutoHotkeyTestFile, getDebugPort } from './util';
-import { debugBuildProject } from '../task/debugBuild';
-import { cleanBuild } from '../task/clean';
+import { debugBuildProject } from '../../task/debugBuild';
+import { cleanBuild } from '../../task/clean';
 
 const defaultDebugConfig = {
   cwd: undefined,
