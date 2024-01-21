@@ -27,7 +27,7 @@
 		"newLine": "crlf"
 	},
 	"include": [
-		"task/**/*",
+		"scripts/**/*",
 		"src/**/*",
 		"test/**/*",
 		"jest.config.ts"

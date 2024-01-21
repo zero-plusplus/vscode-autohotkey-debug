@@ -4,54 +4,7 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "install-test-vsix",
-      "type": "shell",
-      "dependsOn": [
-        "subtask:build-test-vsix",
-        "subtask:install-test-vsix",
-        "subtask:reload-vscode",
-      ],
-      "dependsOrder": "sequence"
-    },
-    {
-      "label": "subtask:build-test-vsix",
-      "type": "shell",
-      "command": "vsce",
-      "args": [
-        "package",
-        "-o", "extension-test.vsix"
-      ]
-    },
-    {
-      "label": "subtask:install-test-vsix",
-      "type": "shell",
-      "command": "code",
-      "args": [
-        "--install-extension", "${workspaceFolder}/extension-test.vsix"
-      ],
-      "dependsOn": [ "build-test-vsix" ],
-    },
-    {
-      "label": "subtask:reload-vscode",
-      "command": "${command:workbench.action.reloadWindow}"
-    },
-    {
-      "label": "subtask:build",
-      "type": "shell",
-      "command": "npm run build"
-    },
-    {
-      "label": "subtask:rebuild",
-      "type": "shell",
-      "command": "npm run rebuild"
-    },
-    {
-      "label": "subtask:build:without-lint",
-      "type": "shell",
-      "command": "npm run build:without-lint"
-    },
-    {
-      "label": "subtask:watch",
+      "label": "npm:watch",
       "type": "shell",
       "isBackground": true,
       "command": "npm run watch",
@@ -68,7 +21,30 @@
           "background": {
             "activeOnStart": true,
             "beginsPattern": "> ts-node task\\/watch\\.ts",
-            "endsPattern": "^\\[esbuild\\] build completed$"
+            "endsPattern": "^\\[esbuild\\] completed at"
+          }
+        }
+      ]
+    },
+    {
+      "label": "npm:watch:public",
+      "type": "shell",
+      "isBackground": true,
+      "command": "npm run watch:public",
+      "problemMatcher": [
+        {
+          "pattern": {
+              "regexp": "^\\s*([^:]+):(\\d+):(\\d+) - (error) (.+)$",
+              "file": 1,
+              "line": 2,
+              "column": 3,
+              "severity": 4,
+              "message": 5,
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": "> ts-node task\\/watch\\.ts",
+            "endsPattern": "^\\[esbuild\\] completed at"
           }
         }
       ]

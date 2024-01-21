@@ -13,7 +13,7 @@
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
-      "preLaunchTask": "subtask:watch",
+      "preLaunchTask": "npm:watch",
       "skipFiles": [
           "<node_internals>/**",
       ],
@@ -30,34 +30,10 @@
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
-      "preLaunchTask": "subtask:rebuild",
+      "preLaunchTask": "npm:watch:public",
       "skipFiles": [
           "<node_internals>/**",
       ],
-    },
-    {
-        "name": "Gulp Test:build",
-        "type": "node",
-        "request": "launch",
-        "program": "${workspaceFolder}/node_modules/gulp/bin/gulp.js",
-        "args": [
-            "build"
-        ],
-        "skipFiles": [
-            "<node_internals>/**"
-        ]
-    },
-    {
-      "name": "Gulp Test:bundle",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/node_modules/gulp/bin/gulp.js",
-      "args": [
-          "bundle"
-      ],
-      "skipFiles": [
-          "<node_internals>/**"
-      ]
     },
     {
       "name": "Debug Jest Tests",

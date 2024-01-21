@@ -2,15 +2,20 @@ import * as path from 'path';
 import * as glob from 'fast-glob';
 import * as esbuild from 'esbuild';
 
-const rootDir = path.resolve(__dirname, '..');
+// #region path
+export const projectRootDir = path.resolve(__dirname, '..');
+export const buildDir = path.resolve(projectRootDir, 'build');
+// #endregion path
+
+// #region esbuild options
 const esbuildCommonOptions: esbuild.BuildOptions = {
   platform: 'node',
   format: 'cjs',
 };
 export const esbuildOptions: esbuild.BuildOptions = {
   ...esbuildCommonOptions,
-  entryPoints: [ `${rootDir}/src/v1-0-0/extension.ts` ],
-  outfile: `${rootDir}/build/v1-0-0/extension.js`,
+  entryPoints: [ `${projectRootDir}/src/v1-0-0/extension.ts` ],
+  outfile: `${projectRootDir}/build/v1-0-0/extension.js`,
   bundle: true,
   minify: true,
   treeShaking: true,
@@ -20,10 +25,10 @@ export const esbuildOptions: esbuild.BuildOptions = {
     'jsonc-parser',
   ],
 };
-
 export const esbuildDebugOptions: esbuild.BuildOptions = {
   ...esbuildCommonOptions,
   entryPoints: glob.sync(`./src/**/*.ts`),
   outdir: 'build/v1-0-0',
   sourcemap: true,
 };
+// #endregion esbuild options

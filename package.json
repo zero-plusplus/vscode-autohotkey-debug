@@ -13,15 +13,14 @@
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug/issues"
   },
   "scripts": {
-    "build": "ts-node task/build.ts",
-    "rebuild": "npm run clean && npm run build",
-    "watch": "ts-node task/watch.ts",
-    "clean": "ts-node task/clean.ts",
+    "build": "ts-node scripts/bin/build.ts",
+    "clean": "ts-node scripts/bin/clean.ts",
+    "watch": "ts-node scripts/bin/watch.ts",
+    "watch:public": "ts-node scripts/bin/watch.public.ts",
+    "lint": "ts-node scripts/bin/lint.ts",
     "test": "jest --runInBand --detectOpenHandles",
-    "test:sandbox": "npm run package && ts-node task/sandbox.ts",
-    "lint": "ts-node task/lint.ts",
-    "package": "npm run clean && npm run lint && node ./node_modules/@vscode/vsce/vsce package",
-    "vscode:prepublish": "npm run build"
+    "test:sandbox": "ts-node scripts/bin/sandbox.ts",
+    "package": "ts-node scripts/bin/package.ts"
   },
   "publisher": "zero-plusplus",
   "sponsor": {
