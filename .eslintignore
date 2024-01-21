@@ -1,3 +1,4 @@
 build/
 node_modules/
 src/v1-0-0
+test/v1-0-0
