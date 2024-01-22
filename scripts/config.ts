@@ -28,7 +28,7 @@ export const esbuildOptions: esbuild.BuildOptions = {
 export const esbuildDebugOptions: esbuild.BuildOptions = {
   ...esbuildCommonOptions,
   entryPoints: glob.sync(`./src/**/*.ts`),
-  outdir: 'build/v1-0-0',
+  outdir: 'build',
   sourcemap: true,
 };
 // #endregion esbuild options
