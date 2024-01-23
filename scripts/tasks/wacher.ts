@@ -10,7 +10,7 @@ export const startWatch = async(options: esbuild.BuildOptions): Promise<void> =>
     watch: {
       onRebuild: (err, result) => {
         if (err) {
-          console.log(`[esbuild] ERROR >>>\n ${err.message}\n <<<`);
+          console.log(`${err.message}\n`);
         }
         console.log(`${watchCompletedMessage} ${now()}`);
       },
