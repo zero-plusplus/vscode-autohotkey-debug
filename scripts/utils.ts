@@ -1,13 +1,13 @@
 // #region date time
 export const now = (): string => {
   const currentDate = new Date();
-  const YYYY = currentDate.getFullYear();
-  const MM = currentDate.getMonth() + 1;
-  const DD = currentDate.getDate();
-  const HH = currentDate.getHours();
-  const mm = currentDate.getMinutes();
-  const ss = currentDate.getSeconds();
-  const sss = currentDate.getMilliseconds();
+  const YYYY = String(currentDate.getFullYear()).padStart(4, '0');
+  const MM = String(currentDate.getMonth() + 1).padStart(2, '0');
+  const DD = String(currentDate.getDate()).padStart(2, '0');
+  const HH = String(currentDate.getHours()).padStart(2, '0');
+  const mm = String(currentDate.getMinutes()).padStart(2, '0');
+  const ss = String(currentDate.getSeconds()).padStart(2, '0');
+  const sss = String(currentDate.getMilliseconds()).padStart(3, '0');
   return `${YYYY}-${MM}-${DD} ${HH}:${mm}:${ss}.${sss}`;
 };
 export const msToSec = (number_ms: number): number => number_ms / 1000;
