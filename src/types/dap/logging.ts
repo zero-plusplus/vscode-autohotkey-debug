@@ -8,8 +8,8 @@ export const announceLevel = {
   ERROR: 6,
   CRITICAL: 7,
 } as const;
-export type AnnounceLevelName = keyof typeof announceLevel;
-export type LogLevel = typeof announceLevel[AnnounceLevelName];
+export type LogLevelName = keyof typeof announceLevel;
+export type LogLevel = typeof announceLevel[LogLevelName];
 export type LogCategory = 'stdout' | 'stderr' | 'console' | 'important' | (string & { ThisIsLiteralUnionTrick: any });
 export const outputCategories = {
   stdout: 'stdout',             // Output in blue text
