@@ -31,6 +31,8 @@ export type BreakpointAction = (session: Session) => Promise<void>;
 export type Breakpoint
   = LineBreakpoint
   | FunctionBreakpoint
+  | ReturnBreakpoint
+  | ExceptionBreakpoint
   | Logpoint;
 
 export interface LineBreakpointBase extends BreakpointData {
