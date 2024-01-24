@@ -1,15 +1,61 @@
 import { BreakpointType, CharacterNumber, Expression, FileName, HitCondition, LineNumber } from '../dbgp/ExtendAutoHotkeyDebugger';
 import { Session } from './session';
+import { VisibleCondition } from './variableCategory';
 
-export interface BreakpointData {
-  kind: Omit<BreakpointType, 'call'> | 'function';
+export type BreakpointKind = Omit<BreakpointType, 'call'> | 'function';
+
+// #region configuration of launch.json
+export type BreakpointDataArray = Array<BreakpointData | BreakpointDataGroup>;
+export type BreakpointData
+  = LineBreakpointData
+  | LogpointData
+  | FunctionBreakpointData
+  | ReturnBreakpointData
+  | ExceptionBreakpointData;
+export interface BreakpointDataBase {
+  kind: BreakpointKind;
+  hidden: VisibleCondition;
   temporary?: boolean;
   condition?: Expression;
   hitCondition?: HitCondition;
   logMessage?: string;
 }
-export interface BreakpointBase extends BreakpointData {
+export interface LineBreakpointDataBase extends BreakpointDataBase {
+  fileName: string;
+  line: number;
+  character?: number;
+}
+export interface NamedBreakpointDataBase extends BreakpointBase {
+  name: string;
+}
+
+export interface LineBreakpointData extends LineBreakpointDataBase {
+  kind: 'line';
+}
+export interface LogpointData extends LineBreakpointDataBase {
+  kind: 'log';
+}
+export interface FunctionBreakpointData extends NamedBreakpointDataBase {
+  kind: 'function';
+}
+export interface ReturnBreakpointData extends NamedBreakpointDataBase {
+  kind: 'return';
+}
+export interface ExceptionBreakpointData extends NamedBreakpointDataBase {
+  kind: 'exception';
+}
+export interface BreakpointDataGroup {
+  label: string;
+  breakpoints: BreakpointData[];
+}
+// #endregion configuration of launch.json
+
+export interface BreakpointBase {
+  kind: Omit<BreakpointType, 'call'> | 'function';
   id: number;
+  condition?: Expression;
+  hitCondition?: HitCondition;
+  logMessage?: string;
   action: BreakpointAction;
   /**
    * Whether the breakpoint has been verified by the debugger.
@@ -35,7 +81,7 @@ export type Breakpoint
   | ExceptionBreakpoint
   | Logpoint;
 
-export interface LineBreakpointBase extends BreakpointData {
+export interface LineBreakpointBase extends BreakpointDataBase {
   fileName: FileName;
   line: LineNumber;
   character?: CharacterNumber;
