@@ -228,6 +228,7 @@ export interface PropertyBase {
   address: number;
   encoding: Encoding;
 }
+export type Primitive = string | number;
 export interface PrimitiveProperty extends PropertyBase {
   value: string;
 }
