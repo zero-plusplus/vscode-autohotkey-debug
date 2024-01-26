@@ -310,26 +310,26 @@ export interface ResponseError {
 export type PacketName = 'init' | 'stream' | 'response';
 export type Packet = InitPacket | StreamPacket | ResponsePacket;
 export interface InitPacket {
-  init: InitResponse;
+  init: { attributes: InitResponse };
 }
 export interface StreamPacket {
-  stream: StreamResponse;
+  stream: { attributes: StreamResponse };
 }
 export interface ResponsePacket {
-  response: CommandResponse;
+  response: { attributes: CommandResponse };
 }
 // #endregion Packet
 
 // #region Response
 export interface InitResponse {
-  fileName: FileName;
-  appId: AppId;
-  ideKey: FloatNumber;
-  session: FloatNumber;
+  appid: AppId;
+  ide_key: '';
+  session: '';
   thread: DecimalNumber;
-  parent: DebuggerParent;
+  parent: '';
   language: LanguageName;
-  protocolVersion: ProtocolVersion;
+  protocol_version: ProtocolVersion;
+  fileuri: FileName;
 }
 export interface StreamResponse {
   type: StreamType;
@@ -358,7 +358,7 @@ export type CommandResponse
   | StdErrResponse;
 export interface CommandResponseBase {
   command: CommandName;
-  transactionId: number;
+  transaction_id: number;
   error?: ResponseError;
 }
 
@@ -376,8 +376,8 @@ export interface FeatureGetResponse extends CommandResponseBase {
 // https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L538
 export interface FeatureSetResponse extends CommandResponseBase {
   command: 'feature_set';
-  featureName: FeatureName;
-  success: boolean;
+  feature: FeatureName;
+  success: '1' | '0';
 }
 export interface ContinuationResponse extends StatusResponse {
   command: ContinuationCommandName;
