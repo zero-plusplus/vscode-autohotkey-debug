@@ -12,9 +12,7 @@ export interface TemporaryResource {
   cleanup: () => void;
 }
 export const createTempDirectory = async(prefix: string): Promise<TemporaryResource> => {
-  const dirName = await fs.mkdtemp(`${prefix}-`, 'utf-8');
-  const dirPath = path.resolve(os.tmpdir(), dirName);
-  await fs.mkdir(dirPath);
+  const dirPath = await fs.mkdtemp(path.resolve(os.tmpdir(), `${prefix}-`), 'utf-8');
 
   return {
     path: dirPath,
