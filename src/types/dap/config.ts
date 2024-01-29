@@ -9,6 +9,7 @@ export type DebugRequest = 'launch' | 'attach';
 export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   // #region basic configurations
   name: string;
+  type: 'autohotkey';
   request: DebugRequest;
   stopOnEntry: boolean;
   skipFunctions?: string[];
@@ -17,8 +18,8 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
 
   // #region launcher configurations
   runtime: string;
-  program: string;
   runtimeArgs?: string[];
+  program: string;
   args?: string[];
   port?: number;
   hostname?: string;
@@ -29,7 +30,7 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   // #region basic configurations
 
   // #region custom configurations
-  openFileOnExit: string;
+  openFileOnExit?: string;
   variableCategories?: false | 'recommend' | VariableCategory[];
   setBreakpoints?: BreakpointDataArray;
   // #endregion custom configurations
@@ -50,6 +51,11 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   // #endregion feature configurations
 }
 export interface NormalizedDebugConfig extends DebugConfig {
+  runtimeArgs: string[];
+  args: string[];
+  port: number;
+  hostname: string;
+
   variableCategories?: VariableCategory[];
 
   usePerfTips: false | PerfTipsConfig;
