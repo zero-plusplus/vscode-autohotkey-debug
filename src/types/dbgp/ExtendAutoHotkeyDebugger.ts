@@ -9,15 +9,25 @@ export type FloatNumber = number;
 export type MejorVersion = FloatNumber | DecimalNumber;
 export type MinorVersion = DecimalNumber;
 export type PatchVersion = DecimalNumber;
+export const preIdList = [ 'alpha', 'beta', 'rc' ] as const;
+export type PreReleaseId = typeof preIdList[number] | (string & { ThisIsLiteralUnionTrick: any });
 export type PreReleaseVersion = DecimalNumber;
-export type PreReleaseId = 'alpha' | 'beta' | 'rc';
 // v1: x.x.y.z | v2: x.y.z
-export type AutoHotkeyVersion = `${MejorVersion}.${MinorVersion}.${PatchVersion}` | (string & { ThisIsLiteralUnionTrick: any });
-export interface ParsedAutoHotkeyVersion {
-  full: AutoHotkeyVersion;
+export type PreAutoHotkeyVersion = `${PreReleaseId}.${PreReleaseVersion}` | (string & { ThisIsLiteralUnionTrick: any });
+export type AutoHotkeyVersion = `${MejorVersion}.${MinorVersion}.${PatchVersion}` | `${MejorVersion}.${MinorVersion}.${PatchVersion}-${PreAutoHotkeyVersion}` | (string & { ThisIsLiteralUnionTrick: any });
+export type ParsedAutoHotkeyVersion
+  = ParsedAutoHotkeyReleasedVersion
+  | ParsedAutoHotkeyPreReleasedVersion;
+export interface ParsedAutoHotkeyReleasedVersion {
+  raw: AutoHotkeyVersion;
+  version: AutoHotkeyVersion;
+
   mejor: MejorVersion;
   minor: MinorVersion;
   patch: PatchVersion;
+}
+export interface ParsedAutoHotkeyPreReleasedVersion extends ParsedAutoHotkeyReleasedVersion {
+  preversion: PreAutoHotkeyVersion;
   preId: PreReleaseId;
   preRelease: PreReleaseVersion;
 }
@@ -136,7 +146,7 @@ export type HitCondition = { operator?: HitConditionOperator; value: Expression 
 export interface BreakpointBase {
   type: BreakpointType;
   id: number;
-  state: BreakpointState;
+  state: boolean;
   temporary: boolean;
   readonly resolved: boolean;
   hitCount?: string;
@@ -151,8 +161,8 @@ export type Breakpoint
   | ConditionalBreakpoint;
 export interface LineBreakpoint extends BreakpointBase {
   type: 'line';
+  fileName: string;
   line: DecimalNumber;
-  fileName: FileName;
 }
 export interface CallBreakpoint extends BreakpointBase {
   type: 'call';
@@ -334,7 +344,7 @@ export interface InitResponse {
 export interface StreamResponse {
   type: StreamType;
   encoding: Encoding;
-  data: string;
+  content: string;
 }
 export type CommandResponse
   = StatusResponse
@@ -350,12 +360,14 @@ export type CommandResponse
   | StackGetResponse
   | ContextNamesResponse
   | ContextGetResponse
+  | TypeMapGetResponse
   | PropertyGetResponse
   | PropertySetResponse
   | PropertyValueResponse
   | SourceResponse
   | StdOutResponse
-  | StdErrResponse;
+  | StdErrResponse
+  | BreakResponse;
 export interface CommandResponseBase {
   command: CommandName;
   transaction_id: number;
