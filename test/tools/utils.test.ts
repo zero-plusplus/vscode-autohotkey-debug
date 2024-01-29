@@ -1,5 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { safeCall } from '../../src/tools/utils';
+import { TimeoutError, safeCall, sleep, timeoutPromise } from '../../src/tools/utils';
 
 describe('utils', () => {
   test('safeCall', () => {
@@ -7,5 +7,8 @@ describe('utils', () => {
     expect(safeCall(() => {
       throw Error();
     }, [], 123)).toBe(123);
+  });
+  test('timeoutPromise / sleep', () => {
+    expect(timeoutPromise(sleep(1000), 500)).rejects.toThrow(TimeoutError);
   });
 });
