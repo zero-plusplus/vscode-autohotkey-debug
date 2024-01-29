@@ -3,10 +3,10 @@ import EventEmitter from 'events';
 import { parseXml } from '../tools/xml';
 import * as dbgp from '../types/dbgp/ExtendAutoHotkeyDebugger';
 import { CommandSender, Process, Session, SessionConnector } from '../types/dap/session';
-import { responseEventName } from '../dap/debugger/constant';
 import { createCommandArgs, encodeToBase64 } from './utils';
 import { timeoutPromise } from '../tools/utils';
 
+const responseEventName = 'response';
 export const createSessionConnector = (): SessionConnector => {
   let packetBuffer: Buffer | undefined;
   let isTerminatedProcess = false;
