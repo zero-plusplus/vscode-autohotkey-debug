@@ -1,0 +1,127 @@
+/* eslint-disable @typescript-eslint/lines-between-class-members */
+import { LoggingDebugSession } from '@vscode/debugadapter';
+import { DebugProtocol } from '@vscode/debugprotocol';
+import { NormalizedDebugConfig } from '../../types/dap/config';
+import { initializeRequest } from './requests/initializeRequest';
+import { configurationDoneRequest } from './requests/configurationDoneRequest';
+import { createScriptRuntimeLauncher } from '../runtime/launcher';
+import { ScriptRuntimeLauncher } from '../../types/dap/runtime/runtime';
+import { launchRequest } from './requests/launchRequest';
+import { attachRequest } from './requests/attachRequest';
+import { disconnectRequest } from './requests/disconnectRequest';
+import { setBreakPointsRequest } from './requests/setBreakPointsRequest';
+import { setExceptionBreakPointsRequest } from './requests/setExceptionBreakPointsRequest';
+import { exceptionInfoRequest } from './requests/exceptionInfoRequest';
+import { setFunctionBreakPointsRequest } from './requests/setFunctionBreakPointsRequest';
+import { threadsRequest } from './requests/threadsRequest';
+import { stackTraceRequest } from './requests/stackTraceRequest';
+import { scopesRequest } from './requests/scopesRequest';
+import { variablesRequest } from './requests/variablesRequest';
+import { continueRequest } from './requests/continueRequest';
+import { nextRequest } from './requests/nextRequest';
+import { stepInRequest } from './requests/stepInRequest';
+import { stepOutRequest } from './requests/stepOutRequest';
+import { pauseRequest } from './requests/pauseRequest';
+import { stepInTargetsRequest } from './requests/stepInTargetsRequest';
+import { setVariableRequest } from './requests/setVariableRequest';
+import { setExpressionRequest } from './requests/setExpressionRequest';
+import { completionsRequest } from './requests/completionsRequest';
+import { evaluateRequest } from './requests/evaluateRequest';
+
+export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
+  private readonly config: NormalizedDebugConfig;
+  private readonly launcher: ScriptRuntimeLauncher;
+  constructor(config: NormalizedDebugConfig) {
+    super();
+
+    this.config = config;
+    this.launcher = createScriptRuntimeLauncher(this.config);
+    this.launcher;
+  }
+  // #region initialize requests
+  protected initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): void {
+    this.sendResponse(initializeRequest(response, args));
+  }
+  protected launchRequest(response: DebugProtocol.LaunchResponse, args: DebugProtocol.LaunchRequestArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(launchRequest(response, args));
+  }
+  protected attachRequest(response: DebugProtocol.AttachResponse, args: DebugProtocol.AttachRequestArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(attachRequest(response, args));
+  }
+  protected configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(configurationDoneRequest(response, args));
+  }
+  // #endregion initialize requests
+
+  // #region termination requests
+  protected disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(disconnectRequest(response, args));
+  }
+  protected restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(response);
+  }
+  // #endregion termination requests
+
+  // #region user-interaction requests
+  protected setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(setBreakPointsRequest(response, args));
+  }
+  protected setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(setFunctionBreakPointsRequest(response, args));
+  }
+  protected setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(setExceptionBreakPointsRequest(response, args));
+  }
+  protected exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(exceptionInfoRequest(response, args));
+  }
+  protected setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(setVariableRequest(response, args));
+  }
+  protected setExpressionRequest(response: DebugProtocol.SetExpressionResponse, args: DebugProtocol.SetExpressionArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(setExpressionRequest(response, args));
+  }
+  protected completionsRequest(response: DebugProtocol.CompletionsResponse, args: DebugProtocol.CompletionsArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(completionsRequest(response, args));
+  }
+  protected evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(evaluateRequest(response, args));
+  }
+  // #endregion user-interaction requests
+
+  // #region stop-event lifecycle requests
+  protected threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(threadsRequest(response));
+  }
+  protected stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(stackTraceRequest(response, args));
+  }
+  protected scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(scopesRequest(response, args));
+  }
+  protected variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(variablesRequest(response, args));
+  }
+  // #endregion stop-event lifecycle requests
+
+  // #region execution requests
+  protected continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(continueRequest(response, args));
+  }
+  protected nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(nextRequest(response, args));
+  }
+  protected stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(stepInRequest(response, args));
+  }
+  protected stepInTargetsRequest(response: DebugProtocol.StepInTargetsResponse, args: DebugProtocol.StepInTargetsArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(stepInTargetsRequest(response, args));
+  }
+  protected stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(stepOutRequest(response, args));
+  }
+  protected pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request | undefined): void {
+    this.sendResponse(pauseRequest(response, args));
+  }
+  // #endregion execution requests
+}
