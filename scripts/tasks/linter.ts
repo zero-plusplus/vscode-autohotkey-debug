@@ -4,7 +4,7 @@ import tsconfig from '../../tsconfig.json';
 import eslintrc from '../../.eslintrc';
 
 export const tscheck = async(): Promise<void> => {
-  execSync('npx tsc --noEmit');
+  execSync('npx tsc --noEmit', { encoding: 'utf-8' });
   return Promise.resolve();
 };
 export const eslint = async(): Promise<void> => {
