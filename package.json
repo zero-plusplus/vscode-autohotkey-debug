@@ -27,7 +27,7 @@
     "url": "https://github.com/sponsors/zero-plusplus"
   },
   "engines": {
-    "vscode": "^1.63.0"
+    "vscode": "^1.85.0"
   },
   "icon": "icon.png",
   "keywords": [
