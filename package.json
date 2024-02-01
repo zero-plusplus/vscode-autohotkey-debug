@@ -4,7 +4,7 @@
   "description": "Advanced debugging support for AutoHotkey(includes H) v1 and v2",
   "author": "zero-plusplus <git@zero-plusplus.com>",
   "license": "MIT",
-  "main": "./build/v1-0-0/extension",
+  "main": "./build/client/extension",
   "repository": {
     "type": "git",
     "url": "https://github.com/zero-plusplus/vscode-autohotkey-debug.git"

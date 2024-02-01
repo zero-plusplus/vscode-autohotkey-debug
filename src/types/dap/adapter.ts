@@ -1,3 +1,5 @@
+import { NormalizedDebugConfig } from './config';
+
 export type LogCategory = 'stdout' | 'stderr' | 'console';
 export type AnnounceLevel = 'error' | 'detail' | 'develop';
 
@@ -13,3 +15,6 @@ export interface DebugDirectiveConfig {
 }
 // #endregion configuration of launch.json
 
+export interface DebugContext {
+  config: NormalizedDebugConfig;
+}

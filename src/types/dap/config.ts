@@ -5,12 +5,16 @@ import { PerfTipsConfig } from './perftips';
 import { LoadedScriptsConfig } from './loadedScripts';
 import { AnnounceLevel, DebugDirectiveConfig, OutputDebugConfig } from './adapter';
 
+export type AttributeType = 'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]';
+export type AttributeValidator = (config: DebugConfig) => Promise<void>;
+
+export type DebugConfigValidator = (config: DebugConfig) => Promise<NormalizedDebugConfig>;
 export type DebugRequest = 'launch' | 'attach';
 export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   // #region basic configurations
-  name: string;
-  type: 'autohotkey';
-  request: DebugRequest;
+  name?: string;
+  type: string;
+  request?: DebugRequest;
   stopOnEntry: boolean;
   skipFunctions?: string[];
   skipFiles?: string[];
@@ -51,6 +55,8 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   // #endregion feature configurations
 }
 export interface NormalizedDebugConfig extends DebugConfig {
+  name: string;
+  request: DebugRequest;
   runtimeArgs: string[];
   args: string[];
   port: number;

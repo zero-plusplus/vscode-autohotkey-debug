@@ -1,5 +1,5 @@
-import { defaultAutoHotkeyInstallDir } from '../tools/autohotkey';
-import { NormalizedDebugConfig } from '../types/dap/config';
+import { defaultAutoHotkeyInstallDir } from '../../tools/autohotkey';
+import { NormalizedDebugConfig } from '../../types/dap/config';
 
 export const createDefaultLauncherConfig = (program: string): NormalizedDebugConfig => {
   return {

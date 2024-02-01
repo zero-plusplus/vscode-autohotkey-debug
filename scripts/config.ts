@@ -14,8 +14,8 @@ const esbuildCommonOptions: esbuild.BuildOptions = {
 };
 export const esbuildOptions: esbuild.BuildOptions = {
   ...esbuildCommonOptions,
-  entryPoints: [ `${projectRootDir}/src/v1-0-0/extension.ts` ],
-  outfile: `${projectRootDir}/build/v1-0-0/extension.js`,
+  entryPoints: [ `${projectRootDir}/src/client/extension.ts` ],
+  outfile: `${projectRootDir}/build/client/extension.js`,
   bundle: true,
   minify: true,
   treeShaking: true,
