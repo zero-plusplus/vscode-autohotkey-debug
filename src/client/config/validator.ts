@@ -13,6 +13,9 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
     return {
       utils,
       rawConfig: config,
+      get isValid() {
+        return validated[attributeName];
+      },
       get() {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return config[attributeName];

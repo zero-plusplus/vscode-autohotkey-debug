@@ -17,6 +17,7 @@ export interface AttributeChecker<K extends keyof DebugConfig> {
   rawConfig: DebugConfig;
   get: () => DebugConfig[K];
   ref: <K extends keyof DebugConfig>(attributeName: K) => DebugConfig[K];
+  isValid: boolean;
   getDependency: <NK extends keyof NormalizedDebugConfig>(dependedAttributeName: NK) => NormalizedDebugConfig[NK];
   markValidated: (value?: DebugConfig[K]) => void;
   throwWarningError: (message: string) => void;
