@@ -21,7 +21,7 @@ export const validateRuntimeAttribute: AttributeValidator = async(createChecker)
 
   const checker = createChecker(attributeName);
   if (!checker.isValid) {
-    checker.markValidated(defaultValue);
+    checker.markValidatedPath(defaultValue);
   }
   return Promise.resolve();
 };
@@ -34,7 +34,7 @@ export const validateRuntimeAttributeByFileExists: AttributeValidator = async(cr
 
   const rawRuntime = checker.get();
   if (rawRuntime && fileExists(rawRuntime)) {
-    checker.markValidated(rawRuntime);
+    checker.markValidatedPath(rawRuntime);
   }
   return Promise.resolve();
 };
@@ -53,12 +53,12 @@ export const validateRuntimeAttributeByRuntime_v1_v2: AttributeValidator = async
     switch (languageId) {
       case 'ahk':
       case 'ahkh': {
-        checker.markValidated(rawRuntime_v1);
+        checker.markValidatedPath(rawRuntime_v1);
         return Promise.resolve();
       }
       case 'ahk2':
       case 'ahkh2': {
-        checker.markValidated(rawRuntime_v2);
+        checker.markValidatedPath(rawRuntime_v2);
         return Promise.resolve();
       }
       default: break;
@@ -66,11 +66,11 @@ export const validateRuntimeAttributeByRuntime_v1_v2: AttributeValidator = async
   }
 
   if (rawRuntime_v2) {
-    checker.markValidated(rawRuntime_v2);
+    checker.markValidatedPath(rawRuntime_v2);
     return Promise.resolve();
   }
   if (rawRuntime_v1) {
-    checker.markValidated(rawRuntime_v1);
+    checker.markValidatedPath(rawRuntime_v1);
     return Promise.resolve();
   }
   return Promise.resolve();
@@ -86,7 +86,7 @@ export const validateRuntimeAttributeByRuntimeOfMainScript: AttributeValidator =
   const mainFileName = path.basename(program);
   const runtime = path.resolve(dirPath, `${mainFileName}.exe`);
   if (fileExists(runtime)) {
-    checker.markValidated(runtime);
+    checker.markValidatedPath(runtime);
     return Promise.resolve();
   }
   return Promise.resolve();
@@ -115,11 +115,14 @@ export const validateRuntimeAttributeByAutoHotkeyLauncher: AttributeValidator = 
     // The requires version can be obtained, but for some reason the runtime may be an empty character. In that case, set the default value
     if (info.requires) {
       const runtime = info.requires === '2' ? 'v2/AutoHotkey.exe' : 'Autohotkey.exe';
-      checker.markValidated(runtime);
+      checker.markValidatedPath(runtime);
       return Promise.resolve();
     }
   }
-  checker.markValidated(info.runtime);
+
+  if (fileExists(info.runtime)) {
+    checker.markValidatedPath(info.runtime);
+  }
   return Promise.resolve();
 };
 export const validateRuntimeAttributeByCommandName: AttributeValidator = async(createChecker): Promise<void> => {
@@ -146,7 +149,7 @@ export const validateRuntimeAttributeByRelativePath: AttributeValidator = async(
 
   const runtime = path.resolve(defaultAutoHotkeyInstallDir, rawRuntime);
   if (fileExists(runtime)) {
-    checker.markValidated(runtime);
+    checker.markValidatedPath(runtime);
     return Promise.resolve();
   }
   return Promise.resolve();
@@ -167,12 +170,12 @@ export const validateRuntimeAttributeByLanguageId: AttributeValidator = async(cr
   switch (languageId) {
     case 'ahk':
     case 'ahkh': {
-      checker.markValidated(defaultAutoHotkeyRuntimePath_v1);
+      checker.markValidatedPath(defaultAutoHotkeyRuntimePath_v1);
       return Promise.resolve();
     }
     case 'ahk2':
     case 'ahkh2': {
-      checker.markValidated(defaultAutoHotkeyRuntimePath_v2);
+      checker.markValidatedPath(defaultAutoHotkeyRuntimePath_v2);
       return Promise.resolve();
     }
     default: break;

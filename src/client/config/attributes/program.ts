@@ -26,6 +26,6 @@ export const validateProgramAttribute: AttributeValidator = async(createChecker)
     return Promise.resolve();
   }
 
-  checker.markValidated(program);
+  checker.markValidatedPath(program);
   return Promise.resolve();
 };

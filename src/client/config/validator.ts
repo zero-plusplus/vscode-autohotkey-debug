@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
+import * as path from 'path';
 import { deepDefaults } from '../../tools/utils';
 import { AttributeChecker, AttributeCheckerFactoryUtils, AttributeValidator, DebugConfig, DebugConfigValidator, NormalizedDebugConfig } from '../../types/dap/config';
 import { validateNameAttribute } from './attributes/name';
@@ -35,6 +36,13 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
         validated[String(attributeName)] = true;
         if (value && attributeName in config) {
           config[attributeName] = value;
+        }
+      },
+      markValidatedPath(value?): void {
+        validated[String(attributeName)] = true;
+        if (value && attributeName in config) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          config[attributeName] = path.resolve(value) as any;
         }
       },
       throwWarningError(message): void {

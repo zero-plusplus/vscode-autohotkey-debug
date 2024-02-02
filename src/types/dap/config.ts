@@ -20,6 +20,7 @@ export interface AttributeChecker<K extends keyof DebugConfig> {
   isValid: boolean;
   getDependency: <NK extends keyof NormalizedDebugConfig>(dependedAttributeName: NK) => NormalizedDebugConfig[NK];
   markValidated: (value?: DebugConfig[K]) => void;
+  markValidatedPath: (value?: DebugConfig[K]) => void;
   throwWarningError: (message: string) => void;
   throwValueError: (expectedValueOrValues: string | string[]) => void;
   throwTypeError: (expectedTypeOrTypes: AttributeType | AttributeType[]) => void;
