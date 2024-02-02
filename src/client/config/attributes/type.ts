@@ -1,17 +1,22 @@
 import { AttributeValidator } from '../../../types/dap/config';
-import { AttributeValueError, AttributeWarningError } from '../error';
 
 export const attributeName = 'type';
 export const defaultValue = 'autohotkey';
-export const validateTypeAttribute: AttributeValidator = async(config): Promise<void> => {
-  if (typeof config.type !== 'string') {
-    throw new AttributeValueError(attributeName, defaultValue);
-  }
+export const validateTypeAttribute: AttributeValidator = async(createChecker): Promise<void> => {
+  const checker = createChecker(attributeName);
 
-  if (config.type === defaultValue) {
+  const rawType = checker.get();
+  if (typeof rawType !== 'string') {
+    checker.throwTypeError(defaultValue);
     return Promise.resolve();
   }
 
-  config.type = defaultValue;
-  throw new AttributeWarningError(attributeName, `The ${attributeName} attribute must be "${defaultValue}".`);
+  if (rawType === defaultValue) {
+    checker.markValidated(rawType);
+    return Promise.resolve();
+  }
+
+  checker.markValidated(defaultValue);
+  checker.throwWarningError(`The ${attributeName} attribute must be "${defaultValue}".`);
+  return Promise.resolve();
 };

@@ -1,15 +1,20 @@
-import { AttributeValidator } from '../../../types/dap/config';
-import { AttributeTypeError } from '../error';
+import { AttributeCheckerFactory, AttributeValidator } from '../../../types/dap/config';
 
 export const attributeName = 'name';
 export const defaultValue = 'AutoHotkey Debug';
-export const validateNameAttribute: AttributeValidator = async(config): Promise<void> => {
-  if (!(attributeName in config) || config.name === undefined) {
-    config.name = defaultValue;
+export const validateNameAttribute: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
+  const checker = createChecker(attributeName);
+
+  const rawName = checker.get();
+  if (rawName === undefined) {
+    checker.markValidated(defaultValue);
     return Promise.resolve();
   }
-  if (typeof config.name === 'string') {
+  if (typeof rawName === 'string') {
+    checker.markValidated(rawName);
     return Promise.resolve();
   }
-  throw new AttributeTypeError(attributeName, 'string');
+
+  checker.throwTypeError('string');
+  return Promise.resolve();
 };

@@ -4,11 +4,29 @@ import { VariableCategory } from './variableCategory';
 import { PerfTipsConfig } from './perftips';
 import { LoadedScriptsConfig } from './loadedScripts';
 import { AnnounceLevel, DebugDirectiveConfig, OutputDebugConfig } from './adapter';
+import { LiteralUnion } from 'type-fest';
 
-export type AttributeType = 'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]';
-export type AttributeValidator = (config: DebugConfig) => Promise<void>;
+export type AttributeType = LiteralUnion<'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]', string>;
+export interface AttributeCheckerFactoryUtils {
+  getLanguageId?: (programPath: string) => Promise<string>;
+  getCurrentFile?: () => Promise<string>;
+}
+export type AttributeCheckerFactory = <K extends keyof DebugConfig>(attributeName: K, utils?: AttributeCheckerFactoryUtils) => AttributeChecker<K>;
+export interface AttributeChecker<K extends keyof DebugConfig> {
+  utils?: AttributeCheckerFactoryUtils;
+  rawConfig: DebugConfig;
+  get: () => DebugConfig[K];
+  ref: <K extends keyof DebugConfig>(attributeName: K) => DebugConfig[K];
+  getDependency: <NK extends keyof NormalizedDebugConfig>(dependedAttributeName: NK) => NormalizedDebugConfig[NK];
+  markValidated: (value?: DebugConfig[K]) => void;
+  throwWarningError: (message: string) => void;
+  throwValueError: (expectedValueOrValues: string | string[]) => void;
+  throwTypeError: (expectedTypeOrTypes: AttributeType | AttributeType[]) => void;
+  throwFileNotFoundError: (filePath?: string) => void;
+}
+export type AttributeValidator = (createChecker: AttributeCheckerFactory) => Promise<void>;
 
-export type DebugConfigValidator = (config: DebugConfig) => Promise<NormalizedDebugConfig>;
+export type DebugConfigValidator = (config: DebugConfig, callback?: (err: Error) => void) => Promise<NormalizedDebugConfig>;
 export type DebugRequest = 'launch' | 'attach';
 export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   // #region basic configurations
@@ -21,9 +39,13 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   trace: boolean;
 
   // #region launcher configurations
-  runtime: string;
+  runtime?: string;
+  runtime_v1?: string;
+  runtime_v2?: string;
   runtimeArgs?: string[];
-  program: string;
+  runtimeArgs_v1?: string[];
+  runtimeArgs_v2?: string[];
+  program?: string;
   args?: string[];
   port?: number;
   hostname?: string;
@@ -54,13 +76,16 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   useLoadedScripts?: boolean | LoadedScriptsConfig;
   // #endregion feature configurations
 }
-export interface NormalizedDebugConfig extends DebugConfig {
+export interface NormalizedDebugConfig extends Omit<DebugConfig, 'runtime_v1' | 'runtime_v2' | 'runtimeArgs_v1' | 'runtimeArgs_v2'> {
   name: string;
   request: DebugRequest;
   runtimeArgs: string[];
   args: string[];
   port: number;
   hostname: string;
+
+  runtime: string;
+  program: string;
 
   variableCategories?: VariableCategory[];
 

@@ -4,13 +4,13 @@ import * as vscode from 'vscode';
 import JSONC from 'jsonc-parser';
 import { validateDebugConfig } from '../config/validator';
 import { DebugConfig } from '../../types/dap/config';
-import { createDefaultLauncherConfig } from '../config/default';
+import { createDefaultDebugConfig } from '../config/default';
 import { readFileSync } from 'fs';
 import { deepDefaults } from '../../tools/utils';
 
 const debugConfigurationProvider: vscode.DebugConfigurationProvider = {
   resolveDebugConfiguration(folder, config, token): vscode.ProviderResult<vscode.DebugConfiguration> {
-    let defaultedConfig = deepDefaults(config, createDefaultLauncherConfig('${file}')) as vscode.DebugConfiguration;
+    let defaultedConfig = deepDefaults(config, createDefaultDebugConfig('${file}')) as vscode.DebugConfiguration;
     if (config.extends) {
       const launch: any = folder
         ? JSONC.parse(readFileSync(path.resolve(folder.uri.fsPath, '.vscode', 'launch.json'), 'utf-8'))

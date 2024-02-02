@@ -9,6 +9,9 @@ export const defaultPort = 9002;
 export const defaultAutoHotkeyInstallDir = path.resolve(String(process.env.PROGRAMFILES), 'AutoHotkey');
 export const defaultAutoHotkeyRuntimePath_v1 = path.resolve(defaultAutoHotkeyInstallDir, 'AutoHotkey.exe');
 export const defaultAutoHotkeyRuntimePath_v2 = path.resolve(defaultAutoHotkeyInstallDir, 'v2', 'AutoHotkey.exe');
+export const defaultAutoHotkeyUxDirPath = path.resolve(`${defaultAutoHotkeyInstallDir}/UX`);
+export const defaultAutoHotkeyUxRuntimePath = path.resolve(`${defaultAutoHotkeyUxDirPath}`, 'AutoHotkeyUX.exe');
+export const defaultAutoHotkeyLauncherPath = path.resolve(`${defaultAutoHotkeyUxDirPath}`, '/launcher.ahk');
 
 // #region runtime
 export const evaluateAutoHotkey = (runtime: string, expression: string): string | undefined => {
@@ -56,6 +59,27 @@ export const attachAutoHotkeyScript = (runtime: string, program: string, hostnam
     return false;
   }
   return true;
+};
+export const getLaunchInfoByLauncher = (program: string, installDir = defaultAutoHotkeyInstallDir): { requires: string; runtime: string; args: string[] } | undefined => {
+  if (!fileExists(program)) {
+    return undefined;
+  }
+  const autohotkeyUxRuntimePath = path.resolve(installDir, 'UX', 'AutoHotkeyUX.exe');
+  if (!fileExists(autohotkeyUxRuntimePath)) {
+    return undefined;
+  }
+  const autohotkeyLauncherPath = path.resolve(installDir, 'UX', 'launcher.ahk');
+  if (!fileExists(autohotkeyLauncherPath)) {
+    return undefined;
+  }
+
+  const result = spawnSync(autohotkeyUxRuntimePath, [ autohotkeyLauncherPath, '/Which', program ]);
+  if (result.error) {
+    return undefined;
+  }
+
+  const [ requires, runtime, ...args ] = result.stdout.toString().split(/\r\n|\n/u);
+  return { requires, runtime, args: args.filter((arg) => arg !== '') };
 };
 // #endregion runtime
 
