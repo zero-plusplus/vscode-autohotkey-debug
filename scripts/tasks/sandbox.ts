@@ -2,8 +2,8 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import { spawn } from 'child_process';
 import del from 'del';
-import { isDirectory } from '../../src/v1-0-0/util/util';
 import { projectRootDir } from '../config';
+import { directoryExists } from '../../src/tools/predicate';
 
 const sampleDirName = 'demo';
 export const startSandBox = async(): Promise<void> => {
@@ -14,7 +14,7 @@ export const startSandBox = async(): Promise<void> => {
   const wsbDirPath = path.resolve(`${tempDir}/${String(packageJson.name)}`);
   const wsbPath = path.resolve(`${wsbDirPath}/sandbox.wsb`);
 
-  if (isDirectory(wsbDirPath)) {
+  if (directoryExists(wsbDirPath)) {
     await del(wsbDirPath, { force: true });
   }
   await fs.mkdir(wsbDirPath);
