@@ -8,7 +8,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     request: attributes.request.defaultValue,
     stopOnEntry: attributes.stopOnEntry.defaultValue,
     skipFunctions: attributes.skipFunctions.defaultValue,
-    skipFiles: [],
+    skipFiles: attributes.skipFiles.defaultValue,
     trace: false,
 
     runtime: attributes.runtime.defaultValue,
