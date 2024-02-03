@@ -15,7 +15,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     runtimeArgs: [],
     program,
     args: [],
-    port: 9002,
+    port: attributes.port.defaultValue,
     hostname: 'localhost',
     noDebug: false,
     cwd: undefined,

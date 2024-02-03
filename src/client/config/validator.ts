@@ -3,7 +3,7 @@ import * as path from 'path';
 import { deepDefaults } from '../../tools/utils';
 import { AttributeChecker, AttributeCheckerFactoryUtils, AttributeValidator, DebugConfig, DebugConfigValidator, NormalizedDebugConfig } from '../../types/dap/config';
 import * as attributes from './attributes';
-import { AttributeFileNotFoundError, AttributeTypeError, AttributeValueError, AttributeWarningError, ValidationPriorityError } from './error';
+import { AttributeFileNotFoundError, AttributeFormatError, AttributeTypeError, AttributeValueError, AttributeWarningError, ValidationPriorityError } from './error';
 
 const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig, utils: AttributeCheckerFactoryUtils = {}): ((attributeName: K) => AttributeChecker<K>) => {
   const validated: Record<string, boolean> = {};
@@ -50,6 +50,9 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
         }
         throw warning;
       },
+      throwFormatError(format: string): void {
+        throw new AttributeFormatError(config.name, String(attributeName), format);
+      },
       throwValueError(expectedValueOrValues): void {
         throw new AttributeValueError(config.name, String(attributeName), expectedValueOrValues);
       },
@@ -92,6 +95,7 @@ export const validateDebugConfig = createAttributesValidator([
   attributes.request.validate,
   attributes.stopOnEntry.validate,
   attributes.args.validate,
+  attributes.port.validate,
 
   attributes.program.validate,
   attributes.runtime.validate,

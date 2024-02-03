@@ -17,6 +17,14 @@ export class AttributeWarningError extends Error {
     this.attributeName = attributeName;
   }
 }
+export class AttributeFormatError extends Error {
+  public readonly attributeName: string;
+  constructor(configName: string | undefined, attributeName: string, format: string) {
+    super(`[Configuration: ${configName ?? defaultNameAttributeValue}] Format Error\nThe ${attributeName} attribute must be in form ${format}`);
+
+    this.attributeName = attributeName;
+  }
+}
 export class AttributeTypeError extends Error {
   public readonly attributeName: string;
   constructor(configName: string | undefined, attributeName: string, expectedTypeOrTypes: AttributeType | AttributeType[]) {

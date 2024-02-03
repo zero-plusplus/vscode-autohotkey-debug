@@ -23,6 +23,7 @@ export interface AttributeChecker<K extends keyof DebugConfig> {
   markValidated: (value?: DebugConfig[K]) => void;
   markValidatedPath: (value?: DebugConfig[K]) => void;
   warning: (message: string) => void;
+  throwFormatError: (format: string) => void;
   throwValueError: (expectedValueOrValues: string | string[]) => void;
   throwTypeError: (expectedTypeOrTypes: AttributeType | AttributeType[]) => void;
   throwFileNotFoundError: (filePath?: string) => void;
