@@ -7,6 +7,7 @@ import { validateProgramAttribute } from './attributes/program';
 import { validateRuntimeAttribute } from './attributes/runtime';
 import { validateTypeAttribute } from './attributes/type';
 import { AttributeFileNotFoundError, AttributeTypeError, AttributeValueError, AttributeWarningError, ValidationPriorityError } from './error';
+import { validateRequestAttribute } from './attributes/request';
 
 const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig, utils?: AttributeCheckerFactoryUtils): ((attributeName: K) => AttributeChecker<K>) => {
   const validated: Record<string, boolean> = {};
@@ -83,6 +84,8 @@ export const createAttributesValidator = (validators: AttributeValidator[], util
 export const validateDebugConfig = createAttributesValidator([
   validateNameAttribute,
   validateTypeAttribute,
+  validateRequestAttribute,
+
   validateProgramAttribute,
   validateRuntimeAttribute,
 ]);
