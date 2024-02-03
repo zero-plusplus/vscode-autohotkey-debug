@@ -23,6 +23,14 @@ export const validate: AttributeValidator = async(createChecker: AttributeChecke
     return Promise.resolve();
   }
 
-  checker.markValidated(rawArgs);
+  const args = rawArgs.filter((arg, index) => {
+    if (typeof arg === 'string') {
+      return true;
+    }
+
+    checker.warning(`The ${attributeName} must be an array of strings; the ${index + 1}th element of the ${attributeName} was ignored because it is not a string.`);
+    return false;
+  });
+  checker.markValidated(args);
   return Promise.resolve();
 };
