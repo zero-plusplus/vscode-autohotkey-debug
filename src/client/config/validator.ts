@@ -85,6 +85,7 @@ export const validateDebugConfig = createAttributesValidator([
   attributes.name.validate,
   attributes.type.validate,
   attributes.request.validate,
+  attributes.stopOnEntry.validate,
 
   attributes.program.validate,
   attributes.runtime.validate,
