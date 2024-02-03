@@ -10,10 +10,11 @@ export type AttributeType = LiteralUnion<'string' | 'number' | 'boolean' | 'obje
 export interface AttributeCheckerFactoryUtils {
   getLanguageId?: (programPath: string) => Promise<string>;
   getCurrentFile?: () => Promise<string>;
+  warning?: (message: string) => Promise<void>;
 }
 export type AttributeCheckerFactory = <K extends keyof DebugConfig>(attributeName: K, utils?: AttributeCheckerFactoryUtils) => AttributeChecker<K>;
 export interface AttributeChecker<K extends keyof DebugConfig> {
-  utils?: AttributeCheckerFactoryUtils;
+  utils: AttributeCheckerFactoryUtils;
   rawConfig: DebugConfig;
   get: () => DebugConfig[K];
   ref: <K extends keyof DebugConfig>(attributeName: K) => DebugConfig[K];
@@ -21,7 +22,7 @@ export interface AttributeChecker<K extends keyof DebugConfig> {
   getDependency: <NK extends keyof NormalizedDebugConfig>(dependedAttributeName: NK) => NormalizedDebugConfig[NK];
   markValidated: (value?: DebugConfig[K]) => void;
   markValidatedPath: (value?: DebugConfig[K]) => void;
-  throwWarningError: (message: string) => void;
+  warning: (message: string) => void;
   throwValueError: (expectedValueOrValues: string | string[]) => void;
   throwTypeError: (expectedTypeOrTypes: AttributeType | AttributeType[]) => void;
   throwFileNotFoundError: (filePath?: string) => void;
@@ -35,7 +36,7 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   name?: string;
   type: string;
   request?: DebugRequest;
-  stopOnEntry: boolean;
+  stopOnEntry?: boolean;
   skipFunctions?: string[];
   skipFiles?: string[];
   trace: boolean;
@@ -49,7 +50,7 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   runtimeArgs_v2?: string[];
   program?: string;
   args?: string[];
-  port?: number;
+  port?: number | `${number}-${number}`;
   hostname?: string;
   noDebug?: boolean;
   cwd?: string;
@@ -81,12 +82,13 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
 export interface NormalizedDebugConfig extends Omit<DebugConfig, 'runtime_v1' | 'runtime_v2' | 'runtimeArgs_v1' | 'runtimeArgs_v2'> {
   name: string;
   request: DebugRequest;
-  runtimeArgs: string[];
+  stopOnEntry: boolean;
   args: string[];
   port: number;
   hostname: string;
 
   runtime: string;
+  runtimeArgs: string[];
   program: string;
 
   variableCategories?: VariableCategory[];
