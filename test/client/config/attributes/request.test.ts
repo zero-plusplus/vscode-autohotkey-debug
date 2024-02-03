@@ -6,10 +6,6 @@ import { AttributeTypeError, AttributeValueError } from '../../../../src/client/
 import { validateRequestAttribute } from '../../../../src/client/config/attributes/request';
 
 describe('request attribute', () => {
-  const errorHandler = (err: Error): void => {
-    throw err;
-  };
-
   describe('validate', () => {
     test('non-normalize', async() => {
       const validateDebugConfig = createAttributesValidator([ validateRequestAttribute ]);
@@ -17,7 +13,7 @@ describe('request attribute', () => {
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
         request: 'launch',
-      }, errorHandler);
+      });
       expect(config.request).toBe('launch');
     });
     test('non-normalize', async() => {
@@ -26,7 +22,7 @@ describe('request attribute', () => {
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
         request: 'attach',
-      }, errorHandler);
+      });
       expect(config.request).toBe('attach');
     });
   });
@@ -39,7 +35,7 @@ describe('request attribute', () => {
         ...createDefaultDebugConfig(''),
         request: {} as 'launch',
       };
-      await expect(validateDebugConfig(config, errorHandler)).rejects.toThrow(AttributeTypeError);
+      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
     });
     test('value error', async() => {
       const validateDebugConfig = createAttributesValidator([ validateRequestAttribute ]);
@@ -48,7 +44,7 @@ describe('request attribute', () => {
         ...createDefaultDebugConfig(''),
         request: 'abc' as 'launch',
       };
-      await expect(validateDebugConfig(config, errorHandler)).rejects.toThrow(AttributeValueError);
+      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeValueError);
     });
   });
 });

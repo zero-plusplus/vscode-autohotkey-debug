@@ -7,9 +7,6 @@ import { AttributeFileNotFoundError } from '../../../../src/client/config/error'
 
 describe('program attribute', () => {
   let temp: TemporaryResource;
-  const errorHandler = (err: Error): void => {
-    throw err;
-  };
   beforeAll(async() => {
     temp = await createTempDirectoryWithFile('program-attribute', '.ahk', ``);
   });
@@ -24,7 +21,7 @@ describe('program attribute', () => {
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
         program: temp.path,
-      }, errorHandler);
+      });
       expect(config.program).toBe(temp.path);
     });
   });
@@ -37,7 +34,7 @@ describe('program attribute', () => {
         ...createDefaultDebugConfig(''),
         program: '',
       };
-      await expect(validateDebugConfig(config, errorHandler)).rejects.toThrow(AttributeFileNotFoundError);
+      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeFileNotFoundError);
     });
   });
 });

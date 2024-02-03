@@ -6,9 +6,6 @@ import { DebugConfig } from '../../../../src/types/dap/config';
 import { AttributeTypeError } from '../../../../src/client/config/error';
 
 describe('name attribute', () => {
-  const errorHandler = (err: Error): void => {
-    throw err;
-  };
   describe('validate', () => {
     test('non-normalize', async() => {
       const validateDebugConfig = createAttributesValidator([ validateNameAttribute ]);
@@ -16,7 +13,7 @@ describe('name attribute', () => {
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
         name: '',
-      }, errorHandler);
+      });
       expect(config.name).toBe('');
     });
   });
@@ -29,7 +26,7 @@ describe('name attribute', () => {
         ...createDefaultDebugConfig(''),
         name: false as unknown as string,
       };
-      await expect(validateDebugConfig(config, errorHandler)).rejects.toThrow(AttributeTypeError);
+      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
     });
   });
 });

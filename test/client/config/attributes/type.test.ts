@@ -6,9 +6,6 @@ import { AttributeTypeError, AttributeWarningError } from '../../../../src/clien
 import { validateTypeAttribute } from '../../../../src/client/config/attributes/type';
 
 describe('type attribute', () => {
-  const errorHandler = (err: Error): void => {
-    throw err;
-  };
   describe('validate', () => {
     test('non-normalize', async() => {
       const validateDebugConfig = createAttributesValidator([ validateTypeAttribute ]);
@@ -16,7 +13,7 @@ describe('type attribute', () => {
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
         type: 'autohotkey',
-      }, errorHandler);
+      });
       expect(config.type).toBe('autohotkey');
     });
   });
@@ -29,7 +26,7 @@ describe('type attribute', () => {
         ...createDefaultDebugConfig(''),
         type: '',
       };
-      await expect(validateDebugConfig(config, errorHandler)).rejects.toThrow(AttributeWarningError);
+      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeWarningError);
     });
     test('type error', async() => {
       const validateDebugConfig = createAttributesValidator([ validateTypeAttribute ]);
@@ -38,7 +35,7 @@ describe('type attribute', () => {
         ...createDefaultDebugConfig(''),
         type: false as unknown as string,
       };
-      await expect(validateDebugConfig(config, errorHandler)).rejects.toThrow(AttributeTypeError);
+      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
     });
   });
 });

@@ -9,9 +9,6 @@ import { defaultAutoHotkeyRuntimePath_v1 } from '../../../../src/tools/autohotke
 
 describe('runtime attribute', () => {
   let temp: TemporaryResource;
-  const errorHandler = (err: Error): void => {
-    throw err;
-  };
   beforeAll(async() => {
     temp = await createTempDirectoryWithFile('runtime-attribute', '.ahk', ``);
   });
@@ -27,7 +24,7 @@ describe('runtime attribute', () => {
         ...createDefaultDebugConfig(''),
         program: temp.path,
         runtime: defaultAutoHotkeyRuntimePath_v1,
-      }, errorHandler);
+      });
       expect(config.runtime).toBe(defaultAutoHotkeyRuntimePath_v1);
     });
     test('relative path', async() => {
@@ -37,7 +34,7 @@ describe('runtime attribute', () => {
         ...createDefaultDebugConfig(''),
         program: temp.path,
         runtime: 'AutoHotkey.exe',
-      }, errorHandler);
+      });
       expect(config.runtime).toBe(defaultAutoHotkeyRuntimePath_v1);
     });
   });
@@ -51,7 +48,7 @@ describe('runtime attribute', () => {
         process: temp.path,
         runtime: '',
       };
-      await expect(validateDebugConfig(config, errorHandler)).rejects.toThrow(AttributeFileNotFoundError);
+      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeFileNotFoundError);
     });
   });
 });

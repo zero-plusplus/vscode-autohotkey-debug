@@ -61,8 +61,12 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
     };
   };
 };
+
 export const createAttributesValidator = (validators: AttributeValidator[], utils?: AttributeCheckerFactoryUtils): DebugConfigValidator => {
-  return async(config: DebugConfig, callback?: (err: Error) => void): Promise<NormalizedDebugConfig> => {
+  const defaultErrorHandler = (err: Error): void => {
+    throw err;
+  };
+  return async(config: DebugConfig, errorHandler?: (err: Error) => void): Promise<NormalizedDebugConfig> => {
     const clonedConfig = deepDefaults({}, config);
 
     const createChecker = createAttributeFactory(clonedConfig, utils);
@@ -73,7 +77,7 @@ export const createAttributesValidator = (validators: AttributeValidator[], util
       }
       catch (err: unknown) {
         if (err instanceof Error) {
-          callback?.(err);
+          (errorHandler ?? defaultErrorHandler)(err);
         }
       }
     }
