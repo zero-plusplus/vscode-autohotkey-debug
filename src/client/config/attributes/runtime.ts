@@ -49,7 +49,7 @@ export const validateByRuntime_v1_v2: AttributeValidator = async(createChecker):
   if (rawRuntime_v1 && rawRuntime_v2) {
     const program = checker.getDependency('program');
 
-    const languageId = await checker.utils?.getLanguageId?.(program);
+    const languageId = await checker.utils.getLanguageId?.(program);
     switch (languageId) {
       case 'ahk':
       case 'ahkh': {
@@ -166,7 +166,7 @@ export const validateByLanguageId: AttributeValidator = async(createChecker): Pr
   }
 
   const program = checker.getDependency('program');
-  const languageId = await checker.utils?.getLanguageId?.(program);
+  const languageId = await checker.utils.getLanguageId?.(program);
   switch (languageId) {
     case 'ahk':
     case 'ahkh': {

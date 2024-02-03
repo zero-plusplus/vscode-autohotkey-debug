@@ -15,7 +15,7 @@ export const validate: AttributeValidator = async(createChecker): Promise<void> 
     return Promise.resolve();
   }
 
-  const program = rawProgram ?? await checker.utils?.getCurrentFile?.();
+  const program = rawProgram ?? await checker.utils.getCurrentFile?.();
   if (!program) {
     checker.throwFileNotFoundError();
     return Promise.resolve();

@@ -5,7 +5,7 @@ import { AttributeChecker, AttributeCheckerFactoryUtils, AttributeValidator, Deb
 import * as attributes from './attributes';
 import { AttributeFileNotFoundError, AttributeTypeError, AttributeValueError, AttributeWarningError, ValidationPriorityError } from './error';
 
-const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig, utils?: AttributeCheckerFactoryUtils): ((attributeName: K) => AttributeChecker<K>) => {
+const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig, utils: AttributeCheckerFactoryUtils = {}): ((attributeName: K) => AttributeChecker<K>) => {
   const validated: Record<string, boolean> = {};
   return (attributeName: K): AttributeChecker<K> => {
     return {
@@ -42,8 +42,13 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
           config[attributeName] = path.resolve(value) as any;
         }
       },
-      throwWarningError(message): void {
-        throw new AttributeWarningError(config.name, String(attributeName), message);
+      warning(message): void {
+        const warning = new AttributeWarningError(config.name, String(attributeName), message);
+        if (this.utils.warning) {
+          this.utils.warning(warning.message);
+          return;
+        }
+        throw warning;
       },
       throwValueError(expectedValueOrValues): void {
         throw new AttributeValueError(config.name, String(attributeName), expectedValueOrValues);
@@ -58,7 +63,7 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
   };
 };
 
-export const createAttributesValidator = (validators: AttributeValidator[], utils?: AttributeCheckerFactoryUtils): DebugConfigValidator => {
+export const createAttributesValidator = (validators: AttributeValidator[], utils: AttributeCheckerFactoryUtils = {}): DebugConfigValidator => {
   const defaultErrorHandler = (err: Error): void => {
     throw err;
   };

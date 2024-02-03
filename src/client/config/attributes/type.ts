@@ -17,6 +17,6 @@ export const validate: AttributeValidator = async(createChecker): Promise<void> 
   }
 
   checker.markValidated(defaultValue);
-  checker.throwWarningError(`The ${attributeName} attribute must be "${defaultValue}".`);
+  checker.warning(`The ${attributeName} attribute must be "${defaultValue}".`);
   return Promise.resolve();
 };
