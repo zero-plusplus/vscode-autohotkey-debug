@@ -7,7 +7,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     type: attributes.type.defaultValue,
     request: attributes.request.defaultValue,
     stopOnEntry: attributes.stopOnEntry.defaultValue,
-    skipFunctions: [],
+    skipFunctions: attributes.skipFunctions.defaultValue,
     skipFiles: [],
     trace: false,
 
@@ -16,7 +16,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     program,
     args: [],
     port: attributes.port.defaultValue,
-    hostname: 'localhost',
+    hostname: attributes.hostname.defaultValue,
     noDebug: false,
     cwd: undefined,
     env: undefined,

@@ -1,4 +1,5 @@
 export * as args from './args';
+export * as hostname from './hostname';
 export * as name from './name';
 export * as port from './port';
 export * as program from './program';
