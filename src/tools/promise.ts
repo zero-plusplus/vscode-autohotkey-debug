@@ -11,8 +11,8 @@ export class TimeoutError extends Error {
     super(`Operation timed out after ${timeout_ms}ms.`);
   }
 }
-export const timeoutPromise = async<T>(promise: Promise<T>, timeout_ms: number): Promise<T | void> => {
-  return Promise.race([
+export const timeoutPromise = async<T>(promise: Promise<T>, timeout_ms: number): Promise<T> => {
+  const result = await Promise.race([
     promise,
     new Promise<void>((resolve, reject) => {
       const id = setTimeout(() => {
@@ -21,4 +21,5 @@ export const timeoutPromise = async<T>(promise: Promise<T>, timeout_ms: number):
       }, timeout_ms);
     }),
   ]);
+  return result as T;
 };
