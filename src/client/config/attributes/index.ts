@@ -1,3 +1,4 @@
+export * as args from './args';
 export * as name from './name';
 export * as program from './program';
 export * as request from './request';
