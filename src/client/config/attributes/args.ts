@@ -15,14 +15,6 @@ export const validate: AttributeValidator = async(createChecker: AttributeChecke
     return Promise.resolve();
   }
 
-  const containsNotStringArgs = rawArgs.some((arg) => typeof arg !== 'string');
-  if (containsNotStringArgs) {
-    const args = rawArgs.filter((arg) => typeof arg === 'string');
-    checker.markValidated(args);
-    checker.warning(`The ${attributeName} must be an array of strings. Non-string elements are ignored.`);
-    return Promise.resolve();
-  }
-
   const args = rawArgs.filter((arg, index) => {
     if (typeof arg === 'string') {
       return true;
