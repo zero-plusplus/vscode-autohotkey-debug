@@ -1,17 +1,17 @@
-import { defaultAutoHotkeyInstallDir } from '../../tools/autohotkey';
 import { NormalizedDebugConfig } from '../../types/dap/config';
+import * as attributes from './attributes';
 
 export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig => {
   return {
-    name: 'AutoHotkey Debug',
-    type: 'autohotkey',
-    request: 'launch',
-    stopOnEntry: false,
+    name: attributes.name.defaultValue,
+    type: attributes.type.defaultValue,
+    request: attributes.request.defaultValue,
+    stopOnEntry: attributes.stopOnEntry.defaultValue,
     skipFunctions: [],
     skipFiles: [],
     trace: false,
 
-    runtime: defaultAutoHotkeyInstallDir,
+    runtime: attributes.runtime.defaultValue,
     runtimeArgs: [],
     program,
     args: [],

@@ -2,9 +2,8 @@ import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import { createDefaultDebugConfig } from '../../../../src/client/config/default';
 import { AttributeFileNotFoundError } from '../../../../src/client/config/error';
 import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { validateProgramAttribute } from '../../../../src/client/config/attributes/program';
+import * as attributes from '../../../../src/client/config/attributes';
 import { TemporaryResource, createTempDirectoryWithFile } from '../../../../src/tools/temp';
-import { validateRuntimeAttribute } from '../../../../src/client/config/attributes/runtime';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../../../src/tools/autohotkey';
 
 describe('runtime attribute', () => {
@@ -18,7 +17,7 @@ describe('runtime attribute', () => {
 
   describe('validate', () => {
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateProgramAttribute, validateRuntimeAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validate, attributes.runtime.validate ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -28,7 +27,7 @@ describe('runtime attribute', () => {
       expect(config.runtime).toBe(defaultAutoHotkeyRuntimePath_v1);
     });
     test('relative path', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateProgramAttribute, validateRuntimeAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validate, attributes.runtime.validate ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -41,7 +40,7 @@ describe('runtime attribute', () => {
 
   describe('validate error', () => {
     test('file not found', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateProgramAttribute, validateRuntimeAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validate, attributes.runtime.validate ]);
 
       const config = {
         ...createDefaultDebugConfig(''),

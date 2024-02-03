@@ -10,14 +10,14 @@ export const defaultValue = fileExists(defaultAutoHotkeyRuntimePath_v2)
   ? defaultAutoHotkeyRuntimePath_v2
   : defaultAutoHotkeyRuntimePath_v1;
 
-export const validateRuntimeAttribute: AttributeValidator = async(createChecker): Promise<void> => {
-  await validateRuntimeAttributeByFileExists(createChecker);
-  await validateRuntimeAttributeByRuntime_v1_v2(createChecker);
-  await validateRuntimeAttributeByRuntimeOfMainScript(createChecker);
-  await validateRuntimeAttributeByAutoHotkeyLauncher(createChecker);
-  await validateRuntimeAttributeByCommandName(createChecker);
-  await validateRuntimeAttributeByRelativePath(createChecker);
-  await validateRuntimeAttributeByLanguageId(createChecker);
+export const validate: AttributeValidator = async(createChecker): Promise<void> => {
+  await validateByFileExists(createChecker);
+  await validateByRuntime_v1_v2(createChecker);
+  await validateByRuntimeOfMainScript(createChecker);
+  await validateByAutoHotkeyLauncher(createChecker);
+  await validateByCommandName(createChecker);
+  await validateByRelativePath(createChecker);
+  await validateByLanguageId(createChecker);
 
   const checker = createChecker(attributeName);
   if (!checker.isValid) {
@@ -26,7 +26,7 @@ export const validateRuntimeAttribute: AttributeValidator = async(createChecker)
   return Promise.resolve();
 };
 
-export const validateRuntimeAttributeByFileExists: AttributeValidator = async(createChecker): Promise<void> => {
+export const validateByFileExists: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
   if (checker.isValid) {
     return Promise.resolve();
@@ -38,7 +38,7 @@ export const validateRuntimeAttributeByFileExists: AttributeValidator = async(cr
   }
   return Promise.resolve();
 };
-export const validateRuntimeAttributeByRuntime_v1_v2: AttributeValidator = async(createChecker): Promise<void> => {
+export const validateByRuntime_v1_v2: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
   if (checker.isValid) {
     return Promise.resolve();
@@ -75,7 +75,7 @@ export const validateRuntimeAttributeByRuntime_v1_v2: AttributeValidator = async
   }
   return Promise.resolve();
 };
-export const validateRuntimeAttributeByRuntimeOfMainScript: AttributeValidator = async(createChecker): Promise<void> => {
+export const validateByRuntimeOfMainScript: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
   if (checker.isValid) {
     return Promise.resolve();
@@ -91,7 +91,7 @@ export const validateRuntimeAttributeByRuntimeOfMainScript: AttributeValidator =
   }
   return Promise.resolve();
 };
-export const validateRuntimeAttributeByAutoHotkeyLauncher: AttributeValidator = async(createChecker): Promise<void> => {
+export const validateByAutoHotkeyLauncher: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
   if (checker.isValid) {
     return Promise.resolve();
@@ -125,7 +125,7 @@ export const validateRuntimeAttributeByAutoHotkeyLauncher: AttributeValidator = 
   }
   return Promise.resolve();
 };
-export const validateRuntimeAttributeByCommandName: AttributeValidator = async(createChecker): Promise<void> => {
+export const validateByCommandName: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
   if (checker.isValid) {
     return Promise.resolve();
@@ -133,7 +133,7 @@ export const validateRuntimeAttributeByCommandName: AttributeValidator = async(c
 
   return Promise.resolve();
 };
-export const validateRuntimeAttributeByRelativePath: AttributeValidator = async(createChecker): Promise<void> => {
+export const validateByRelativePath: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
   if (checker.isValid) {
     return Promise.resolve();
@@ -154,7 +154,7 @@ export const validateRuntimeAttributeByRelativePath: AttributeValidator = async(
   }
   return Promise.resolve();
 };
-export const validateRuntimeAttributeByLanguageId: AttributeValidator = async(createChecker): Promise<void> => {
+export const validateByLanguageId: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
   if (checker.isValid) {
     return Promise.resolve();

@@ -3,12 +3,12 @@ import { createDefaultDebugConfig } from '../../../../src/client/config/default'
 import { createAttributesValidator } from '../../../../src/client/config/validator';
 import { DebugConfig } from '../../../../src/types/dap/config';
 import { AttributeTypeError, AttributeWarningError } from '../../../../src/client/config/error';
-import { validateTypeAttribute } from '../../../../src/client/config/attributes/type';
+import * as attributes from '../../../../src/client/config/attributes';
 
 describe('type attribute', () => {
   describe('validate', () => {
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateTypeAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.type.validate ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -20,7 +20,7 @@ describe('type attribute', () => {
 
   describe('validate error', () => {
     test('warning', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateTypeAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.type.validate ]);
 
       const config: DebugConfig = {
         ...createDefaultDebugConfig(''),
@@ -29,7 +29,7 @@ describe('type attribute', () => {
       await expect(validateDebugConfig(config)).rejects.toThrow(AttributeWarningError);
     });
     test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateTypeAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.type.validate ]);
 
       const config: DebugConfig = {
         ...createDefaultDebugConfig(''),

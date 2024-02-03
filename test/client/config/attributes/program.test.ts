@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import { createDefaultDebugConfig } from '../../../../src/client/config/default';
 import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { validateProgramAttribute } from '../../../../src/client/config/attributes/program';
+import * as attributes from '../../../../src/client/config/attributes';
 import { TemporaryResource, createTempDirectoryWithFile } from '../../../../src/tools/temp';
 import { AttributeFileNotFoundError } from '../../../../src/client/config/error';
 
@@ -16,7 +16,7 @@ describe('program attribute', () => {
 
   describe('validate', () => {
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateProgramAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validate ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -28,7 +28,7 @@ describe('program attribute', () => {
 
   describe('validate error', () => {
     test('file not found', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateProgramAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validate ]);
 
       const config = {
         ...createDefaultDebugConfig(''),

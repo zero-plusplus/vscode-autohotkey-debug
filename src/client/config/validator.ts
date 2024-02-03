@@ -2,12 +2,8 @@
 import * as path from 'path';
 import { deepDefaults } from '../../tools/utils';
 import { AttributeChecker, AttributeCheckerFactoryUtils, AttributeValidator, DebugConfig, DebugConfigValidator, NormalizedDebugConfig } from '../../types/dap/config';
-import { validateNameAttribute } from './attributes/name';
-import { validateProgramAttribute } from './attributes/program';
-import { validateRuntimeAttribute } from './attributes/runtime';
-import { validateTypeAttribute } from './attributes/type';
+import * as attributes from './attributes';
 import { AttributeFileNotFoundError, AttributeTypeError, AttributeValueError, AttributeWarningError, ValidationPriorityError } from './error';
-import { validateRequestAttribute } from './attributes/request';
 
 const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig, utils?: AttributeCheckerFactoryUtils): ((attributeName: K) => AttributeChecker<K>) => {
   const validated: Record<string, boolean> = {};
@@ -86,10 +82,10 @@ export const createAttributesValidator = (validators: AttributeValidator[], util
 };
 
 export const validateDebugConfig = createAttributesValidator([
-  validateNameAttribute,
-  validateTypeAttribute,
-  validateRequestAttribute,
+  attributes.name.validate,
+  attributes.type.validate,
+  attributes.request.validate,
 
-  validateProgramAttribute,
-  validateRuntimeAttribute,
+  attributes.program.validate,
+  attributes.runtime.validate,
 ]);

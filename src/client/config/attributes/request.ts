@@ -2,7 +2,7 @@ import { AttributeValidator } from '../../../types/dap/config';
 
 export const attributeName = 'request';
 export const defaultValue = 'launch';
-export const validateRequestAttribute: AttributeValidator = async(createChecker): Promise<void> => {
+export const validate: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
 
   const rawRequest = checker.get();

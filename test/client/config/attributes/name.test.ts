@@ -1,14 +1,14 @@
 import { describe, expect, test } from '@jest/globals';
 import { createDefaultDebugConfig } from '../../../../src/client/config/default';
 import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { validateNameAttribute } from '../../../../src/client/config/attributes/name';
+import * as attributes from '../../../../src/client/config/attributes';
 import { DebugConfig } from '../../../../src/types/dap/config';
 import { AttributeTypeError } from '../../../../src/client/config/error';
 
 describe('name attribute', () => {
   describe('validate', () => {
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateNameAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.name.validate ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -20,7 +20,7 @@ describe('name attribute', () => {
 
   describe('validate error', () => {
     test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ validateNameAttribute ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.name.validate ]);
 
       const config: DebugConfig = {
         ...createDefaultDebugConfig(''),
