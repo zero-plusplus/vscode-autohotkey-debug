@@ -1,16 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
-import { TimeoutError, deepDefaults, safeCall, sleep, timeoutPromise } from '../../src/tools/utils';
+import { deepDefaults } from '../../../src/tools/utils';
 
 describe('utils', () => {
-  test('safeCall', () => {
-    expect(safeCall((value) => value, [ 'abc' ])).toBe('abc');
-    expect(safeCall(() => {
-      throw Error();
-    }, [], 123)).toBe(123);
-  });
-  test('timeoutPromise / sleep', () => {
-    expect(timeoutPromise(sleep(1000), 500)).rejects.toThrow(TimeoutError);
-  });
   test('deepDefaults', () => {
     const obj = { a: 'value', c: { d: 'value' } } as const;
     const source1 = { a: 'overwrite?', c: { d: 'overwrite?', e: 'value' } } as const;

@@ -4,7 +4,7 @@ import { parseXml } from '../tools/xml';
 import * as dbgp from '../types/dbgp/ExtendAutoHotkeyDebugger';
 import { CommandSender, Process, Session, SessionConnector } from '../types/dap/session';
 import { createCommandArgs, encodeToBase64 } from './utils';
-import { timeoutPromise } from '../tools/utils';
+import { timeoutPromise } from '../tools/promise';
 
 const responseEventName = 'response';
 export const createSessionConnector = (): SessionConnector => {
