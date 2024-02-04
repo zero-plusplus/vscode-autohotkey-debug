@@ -6,7 +6,7 @@ export const attributeName = 'program';
 export const defaultValue = fileExists(defaultAutoHotkeyRuntimePath_v2)
   ? defaultAutoHotkeyRuntimePath_v2
   : defaultAutoHotkeyRuntimePath_v1;
-export const validate: AttributeValidator = async(createChecker): Promise<void> => {
+export const validator: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
 
   const rawProgram = checker.get();

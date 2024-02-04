@@ -2,7 +2,7 @@ import { AttributeValidator } from '../../../types/dap/config';
 
 export const attributeName = 'env';
 export const defaultValue = undefined;
-export const validate: AttributeValidator = async(createChecker) => {
+export const validator: AttributeValidator = async(createChecker) => {
   const checker = createChecker(attributeName);
 
   const rawAttribute = checker.get();

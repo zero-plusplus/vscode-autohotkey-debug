@@ -17,7 +17,7 @@ describe('runtime attribute', () => {
 
   describe('validate', () => {
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.program.validate, attributes.runtime.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validator, attributes.runtime.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -27,7 +27,7 @@ describe('runtime attribute', () => {
       expect(config.runtime).toBe(defaultAutoHotkeyRuntimePath_v1);
     });
     test('relative path', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.program.validate, attributes.runtime.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validator, attributes.runtime.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -40,7 +40,7 @@ describe('runtime attribute', () => {
 
   describe('validate error', () => {
     test('file not found', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.program.validate, attributes.runtime.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validator, attributes.runtime.validator ]);
 
       const config = {
         ...createDefaultDebugConfig(''),

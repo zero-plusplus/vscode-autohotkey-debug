@@ -10,7 +10,7 @@ export const defaultValue = fileExists(defaultAutoHotkeyRuntimePath_v2)
   ? defaultAutoHotkeyRuntimePath_v2
   : defaultAutoHotkeyRuntimePath_v1;
 
-export const validate: AttributeValidator = async(createChecker): Promise<void> => {
+export const validator: AttributeValidator = async(createChecker): Promise<void> => {
   await validateByFileExists(createChecker);
   await validateByRuntime_v1_v2(createChecker);
   await validateByRuntimeOfMainScript(createChecker);

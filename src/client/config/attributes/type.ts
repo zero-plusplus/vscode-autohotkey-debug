@@ -2,7 +2,7 @@ import { AttributeValidator } from '../../../types/dap/config';
 
 export const attributeName = 'type';
 export const defaultValue = 'autohotkey';
-export const validate: AttributeValidator = async(createChecker): Promise<void> => {
+export const validator: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
 
   const rawType = checker.get();

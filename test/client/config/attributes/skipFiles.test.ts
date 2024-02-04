@@ -1,4 +1,4 @@
 import * as attributes from '../../../../src/client/config/attributes';
 import { createTest } from './common/strings';
 
-createTest('skipFiles', attributes.skipFiles.defaultValue, attributes.skipFiles.validate);
+createTest('skipFiles', attributes.skipFiles.defaultValue, attributes.skipFiles.validator);

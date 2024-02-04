@@ -8,7 +8,7 @@ import * as attributes from '../../../../src/client/config/attributes';
 describe('type attribute', () => {
   describe('validate', () => {
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.type.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.type.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -20,7 +20,7 @@ describe('type attribute', () => {
 
   describe('validate error', () => {
     test('warning', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.type.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.type.validator ]);
 
       const config: DebugConfig = {
         ...createDefaultDebugConfig(''),
@@ -29,7 +29,7 @@ describe('type attribute', () => {
       await expect(validateDebugConfig(config)).rejects.toThrow(AttributeWarningError);
     });
     test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.type.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.type.validator ]);
 
       const config: DebugConfig = {
         ...createDefaultDebugConfig(''),

@@ -16,7 +16,7 @@ describe('program attribute', () => {
 
   describe('validate', () => {
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.program.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -28,7 +28,7 @@ describe('program attribute', () => {
 
   describe('validate error', () => {
     test('file not found', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.program.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.program.validator ]);
 
       const config = {
         ...createDefaultDebugConfig(''),

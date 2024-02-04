@@ -4,7 +4,7 @@ import { AttributeCheckerFactory, AttributeValidator } from '../../../types/dap/
 
 export const attributeName = 'port';
 export const defaultValue = 9002;
-export const validate: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
+export const validator: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
   const checker = createChecker(attributeName);
 
   const tryPorts: number[] = [];

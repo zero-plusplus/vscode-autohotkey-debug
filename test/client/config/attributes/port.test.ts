@@ -8,7 +8,7 @@ import { AttributeTypeError, AttributeWarningError } from '../../../../src/clien
 describe('port attribute', () => {
   describe('validate', () => {
     test('default', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.port.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.port.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -17,7 +17,7 @@ describe('port attribute', () => {
       expect(config.port).toBe(attributes.port.defaultValue);
     });
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.port.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.port.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -26,7 +26,7 @@ describe('port attribute', () => {
       expect(config.port).toBe(9002);
     });
     test('string-format port', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.port.validate ], { warning: async(): Promise<void> => Promise.resolve() });
+      const validateDebugConfig = createAttributesValidator([ attributes.port.validator ], { warning: async(): Promise<void> => Promise.resolve() });
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -35,7 +35,7 @@ describe('port attribute', () => {
       expect(config.port).toBe(9002);
     });
     test('first-end format port', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.port.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.port.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -47,7 +47,7 @@ describe('port attribute', () => {
 
   describe('validate error', () => {
     test('warning', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.port.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.port.validator ]);
 
       const config = {
         ...createDefaultDebugConfig(''),
@@ -56,7 +56,7 @@ describe('port attribute', () => {
       await expect(validateDebugConfig(config)).rejects.toThrowError(AttributeWarningError);
     });
     test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.name.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.name.validator ]);
 
       const config: DebugConfig = {
         ...createDefaultDebugConfig(''),

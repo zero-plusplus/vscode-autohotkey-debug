@@ -8,7 +8,7 @@ import { DebugConfig } from '../../../../src/types/dap/config';
 describe('env attribute', () => {
   describe('validate', () => {
     test('normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.env.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.env.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -17,7 +17,7 @@ describe('env attribute', () => {
       expect(config.env).toBe(attributes.env.defaultValue);
     });
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.env.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.env.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
@@ -29,7 +29,7 @@ describe('env attribute', () => {
 
   describe('validate error', () => {
     test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.env.validate ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.env.validator ]);
 
       const config: DebugConfig = {
         ...createDefaultDebugConfig(''),
