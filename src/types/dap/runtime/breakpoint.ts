@@ -1,6 +1,6 @@
-import { BreakpointType, CharacterNumber, Expression, FileName, HitCondition, LineNumber } from '../dbgp/ExtendAutoHotkeyDebugger';
-import { Session } from './session';
-import { VisibleCondition } from './variableCategory';
+import { BreakpointType, CharacterNumber, Expression, FileName, HitCondition, LineNumber } from '../../dbgp/ExtendAutoHotkeyDebugger';
+import { Session } from '../session';
+import { VisibleCondition } from '../variableCategory';
 
 export type BreakpointKind = Omit<BreakpointType, 'call'> | 'function';
 

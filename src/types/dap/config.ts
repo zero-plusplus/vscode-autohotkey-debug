@@ -1,5 +1,5 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { BreakpointDataArray } from './breakpoint';
+import { BreakpointDataArray } from './runtime/breakpoint';
 import { VariableCategory } from './variableCategory';
 import { PerfTipsConfig } from './perftips';
 import { LoadedScriptsConfig } from './loadedScripts';
