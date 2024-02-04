@@ -1,5 +1,6 @@
 export * as args from './args';
 export * as cwd from './cwd';
+export * as env from './env';
 export * as hostname from './hostname';
 export * as name from './name';
 export * as noDebug from './noDebug';

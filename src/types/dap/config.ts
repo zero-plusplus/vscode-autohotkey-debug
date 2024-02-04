@@ -6,7 +6,7 @@ import { LoadedScriptsConfig } from './loadedScripts';
 import { AnnounceLevel, DebugDirectiveConfig, OutputDebugConfig } from './adapter';
 import { LiteralUnion } from 'type-fest';
 
-export type AttributeType = LiteralUnion<'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]', string>;
+export type AttributeType = LiteralUnion<'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]' | 'object', string>;
 export interface AttributeCheckerFactoryUtils {
   getLanguageId?: (programPath: string) => Promise<string>;
   getCurrentFile?: () => Promise<string>;
