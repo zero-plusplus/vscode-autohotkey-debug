@@ -4,19 +4,17 @@ export const createBooleanValueValidator = <N extends keyof DebugConfig>(attribu
   return async(createChecker) => {
     const checker = createChecker(attributeName);
 
-    const rawName = checker.get();
-    if (rawName === undefined) {
+    const rawAttribute = checker.get();
+    if (rawAttribute === undefined) {
       checker.markValidated(defaultValue);
       return Promise.resolve();
     }
-    if (typeof rawName === 'boolean') {
-      checker.markValidated(rawName);
+    if (typeof rawAttribute === 'boolean') {
+      checker.markValidated(rawAttribute);
       return Promise.resolve();
     }
 
-    const value = Boolean(rawName) as DebugConfig[N];
-    checker.markValidated(value);
-    checker.warning(`The given value has been converted to ${value ? 'true' : 'false'}.`);
+    checker.throwTypeError('boolean');
     return Promise.resolve();
   };
 };

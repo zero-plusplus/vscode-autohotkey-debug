@@ -88,7 +88,9 @@ export interface NormalizedDebugConfig extends Omit<DebugConfig, 'runtime_v1' | 
   hostname: string;
 
   runtime: string;
+  runtimeArgs: string[];
   program: string;
+  args: string[];
 
   variableCategories?: VariableCategory[];
 

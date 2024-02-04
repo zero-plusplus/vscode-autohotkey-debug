@@ -4,13 +4,13 @@ export const createStringValueValidator = <N extends keyof DebugConfig>(attribut
   return async(createChecker) => {
     const checker = createChecker(attributeName);
 
-    const rawName = checker.get();
-    if (rawName === undefined) {
+    const rawAttribute = checker.get();
+    if (rawAttribute === undefined) {
       checker.markValidated(defaultValue);
       return Promise.resolve();
     }
-    if (typeof rawName === 'string') {
-      checker.markValidated(rawName);
+    if (typeof rawAttribute === 'string') {
+      checker.markValidated(rawAttribute);
       return Promise.resolve();
     }
 
