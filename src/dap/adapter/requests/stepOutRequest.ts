@@ -1,6 +1,6 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { DebugContext } from '../../../types/dap/adapter';
+import { ScriptRuntime } from '../../../types/dap/runtime/runtime';
 
-export const stepOutRequest = <R extends DebugProtocol.StepOutResponse>(context: DebugContext, response: R, args: DebugProtocol.StepOutArguments): R => {
+export const stepOutRequest = <R extends DebugProtocol.StepOutResponse>(runtime: ScriptRuntime, response: R, args: DebugProtocol.StepOutArguments): R => {
   return response;
 };

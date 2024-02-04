@@ -1,6 +1,6 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { DebugContext } from '../../../types/dap/adapter';
+import { ScriptRuntime } from '../../../types/dap/runtime/runtime';
 
-export const exceptionInfoRequest = <R extends DebugProtocol.ExceptionInfoResponse>(context: DebugContext, response: R, args: DebugProtocol.ExceptionInfoArguments): R => {
+export const exceptionInfoRequest = <R extends DebugProtocol.ExceptionInfoResponse>(runtime: ScriptRuntime, response: R, args: DebugProtocol.ExceptionInfoArguments): R => {
   return response;
 };

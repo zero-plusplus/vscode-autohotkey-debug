@@ -1,6 +1,6 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { DebugContext } from '../../../types/dap/adapter';
+import { ScriptRuntime } from '../../../types/dap/runtime/runtime';
 
-export const setExpressionRequest = <R extends DebugProtocol.SetExpressionResponse>(context: DebugContext, response: R, args: DebugProtocol.SetExpressionArguments): R => {
+export const setExpressionRequest = <R extends DebugProtocol.SetExpressionResponse>(runtime: ScriptRuntime, response: R, args: DebugProtocol.SetExpressionArguments): R => {
   return response;
 };

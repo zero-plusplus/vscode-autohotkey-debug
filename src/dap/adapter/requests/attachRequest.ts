@@ -1,6 +1,6 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { DebugContext } from '../../../types/dap/adapter';
+import { ScriptRuntime } from '../../../types/dap/runtime/runtime';
 
-export const attachRequest = <R extends DebugProtocol.AttachResponse>(context: DebugContext, response: R): R => {
+export const attachRequest = <R extends DebugProtocol.AttachResponse>(runtime: ScriptRuntime, response: R): R => {
   return response;
 };

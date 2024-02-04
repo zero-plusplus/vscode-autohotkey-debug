@@ -1,4 +1,5 @@
 import { NormalizedDebugConfig } from './config';
+import { ScriptRuntime } from './runtime/runtime';
 
 export type LogCategory = 'stdout' | 'stderr' | 'console';
 export type AnnounceLevel = 'error' | 'detail' | 'develop';
@@ -16,5 +17,6 @@ export interface DebugDirectiveConfig {
 // #endregion configuration of launch.json
 
 export interface DebugContext {
+  runtime: ScriptRuntime;
   config: NormalizedDebugConfig;
 }

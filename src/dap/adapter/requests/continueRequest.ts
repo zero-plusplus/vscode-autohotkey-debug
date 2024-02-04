@@ -1,6 +1,6 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { DebugContext } from '../../../types/dap/adapter';
+import { ScriptRuntime } from '../../../types/dap/runtime/runtime';
 
-export const continueRequest = <R extends DebugProtocol.ContinueResponse>(context: DebugContext, response: R, args: DebugProtocol.ContinueArguments): R => {
+export const continueRequest = <R extends DebugProtocol.ContinueResponse>(runtime: ScriptRuntime, response: R, args: DebugProtocol.ContinueArguments): R => {
   return response;
 };

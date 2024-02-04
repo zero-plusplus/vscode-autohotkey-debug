@@ -1,6 +1,6 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { DebugContext } from '../../../types/dap/adapter';
+import { ScriptRuntime } from '../../../types/dap/runtime/runtime';
 
-export const setBreakPointsRequest = <R extends DebugProtocol.SetBreakpointsResponse>(context: DebugContext, response: R, args: DebugProtocol.SetBreakpointsArguments): R => {
+export const setBreakPointsRequest = <R extends DebugProtocol.SetBreakpointsResponse>(runtime: ScriptRuntime, response: R, args: DebugProtocol.SetBreakpointsArguments): R => {
   return response;
 };
