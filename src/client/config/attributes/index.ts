@@ -8,4 +8,5 @@ export * as runtime from './runtime';
 export * as skipFiles from './skipFiles';
 export * as skipFunctions from './skipFunctions';
 export * as stopOnEntry from './stopOnEntry';
+export * as trace from './trace';
 export * as type from './type';
