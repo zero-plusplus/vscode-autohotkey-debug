@@ -1,5 +1,5 @@
 import { NormalizedDebugConfig } from '../../types/dap/config';
-import { ScriptRuntime } from '../../types/dap/runtime/runtime';
+import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime';
 import { Session } from '../../types/dap/session';
 
 export const createScriptRuntime = (session: Session, config: NormalizedDebugConfig): ScriptRuntime => {

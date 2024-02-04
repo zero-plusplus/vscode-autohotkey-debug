@@ -26,7 +26,7 @@ import { setExpressionRequest } from './requests/setExpressionRequest';
 import { completionsRequest } from './requests/completionsRequest';
 import { evaluateRequest } from './requests/evaluateRequest';
 import { createScriptRuntimeLauncher } from '../runtime/launcher';
-import { ScriptRuntime } from '../../types/dap/runtime/runtime';
+import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   private runtime!: ScriptRuntime;
