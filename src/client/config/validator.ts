@@ -31,7 +31,7 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
       },
       markValidated(value?): void {
         validated[String(attributeName)] = true;
-        if (value && attributeName in config) {
+        if (attributeName in config && value !== undefined) {
           config[attributeName] = value;
         }
       },
