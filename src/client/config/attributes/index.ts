@@ -4,6 +4,7 @@ export * as env from './env';
 export * as hostname from './hostname';
 export * as name from './name';
 export * as noDebug from './noDebug';
+export * as openFileOnExit from './openFileOnExit';
 export * as port from './port';
 export * as program from './program';
 export * as request from './request';

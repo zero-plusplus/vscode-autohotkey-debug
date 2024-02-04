@@ -21,7 +21,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     cwd: attributes.cwd.defaultValue,
     env: attributes.env.defaultValue,
 
-    openFileOnExit: undefined,
+    openFileOnExit: attributes.openFileOnExit.defaultValue,
     variableCategories: undefined,
     setBreakpoints: [],
 
