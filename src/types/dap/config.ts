@@ -84,7 +84,6 @@ export interface NormalizedDebugConfig extends Omit<DebugConfig, 'runtime_v1' | 
   name: string;
   request: DebugRequest;
   stopOnEntry: boolean;
-  args: string[];
   port: number;
   hostname: string;
 
