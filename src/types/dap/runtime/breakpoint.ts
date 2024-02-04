@@ -1,8 +1,8 @@
-import { BreakpointType, CharacterNumber, Expression, FileName, HitCondition, LineNumber } from '../../dbgp/ExtendAutoHotkeyDebugger';
+import * as dbgp from '../../dbgp/ExtendAutoHotkeyDebugger';
 import { Session } from '../session';
 import { VisibleCondition } from '../variableCategory';
 
-export type BreakpointKind = Omit<BreakpointType, 'call'> | 'function';
+export type BreakpointKind = Omit<dbgp.BreakpointType, 'call'> | 'function';
 
 // #region configuration of launch.json
 export type BreakpointDataArray = Array<BreakpointData | BreakpointDataGroup>;
@@ -16,8 +16,8 @@ export interface BreakpointDataBase {
   kind: BreakpointKind;
   hidden: VisibleCondition;
   temporary?: boolean;
-  condition?: Expression;
-  hitCondition?: HitCondition;
+  condition?: string;
+  hitCondition?: string;
   logMessage?: string;
 }
 export interface LineBreakpointDataBase extends BreakpointDataBase {
@@ -25,7 +25,7 @@ export interface LineBreakpointDataBase extends BreakpointDataBase {
   line: number;
   character?: number;
 }
-export interface NamedBreakpointDataBase extends BreakpointBase {
+export interface NamedBreakpointDataBase extends BreakpointDataBase {
   name: string;
 }
 
@@ -51,10 +51,10 @@ export interface BreakpointDataGroup {
 // #endregion configuration of launch.json
 
 export interface BreakpointBase {
-  kind: Omit<BreakpointType, 'call'> | 'function';
   id: number;
-  condition?: Expression;
-  hitCondition?: HitCondition;
+  kind: BreakpointKind;
+  condition?: string;
+  hitCondition?: string;
   logMessage?: string;
   action: BreakpointAction;
   /**
@@ -69,7 +69,7 @@ export interface BreakpointBase {
    * ```
    */
   verified: boolean;
-  customVertify?: () => [ LineNumber, CharacterNumber? ];
+  customVertify?: () => [ dbgp.LineNumber, dbgp.CharacterNumber? ];
   unverifiedLine: number;
   unverifiedColumn: number;
 }
@@ -81,10 +81,10 @@ export type Breakpoint
   | ExceptionBreakpoint
   | Logpoint;
 
-export interface LineBreakpointBase extends BreakpointDataBase {
-  fileName: FileName;
-  line: LineNumber;
-  character?: CharacterNumber;
+export interface LineBreakpointBase extends BreakpointBase {
+  fileName: dbgp.FileName;
+  line: dbgp.LineNumber;
+  character?: dbgp.CharacterNumber;
 }
 export interface LineBreakpoint extends LineBreakpointBase {
   kind: 'line';
@@ -104,4 +104,14 @@ export interface ExceptionBreakpoint extends NamedBreakpointBase {
 export interface Logpoint extends LineBreakpointBase {
   kind: 'log';
   logMessage: string;
+}
+
+export interface BreakpointManager {
+  getBreakpointById: (breakpointId: number) => dbgp.Breakpoint | undefined;
+  getBreakpointsByLine: (fileName: string, line_0base: number) => dbgp.Breakpoint[];
+  getAllBreakpoints: () => dbgp.Breakpoint[];
+  setBreakpoint: (breakpointData: BreakpointData) => Promise<dbgp.Breakpoint>;
+  removeBreakpointById: (breakpointId: number) => Promise<void>;
+  removeBreakpointsByLine: (fileName: string, line_0base: number) => Promise<void>;
+  removeBreakpointsByFile: (fileName: string) => Promise<void>;
 }
