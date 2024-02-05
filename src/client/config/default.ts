@@ -22,8 +22,8 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     env: attributes.env.defaultValue,
 
     openFileOnExit: attributes.openFileOnExit.defaultValue,
-    variableCategories: undefined,
-    setBreakpoints: [],
+    variableCategories: attributes.variableCategories.defaultValue,
+    setBreakpoints: attributes.setBreakpoints.defaultValue,
 
     maxChildren: 10000,
 

@@ -10,6 +10,7 @@ export * as program from './program';
 export * as request from './request';
 export * as runtime from './runtime';
 export * as runtimeArgs from './runtimeArgs';
+export * as setBreakpoints from './setBreakpoints';
 export * as skipFiles from './skipFiles';
 export * as skipFunctions from './skipFunctions';
 export * as stopOnEntry from './stopOnEntry';
