@@ -27,7 +27,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
 
     maxChildren: 10000,
 
-    usePerfTips: false,
+    usePerfTips: attributes.usePerfTips.defaultValue,
     useIntelliSenseInDebugging: true,
     useDebugDirective: false,
     useAutoJumpToError: false,

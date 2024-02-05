@@ -70,8 +70,8 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   // #endregion dbgp configurations
 
   // #region feature configurations
-  usePerfTips: boolean | PerfTipsConfig;
-  useIntelliSenseInDebugging: boolean;
+  usePerfTips?: boolean | PerfTipsConfig;
+  useIntelliSenseInDebugging?: boolean;
   useDebugDirective: boolean | DebugDirectiveConfig;
   useAutoJumpToError: boolean;
   useUIAVersion?: boolean;
@@ -95,6 +95,7 @@ export interface NormalizedDebugConfig extends Omit<DebugConfig, 'runtime_v1' | 
   variableCategories?: VariableCategory[];
 
   usePerfTips: false | PerfTipsConfig;
+  useIntelliSenseInDebugging: boolean;
   useDebugDirective: false | DebugDirectiveConfig;
   useOutputDebug: false | OutputDebugConfig;
   useAnnounce: AnnounceLevel;
