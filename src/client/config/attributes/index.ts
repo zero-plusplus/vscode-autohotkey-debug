@@ -15,3 +15,4 @@ export * as skipFunctions from './skipFunctions';
 export * as stopOnEntry from './stopOnEntry';
 export * as trace from './trace';
 export * as type from './type';
+export * as variableCategories from './variableCategories';

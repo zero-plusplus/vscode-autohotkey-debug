@@ -8,6 +8,7 @@
  * You can also use conditional expressions to show/hide categories.
  * In the unit test example above, you can specify a condition that hides the category if the `UnitTest` class does not exist, thereby preventing categories you are not interested in from being displayed.
  */
+import { LiteralUnion } from 'type-fest';
 import { ContextName } from '../dbgp/ExtendAutoHotkeyDebugger';
 
 export type SourceName = ContextName;
@@ -16,7 +17,7 @@ export type Expression = string;
 export type VisibleCondition = boolean | Expression;
 export interface VariableMatcher {
   pattern?: MatchPattern;
-  attributes: VariableAttributes;
+  attributes?: VariableAttributes;
 }
 export type PatternLiteral
   = VariablePrefixPatternLiteral
@@ -28,7 +29,7 @@ export type VariablePrefixPatternLiteral = `>${string}>`;
 export type VariableSuffixxPatternLiteral = `<${string}<`;
 export type VariableExactPatternLiteral = `>${string}<`;
 export type VariableRegExPatternLiteral = `/${string}/`;
-export type VariableWildcardPatternLiteral = `|${string}|` | string & { ThisIsLiteralUnionTrick: any };
+export type VariableWildcardPatternLiteral = LiteralUnion<`|${string}|`, string>;
 
 export type MatchPattern
   = PatternLiteral
@@ -81,11 +82,11 @@ export type CategoryItem
   | ExpressionCategoryItem
   | CategoryItemSelector;
 export interface CategoryItemBase {
-  visible: VisibleCondition;
+  visible?: VisibleCondition;
 }
 export interface VariableCategoryItem extends CategoryItemBase {
-  name: string;
-  scope?: SourceName;
+  variableName: string;
+  scope: SourceName;
 }
 export interface ExpressionCategoryItem extends CategoryItemBase {
   label: string;
