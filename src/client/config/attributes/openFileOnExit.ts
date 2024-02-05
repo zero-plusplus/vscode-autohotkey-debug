@@ -1,5 +1,5 @@
-import { createStringValueValidator } from './common/string';
+import { createFilePathValidator } from './common/file';
 
 export const attributeName = 'openFileOnExit';
 export const defaultValue = undefined;
-export const validator = createStringValueValidator(attributeName, defaultValue);
+export const validator = createFilePathValidator(attributeName, defaultValue);
