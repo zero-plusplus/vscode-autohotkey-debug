@@ -14,7 +14,11 @@ export const validator: AttributeValidator = async(createChecker): Promise<void>
   await validateByFileExists(createChecker);
   await validateByRuntime_v1_v2(createChecker);
   await validateByRuntimeOfMainScript(createChecker);
-  await validateByAutoHotkeyLauncher(createChecker);
+
+  // Using an executable file to initialize the configuration is costly. Therefore, the AutoHotkey launcher's runtime select feature needs to be implemented here.
+  // await validateByAutoHotkeyLauncher(createChecker);
+  await validateByAutoHotkeyLauncherLike(createChecker);
+
   await validateByCommandName(createChecker);
   await validateByRelativePath(createChecker);
   await validateByLanguageId(createChecker);
@@ -89,6 +93,9 @@ export const validateByRuntimeOfMainScript: AttributeValidator = async(createChe
     checker.markValidatedPath(runtime);
     return Promise.resolve();
   }
+  return Promise.resolve();
+};
+export const validateByAutoHotkeyLauncherLike: AttributeValidator = async(): Promise<void> => {
   return Promise.resolve();
 };
 export const validateByAutoHotkeyLauncher: AttributeValidator = async(createChecker): Promise<void> => {
