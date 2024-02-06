@@ -31,7 +31,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     useIntelliSenseInDebugging: attributes.useIntelliSenseInDebugging.defaultValue,
     useDebugDirective: attributes.useDebugDirective.defaultValue,
     useAutoJumpToError: attributes.useAutoJumpToError.defaultValue,
-    useUIAVersion: false,
+    useUIAVersion: attributes.useUIAVersion.defaultValue,
     useOutputDebug: attributes.useOutputDebug.defaultValue,
     useAnnounce: attributes.useAnnounce.defaultValue,
     useLoadedScripts: attributes.useLoadedScripts.defaultValue,

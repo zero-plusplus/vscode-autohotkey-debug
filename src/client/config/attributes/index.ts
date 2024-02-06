@@ -23,4 +23,5 @@ export * as useIntelliSenseInDebugging from './useIntelliSenseInDebugging';
 export * as useLoadedScripts from './useLoadedScripts';
 export * as useOutputDebug from './useOutputDebug';
 export * as usePerfTips from './usePerfTips';
+export * as useUIAVersion from './useUIAVersion';
 export * as variableCategories from './variableCategories';
