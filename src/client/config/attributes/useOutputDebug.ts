@@ -1,24 +1,22 @@
 import { deepDefaults } from '../../../tools/utils';
-import { DebugDirectiveConfig } from '../../../types/dap/adapter';
+import { OutputDebugConfig } from '../../../types/dap/adapter';
 import { AttributeValidator } from '../../../types/dap/config';
 
-export const attributeName = 'useDebugDirective';
-export const defaultValue = false;
-export const normalizeDefaultValue: DebugDirectiveConfig = {
-  useBreakpointDirective: true,
-  useClearConsoleDirective: true,
-  useOutputDirective: true,
+export const attributeName = 'useOutputDebug';
+export const defaultValue: OutputDebugConfig = {
+  category: 'stderr',
+  useTrailingLinebreak: false,
 };
 export const validator: AttributeValidator = async(createChecker): Promise<void> => {
   const checker = createChecker(attributeName);
 
   const rawAttribute = checker.get();
   if (rawAttribute === undefined || rawAttribute === false) {
-    checker.markValidated(defaultValue);
+    checker.markValidated(false);
     return Promise.resolve();
   }
   if (rawAttribute === true) {
-    checker.markValidated(normalizeDefaultValue);
+    checker.markValidated(defaultValue);
     return Promise.resolve();
   }
 
@@ -27,6 +25,6 @@ export const validator: AttributeValidator = async(createChecker): Promise<void>
     return Promise.resolve();
   }
 
-  checker.markValidated(deepDefaults(rawAttribute, normalizeDefaultValue));
+  checker.markValidated(deepDefaults(rawAttribute, defaultValue));
   return Promise.resolve();
 };

@@ -5,44 +5,44 @@ import { DebugConfig } from '../../../../src/types/dap/config';
 import { AttributeTypeError } from '../../../../src/client/config/error';
 import * as attributes from '../../../../src/client/config/attributes';
 
-describe('useDebugDirective attribute', () => {
+describe('useOutputDebug attribute', () => {
   describe('validate', () => {
     test('normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useDebugDirective.validator ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.useOutputDebug.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
-        useDebugDirective: true,
+        useOutputDebug: true,
       });
-      expect(config.useDebugDirective).toBe(attributes.useDebugDirective.normalizeDefaultValue);
+      expect(config.useOutputDebug).toBe(attributes.useOutputDebug.defaultValue);
     });
     test('normalize', async() => {
       const validateDebugConfig = createAttributesValidator([ attributes.useDebugDirective.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
-        useDebugDirective: { useBreakpointDirective: true, useClearConsoleDirective: true, useOutputDirective: true },
+        useOutputDebug: { category: 'stderr', useTrailingLinebreak: true },
       });
-      expect(config.useDebugDirective).toEqual({ useBreakpointDirective: true, useClearConsoleDirective: true, useOutputDirective: true });
+      expect(config.useOutputDebug).toEqual({ category: 'stderr', useTrailingLinebreak: true });
     });
     test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useDebugDirective.validator ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.useOutputDebug.validator ]);
 
       const config = await validateDebugConfig({
         ...createDefaultDebugConfig(''),
-        useDebugDirective: false,
+        useOutputDebug: false,
       });
-      expect(config.useDebugDirective).toBe(attributes.useDebugDirective.defaultValue);
+      expect(config.useOutputDebug).toBe(false);
     });
   });
 
   describe('validate error', () => {
     test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useDebugDirective.validator ]);
+      const validateDebugConfig = createAttributesValidator([ attributes.useOutputDebug.validator ]);
 
       const config: DebugConfig = {
         ...createDefaultDebugConfig(''),
-        useDebugDirective: '' as unknown as boolean,
+        useOutputDebug: '' as unknown as boolean,
       };
       await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
     });

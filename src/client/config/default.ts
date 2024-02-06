@@ -32,10 +32,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     useDebugDirective: attributes.useDebugDirective.defaultValue,
     useAutoJumpToError: false,
     useUIAVersion: false,
-    useOutputDebug: {
-      category: 'stderr',
-      useTrailingLinebreak: true,
-    },
+    useOutputDebug: attributes.useOutputDebug.defaultValue,
     useAnnounce: 'detail',
     useLoadedScripts: {
       scanImplicitLibrary: true,

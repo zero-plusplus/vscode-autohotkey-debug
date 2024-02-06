@@ -18,5 +18,6 @@ export * as trace from './trace';
 export * as type from './type';
 export * as useDebugDirective from './useDebugDirective';
 export * as useIntelliSenseInDebugging from './useIntelliSenseInDebugging';
+export * as useOutputDebug from './useOutputDebug';
 export * as usePerfTips from './usePerfTips';
 export * as variableCategories from './variableCategories';

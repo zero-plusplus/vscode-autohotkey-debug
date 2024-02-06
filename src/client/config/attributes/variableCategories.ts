@@ -1,4 +1,3 @@
-import { deepDefaults } from '../../../tools/utils';
 import { AttributeValidator } from '../../../types/dap/config';
 import { VariableCategory } from '../../../types/dap/variableCategory';
 
@@ -58,7 +57,6 @@ export const validator: AttributeValidator = async(createChecker): Promise<void>
     return Promise.resolve();
   }
 
-  const variableCategories = deepDefaults({}, rawVariableCategories);
-  checker.markValidated(variableCategories);
+  checker.markValidated(rawVariableCategories);
   return Promise.resolve();
 };
