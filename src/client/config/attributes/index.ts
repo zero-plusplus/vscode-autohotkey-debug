@@ -16,6 +16,7 @@ export * as skipFunctions from './skipFunctions';
 export * as stopOnEntry from './stopOnEntry';
 export * as trace from './trace';
 export * as type from './type';
+export * as useAutoJumpToError from './useAutoJumpToError';
 export * as useDebugDirective from './useDebugDirective';
 export * as useIntelliSenseInDebugging from './useIntelliSenseInDebugging';
 export * as useOutputDebug from './useOutputDebug';
