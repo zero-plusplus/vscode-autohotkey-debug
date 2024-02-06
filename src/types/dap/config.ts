@@ -72,7 +72,7 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   // #region feature configurations
   usePerfTips?: boolean | PerfTipsConfig;
   useIntelliSenseInDebugging?: boolean;
-  useDebugDirective: boolean | DebugDirectiveConfig;
+  useDebugDirective?: boolean | DebugDirectiveConfig;
   useAutoJumpToError: boolean;
   useUIAVersion?: boolean;
   useOutputDebug?: boolean | OutputDebugConfig;
