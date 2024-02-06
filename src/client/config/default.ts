@@ -33,7 +33,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     useAutoJumpToError: attributes.useAutoJumpToError.defaultValue,
     useUIAVersion: false,
     useOutputDebug: attributes.useOutputDebug.defaultValue,
-    useAnnounce: 'detail',
+    useAnnounce: attributes.useAnnounce.defaultValue,
     useLoadedScripts: {
       scanImplicitLibrary: true,
     },
