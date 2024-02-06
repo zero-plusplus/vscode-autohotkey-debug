@@ -20,6 +20,7 @@ export * as useAnnounce from './useAnnounce';
 export * as useAutoJumpToError from './useAutoJumpToError';
 export * as useDebugDirective from './useDebugDirective';
 export * as useIntelliSenseInDebugging from './useIntelliSenseInDebugging';
+export * as useLoadedScripts from './useLoadedScripts';
 export * as useOutputDebug from './useOutputDebug';
 export * as usePerfTips from './usePerfTips';
 export * as variableCategories from './variableCategories';

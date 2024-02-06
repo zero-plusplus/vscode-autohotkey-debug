@@ -34,8 +34,6 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     useUIAVersion: false,
     useOutputDebug: attributes.useOutputDebug.defaultValue,
     useAnnounce: attributes.useAnnounce.defaultValue,
-    useLoadedScripts: {
-      scanImplicitLibrary: true,
-    },
+    useLoadedScripts: attributes.useLoadedScripts.defaultValue,
   };
 };
