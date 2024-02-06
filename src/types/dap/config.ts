@@ -65,10 +65,6 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   setBreakpoints?: BreakpointDataArray;
   // #endregion custom configurations
 
-  // #region dbgp configurations
-  maxChildren: number;
-  // #endregion dbgp configurations
-
   // #region feature configurations
   usePerfTips?: boolean | PerfTipsConfig;
   useIntelliSenseInDebugging?: boolean;
