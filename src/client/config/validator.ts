@@ -27,7 +27,7 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
           throw new ValidationPriorityError(config.name, String(attributeName), dependedAttributeName);
         }
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-        return config[attributeName] as unknown as NormalizedDebugConfig[NK];
+        return config[dependedAttributeName] as unknown as NormalizedDebugConfig[NK];
       },
       markValidated(value?): void {
         validated[String(attributeName)] = true;
