@@ -1,19 +1,8 @@
 import { describe, expect, test, xdescribe } from '@jest/globals';
-import { compareAutoHotkeyVersion, defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2, evaluateAhkVersion, evaluateAutoHotkey, parseAutoHotkeyVersion } from '../../src/tools/autohotkey';
-import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../src/types/dbgp/ExtendAutoHotkeyDebugger';
+import { compareAutoHotkeyVersion, defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2, evaluateAhkVersion, parseAutoHotkeyVersion } from '../../../src/tools/autohotkey';
+import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../../src/types/dbgp/ExtendAutoHotkeyDebugger';
 
-describe('autohotkey', () => {
-  xdescribe('Costly testing', () => {
-    test('evaluateAutoHotkey', () => {
-      expect(evaluateAutoHotkey(defaultAutoHotkeyRuntimePath_v1, '"abc"')).toBe('abc');
-      expect(evaluateAutoHotkey(defaultAutoHotkeyRuntimePath_v2, '"abc"')).toBe('abc');
-    });
-    test('evaluateAhkVersion', () => {
-      expect(evaluateAhkVersion(defaultAutoHotkeyRuntimePath_v1)).toBeTruthy();
-      expect(evaluateAhkVersion(defaultAutoHotkeyRuntimePath_v2)).toBeTruthy();
-      expect(evaluateAhkVersion('')).toBeFalsy();
-    });
-  });
+describe('version', () => {
   describe('parseAutoHotkeyVersion', () => {
     test('v1', () => {
       const version = '1.1.31.00';
@@ -131,6 +120,14 @@ describe('autohotkey', () => {
       const a = parseAutoHotkeyVersion('2.0.0');
       const b = parseAutoHotkeyVersion('1.1.30.00');
       expect(compareAutoHotkeyVersion(a, b)).toBeGreaterThan(0);
+    });
+  });
+
+  xdescribe('Costly testing', () => {
+    test('evaluateAhkVersion', () => {
+      expect(evaluateAhkVersion(defaultAutoHotkeyRuntimePath_v1)).toBeTruthy();
+      expect(evaluateAhkVersion(defaultAutoHotkeyRuntimePath_v2)).toBeTruthy();
+      expect(evaluateAhkVersion('')).toBeFalsy();
     });
   });
 });
