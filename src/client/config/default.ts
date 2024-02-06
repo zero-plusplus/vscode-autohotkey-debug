@@ -25,8 +25,6 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     variableCategories: attributes.variableCategories.defaultValue,
     setBreakpoints: attributes.setBreakpoints.defaultValue,
 
-    maxChildren: 10000,
-
     usePerfTips: attributes.usePerfTips.defaultValue,
     useIntelliSenseInDebugging: attributes.useIntelliSenseInDebugging.defaultValue,
     useDebugDirective: attributes.useDebugDirective.defaultValue,
