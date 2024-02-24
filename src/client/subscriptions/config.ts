@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as vscode from 'vscode';
 import JSONC from 'jsonc-parser';
 import { validateDebugConfig } from '../config/validator';
-import { DebugConfig } from '../../types/dap/config';
+import { DebugConfig } from '../../types/dap/config.types';
 import { createDefaultDebugConfig } from '../config/default';
 import { readFileSync } from 'fs';
 import { deepDefaults } from '../../tools/utils';

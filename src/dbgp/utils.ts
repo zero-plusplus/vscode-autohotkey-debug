@@ -1,5 +1,5 @@
 import { URI } from 'vscode-uri';
-import * as dbgp from '../types/dbgp/ExtendAutoHotkeyDebugger';
+import * as dbgp from '../types/dbgp/ExtendAutoHotkeyDebugger.types';
 import { safeCall } from '../tools/utils';
 
 export const isUncPath = (fileName: string): boolean => {

@@ -1,4 +1,4 @@
-import { NormalizedDebugConfig } from '../../types/dap/config';
+import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import * as attributes from './attributes';
 
 export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig => {

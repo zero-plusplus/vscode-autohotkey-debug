@@ -1,7 +1,7 @@
 /* eslint-disable no-bitwise */
 import { describe, expect, test } from '@jest/globals';
 import { createScanner } from '../../../../src/tools/autohotkey/detector/scanner';
-import { RuntimeTarget, SyntaxKind, TokenFlags } from '../../../../src/types/tools/autohotkey/detector';
+import { RuntimeTarget, SyntaxKind, TokenFlags } from '../../../../src/types/tools/autohotkey/detector.types';
 
 describe('scanner', () => {
   describe('v1', () => {

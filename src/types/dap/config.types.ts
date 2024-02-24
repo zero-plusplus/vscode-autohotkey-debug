@@ -1,9 +1,9 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { BreakpointDataArray } from './runtime/breakpoint';
-import { VariableCategory } from './variableCategory';
-import { PerfTipsConfig } from './perftips';
-import { LoadedScriptsConfig } from './loadedScripts';
-import { AnnounceLevel, DebugDirectiveConfig, OutputDebugConfig } from './adapter';
+import { BreakpointDataArray } from './runtime/breakpoint.types';
+import { VariableCategory } from './variableCategory.types';
+import { PerfTipsConfig } from './perftips.types.';
+import { LoadedScriptsConfig } from './loadedScripts.types';
+import { AnnounceLevel, DebugDirectiveConfig, OutputDebugConfig } from './adapter.types';
 import { LiteralUnion } from 'type-fest';
 
 export type AttributeType = LiteralUnion<'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]' | 'object', string>;

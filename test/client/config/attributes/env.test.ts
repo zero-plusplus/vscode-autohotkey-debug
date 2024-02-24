@@ -3,7 +3,7 @@ import { createDefaultDebugConfig } from '../../../../src/client/config/default'
 import { createAttributesValidator } from '../../../../src/client/config/validator';
 import * as attributes from '../../../../src/client/config/attributes';
 import { AttributeTypeError } from '../../../../src/client/config/error';
-import { DebugConfig } from '../../../../src/types/dap/config';
+import { DebugConfig } from '../../../../src/types/dap/config.types';
 
 describe('env attribute', () => {
   describe('validate', () => {

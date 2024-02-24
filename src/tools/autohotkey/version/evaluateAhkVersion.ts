@@ -1,4 +1,4 @@
-import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../../types/dbgp/ExtendAutoHotkeyDebugger';
+import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../../types/dbgp/ExtendAutoHotkeyDebugger.types';
 import { evaluateAutoHotkey } from '..';
 import { parseAutoHotkeyVersion } from './parseAutoHotkeyVersion';
 

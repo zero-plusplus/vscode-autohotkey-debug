@@ -1,6 +1,6 @@
 import { deepDefaults } from '../../../tools/utils';
-import { AttributeValidator } from '../../../types/dap/config';
-import { LoadedScriptsConfig } from '../../../types/dap/loadedScripts';
+import { AttributeValidator } from '../../../types/dap/config.types';
+import { LoadedScriptsConfig } from '../../../types/dap/loadedScripts.types';
 
 export const attributeName = 'useLoadedScripts';
 export const defaultValue: LoadedScriptsConfig = {

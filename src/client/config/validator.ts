@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import * as path from 'path';
 import { deepDefaults } from '../../tools/utils';
-import { AttributeChecker, AttributeCheckerFactoryUtils, AttributeValidator, DebugConfig, DebugConfigValidator, NormalizedDebugConfig } from '../../types/dap/config';
+import { AttributeChecker, AttributeCheckerFactoryUtils, AttributeValidator, DebugConfig, DebugConfigValidator, NormalizedDebugConfig } from '../../types/dap/config.types';
 import * as attributes from './attributes';
 import { AttributeFileNotFoundError, AttributeFormatError, AttributeTypeError, AttributeValueError, AttributeWarningError, ValidationPriorityError } from './error';
 

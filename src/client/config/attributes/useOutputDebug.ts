@@ -1,6 +1,6 @@
 import { deepDefaults } from '../../../tools/utils';
-import { OutputDebugConfig } from '../../../types/dap/adapter';
-import { AttributeValidator } from '../../../types/dap/config';
+import { OutputDebugConfig } from '../../../types/dap/adapter.types';
+import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'useOutputDebug';
 export const defaultValue: OutputDebugConfig = {

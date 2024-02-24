@@ -1,5 +1,5 @@
 import { fileExists } from '../../../../tools/predicate';
-import { AttributeValidator, DebugConfig } from '../../../../types/dap/config';
+import { AttributeValidator, DebugConfig } from '../../../../types/dap/config.types';
 
 export const createFilePathValidator = <N extends keyof DebugConfig>(attributeName: N, defaultValue: DebugConfig[N]): AttributeValidator => {
   return async(createChecker): Promise<void> => {

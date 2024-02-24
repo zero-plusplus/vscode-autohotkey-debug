@@ -1,4 +1,4 @@
-import { AttributeCheckerFactory, AttributeValidator, DebugConfig } from '../../../../types/dap/config';
+import { AttributeCheckerFactory, AttributeValidator, DebugConfig } from '../../../../types/dap/config.types';
 
 export const createArrayValueValidator = <N extends keyof DebugConfig>(attributeName: N, defaultValue: DebugConfig[N]): AttributeValidator => {
   return async(createChecker: AttributeCheckerFactory): Promise<void> => {

@@ -1,5 +1,5 @@
-import { AttributeValidator } from '../../../types/dap/config';
-import { PerfTipsConfig } from '../../../types/dap/perftips';
+import { AttributeValidator } from '../../../types/dap/config.types';
+import { PerfTipsConfig } from '../../../types/dap/perftips.types.';
 
 export const attributeName = 'usePerfTips';
 export const defaultValue = false;

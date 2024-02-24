@@ -1,5 +1,5 @@
-import { AttributeValidator } from '../../../types/dap/config';
-import { VariableCategory } from '../../../types/dap/variableCategory';
+import { AttributeValidator } from '../../../types/dap/config.types';
+import { VariableCategory } from '../../../types/dap/variableCategory.types';
 
 export const attributeName = 'variableCategories';
 export const defaultValue = undefined;

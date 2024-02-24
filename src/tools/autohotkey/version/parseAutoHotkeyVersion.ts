@@ -1,4 +1,4 @@
-import { AutoHotkeyVersion, ParsedAutoHotkeyVersion, PreAutoHotkeyVersion, PreReleaseId } from '../../../types/dbgp/ExtendAutoHotkeyDebugger';
+import { AutoHotkeyVersion, ParsedAutoHotkeyVersion, PreAutoHotkeyVersion, PreReleaseId } from '../../../types/dbgp/ExtendAutoHotkeyDebugger.types';
 import { toNumber } from '../../convert';
 
 export const parseAutoHotkeyVersion = (rawVersion: AutoHotkeyVersion): ParsedAutoHotkeyVersion => {

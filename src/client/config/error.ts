@@ -1,4 +1,4 @@
-import { AttributeType } from '../../types/dap/config';
+import { AttributeType } from '../../types/dap/config.types';
 import { defaultValue as defaultNameAttributeValue } from './attributes/name';
 
 export class ValidationPriorityError extends Error {

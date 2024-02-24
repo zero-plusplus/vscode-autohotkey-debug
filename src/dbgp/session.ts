@@ -1,8 +1,8 @@
 import { Server, Socket, createServer } from 'net';
 import EventEmitter from 'events';
 import { parseXml } from '../tools/xml';
-import * as dbgp from '../types/dbgp/ExtendAutoHotkeyDebugger';
-import { CommandSender, Process, Session, SessionConnector } from '../types/dap/session';
+import * as dbgp from '../types/dbgp/ExtendAutoHotkeyDebugger.types';
+import { CommandSender, Process, Session, SessionConnector } from '../types/dap/session.types';
 import { createCommandArgs, encodeToBase64 } from './utils';
 import { timeoutPromise } from '../tools/promise';
 

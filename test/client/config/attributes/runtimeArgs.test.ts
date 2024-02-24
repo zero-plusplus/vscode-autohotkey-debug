@@ -4,7 +4,7 @@ import { createAttributesValidator } from '../../../../src/client/config/validat
 import { createDefaultDebugConfig } from '../../../../src/client/config/default';
 import { TemporaryResource, createTempDirectoryWithFile } from '../../../../src/tools/temp';
 import { utf8BomText } from '../../../../src/tools/utils/checkUtf8WithBom';
-import { DebugConfig } from '../../../../src/types/dap/config';
+import { DebugConfig } from '../../../../src/types/dap/config.types';
 import { AttributeTypeError, AttributeWarningError } from '../../../../src/client/config/error';
 
 describe(`runtimeArgs attribute`, () => {

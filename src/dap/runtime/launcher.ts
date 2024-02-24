@@ -1,10 +1,10 @@
 import * as path from 'path';
 import { createSessionConnector } from '../../dbgp/session';
-import { ScriptRuntime, ScriptRuntimeLauncher } from '../../types/dap/runtime/scriptRuntime';
+import { ScriptRuntime, ScriptRuntimeLauncher } from '../../types/dap/runtime/scriptRuntime.types';
 import { spawn } from 'child_process';
 import { attachAutoHotkeyScript } from '../../tools/autohotkey';
-import { NormalizedDebugConfig } from '../../types/dap/config';
-import { Process } from '../../types/dap/session';
+import { NormalizedDebugConfig } from '../../types/dap/config.types';
+import { Process } from '../../types/dap/session.types';
 import { createScriptRuntime } from './scriptRuntime';
 
 export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): ScriptRuntimeLauncher => {

@@ -1,6 +1,6 @@
 import { toNumber } from '../../../tools/convert';
 import { checkPortUsed, range } from '../../../tools/utils';
-import { AttributeCheckerFactory, AttributeValidator } from '../../../types/dap/config';
+import { AttributeCheckerFactory, AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'port';
 export const defaultValue = 9002;

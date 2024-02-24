@@ -1,5 +1,5 @@
-import { NormalizedDebugConfig } from './config';
-import { ScriptRuntime } from './runtime/scriptRuntime';
+import { NormalizedDebugConfig } from './config.types';
+import { ScriptRuntime } from './runtime/scriptRuntime.types';
 
 export type LogCategory = 'stdout' | 'stderr' | 'console';
 export type AnnounceLevel = 'error' | 'detail' | 'develop';

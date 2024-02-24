@@ -1,6 +1,6 @@
 import { defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2 } from '../../../tools/autohotkey';
 import { fileExists } from '../../../tools/predicate';
-import { AttributeValidator } from '../../../types/dap/config';
+import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'program';
 export const defaultValue = fileExists(defaultAutoHotkeyRuntimePath_v2)

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/lines-between-class-members */
 import { LoggingDebugSession } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { NormalizedDebugConfig } from '../../types/dap/config';
+import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { initializeRequest } from './requests/initializeRequest';
 import { configurationDoneRequest } from './requests/configurationDoneRequest';
 import { launchRequest } from './requests/launchRequest';
@@ -26,7 +26,7 @@ import { setExpressionRequest } from './requests/setExpressionRequest';
 import { completionsRequest } from './requests/completionsRequest';
 import { evaluateRequest } from './requests/evaluateRequest';
 import { createScriptRuntimeLauncher } from '../runtime/launcher';
-import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime';
+import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   private runtime!: ScriptRuntime;

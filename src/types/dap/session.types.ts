@@ -1,4 +1,4 @@
-import * as dbgp from '../dbgp/ExtendAutoHotkeyDebugger';
+import * as dbgp from '../dbgp/ExtendAutoHotkeyDebugger.types';
 import { ChildProcessWithoutNullStreams } from 'child_process';
 import EventEmitter from 'events';
 

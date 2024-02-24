@@ -1,4 +1,4 @@
-import { AttributeValidator } from '../../../types/dap/config';
+import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'request';
 export const defaultValue = 'launch';

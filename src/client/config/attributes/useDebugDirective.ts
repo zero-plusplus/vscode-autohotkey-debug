@@ -1,6 +1,6 @@
 import { deepDefaults } from '../../../tools/utils';
-import { DebugDirectiveConfig } from '../../../types/dap/adapter';
-import { AttributeValidator } from '../../../types/dap/config';
+import { DebugDirectiveConfig } from '../../../types/dap/adapter.types';
+import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'useDebugDirective';
 export const defaultValue = false;

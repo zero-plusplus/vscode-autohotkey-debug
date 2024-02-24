@@ -1,5 +1,5 @@
 /* eslint-disable no-bitwise */
-import { CharacterCodes, ErrorCallback, RuntimeTarget, ScannerHelpers, SyntaxKind, TokenFlags, TokenResolverMap } from '../../../types/tools/autohotkey/detector';
+import { CharacterCodes, ErrorCallback, RuntimeTarget, ScannerHelpers, SyntaxKind, TokenFlags, TokenResolverMap } from '../../../types/tools/autohotkey/detector.types';
 
 export const supportedTokenMap = {
   [SyntaxKind.EqualsGreaterThanToken]: RuntimeTarget.v2,

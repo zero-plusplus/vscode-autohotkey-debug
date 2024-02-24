@@ -9,7 +9,7 @@
  * In the unit test example above, you can specify a condition that hides the category if the `UnitTest` class does not exist, thereby preventing categories you are not interested in from being displayed.
  */
 import { LiteralUnion } from 'type-fest';
-import { ContextName } from '../dbgp/ExtendAutoHotkeyDebugger';
+import { ContextName } from '../dbgp/ExtendAutoHotkeyDebugger.types';
 
 export type SourceName = ContextName;
 export type SourceSelector = '*' | SourceName;

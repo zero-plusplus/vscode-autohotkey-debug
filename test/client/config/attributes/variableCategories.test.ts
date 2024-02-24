@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals';
 import * as attributes from '../../../../src/client/config/attributes';
 import { createDefaultDebugConfig } from '../../../../src/client/config/default';
 import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { VariableCategory } from '../../../../src/types/dap/variableCategory';
+import { VariableCategory } from '../../../../src/types/dap/variableCategory.types';
 import { AttributeTypeError, AttributeValueError } from '../../../../src/client/config/error';
 
 describe('variableCategories attribute', () => {

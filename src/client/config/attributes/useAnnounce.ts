@@ -1,5 +1,5 @@
-import { AnnounceLevel } from '../../../types/dap/adapter';
-import { AttributeValidator } from '../../../types/dap/config';
+import { AnnounceLevel } from '../../../types/dap/adapter.types';
+import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'useAnnounce';
 export const defaultValue: AnnounceLevel = 'detail';

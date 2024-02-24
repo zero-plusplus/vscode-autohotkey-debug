@@ -1,5 +1,5 @@
 import { checkUtf8WithBomByFile } from '../../../tools/utils/checkUtf8WithBom';
-import { AttributeCheckerFactory, AttributeValidator } from '../../../types/dap/config';
+import { AttributeCheckerFactory, AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'runtimeArgs';
 export const defaultValue = [ '/ErrorStdOut' ];

@@ -1,4 +1,4 @@
-import { AttributeValidator, DebugConfig } from '../../../../types/dap/config';
+import { AttributeValidator, DebugConfig } from '../../../../types/dap/config.types';
 
 export const createStringValueValidator = <N extends keyof DebugConfig>(attributeName: N, defaultValue: DebugConfig[N]): AttributeValidator => {
   return async(createChecker) => {

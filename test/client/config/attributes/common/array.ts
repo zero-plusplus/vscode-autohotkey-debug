@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import { createDefaultDebugConfig } from '../../../../../src/client/config/default';
 import { createAttributesValidator } from '../../../../../src/client/config/validator';
-import { AttributeValidator, DebugConfig } from '../../../../../src/types/dap/config';
+import { AttributeValidator, DebugConfig } from '../../../../../src/types/dap/config.types';
 import { AttributeTypeError } from '../../../../../src/client/config/error';
 
 export const createTest = (attributeName: string, defaultValue: any, validatorOrValidators: AttributeValidator | AttributeValidator[]): void => {

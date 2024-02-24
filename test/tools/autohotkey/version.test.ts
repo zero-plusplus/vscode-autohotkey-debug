@@ -1,6 +1,6 @@
 import { describe, expect, test, xdescribe } from '@jest/globals';
 import { compareAutoHotkeyVersion, defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2, evaluateAhkVersion, parseAutoHotkeyVersion } from '../../../src/tools/autohotkey';
-import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../../src/types/dbgp/ExtendAutoHotkeyDebugger';
+import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../../src/types/dbgp/ExtendAutoHotkeyDebugger.types';
 
 describe('version', () => {
   describe('parseAutoHotkeyVersion', () => {

@@ -2,7 +2,7 @@ import { describe, expect, test } from '@jest/globals';
 import { createDefaultDebugConfig } from '../../../../src/client/config/default';
 import { createAttributesValidator } from '../../../../src/client/config/validator';
 import * as attributes from '../../../../src/client/config/attributes';
-import { DebugConfig } from '../../../../src/types/dap/config';
+import { DebugConfig } from '../../../../src/types/dap/config.types';
 import { AttributeTypeError, AttributeWarningError } from '../../../../src/client/config/error';
 
 describe('port attribute', () => {

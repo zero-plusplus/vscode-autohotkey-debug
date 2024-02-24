@@ -1,6 +1,6 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { NormalizedDebugConfig } from '../config';
-import { LogCategory } from '../adapter';
+import { NormalizedDebugConfig } from '../config.types';
+import { LogCategory } from '../adapter.types';
 
 export type RunCommand = string; // e.g. AutoHotkey.exe /Debug script.ahk
 export type LaunchMethod
