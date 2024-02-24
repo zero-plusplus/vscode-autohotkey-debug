@@ -4,11 +4,11 @@
     {
       "types": {
         "confirmFileCreation": true,
-        "directory": "types",
+        "directory": "src/types",
         "extension": ".types.ts"
       },
       "test": {
-        "confirmFileCreation": "force",
+        "confirmFileCreation": true,
         "directory": "test",
         "extension": ".test.ts"
       }
