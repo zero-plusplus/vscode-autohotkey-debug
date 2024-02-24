@@ -1,0 +1,17 @@
+{
+  // Settings for my private extension
+  "vscode-switch-t3.switcherRules": [
+    {
+      "types": {
+        "confirmFileCreation": true,
+        "directory": "types",
+        "extension": ".types.ts"
+      },
+      "test": {
+        "confirmFileCreation": "force",
+        "directory": "test",
+        "extension": ".test.ts"
+      }
+    }
+  ]
+}
