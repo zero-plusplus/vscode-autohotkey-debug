@@ -1,5 +1,5 @@
 /* eslint-disable no-bitwise, no-multi-spaces, @typescript-eslint/prefer-literal-enum-member */
-// #region data
+// #region enum
 export const enum RuntimeTarget {
   Legacy = 0,
   v1 = 1000,

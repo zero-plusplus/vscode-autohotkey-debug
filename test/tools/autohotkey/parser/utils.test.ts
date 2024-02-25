@@ -8,16 +8,17 @@ describe('utils', () => {
     const factory = createGreenNodeFactory();
 
     test('token', () => {
-      const token = factory.createToken(SyntaxKind.NumberLiteral, '123');
+      const token = factory.createNumberLiteral('123');
       expect(printGreenNode(token)).toBe('123');
     });
     test('binary expression', () => {
       const greenNode = factory.createNode(SyntaxKind.BinaryExpression, [
-        factory.createToken(SyntaxKind.NumberLiteral, '123'),
-        factory.createToken(SyntaxKind.HorizSpaceTrivia, ' '),
-        factory.createToken(SyntaxKind.PlusToken, '+'),
-        factory.createToken(SyntaxKind.HorizSpaceTrivia, ' '),
-        factory.createToken(SyntaxKind.NumberLiteral, '123'),
+        factory.createNumberLiteral('123'),
+        factory.createSpaceTrivia(),
+        factory.createPlusToken(),
+        factory.createSpaceTrivia(),
+        factory.createNumberLiteral('123'),
+
       ]);
       expect(printGreenNode(greenNode)).toBe('123 + 123');
     });
@@ -31,10 +32,10 @@ describe('utils', () => {
       ]);
       const nestedNode = factory.createNode(SyntaxKind.BinaryExpression, [
         left,
-        factory.createToken(SyntaxKind.HorizSpaceTrivia, ' '),
-        factory.createToken(SyntaxKind.PlusToken, '+'),
-        factory.createToken(SyntaxKind.HorizSpaceTrivia, ' '),
-        factory.createToken(SyntaxKind.NumberLiteral, '123'),
+        factory.createSpaceTrivia(),
+        factory.createPlusToken(),
+        factory.createSpaceTrivia(),
+        factory.createNumberLiteral('123'),
       ]);
       expect(printGreenNode(nestedNode)).toBe('123 + 123 + 123');
     });
