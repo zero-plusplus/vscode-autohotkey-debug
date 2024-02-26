@@ -10,6 +10,9 @@ export const supportedTokenMap = {
   [SyntaxKind.ExclamationEqualsEqualsToken]: RuntimeTarget.v2,
   [SyntaxKind.QuestionDotToken]: RuntimeTarget.v2_1,
 };
+export const removedTokenMap = {
+  [SyntaxKind.LessThanGreaterThanToken]: RuntimeTarget.v2,
+};
 export const createTokenMap = (): TokenResolverMap => {
   return {
     [CharacterCodes.Tab]: scanHorizSpaceTrivias,
@@ -142,15 +145,13 @@ export function createScanner(initialRuntimeTarget: RuntimeTarget, sourceText = 
   const tokenMap = createTokenMap();
   let runtimeTarget = initialRuntimeTarget;
   let text = sourceText;
-  let endPosition: number;
 
-  // current state
+  // context
+  let endPosition: number;
   let currentPosition: number;
   let currentToken: GreenToken | undefined;
   let tokenStart = 0;
-  let tokenText: string;
-  let tokenFlags: TokenFlags;
-
+  let tokenFlags = TokenFlags.None;
   let peekCache: GreenToken | undefined;
 
   const helpers: ScannerHelpers = {
@@ -259,10 +260,11 @@ export function createScanner(initialRuntimeTarget: RuntimeTarget, sourceText = 
     };
   }
   function resetTokenState(start = 0): void {
-    currentToken = undefined;
     currentPosition = start;
-    tokenStart = 0;
+    currentToken = undefined;
+    tokenStart = start;
     tokenFlags = TokenFlags.None;
+    peekCache = undefined;
   }
   function lookAhead<T>(callback: () => T): T {
     const snapshot = createSnapshot();
@@ -306,7 +308,7 @@ export function createScanner(initialRuntimeTarget: RuntimeTarget, sourceText = 
   // function getTokenValue(): string {
   //   return tokenText;
   // }
-  function expect(expect: CharacterCodes, offset = 1): boolean {
+  function expect(expect: CharacterCodes, offset = 0): boolean {
     const charCode = getCharCodeByOffset(offset);
     if (charCode === expect) {
       return true;
@@ -342,14 +344,25 @@ export function createScanner(initialRuntimeTarget: RuntimeTarget, sourceText = 
     return 0;
   }
   function commit(syntaxKind: SyntaxKind): GreenToken {
-    tokenText = text.slice(tokenStart, currentPosition);
-    return factory.createToken(syntaxKind, tokenText);
+    const tokenText = text.slice(tokenStart, currentPosition);
+    return factory.createToken(syntaxKind, tokenText, tokenFlags);
   }
   // #endregion scanner helpers
 
   // #region utils
   function resolveTokenBySyntaxKind(syntaxKind: SyntaxKind, length: number): GreenToken {
     advanceByLength(length);
+
+    const supportedVersion = supportedTokenMap[syntaxKind] as RuntimeTarget | undefined;
+    if (supportedVersion && runtimeTarget < supportedVersion) {
+      appendTokenFlag(TokenFlags.Unsupported);
+    }
+
+    const removedVersion = removedTokenMap[syntaxKind] as RuntimeTarget | undefined;
+    if (removedVersion && removedVersion < runtimeTarget) {
+      appendTokenFlag(TokenFlags.Removed);
+    }
+
     return commit(syntaxKind);
   }
   function resolveTokenByRegExp([ regexp, kind ]: [ RegExp, SyntaxKind ]): GreenToken {
@@ -421,14 +434,14 @@ export function scanLineCommentTrivia(helpers: ScannerHelpers): GreenToken {
   return commit(SyntaxKind.LineCommentTrivia);
 }
 export function scanBlockCommentTrivia(helpers: ScannerHelpers): GreenToken {
-  const { isTerminate, expectNext, getCharCode, advance, commit } = helpers;
+  const { isTerminate, expect, getCharCode, advance, commit } = helpers;
 
-  if (!expectNext(CharacterCodes.Slash)) {
+  if (!expect(CharacterCodes.Slash)) {
     throw Error('The current character is not a slash.');
   }
   advance();
 
-  if (!expectNext(CharacterCodes.Asterisk)) {
+  if (!expect(CharacterCodes.Asterisk)) {
     throw Error('The current character is not a slash.');
   }
   advance();
@@ -542,16 +555,16 @@ export function scanStringLiteral(helpers: ScannerHelpers): GreenToken {
   return commit(SyntaxKind.StringLiteral);
 }
 export function scanNumberLiteral(helpers: ScannerHelpers): GreenToken {
-  const { isTerminate: isTerminateScan, hasTokenFlag, appendTokenFlag, getCharCode, advance, expectNext, commit } = helpers;
+  const { isTerminate: isTerminateScan, hasTokenFlag, appendTokenFlag, getCharCode, advance, expect, commit } = helpers;
 
   // v1: https://www.autohotkey.com/docs/v1/Concepts.htm#numbers
   // v2: https://www.autohotkey.com/docs/v2/Concepts.htm#numbers
 
   // consume leading zero (e.g. `0123`) or hex (e.g. `0x123`)
-  if (expectNext(CharacterCodes._0)) {
+  if (expect(CharacterCodes._0)) {
     advance(); // consume `0`
 
-    if (expectNext(CharacterCodes._x) || expectNext(CharacterCodes._X)) {
+    if (expect(CharacterCodes._x) || expect(CharacterCodes._X)) {
       advance(); // consume `x` or `X`
 
       advanceHex();
@@ -564,7 +577,7 @@ export function scanNumberLiteral(helpers: ScannerHelpers): GreenToken {
 
   // consume decimal or float
   advanceDecimal();
-  if (expectNext(CharacterCodes.Dot)) {
+  if (expect(CharacterCodes.Dot)) {
     advance();
     advanceDecimalPart();
     appendTokenFlag(TokenFlags.FloatNumber);
@@ -572,10 +585,10 @@ export function scanNumberLiteral(helpers: ScannerHelpers): GreenToken {
 
   // consume scientific notation
   if (hasTokenFlag(TokenFlags.FloatNumber)) {
-    if (expectNext(CharacterCodes._e) || expectNext(CharacterCodes._E)) {
+    if (expect(CharacterCodes._e) || expect(CharacterCodes._E)) {
       advance();
 
-      if (expectNext(CharacterCodes.Plus) || expectNext(CharacterCodes.Minus)) {
+      if (expect(CharacterCodes.Plus) || expect(CharacterCodes.Minus)) {
         advance();
       }
 
@@ -586,7 +599,7 @@ export function scanNumberLiteral(helpers: ScannerHelpers): GreenToken {
   return commit(SyntaxKind.NumberLiteral);
 
   function advanceLeadingZero(): void {
-    while (expectNext(CharacterCodes._0)) {
+    while (expect(CharacterCodes._0)) {
       advance();
     }
   }

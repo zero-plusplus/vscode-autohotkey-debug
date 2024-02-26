@@ -133,13 +133,15 @@ export enum SyntaxKind {
 }
 export const enum TokenFlags {
   None = 0,
-  Unterminated =              1 << 0,
-  HexNumber =                 1 << 1,
-  FloatNumber =               1 << 2,
-  ScientificNotationNumber =  1 << 3,
-  ContainsLeadingZero =       1 << 4,
-  ContainsLeadingDigit =      1 << 5,
-  ContainsInvalidEscape =     1 << 6,
+  Unsupported =               1 << 0,
+  Removed =                   1 << 1,
+  Unterminated =              1 << 2,
+  HexNumber =                 1 << 3,
+  FloatNumber =               1 << 4,
+  ScientificNotationNumber =  1 << 5,
+  ContainsLeadingZero =       1 << 6,
+  ContainsLeadingDigit =      1 << 7,
+  ContainsInvalidEscape =     1 << 8,
 }
 // #region enum
 
@@ -149,6 +151,7 @@ export interface Syntax {
 }
 export interface GreenToken extends Syntax {
   text: string;
+  flags: TokenFlags;
 }
 export interface GreenNode extends Syntax {
   width: number;
