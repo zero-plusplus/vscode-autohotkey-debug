@@ -131,6 +131,16 @@ export enum SyntaxKind {
   CloseBracketToken = 'CloseBracketToken',
   CloseBraceToken = 'CloseBraceToken',
 }
+export const enum TokenFlags {
+  None = 0,
+  Unterminated =              1 << 0,
+  HexNumber =                 1 << 1,
+  FloatNumber =               1 << 2,
+  ScientificNotationNumber =  1 << 3,
+  ContainsLeadingZero =       1 << 4,
+  ContainsLeadingDigit =      1 << 5,
+  ContainsInvalidEscape =     1 << 6,
+}
 // #region enum
 
 // #region green node
