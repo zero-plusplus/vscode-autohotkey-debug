@@ -4,6 +4,12 @@ import { SyntaxKind } from '../../../../src/types/tools/autohotkey/parser/common
 
 describe('greenNodeFactory', () => {
   const factory = createGreenNodeFactory();
+
+  test('memoized factory and token', () => {
+    const factory2 = createGreenNodeFactory();
+    expect(factory.createPlusToken()).toBe(factory2.createPlusToken());
+  });
+
   test('binary expression', () => {
     const greenNode = factory.createNode(SyntaxKind.BinaryExpression, [
       factory.createNumberLiteral('123'),

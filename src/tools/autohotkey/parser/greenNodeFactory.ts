@@ -1,7 +1,8 @@
 import { GreenElement, GreenNode, GreenToken, SyntaxKind, TokenFlags } from '../../../types/tools/autohotkey/parser/common.types';
+import { memoize } from '../../utils/memoize';
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const createGreenNodeFactory = () => {
+export const createGreenNodeFactory = memoize(() => {
   const tokenCache = new Map<string, GreenToken>();
 
   return {
@@ -78,6 +79,7 @@ export const createGreenNodeFactory = () => {
 
     // #endregion token
     createNode,
+    createBinaryExpressionNode: (left: GreenElement, operator: GreenToken, right: GreenElement): GreenNode => createNode(SyntaxKind.BinaryExpression, [ left, operator, right ]),
   };
 
   function createToken(kind: SyntaxKind, text: string, flags = TokenFlags.None): Readonly<GreenToken> {
@@ -103,4 +105,6 @@ export const createGreenNodeFactory = () => {
     };
     return greenNode;
   }
-};
+});
+
+export type NodeFactory = ReturnType<typeof createGreenNodeFactory>;
