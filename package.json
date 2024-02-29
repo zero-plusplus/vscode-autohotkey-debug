@@ -1505,6 +1505,7 @@
     "fast-xml-parser": "^3.21.1",
     "he": "^1.2.0",
     "jsonc-parser": "^3.2.0",
+    "ohm-js": "^17.1.0",
     "vscode-uri": "^2.1.2"
   },
   "devDependencies": {
