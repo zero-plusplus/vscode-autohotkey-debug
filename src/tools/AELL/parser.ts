@@ -138,9 +138,13 @@ export const grammarText_v1 = `
       = "\\r\\n"
       | "\\n"
 
-    identifier = identifierStart identifierPart*
+    identifier = normalIdentifier | metaIdentifier
+    normalIdentifier = identifierStart identifierPart*
     identifierStart = letter | "_" | "$" | "@" | "#"
     identifierPart = identifierStart | digit
+
+    metaIdentifier = "<" metaIdentifierStart identifierPart* ">"
+    metaIdentifierStart = "$" | identifierStart
 
     literal
       = stringLiteral
@@ -178,6 +182,7 @@ export const grammarText_v2 = `
        | MemberExpression #(whitespace* "[") Arguments "]" -- elementaccess
        | PrimaryExpression
 
+    identifierStart := letter
     stringLiteral
       := "\\"" doubleCharacter* "\\""
        | "'" singleCharacter* "'"
@@ -190,7 +195,7 @@ export const grammarText_v2 = `
 `;
 
 const grammar_v1 = ohm.grammar(grammarText_v1);
-const grammar_v2 = ohm.grammar(grammarText_v2, ohm.grammars(grammarText_v1));
+const grammar_v2_0 = ohm.grammar(grammarText_v2, ohm.grammars(grammarText_v1));
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const expressionNodeMapping = (() => {
@@ -277,10 +282,16 @@ export const expressionNodeMapping = (() => {
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const createAELLParser = (ahkVersionOrText: string | ParsedAutoHotkeyVersion) => {
   const ahkVersion = typeof ahkVersionOrText === 'string' ? parseAutoHotkeyVersion(ahkVersionOrText) : ahkVersionOrText;
+  const grammar = ((): ohm.Grammar => {
+    if (ahkVersion.mejor === 2.0) {
+      return grammar_v2_0;
+    }
+    return grammar_v1;
+  })();
+
   return (input: string): Node => {
-    const matchResult = 2.0 <= ahkVersion.mejor
-      ? grammar_v2.match(input)
-      : grammar_v1.match(input);
+    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+    const matchResult = grammar.match(input);
     if (!matchResult.succeeded()) {
       throw new ParseError(matchResult);
     }
