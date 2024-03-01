@@ -122,8 +122,35 @@ describe('parser', () => {
   describe('v2.0', () => {
     const parseAELL = createAELLParser('2.0.0');
 
-    test('identifier', () => {
+
+    test.each`
+      text      | expectedError
+      ${'#abc'} | ${ParseError}
+      ${'$abc'} | ${ParseError}
+      ${'@abc'} | ${ParseError}
+    `('identifier', () => {
       expect(() => parseAELL('$abc')).toThrow(ParseError);
+    });
+
+    test.each`
+      text                | expectedKind                              | expectedValue
+      ${'%1 + 1%'}        | ${SyntaxKind.DereferenceExpression}       | ${'%1 + 1%'}
+      ${'a%b%c'}          | ${SyntaxKind.NameSubstitutionExpression}  | ${'a%b%c'}
+    `('primary expression', ({ text, expectedKind, expectedValue }) => {
+      const ast = parseAELL(String(text));
+      expect(ast.kind).toBe(expectedKind);
+      if (ast.kind !== expectedKind) {
+        throw Error();
+      }
+
+      if (!('value' in ast)) {
+        throw Error();
+      }
+      expect(ast.value).toBe(expectedValue);
+      if (!('text' in ast)) {
+        throw Error();
+      }
+      expect(ast.text).toBe(text);
     });
 
     test('meta identifier', () => {

@@ -134,8 +134,9 @@ export const grammarText_v1 = `
       | ParenthesizedExpression
 
     ParenthesizedExpression = "(" Expression ")"
-    NameSubstitutionExpression = ((#(rawIdentifier) | DereferenceExpression) ~#(whitespace))+
-    DereferenceExpression = #("%" rawIdentifier "%")
+    NameSubstitutionExpression = ((#(rawIdentifier) | #nameDereferenceExpression) ~#(whitespace))+
+    DereferenceExpression = #nameDereferenceExpression
+    nameDereferenceExpression = #("%" rawIdentifier "%")
 
     whitespace = " " | "\\t"
     lineTerminator
