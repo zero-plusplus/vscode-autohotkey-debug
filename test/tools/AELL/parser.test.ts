@@ -117,11 +117,29 @@ describe('parser', () => {
       }
       expect(ast.right).toMatchObject(expectedRight as Record<any, any>);
     });
+
+    test('precedence', () => {
+      const ast = parseAELL('1 * 2 + 3 * 4');
+      expect(ast.kind).toBe(SyntaxKind.BinaryExpression);
+      if (!('left' in ast)) {
+        throw Error();
+      }
+      expect(ast.left).toMatchObject({ kind: SyntaxKind.BinaryExpression, left: { kind: SyntaxKind.NumberLiteral, value: 1 }, operator: '*', right: { kind: SyntaxKind.NumberLiteral, value: 2 } });
+
+      if (!('operator' in ast)) {
+        throw Error();
+      }
+      expect(ast.operator).toBe('+');
+
+      if (!('right' in ast)) {
+        throw Error();
+      }
+      expect(ast.right).toMatchObject({ kind: SyntaxKind.BinaryExpression, left: { kind: SyntaxKind.NumberLiteral, value: 3 }, operator: '*', right: { kind: SyntaxKind.NumberLiteral, value: 4 } });
+    });
   });
 
   describe('v2.0', () => {
     const parseAELL = createAELLParser('2.0.0');
-
 
     test.each`
       text      | expectedError
