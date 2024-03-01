@@ -129,21 +129,23 @@ export const grammarText_v1 = `
       = identifier
       | stringLiteral
       | numericLiteral
-      | DereferenceExpressions
+      | DereferenceExpression
+      | NameSubstitutionExpression
       | ParenthesizedExpression
 
     ParenthesizedExpression = "(" Expression ")"
-    DereferenceExpressions = (#(identifier) | DereferenceExpression)+
-    DereferenceExpression = #("%" identifier "%")
+    NameSubstitutionExpression = ((#(rawIdentifier) | DereferenceExpression) ~#(whitespace))+
+    DereferenceExpression = #("%" rawIdentifier "%")
 
     whitespace = " " | "\\t"
     lineTerminator
       = "\\r\\n"
       | "\\n"
 
-    identifier = normalIdentifier | metaIdentifier
+    identifier = rawIdentifier ~"%"
+    rawIdentifier = normalIdentifier | metaIdentifier
     normalIdentifier = identifierStart identifierPart*
-    identifierStart = letter | "_" | "$" | "@" | "#"
+    identifierStart = letter | "_" | "$" | "@" | "#" ~ "%"
     identifierPart = identifierStart | digit
 
     metaIdentifier = "<" metaIdentifierStart identifierPart* ">"
@@ -177,7 +179,7 @@ export const grammarText_v2 = `
 
     MemberExpression
       := MemberExpression "." #(identifier) -- propertyaccess
-       | MemberExpression "." DereferenceExpressions -- dereference_propertyaccess
+       | MemberExpression "." NameSubstitutionExpression -- dereference_propertyaccess
        | MemberExpression #(whitespace* "[") Arguments "]" -- elementaccess
        | PrimaryExpression
 
@@ -240,8 +242,8 @@ export const expressionNodeMapping = (() => {
     MultiplicativeExpression_division:                  { kind: SyntaxKind.BinaryExpression, left: 0, operator: 1, right: 2, startPosition, endPosition },
     MultiplicativeExpression_floor_division:            { kind: SyntaxKind.BinaryExpression, left: 0, operator: 1, right: 2, startPosition, endPosition },
     ExponentiationExpression_power:                     { kind: SyntaxKind.BinaryExpression, left: 0, operator: 1, right: 2, startPosition, endPosition },
-    DereferenceExpressions:                             { kind: SyntaxKind.DereferenceExpressions, dereferenceExpressions: 0, startPosition, endPosition },
-    DereferenceExpression:                              { kind: SyntaxKind.DereferenceExpression, leftPercent: 0, expression: 1, rightPercent: 2, startPosition, endPosition },
+    NameSubstitutionExpression:                         { kind: SyntaxKind.NameSubstitutionExpression, value: text, text, startPosition, endPosition },
+    DereferenceExpression:                              { kind: SyntaxKind.DereferenceExpression, value: text, text, startPosition, endPosition },
     CallExpression_call:                                { kind: SyntaxKind.CallExpression, caller: 0, arguments: 2, startPosition, endPosition },
     CallExpression_propertyaccess:                      { kind: SyntaxKind.PropertyAccessExpression, object: 0, property: 2, startPosition, endPosition },
     CallExpression_elementaccess:                       { kind: SyntaxKind.ElementAccessExpression, object: 0, arguments: 3, startPosition, endPosition },

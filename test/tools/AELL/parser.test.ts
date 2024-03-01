@@ -7,12 +7,14 @@ describe('parser', () => {
     const parseAELL = createAELLParser('1.1.30');
 
     test.each`
-      text                | expectedKind                      | expectedValue
-      ${'$abc'}           | ${SyntaxKind.Identifier}          | ${'$abc'}
-      ${'<exception>'}    | ${SyntaxKind.Identifier}          | ${'<exception>'}
-      ${'<$hitCount>'}    | ${SyntaxKind.Identifier}          | ${'<$hitCount>'}
-      ${'"abc"'}          | ${SyntaxKind.StringLiteral}       | ${'abc'}
-      ${'1'}              | ${SyntaxKind.NumberLiteral}       | ${1}
+      text                | expectedKind                              | expectedValue
+      ${'$abc'}           | ${SyntaxKind.Identifier}                  | ${'$abc'}
+      ${'<exception>'}    | ${SyntaxKind.Identifier}                  | ${'<exception>'}
+      ${'<$hitCount>'}    | ${SyntaxKind.Identifier}                  | ${'<$hitCount>'}
+      ${'"abc"'}          | ${SyntaxKind.StringLiteral}               | ${'abc'}
+      ${'1'}              | ${SyntaxKind.NumberLiteral}               | ${1}
+      ${'%abc%'}          | ${SyntaxKind.DereferenceExpression}       | ${'%abc%'}
+      ${'a%b%c'}          | ${SyntaxKind.NameSubstitutionExpression}  | ${'a%b%c'}
     `('primary expression', ({ text, expectedKind, expectedValue }) => {
       const ast = parseAELL(String(text));
       expect(ast.kind).toBe(expectedKind);

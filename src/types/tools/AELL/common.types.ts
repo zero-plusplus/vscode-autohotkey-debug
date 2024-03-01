@@ -2,7 +2,7 @@ export const enum SyntaxKind {
   StringLiteral = 'StringLiteral',
   NumberLiteral = 'NumberLiteral',
   Identifier = 'Identifier',
-  DereferenceExpressions = 'DereferenceExpressions',
+  NameSubstitutionExpression = 'NameSubstitutionExpression',
   DereferenceExpression = 'DereferenceExpression',
   PropertyAccessExpression = 'PropertyAccessExpression',
   DereferencePropertyAccessExpression = 'DereferencePropertyAccessExpression',
@@ -76,7 +76,7 @@ export interface IdentifierNode extends Syntax {
 }
 
 export interface DereferenceExpressionsNode extends Syntax {
-  kind: SyntaxKind.DereferenceExpressions;
+  kind: SyntaxKind.NameSubstitutionExpression;
   dereferenceExpressions: Array<IdentifierNode | DereferenceExpressionNode>;
 }
 export interface DereferenceExpressionNode extends Syntax {
