@@ -125,7 +125,8 @@ export const grammarText_v1 = `
 
     PrimaryExpression
       = identifier
-      | literal
+      | stringLiteral
+      | numericLiteral
       | DereferenceExpressions
       | ParenthesizedExpression
 
@@ -145,10 +146,6 @@ export const grammarText_v1 = `
 
     metaIdentifier = "<" metaIdentifierStart identifierPart* ">"
     metaIdentifierStart = "$" | identifierStart
-
-    literal
-      = stringLiteral
-      | numericLiteral
 
     stringLiteral = "\\"" doubleCharacter* "\\""
     commonEscapeSequence = "\`\`" | "\`," | "\`%" | "\`;" | "\`::" | "\`r" | "\`n" | "\`b" | "\`t" | "\`v" | "\`a" | "\`f"
@@ -259,12 +256,17 @@ export const expressionNodeMapping = (() => {
     PostfixUnaryExpression_increment: { kind: SyntaxKind.PostFixUnaryExpression, expression: 0, operator: 1, startPosition, endPosition },
     PostfixUnaryExpression_decrement: { kind: SyntaxKind.PostFixUnaryExpression, expression: 0, operator: 1, startPosition, endPosition },
     TernaryExpression_ternary: { kind: SyntaxKind.TernaryExpression, condition: 0, whenTrue: 2, whenFalse: 4, startPosition, endPosition },
-    stringLiteral: { kind: SyntaxKind.StringLiteral, value: 1, text, startPosition, endPosition },
+    stringLiteral: { kind: SyntaxKind.StringLiteral, value: slicedText(1, -1), text, startPosition, endPosition },
     numericLiteral: { kind: SyntaxKind.NumberLiteral, value: (nodes: ohm.Node[]): number => Number(text(nodes)), text, startPosition, endPosition },
     booleanLiteral: { kind: SyntaxKind.Identifier, value: (nodes: ohm.Node[]): boolean => Boolean(text(nodes)), text, startPosition, endPosition },
-    identifier: { kind: SyntaxKind.Identifier, value: text, startPosition, endPosition },
+    identifier: { kind: SyntaxKind.Identifier, value: text, text, startPosition, endPosition },
   };
 
+  function slicedText(start: number, end?: number) {
+    return (nodes: ohm.Node[]): string => {
+      return text(nodes.slice(start, end));
+    };
+  }
   function text(nodes: ohm.Node[]): string {
     return nodes.map((node) => node.source.contents).join('');
   }

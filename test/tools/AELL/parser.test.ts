@@ -6,51 +6,47 @@ describe('parser', () => {
   describe('v1.1', () => {
     const parseAELL = createAELLParser('1.1.30');
 
-    test('identifier', () => {
-      const ast = parseAELL('$abc');
-      expect(ast.kind).toBe(SyntaxKind.Identifier);
-      if (ast.kind !== SyntaxKind.Identifier) {
+    test.each`
+      text                | expectedKind                      | expectedValue
+      ${'$abc'}           | ${SyntaxKind.Identifier}          | ${'$abc'}
+      ${'<exception>'}    | ${SyntaxKind.Identifier}          | ${'<exception>'}
+      ${'<$hitCount>'}    | ${SyntaxKind.Identifier}          | ${'<$hitCount>'}
+      ${'"abc"'}          | ${SyntaxKind.StringLiteral}       | ${'abc'}
+      ${'1'}              | ${SyntaxKind.NumberLiteral}       | ${1}
+    `('identifier', ({ text, expectedKind, expectedValue }) => {
+      const ast = parseAELL(String(text));
+      expect(ast.kind).toBe(expectedKind);
+      if (ast.kind !== expectedKind) {
         throw Error();
       }
-      expect(ast.value).toBe('$abc');
+
+      if (!('value' in ast)) {
+        throw Error();
+      }
+      expect(ast.value).toBe(expectedValue);
+      if (!('text' in ast)) {
+        throw Error();
+      }
+      expect(ast.text).toBe(text);
     });
 
-    test('meta identifier', () => {
-      const ast = parseAELL('<exception>');
-      expect(ast.kind).toBe(SyntaxKind.Identifier);
-      if (ast.kind !== SyntaxKind.Identifier) {
-        throw Error();
-      }
-      expect(ast.value).toBe('<exception>');
-    });
+    test.each`
+      text              | expectedKind                    | expectedLeft                                      | expectedRight
+      ${'a := b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'1 + 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+    `('binary expression', ({ text, expectedKind, expectedLeft, expectedRight }) => {
+      const ast = parseAELL(String(text));
+      expect(ast.kind).toBe(expectedKind);
 
-    test('meta identifier', () => {
-      const ast = parseAELL('<exception>');
-      expect(ast.kind).toBe(SyntaxKind.Identifier);
-      if (ast.kind !== SyntaxKind.Identifier) {
+      if (!('left' in ast)) {
         throw Error();
       }
-      expect(ast.value).toBe('<exception>');
-    });
+      expect(ast.left).toMatchObject(expectedLeft as Record<any, any>);
 
-    test('binary expression', () => {
-      const ast = parseAELL('a := b');
-      expect(ast.kind).toBe(SyntaxKind.AssignExpression);
-      if (ast.kind !== SyntaxKind.AssignExpression) {
+      if (!('right' in ast)) {
         throw Error();
       }
-
-      expect(ast.left.kind).toBe(SyntaxKind.Identifier);
-      if (ast.left.kind !== SyntaxKind.Identifier) {
-        throw Error();
-      }
-      expect(ast.left.value).toBe('a');
-
-      expect(ast.right.kind).toBe(SyntaxKind.Identifier);
-      if (ast.right.kind !== SyntaxKind.Identifier) {
-        throw Error();
-      }
-      expect(ast.right.value).toBe('b');
+      expect(ast.right).toMatchObject(expectedRight as Record<any, any>);
     });
   });
 
