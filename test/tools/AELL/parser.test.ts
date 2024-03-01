@@ -31,17 +31,52 @@ describe('parser', () => {
     });
 
     test.each`
-      text              | expectedKind                    | expectedLeft                                      | expectedRight
-      ${'a := b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
-      ${'1 + 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
-    `('binary expression', ({ text, expectedKind, expectedLeft, expectedRight }) => {
+      text              | expectedKind                    | expectedLeft                                      | expectedOperator  | expectedRight
+      ${'a := b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${':='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a += b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${'+='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a -= b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${'-='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a *= b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${'*='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a /= b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${'/='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a //= b'}      | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${'//='}          | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a .= b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${'.='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a |= b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${'|='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a ^= b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${'^='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a &= b'}       | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}    | ${'&='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a <<= b'}      | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}   | ${'<<='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a >>= b'}      | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}   | ${'>>='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'a >>>= b'}     | ${SyntaxKind.AssignExpression}  | ${{ kind: SyntaxKind.Identifier, value: 'a' }}  | ${'>>>='}           | ${{ kind: SyntaxKind.Identifier, value: 'b' }}
+      ${'1 + 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'+'}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 * 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'*'}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 / 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'/'}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 // 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'//'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 ** 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'**'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 << 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'<<'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 >> 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'>>'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 >>> 1.2'}    | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'>>>'}          | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 ~= 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'~='}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 < 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'<'}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 <= 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'<='}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 > 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'>'}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 >= 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'>='}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 = 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'='}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 == 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'=='}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 != 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'!='}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 !== 1.2'}    | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'!=='}          | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 || 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'||'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 && 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'&&'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 1.2'}        | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${' '}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+    `('binary expression', ({ text, expectedKind, expectedLeft, expectedOperator, expectedRight }) => {
       const ast = parseAELL(String(text));
       expect(ast.kind).toBe(expectedKind);
-
       if (!('left' in ast)) {
         throw Error();
       }
       expect(ast.left).toMatchObject(expectedLeft as Record<any, any>);
+
+      if (!('operator' in ast)) {
+        throw Error();
+      }
+      expect(ast.operator).toBe(expectedOperator);
 
       if (!('right' in ast)) {
         throw Error();
