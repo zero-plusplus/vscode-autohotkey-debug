@@ -96,6 +96,7 @@ describe('parser', () => {
       ${'1 || 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'||'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 && 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'&&'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 1.2'}        | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${' '}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1, 1.2'}       | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${','}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
     `('binary expression', ({ text, expectedKind, expectedLeft, expectedOperator, expectedRight }) => {
       const ast = parseAELL(String(text));
       expect(ast.kind).toBe(expectedKind);
