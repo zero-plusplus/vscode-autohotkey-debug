@@ -298,15 +298,17 @@ export const createAELLParser = (ahkVersionOrText: string | ParsedAutoHotkeyVers
     return grammar_v1;
   })();
 
-  return (input: string): Node => {
+  return {
+    parse: (input: string): Node => {
     // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-    const matchResult = grammar.match(input);
-    if (!matchResult.succeeded()) {
-      throw new ParseError(matchResult);
-    }
+      const matchResult = grammar.match(input);
+      if (!matchResult.succeeded()) {
+        throw new ParseError(matchResult);
+      }
 
-    const node = extras.toAST(matchResult, expressionNodeMapping);
-    return node as Node;
+      const node = extras.toAST(matchResult, expressionNodeMapping);
+      return node as Node;
+    },
   };
 };
 

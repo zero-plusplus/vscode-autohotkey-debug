@@ -4,7 +4,7 @@ import { SyntaxKind } from '../../../src/types/tools/AELL/common.types';
 
 describe('parser', () => {
   describe('v1.1', () => {
-    const parseAELL = createAELLParser('1.1.30');
+    const { parse: parseAELL } = createAELLParser('1.1.30');
 
     test.each`
       text                | expectedKind                              | expectedValue
@@ -139,7 +139,7 @@ describe('parser', () => {
   });
 
   describe('v2.0', () => {
-    const parseAELL = createAELLParser('2.0.0');
+    const { parse: parseAELL } = createAELLParser('2.0.0');
 
     test.each`
       text      | expectedError
