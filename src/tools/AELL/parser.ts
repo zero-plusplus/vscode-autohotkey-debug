@@ -104,6 +104,7 @@ export const grammarText_v1 = `
       | "!" UnaryExpression -- not
       | "&" ~"&" UnaryExpression -- address
       | "~" UnaryExpression -- bitwise_not
+      | "^" UnaryExpression -- bitwise_exclusive_or
       | "*" UnaryExpression -- dereference
       | PostfixUnaryExpression
 
@@ -247,16 +248,17 @@ export const expressionNodeMapping = (() => {
     MemberExpression_propertyaccess:                    { kind: SyntaxKind.PropertyAccessExpression, object: 0, property: 2, startPosition, endPosition },
     MemberExpression_dereference_propertyaccess:        { kind: SyntaxKind.DereferencePropertyAccessExpression, object: 0, property: 2, startPosition, endPosition },
     MemberExpression_elementaccess:                     { kind: SyntaxKind.ElementAccessExpression, object: 0, arguments: 3, startPosition, endPosition },
-    UnaryExpression_positive:                           { kind: SyntaxKind.UnaryExpression, operator: 0, expression: 1, startPosition, endPosition },
-    UnaryExpression_negative:                           { kind: SyntaxKind.UnaryExpression, operator: 0, expression: 1, startPosition, endPosition },
-    UnaryExpression_not:                                { kind: SyntaxKind.UnaryExpression, operator: 0, expression: 1, startPosition, endPosition },
-    UnaryExpression_address:                            { kind: SyntaxKind.UnaryExpression, operator: 0, expression: 1, startPosition, endPosition },
-    UnaryExpression_bitwise_not:                        { kind: SyntaxKind.UnaryExpression, operator: 0, expression: 1, startPosition, endPosition },
-    UnaryExpression_dereference:                        { kind: SyntaxKind.UnaryExpression, operator: 0, expression: 1, startPosition, endPosition },
-    UnaryExpression_increment:                          { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, expression: 1, startPosition, endPosition },
-    UnaryExpression_decrement:                          { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, expression: 1, startPosition, endPosition },
-    PostfixUnaryExpression_increment:                   { kind: SyntaxKind.PostFixUnaryExpression, expression: 0, operator: 1, startPosition, endPosition },
-    PostfixUnaryExpression_decrement:                   { kind: SyntaxKind.PostFixUnaryExpression, expression: 0, operator: 1, startPosition, endPosition },
+    UnaryExpression_positive:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    UnaryExpression_negative:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    UnaryExpression_not:                                { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    UnaryExpression_address:                            { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    UnaryExpression_bitwise_not:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    UnaryExpression_bitwise_exclusive_or:               { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    UnaryExpression_dereference:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    UnaryExpression_increment:                          { kind: SyntaxKind.PreFixUnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    UnaryExpression_decrement:                          { kind: SyntaxKind.PreFixUnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    PostfixUnaryExpression_increment:                   { kind: SyntaxKind.PostFixUnaryExpression, operand: 0, operator: 1, startPosition, endPosition },
+    PostfixUnaryExpression_decrement:                   { kind: SyntaxKind.PostFixUnaryExpression, operand: 0, operator: 1, startPosition, endPosition },
     TernaryExpression_ternary:                          { kind: SyntaxKind.TernaryExpression, condition: 0, whenTrue: 2, whenFalse: 4, startPosition, endPosition },
     stringLiteral:                                      { kind: SyntaxKind.StringLiteral, value: slicedText(1, -1), text, startPosition, endPosition },
     numericLiteral:                                     { kind: SyntaxKind.NumberLiteral, value: (nodes: ohm.Node[]): number => Number(text(nodes)), text, startPosition, endPosition },

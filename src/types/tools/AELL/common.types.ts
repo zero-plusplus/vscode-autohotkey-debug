@@ -9,7 +9,7 @@ export const enum SyntaxKind {
   ElementAccessExpression = 'ElementAccessExpression',
   CallExpression = 'CallExpression',
   UnaryExpression = 'UnaryExpression',
-  PrefixUnaryExpression = 'PrefixUnaryExpression',
+  PreFixUnaryExpression = 'PrefixUnaryExpression',
   PostFixUnaryExpression = 'PostFixUnaryExpression',
   TernaryExpression = 'TernaryExpression',
   AssignExpression = 'AssignExpression',
@@ -40,16 +40,16 @@ export interface Syntax {
 export interface UnaryExpressionNode extends Syntax {
   kind: SyntaxKind.UnaryExpression;
   operator: '+' | '-' | '&' | '!' | '~' | '*';
-  expression: Node;
+  operand: Node;
 }
 export interface PrefixUnaryExpressionNode extends Syntax {
-  kind: SyntaxKind.PrefixUnaryExpression;
+  kind: SyntaxKind.PreFixUnaryExpression;
   operator: '++' | '--';
-  expression: Node;
+  operand: Node;
 }
 export interface PostfixUnaryExpressionNode extends Syntax {
   kind: SyntaxKind.PostFixUnaryExpression;
-  expression: Node;
+  operand: Node;
   operator: '++' | '--';
 }
 export interface TernaryExpressionNode extends Syntax {

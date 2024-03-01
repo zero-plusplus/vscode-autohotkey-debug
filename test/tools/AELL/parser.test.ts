@@ -13,7 +13,7 @@ describe('parser', () => {
       ${'<$hitCount>'}    | ${SyntaxKind.Identifier}          | ${'<$hitCount>'}
       ${'"abc"'}          | ${SyntaxKind.StringLiteral}       | ${'abc'}
       ${'1'}              | ${SyntaxKind.NumberLiteral}       | ${1}
-    `('identifier', ({ text, expectedKind, expectedValue }) => {
+    `('primary expression', ({ text, expectedKind, expectedValue }) => {
       const ast = parseAELL(String(text));
       expect(ast.kind).toBe(expectedKind);
       if (ast.kind !== expectedKind) {
@@ -28,6 +28,37 @@ describe('parser', () => {
         throw Error();
       }
       expect(ast.text).toBe(text);
+    });
+
+    test.each`
+      text               | expectedKind                             | expectedOperator | expectedOperand
+      ${'+a'}            | ${SyntaxKind.UnaryExpression}            | ${'+'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
+      ${'-a'}            | ${SyntaxKind.UnaryExpression}            | ${'-'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
+      ${'!a'}            | ${SyntaxKind.UnaryExpression}            | ${'!'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
+      ${'&a'}            | ${SyntaxKind.UnaryExpression}            | ${'&'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
+      ${'~a'}            | ${SyntaxKind.UnaryExpression}            | ${'~'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
+      ${'*a'}            | ${SyntaxKind.UnaryExpression}            | ${'*'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
+      ${'^a'}            | ${SyntaxKind.UnaryExpression}            | ${'^'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
+      ${'++1'}           | ${SyntaxKind.PreFixUnaryExpression}      | ${'++'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
+      ${'--1'}           | ${SyntaxKind.PreFixUnaryExpression}      | ${'--'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
+      ${'1++'}           | ${SyntaxKind.PostFixUnaryExpression}     | ${'++'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
+      ${'1--'}           | ${SyntaxKind.PostFixUnaryExpression}     | ${'--'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
+    `('unary expression', ({ text, expectedKind, expectedOperator, expectedOperand }) => {
+      const ast = parseAELL(String(text));
+      expect(ast.kind).toBe(expectedKind);
+      if (ast.kind !== expectedKind) {
+        throw Error();
+      }
+
+      if (!('operator' in ast)) {
+        throw Error();
+      }
+      expect(ast.operator).toBe(expectedOperator);
+
+      if (!('operand' in ast)) {
+        throw Error();
+      }
+      expect(ast.operand).toMatchObject(expectedOperand as Record<any, any>);
     });
 
     test.each`
