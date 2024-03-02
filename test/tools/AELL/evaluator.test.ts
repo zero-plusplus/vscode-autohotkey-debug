@@ -8,6 +8,7 @@ describe('evaluator', () => {
     text                | expectedEvalValue
     ${'1 + 1'}          | ${2}
     ${'1 * 1 + 1 * 1'}  | ${2}
+    ${'true'}           | ${'1'}
   `('', async({ text, expectedEvalValue }) => {
     expect(await evalExpression(String(text))).toBe(expectedEvalValue);
   });
