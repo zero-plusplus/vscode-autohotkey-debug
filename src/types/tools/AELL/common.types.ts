@@ -1,6 +1,7 @@
 export const enum SyntaxKind {
   StringLiteral = 'StringLiteral',
   NumberLiteral = 'NumberLiteral',
+  BooleanLiteral = 'BooleanLiteral',
   Identifier = 'Identifier',
   NameSubstitutionExpression = 'NameSubstitutionExpression',
   DereferenceExpression = 'DereferenceExpression',
@@ -114,5 +115,9 @@ export interface StringLiteralNode extends Syntax {
 export interface NumberLiteralNode extends Syntax {
   kind: SyntaxKind.NumberLiteral;
   value: string;
+}
+export interface BooleanLiteralNode extends Syntax {
+  kind: SyntaxKind.NumberLiteral;
+  value: boolean;
 }
 // #endregion node

@@ -265,10 +265,28 @@ export const expressionNodeMapping = (() => {
     TernaryExpression_ternary:                          { kind: SyntaxKind.TernaryExpression, condition: 0, whenTrue: 2, whenFalse: 4, startPosition, endPosition },
     stringLiteral:                                      { kind: SyntaxKind.StringLiteral, value: slicedText(1, -1), text, startPosition, endPosition },
     numericLiteral:                                     { kind: SyntaxKind.NumberLiteral, value: (nodes: ohm.Node[]): number => Number(text(nodes)), text, startPosition, endPosition },
-    booleanLiteral:                                     { kind: SyntaxKind.Identifier, value: (nodes: ohm.Node[]): boolean => Boolean(text(nodes)), text, startPosition, endPosition },
-    identifier:                                         { kind: SyntaxKind.Identifier, value: text, text, startPosition, endPosition },
+    identifier:                                         { kind: identifierKind, value: identifierValue, text, startPosition, endPosition },
   };
 
+  function identifierKind(nodes: ohm.Node[]): SyntaxKind {
+    const identifierName = text(nodes);
+    switch (identifierName.toLowerCase()) {
+      case 'true':
+      case 'false':
+        return SyntaxKind.BooleanLiteral;
+      default: break;
+    }
+    return SyntaxKind.Identifier;
+  }
+  function identifierValue(nodes: ohm.Node[]): string | boolean {
+    const identifierName = text(nodes);
+    switch (identifierName.toLowerCase()) {
+      case 'true': return true;
+      case 'false': return false;
+      default: break;
+    }
+    return text(nodes);
+  }
   function slicedText(start: number, end?: number) {
     return (nodes: ohm.Node[]): string => {
       return text(nodes.slice(start, end));

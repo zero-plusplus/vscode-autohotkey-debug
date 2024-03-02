@@ -15,6 +15,7 @@ describe('parser', () => {
       ${'1'}              | ${SyntaxKind.NumberLiteral}               | ${1}
       ${'%abc%'}          | ${SyntaxKind.DereferenceExpression}       | ${'%abc%'}
       ${'a%b%c'}          | ${SyntaxKind.NameSubstitutionExpression}  | ${'a%b%c'}
+      ${'true'}           | ${SyntaxKind.BooleanLiteral}              | ${true}
     `('primary expression', ({ text, expectedKind, expectedValue }) => {
       const ast = parseAELL(String(text));
       expect(ast.kind).toBe(expectedKind);
