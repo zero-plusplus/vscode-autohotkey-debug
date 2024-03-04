@@ -1,12 +1,13 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
 
-export const initializeRequest = <R extends DebugProtocol.InitializeResponse>(response: R, args: DebugProtocol.InitializeRequestArguments): R => {
+export const initializeRequest = async <R extends DebugProtocol.InitializeResponse>(response: R, args: DebugProtocol.InitializeRequestArguments): Promise<R> => {
   response.body = {
     completionTriggerCharacters: [ '.' ],
     supportsCompletionsRequest: true,
     supportsConditionalBreakpoints: true,
     supportsConfigurationDoneRequest: true,
     supportsEvaluateForHovers: true,
+    supportsBreakpointLocationsRequest: true,
     supportsExceptionFilterOptions: true,
     supportsExceptionInfoRequest: true,
     supportsExceptionOptions: true,
@@ -18,5 +19,5 @@ export const initializeRequest = <R extends DebugProtocol.InitializeResponse>(re
     supportsSetVariable: true,
     supportTerminateDebuggee: true,
   };
-  return response;
+  return Promise.resolve(response);
 };

@@ -1,6 +1,6 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { ScriptRuntime } from '../../../types/dap/runtime/scriptRuntime.types';
 
-export const completionsRequest = <R extends DebugProtocol.CompletionsResponse>(runtime: ScriptRuntime, response: R, args: DebugProtocol.CompletionsArguments): R => {
-  return response;
+export const completionsRequest = async <R extends DebugProtocol.CompletionsResponse>(runtime: ScriptRuntime, response: R, args: DebugProtocol.CompletionsArguments): Promise<R> => {
+  return Promise.resolve(response);
 };

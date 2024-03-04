@@ -12,7 +12,7 @@ export const deepDefaults = <DEST extends object, S1 extends object, S2 extends 
       const destValue = dest[key];
       if (typeof destValue === 'object' && (sourceValue && typeof sourceValue === 'object')) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        dest[key] = deepDefaults({ ...destValue }, sourceValue);
+        dest[key] = deepDefaults(Array.isArray(destValue) ? [ ...destValue ] : { ...destValue }, sourceValue);
         continue;
       }
 

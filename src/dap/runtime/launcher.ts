@@ -20,7 +20,6 @@ export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): Scri
         ...args,
       ];
 
-
       const process = (useUIAVersion
         ? spawn('cmd', [ '/c', '"', `"${runtime}"`, ...launchArgs, '"' ], { cwd: path.dirname(program), env, shell: true })
         : spawn(runtime, launchArgs, { cwd, env })) as Process;
