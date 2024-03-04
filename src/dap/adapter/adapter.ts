@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/lines-between-class-members */
-import { LoggingDebugSession } from '@vscode/debugadapter';
+import { InitializedEvent, LoggingDebugSession } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { initializeRequest } from './requests/initializeRequest';
@@ -25,12 +25,12 @@ import { setVariableRequest } from './requests/setVariableRequest';
 import { setExpressionRequest } from './requests/setExpressionRequest';
 import { completionsRequest } from './requests/completionsRequest';
 import { evaluateRequest } from './requests/evaluateRequest';
-import { createScriptRuntimeLauncher } from '../runtime/launcher';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { RequestQueue } from '../utils/RequestQueue';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   private runtime!: ScriptRuntime;
+  private config!: NormalizedDebugConfig;
   private readonly requestQueue = new RequestQueue();
   // #region initialize requests
   protected async initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): Promise<void> {
@@ -39,19 +39,25 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
     });
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, config: NormalizedDebugConfig): Promise<void> {
+    this.config = config;
     await this.request('launchRequest', async() => {
-      const [ runtime, newResponse ] = await launchRequest(config, response);
-
+      const [ runtime, newResponse ] = await launchRequest(this.config, response);
+      runtime.config = this.config;
       this.runtime = runtime;
+
       this.sendResponse(newResponse);
+      this.sendEvent(new InitializedEvent());
     });
   }
   protected async attachRequest(response: DebugProtocol.AttachResponse, config: NormalizedDebugConfig): Promise<void> {
+    this.config = config;
     await this.request('attachRequest', async() => {
-      const launcher = createScriptRuntimeLauncher(config);
-      this.runtime = await launcher.attach();
+      const [ runtime, newResponse ] = await attachRequest(this.config, response);
+      runtime.config = this.config;
+      this.runtime = runtime;
 
-      this.sendResponse(await attachRequest(this.runtime, response));
+      this.sendResponse(newResponse);
+      this.sendEvent(new InitializedEvent());
     });
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request | undefined): Promise<void> {

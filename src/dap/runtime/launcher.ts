@@ -6,33 +6,44 @@ import { attachAutoHotkeyScript } from '../../tools/autohotkey';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { Process } from '../../types/dap/session.types';
 import { createScriptRuntime } from './scriptRuntime';
+import { InitPacket } from '../../types/dbgp/ExtendAutoHotkeyDebugger.types';
 
 export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): ScriptRuntimeLauncher => {
   const connector = createSessionConnector();
   return {
     async launch(): Promise<ScriptRuntime> {
-      const { noDebug, runtime, cwd, hostname, port, runtimeArgs, program, args, env, useUIAVersion } = config;
+      return new Promise((resolve) => {
+        const { noDebug, runtime, cwd, hostname, port, runtimeArgs, program, args, env, useUIAVersion } = config;
 
-      const launchArgs = [
-        ...(noDebug ? [] : [ `/Debug=${hostname}:${port}` ]),
-        ...runtimeArgs,
-        `${program}`,
-        ...args,
-      ];
+        const launchArgs = [
+          ...(noDebug ? [] : [ `/Debug=${hostname}:${port}` ]),
+          ...runtimeArgs,
+          `${program}`,
+          ...args,
+        ];
 
-      const process = (useUIAVersion
-        ? spawn('cmd', [ '/c', '"', `"${runtime}"`, ...launchArgs, '"' ], { cwd: path.dirname(program), env, shell: true })
-        : spawn(runtime, launchArgs, { cwd, env })) as Process;
-      process.invocationCommand = `"${runtime}" ${launchArgs.join(' ')}`;
-      const session = await connector.connect(config.port, config.hostname, process);
-      return createScriptRuntime(session, config);
+        const process = (useUIAVersion
+          ? spawn('cmd', [ '/c', '"', `"${runtime}"`, ...launchArgs, '"' ], { cwd: path.dirname(program), env, shell: true })
+          : spawn(runtime, launchArgs, { cwd, env })) as Process;
+        process.invocationCommand = `"${runtime}" ${launchArgs.join(' ')}`;
+        connector.connect(config.port, config.hostname, process).then((session) => {
+          session.once('debugger:init', (initPacket: InitPacket) => {
+            resolve(createScriptRuntime(session, config, initPacket));
+          });
+        });
+      });
     },
     async attach(): Promise<ScriptRuntime> {
-      const { runtime, program, hostname, port } = config;
-      attachAutoHotkeyScript(runtime, program, hostname, port);
+      return new Promise((resolve) => {
+        const { runtime, program, hostname, port } = config;
+        attachAutoHotkeyScript(runtime, program, hostname, port);
 
-      const session = await connector.connect(config.port, config.hostname);
-      return createScriptRuntime(session, config);
+        connector.connect(config.port, config.hostname).then((session) => {
+          session.once('debugger:init', (initPacket: InitPacket) => {
+            resolve(createScriptRuntime(session, config, initPacket));
+          });
+        });
+      });
     },
   };
 };

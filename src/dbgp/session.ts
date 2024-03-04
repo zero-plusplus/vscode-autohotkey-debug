@@ -16,7 +16,6 @@ export const createSessionConnector = (): SessionConnector => {
       return new Promise((resolve) => {
         const server = createServer((socket) => {
           socket.on('data', handlePacket);
-          resolve(createSession(server, socket, process));
 
           function handlePacket(packet: Buffer): void {
             // As shown in the example below, the data passed from dbgp is divided into data length and response.
@@ -60,16 +59,32 @@ export const createSessionConnector = (): SessionConnector => {
             // Wait for next packet
             packetBuffer = currentPacket;
           }
-        }).listen(port, hostname);
+        })
+          .listen(port, hostname)
+          .on('connection', (socket) => {
+            resolve(createSession(server, socket, process));
+          });
       });
     },
   };
 
   function createSession(server: Server, socket: Socket, process?: Process): Session {
-    const responseEmitter = registerEvents();
+    const emitter = registerEvents();
     const sendCommand = createCommandSender(socket);
+
     return {
-      responseEmitter,
+      on(eventName, litener): Session {
+        emitter.on(eventName, litener);
+        return this;
+      },
+      once(eventName, litener): Session {
+        emitter.once(eventName, litener);
+        return this;
+      },
+      off(eventName, litener): Session {
+        emitter.off(eventName, litener);
+        return this;
+      },
       sendCommand,
       async close(timeout_ms = 500): Promise<Error | undefined> {
         await closeProcess(timeout_ms);

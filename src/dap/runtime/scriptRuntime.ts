@@ -1,8 +1,9 @@
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { Session } from '../../types/dap/session.types';
+import { InitPacket } from '../../types/dbgp/ExtendAutoHotkeyDebugger.types';
 
-export const createScriptRuntime = (session: Session, config: NormalizedDebugConfig): ScriptRuntime => {
+export const createScriptRuntime = (session: Session, config: NormalizedDebugConfig, initPacket: InitPacket): ScriptRuntime => {
   const runtime: ScriptRuntime = {
     config,
     async close(): Promise<Error | undefined> {
@@ -34,15 +35,15 @@ export const createScriptRuntime = (session: Session, config: NormalizedDebugCon
     },
   };
 
-  session.responseEmitter.on('process:close', runtime.onProcessClose);
-  session.responseEmitter.on('process:error', runtime.onError);
-  session.responseEmitter.on('process:stdout', runtime.onStdOut);
-  session.responseEmitter.on('process:stderr', runtime.onStdErr);
-  session.responseEmitter.on('debugger:close', runtime.onSocketClose);
-  session.responseEmitter.on('debugger:error', runtime.onError);
-  session.responseEmitter.on('debugger:stdout', runtime.onStdOut);
-  session.responseEmitter.on('debugger:stderr', runtime.onOutputDebug);
-  session.responseEmitter.on('server:close', runtime.onServerClose);
-  session.responseEmitter.on('server:error', runtime.onError);
+  session.on('process:close', runtime.onProcessClose);
+  session.on('process:error', runtime.onError);
+  session.on('process:stdout', runtime.onStdOut);
+  session.on('process:stderr', runtime.onStdErr);
+  session.on('debugger:close', runtime.onSocketClose);
+  session.on('debugger:error', runtime.onError);
+  session.on('debugger:stdout', runtime.onStdOut);
+  session.on('debugger:stderr', runtime.onOutputDebug);
+  session.on('server:close', runtime.onServerClose);
+  session.on('server:error', runtime.onError);
   return runtime;
 };
