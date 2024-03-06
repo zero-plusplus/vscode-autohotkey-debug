@@ -1,4 +1,4 @@
-import { ParsedAutoHotkeyVersion, preIdList } from '../../../types/dbgp/ExtendAutoHotkeyDebugger.types';
+import { ParsedAutoHotkeyVersion, preIdList } from '../../../types/tools/autohotkey/version/common.types';
 
 export const compareAutoHotkeyVersion = (a: ParsedAutoHotkeyVersion, b: ParsedAutoHotkeyVersion): number => {
   const mejorDiff = a.mejor - b.mejor;
