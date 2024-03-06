@@ -14,5 +14,5 @@
       }
     }
   ],
-  "jest.runMode": "on-demand"
+  "jest.runMode": "on-save"
 }
