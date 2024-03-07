@@ -1,4 +1,4 @@
-import * as dbgp from '../../dbgp/ExtendAutoHotkeyDebugger.types';
+import * as dbgp from '../../dbgp/AutoHotkeyDebugger.types';
 import { Session } from '../session.types';
 import { VisibleCondition } from '../variableCategory.types';
 
@@ -56,7 +56,8 @@ export interface BreakpointBase {
   condition?: string;
   hitCondition?: string;
   logMessage?: string;
-  action: BreakpointAction;
+  state: dbgp.BreakpointState;
+  action?: BreakpointAction;
   /**
    * Whether the breakpoint has been verified by the debugger.
    *
@@ -69,9 +70,10 @@ export interface BreakpointBase {
    * ```
    */
   verified: boolean;
-  customVertify?: () => [ dbgp.LineNumber, dbgp.CharacterNumber? ];
+  customVertify?: () => [ /* line */ number, /* character */ number? ];
   unverifiedLine: number;
-  unverifiedColumn: number;
+  unverifiedColumn?: number;
+  temporary: boolean;
 }
 export type BreakpointAction = (session: Session) => Promise<void>;
 export type Breakpoint
@@ -82,9 +84,9 @@ export type Breakpoint
   | Logpoint;
 
 export interface LineBreakpointBase extends BreakpointBase {
-  fileName: dbgp.FileName;
-  line: dbgp.LineNumber;
-  character?: dbgp.CharacterNumber;
+  fileName: string;
+  line: number;
+  character?: number;
 }
 export interface LineBreakpoint extends LineBreakpointBase {
   kind: 'line';
@@ -107,10 +109,10 @@ export interface Logpoint extends LineBreakpointBase {
 }
 
 export interface BreakpointManager {
-  getBreakpointById: (breakpointId: number) => dbgp.Breakpoint | undefined;
-  getBreakpointsByLine: (fileName: string, line_0base: number) => dbgp.Breakpoint[];
-  getAllBreakpoints: () => dbgp.Breakpoint[];
-  setBreakpoint: (breakpointData: BreakpointData) => Promise<dbgp.Breakpoint>;
+  getBreakpointById: (breakpointId: number) => Breakpoint | undefined;
+  getBreakpointsByLine: (fileName: string, line_0base: number) => Breakpoint[];
+  getAllBreakpoints: () => Breakpoint[];
+  setBreakpoint: (breakpointData: BreakpointData) => Promise<Breakpoint>;
   removeBreakpointById: (breakpointId: number) => Promise<void>;
   removeBreakpointsByLine: (fileName: string, line_0base: number) => Promise<void>;
   removeBreakpointsByFile: (fileName: string) => Promise<void>;

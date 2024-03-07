@@ -22,7 +22,7 @@ export const toDbgpFileName = (filePath: string): string | undefined => {
   }
   return undefined;
 };
-export const toFsPath = <D = undefined>(fileName: string): string | D => {
+export const toFsPath = (fileName: string): string => {
   const fsPath = URI.parse(fileName).fsPath;
 
   // The UNC path is somehow converted as follows and needs to be corrected.

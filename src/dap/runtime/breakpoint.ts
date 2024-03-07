@@ -1,6 +1,6 @@
-import * as dbgp from '../../types/dbgp/ExtendAutoHotkeyDebugger.types';
+import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { CommandSender } from '../../types/dap/session.types';
-import { BreakpointData, BreakpointManager } from '../../types/dap/runtime/breakpoint.types';
+import { Breakpoint, BreakpointData, BreakpointManager, LineBreakpoint } from '../../types/dap/runtime/breakpoint.types';
 import { toDbgpFileName, toFsPath } from '../../dbgp/utils';
 import { DbgpError } from '../../dbgp/error';
 
@@ -10,12 +10,12 @@ export const createBreakpointId = (): number => {
 };
 
 export const createBreakpointManager = (sendCommand: CommandSender): BreakpointManager => {
-  const breakpointsByFile = new Map<dbgp.FileName, Map<number, dbgp.Breakpoint[]>>();
+  const breakpointsByFile = new Map<string, Map<number, Breakpoint[]>>();
   return {
     getBreakpointById,
     getBreakpointsByLine,
     getAllBreakpoints,
-    async setBreakpoint(breakpointData: BreakpointData): Promise<dbgp.Breakpoint> {
+    async setBreakpoint(breakpointData: BreakpointData): Promise<Breakpoint> {
       switch (breakpointData.kind) {
         case 'line': return setLineBreakpoint(breakpointData.fileName, breakpointData.line);
         default: break;
@@ -27,8 +27,8 @@ export const createBreakpointManager = (sendCommand: CommandSender): BreakpointM
     removeBreakpointsByFile,
   };
 
-  function getAllBreakpoints(): dbgp.Breakpoint[] {
-    const breakpoints: dbgp.Breakpoint[] = [];
+  function getAllBreakpoints(): Breakpoint[] {
+    const breakpoints: Breakpoint[] = [];
     for (const [ , breakpointInFile ] of [ ...breakpointsByFile ]) {
       for (const [ , breakpointsByLine ] of [ ...breakpointInFile ]) {
         breakpoints.push(...breakpointsByLine);
@@ -36,30 +36,31 @@ export const createBreakpointManager = (sendCommand: CommandSender): BreakpointM
     }
     return breakpoints;
   }
-  function getBreakpointById(breakpointId: number): dbgp.Breakpoint | undefined {
+  function getBreakpointById(breakpointId: number): Breakpoint | undefined {
     return getAllBreakpoints().find((breakpoint) => breakpoint.id === breakpointId);
   }
-  function getBreakpointsByLine(fileName: string, line_0base: number): dbgp.Breakpoint[] {
+  function getBreakpointsByLine(fileName: string, line_0base: number): Breakpoint[] {
     const dbgpFileName = toDbgpFileName(fileName);
     if (!dbgpFileName) {
       return [];
     }
     return breakpointsByFile.get(dbgpFileName)?.get(line_0base) ?? [];
   }
-  async function setLineBreakpoint(fileName: string, line: number, condition?: dbgp.Condition, temporary = false): Promise<dbgp.LineBreakpoint> {
+  async function setLineBreakpoint(fileName: string, line: number, condition?: string, temporary = false): Promise<LineBreakpoint> {
     const type: dbgp.BreakpointType = 'line';
     const response = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', type, '-f', toDbgpFileName(fileName), '-r', temporary ]);
     if (response.error) {
-      throw new DbgpError(Number(response.error.code));
+      throw new DbgpError(Number(response.error.attributes.code));
     }
-    const breakpoint: dbgp.LineBreakpoint = {
+    const breakpoint: LineBreakpoint = {
       id: createBreakpointId(),
-      type,
+      kind: type,
       fileName: toFsPath(fileName),
-      resolved: response.resolved,
+      verified: response.attributes.resolved,
       line,
-      state: response.state === 'enabled',
+      state: response.attributes.state,
       temporary,
+      unverifiedLine: line,
     };
     return breakpoint;
   }
