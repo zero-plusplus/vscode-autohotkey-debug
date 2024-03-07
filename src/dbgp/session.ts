@@ -2,7 +2,7 @@ import { Server, Socket, createServer } from 'net';
 import EventEmitter from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { Breakpoint, CommandSender, Process, Session, SessionConnector } from '../types/dap/session.types';
+import { Breakpoint, CommandSender, ExceptionBreakpoint, Process, Session, SessionConnector } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
@@ -108,9 +108,16 @@ export const createSessionConnector = (): SessionConnector => {
           type,
         };
       },
-      // async setExceptionBreakpoint() {
-      //   const response = sendCommand('breakpoint_set', [ '-n' ]);
-      // },
+      async setExceptionBreakpoint(enabled: boolean): Promise<ExceptionBreakpoint> {
+        const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'exception', '-s', enabled ? 'enabled' : 'disabled' ]);
+        if (setResponse.error) {
+          throw new DbgpError(Number(setResponse.error.attributes.code));
+        }
+        return {
+          type: 'exception',
+          state: setResponse.attributes.state,
+        };
+      },
       async close(timeout_ms = 500): Promise<Error | undefined> {
         await closeProcess(timeout_ms);
         return closeSession();

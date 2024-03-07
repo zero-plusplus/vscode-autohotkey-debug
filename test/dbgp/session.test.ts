@@ -29,5 +29,9 @@ describe('session', () => {
       const breakpoint = await runtime.session.setLineBreakpoint(testFile.path, 1);
       expect({ ...breakpoint, fileName: breakpoint.fileName.toLowerCase() }).toEqual({ id: 1, type: 'line', fileName: testFile.path.toLowerCase(), line: 1, state: 'enabled' } as typeof breakpoint);
     });
+    test('setExceptionBreakpoint', async() => {
+      const breakpoint = await runtime.session.setExceptionBreakpoint(true);
+      expect(breakpoint).toEqual({ type: 'exception', state: 'enabled' } as typeof breakpoint);
+    });
   });
 });

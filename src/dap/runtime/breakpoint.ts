@@ -1,5 +1,5 @@
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { CommandSender } from '../../types/dap/session.types';
+import { CommandSender } from '../../types/dbgp/session.types';
 import { Breakpoint, BreakpointData, BreakpointManager, LineBreakpoint } from '../../types/dap/runtime/breakpoint.types';
 import { toDbgpFileName, toFsPath } from '../../dbgp/utils';
 import { DbgpError } from '../../dbgp/error';

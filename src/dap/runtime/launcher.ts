@@ -4,7 +4,7 @@ import { ScriptRuntime, ScriptRuntimeLauncher } from '../../types/dap/runtime/sc
 import { spawn } from 'child_process';
 import { attachAutoHotkeyScript } from '../../tools/autohotkey';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
-import { Process } from '../../types/dap/session.types';
+import { Process } from '../../types/dbgp/session.types';
 import { createScriptRuntime } from './scriptRuntime';
 import { InitPacket } from '../../types/dbgp/ExtendAutoHotkeyDebugger.types';
 

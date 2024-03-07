@@ -1,4 +1,4 @@
-import * as dbgp from '../dbgp/AutoHotkeyDebugger.types';
+import * as dbgp from './AutoHotkeyDebugger.types';
 import { ChildProcessWithoutNullStreams } from 'child_process';
 
 export interface Process extends ChildProcessWithoutNullStreams {
@@ -14,7 +14,10 @@ export interface Breakpoint {
   line: number;
   state: dbgp.BreakpointState;
 }
-
+export interface ExceptionBreakpoint {
+  type: 'exception';
+  state: dbgp.BreakpointState;
+}
 export type CommandSender = <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: dbgp.CommandName, args?: Array<string | number | boolean | undefined>, data?: string) => Promise<T>;
 export type SessionEventName =
 | 'process:close'
@@ -35,6 +38,7 @@ export interface Session {
   off: (eventName: SessionEventName, litener: (...args: any[]) => void) => this;
   sendCommand: CommandSender;
   setLineBreakpoint: (fileName: string, line: number) => Promise<Breakpoint>;
+  setExceptionBreakpoint: (enabled: boolean) => Promise<ExceptionBreakpoint>;
   close: () => Promise<Error | undefined>;
   detach: () => Promise<Error | undefined>;
 }

@@ -1,5 +1,5 @@
 import * as dbgp from '../../dbgp/AutoHotkeyDebugger.types';
-import { Session } from '../session.types';
+import { Session } from '../../dbgp/session.types';
 import { VisibleCondition } from '../variableCategory.types';
 
 export type BreakpointKind = Omit<dbgp.BreakpointType, 'call'> | 'function';
