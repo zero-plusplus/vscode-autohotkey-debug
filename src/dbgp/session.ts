@@ -1,10 +1,11 @@
 import { Server, Socket, createServer } from 'net';
 import EventEmitter from 'events';
+import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import * as dbgp from '../types/dbgp/ExtendAutoHotkeyDebugger.types';
-import { CommandSender, Process, Session, SessionConnector } from '../types/dap/session.types';
-import { createCommandArgs, encodeToBase64 } from './utils';
+import { Breakpoint, CommandSender, Process, Session, SessionConnector } from '../types/dap/session.types';
+import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
+import { DbgpError } from './error';
 
 const responseEventName = 'response';
 export const createSessionConnector = (): SessionConnector => {
@@ -86,6 +87,30 @@ export const createSessionConnector = (): SessionConnector => {
         return this;
       },
       sendCommand,
+      async setLineBreakpoint(fileName: string, line_1base: number): Promise<Breakpoint> {
+        const fileUri = toDbgpFileName(fileName);
+        const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'line', '-f', fileUri, '-n', line_1base ]);
+        if (setResponse.error) {
+          throw new DbgpError(Number(setResponse.error.attributes.code));
+        }
+
+        const getResponse = await sendCommand<dbgp.BreakpointGetResponse>('breakpoint_get', [ '-d', setResponse.attributes.id ]);
+        if (getResponse.error) {
+          throw new DbgpError(Number(getResponse.error.attributes.code));
+        }
+
+        const { filename, id, lineno, state, type } = getResponse.breakpoint.attributes;
+        return {
+          id: Number(id),
+          fileName: toFsPath(filename),
+          line: Number(lineno),
+          state,
+          type,
+        };
+      },
+      // async setExceptionBreakpoint() {
+      //   const response = sendCommand('breakpoint_set', [ '-n' ]);
+      // },
       async close(timeout_ms = 500): Promise<Error | undefined> {
         await closeProcess(timeout_ms);
         return closeSession();
@@ -166,37 +191,38 @@ export const createSessionConnector = (): SessionConnector => {
     }
 
     function createCommandSender(socket: Socket): CommandSender {
-      let currentTransactionId = 0;
+      let currentTransactionId = 1;
 
-      const sendCommand = async<R extends dbgp.CommandResponse>(commandName: dbgp.CommandName, args?: Array<string | number | boolean | undefined>, data?: string): Promise<R> => {
+      const sendCommand = async<T extends dbgp.CommandResponse = dbgp.CommandResponse>(commandName: dbgp.CommandName, args?: Array<string | number | boolean | undefined>, data?: string): Promise<T> => {
         const transactionId = currentTransactionId++;
-        return sendCommandRaw<R>(transactionId, commandName, args, data);
+        return sendCommandRaw<T>(transactionId, commandName, args, data);
       };
       return sendCommand;
 
-      async function sendCommandRaw<R extends dbgp.CommandResponse>(transactionId: number, commandName: string, args?: Array<string | number | boolean | undefined>, data?: string): Promise<R> {
+      async function sendCommandRaw<T extends dbgp.CommandResponse = dbgp.CommandResponse>(transactionId: number, commandName: string, args?: Array<string | number | boolean | undefined>, data?: string): Promise<T> {
         return new Promise((resolve, reject) => {
-          let command_str = `-i ${transactionId} ${String(commandName)}`;
+          let command_str = `${commandName} -i ${transactionId}`;
           if (Array.isArray(args)) {
             command_str += ` ${createCommandArgs(...args).join(' ')}`;
           }
           if (typeof data === 'string') {
             command_str += ` -- ${encodeToBase64(data)}`;
           }
-          command_str += '\0';
 
           if (!socket.writable) {
             Promise.reject(new Error('Socket not writable.'));
             return;
           }
 
-          socket.write(Buffer.from(command_str), (err) => {
+          socket.write(Buffer.from(`${command_str}\0`), (err) => {
             if (err) {
               reject(new Error('Some error occurred when writing.'));
             }
             socket.once(responseEventName, (packet: dbgp.CommandResponse) => {
               if ('response' in packet) {
-                resolve(packet as R);
+                const response = packet.response as dbgp.CommandResponseBase;
+                response.command = command_str;
+                resolve(packet.response as T);
               }
             });
           });

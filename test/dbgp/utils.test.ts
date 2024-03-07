@@ -10,12 +10,10 @@ describe('utils', () => {
     expect(isDbgpFileName('file:C:\\')).toBeTruthy();
   });
   test('toDbgpFileName', () => {
-    expect(toDbgpFileName('\\\\server\\share')).toBe('file:///%5c%5cserver%5cshare');
-    expect(toDbgpFileName('file:C:\\foo.ts')).toBe('file:///c%3a%5cfoo.ts');
+    expect(toDbgpFileName('C:\\foo.ts')).toBe('file:///c%3a/foo.ts');
   });
   test('toFsPath', () => {
     expect(toFsPath('\\\\server\\share')).toBe('\\\\server\\share');
-    expect(toFsPath('file:C:\\foo.ts')).toBe('c:\\foo.ts');
   });
   test('escapeCommandArgValue', () => {
     expect(escapeCommandArgValue('a"bc"\0')).toBe('"a\\"bc\\"\\0"');

@@ -1,4 +1,3 @@
-import * as os from 'os';
 import * as path from 'path';
 import { promises as fs, rmdirSync, unlinkSync } from 'fs';
 import { randomBytes } from 'crypto';
@@ -12,7 +11,8 @@ export interface TemporaryResource {
   cleanup: () => void;
 }
 export const createTempDirectory = async(prefix: string): Promise<TemporaryResource> => {
-  const dirPath = await fs.mkdtemp(path.resolve(os.tmpdir(), `${prefix}-`), 'utf-8');
+  const tempDir = path.resolve(process.env.windir ?? '', '..', 'Users', process.env.USERNAME ?? '', 'AppData', 'Local', 'Temp');
+  const dirPath = await fs.mkdtemp(path.resolve(tempDir, `${prefix}-`), 'utf-8');
 
   return {
     path: dirPath,

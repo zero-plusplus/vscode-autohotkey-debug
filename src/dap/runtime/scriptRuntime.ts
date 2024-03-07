@@ -5,6 +5,7 @@ import { InitPacket } from '../../types/dbgp/ExtendAutoHotkeyDebugger.types';
 
 export const createScriptRuntime = (session: Session, config: NormalizedDebugConfig, initPacket: InitPacket): ScriptRuntime => {
   const runtime: ScriptRuntime = {
+    session,
     config,
     async close(): Promise<Error | undefined> {
       return session.close();

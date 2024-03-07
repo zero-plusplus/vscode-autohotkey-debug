@@ -4,27 +4,9 @@
  * AutoHotkey_H: https://github.com/HotKeyIt/ahkdll/tree/alpha
  */
 // #region data
-// #region Version
-export type DecimalNumber = number;
-export type FloatNumber = number;
-export type MejorVersion = FloatNumber | DecimalNumber;
-export type MinorVersion = DecimalNumber;
-export type PatchVersion = DecimalNumber;
-export type PreReleaseVersion = DecimalNumber;
-export type PreReleaseId = 'alpha' | 'beta' | 'rc';
-// v1: x.x.y.z | v2: x.y.z
-export type AutoHotkeyVersion = `${MejorVersion}.${MinorVersion}.${PatchVersion}` | (string & { ThisIsLiteralUnionTrick: any });
-export interface ParsedAutoHotkeyVersion {
-  full: AutoHotkeyVersion;
-  mejor: MejorVersion;
-  minor: MinorVersion;
-  patch: PatchVersion;
-  preId: PreReleaseId;
-  preRelease: PreReleaseVersion;
-}
-export type ParseAutoHotkeyVersion = (a: AutoHotkeyVersion | ParsedAutoHotkeyVersion, b: AutoHotkeyVersion | ParsedAutoHotkeyVersion) => ParsedAutoHotkeyVersion;
-export type AutoHotkeyVersionCompare = (a: AutoHotkeyVersion | ParsedAutoHotkeyVersion, b: AutoHotkeyVersion | ParsedAutoHotkeyVersion) => number;
-// #endregion Version
+
+import { AnyMxRecord } from 'dns';
+import { AutoHotkeyVersion } from '../tools/autohotkey/version/common.types';
 
 // #region FileName
 export type FileName = FileUri | VirtualFileUri;
@@ -171,53 +153,14 @@ export interface FeatureRecord {
 }
 // #endregion Feature
 
-// #region Breakpoint
-export type BreakpointId = DecimalNumber;
-export type BreakpointType = 'line' | 'exception';
-export type BreakpointState = 'enabled' | 'disabled';
-export interface BreakpointGetArgument {
-  type: BreakpointType;
-  state: boolean;
-  fileName: FileName;
-  line;
-}
-export interface BreakpointBase {
-  type: BreakpointType;
-  id: number;
-  state: BreakpointState;
-  temporary: boolean;
-  readonly resolved: boolean;
-  hitCount?: string;
-  hitValue?: number;
-  hitCondition?: string;
-}
-export type Breakpoint
-  = LineBreakpoint
-  | ExceptionBreakpoint;
-export interface LineBreakpoint extends BreakpointBase {
-  type: 'line';
-  line: DecimalNumber;
-  fileName: FileName;
-}
-export interface ExceptionBreakpoint extends BreakpointBase {
-  type: 'exception';
-  exception: string;
-}
-// #endregion Breakpoint
-
 // #region Stack
 export type StackType = 'file';
-export type LineNumber = DecimalNumber;
-export type CharacterNumber = DecimalNumber;
-export type CmdRange = `${LineNumber}:${CharacterNumber}`;
 export interface Stack {
   level: number;
   type: StackType;
   fileName: FileName;
   line: number;
   where?: string;
-  cmdbegin?: CmdRange;
-  cmdend?: CmdRange;
 }
 // #endregion Stack
 
@@ -339,13 +282,13 @@ export interface ResponseError {
 export type PacketName = 'init' | 'stream' | 'response';
 export type Packet = InitPacket | StreamPacket | ResponsePacket;
 export interface InitPacket {
-  init: InitResponse;
+  init: { attributes: InitResponse };
 }
 export interface StreamPacket {
-  stream: StreamResponse;
+  stream: { attributes: StreamResponse };
 }
 export interface ResponsePacket {
-  response: CommandResponse;
+  response: { attributes: CommandResponse };
 }
 // #endregion Packet
 
@@ -355,9 +298,9 @@ export interface ResponsePacket {
 export interface InitResponse {
   fileName: FileName;
   appId: AppId;
-  ideKey: FloatNumber;
-  session: FloatNumber;
-  thread: DecimalNumber;
+  ideKey: number;
+  session: number;
+  thread: number;
   parent: DebuggerParent;
   language: LanguageName;
   protocolVersion: ProtocolVersion;
@@ -365,7 +308,21 @@ export interface InitResponse {
 export interface StreamResponse {
   type: StreamType;
   encoding: Encoding;
-  data: string;
+  content: string;
+}
+export interface CommandResponseBase {
+  command: string;
+  error?: ErrorResponse;
+}
+export interface AttributeBase {
+  command: CommandName;
+  transaction_id: string;
+}
+
+export interface ErrorResponse {
+  attributes: {
+    code: string;
+  };
 }
 export type CommandResponse
   = StatusResponse
@@ -387,11 +344,6 @@ export type CommandResponse
   | SourceResponse
   | StdOutResponse
   | StdErrResponse;
-export interface CommandResponseBase {
-  command: CommandName;
-  transactionId: number;
-  error?: ResponseError;
-}
 
 export interface StatusResponse extends CommandResponseBase {
   status: RunState;
@@ -412,16 +364,32 @@ export interface FeatureSetResponse extends CommandResponseBase {
 }
 export interface ContinuationResponse extends StatusResponse {
   command: ContinuationCommandName;
-  breakpoint?: Breakpoint;
+  breakpoint?: any;
+}
+export type BreakpointId = number;
+export type BreakpointType = 'line' | 'exception';
+export type BreakpointState = 'enabled' | 'disabled';
+export interface BreakpointSetResponse extends CommandResponseBase {
+  attributes: {
+    command: 'breakpoint_set';
+    id: string;
+    state: BreakpointState;
+    resolved: boolean;
+  } & AttributeBase;
 }
 export interface BreakpointGetResponse extends CommandResponseBase {
-  command: 'breakpoint_get';
-  breakpoint: Breakpoint;
-}
-export interface BreakpointSetResponse extends CommandResponseBase {
-  command: 'breakpoint_set';
-  state: BreakpointState;
-  resolved: boolean;
+  attributes: {
+    command: 'breakpoint_get';
+  } & AttributeBase;
+  breakpoint: {
+    attributes: {
+      id: string;
+      filename: string;
+      lineno: string;
+      state: BreakpointState;
+      type: BreakpointType;
+    };
+  };
 }
 export interface BreakpointUpdateResponse extends CommandResponseBase {
   command: 'breakpoint_update';
@@ -431,7 +399,7 @@ export interface BreakpointRemoveResponse extends CommandResponseBase {
 }
 export interface BreakpointListResponse extends CommandResponseBase {
   command: 'breakpoint_list';
-  breakpoints: Breakpoint[];
+  breakpoints: AnyMxRecord[];
 }
 export interface StackDepthResponse extends CommandResponseBase {
   command: 'stack_depth';
@@ -484,46 +452,3 @@ export interface BreakResponse extends CommandResponseBase {
   success: boolean;
 }
 // #endregion Response
-
-// #region client
-export type MessageHandler<P> = (packet: P[keyof P]) => void;
-export interface MessageHandlers {
-  init: MessageHandler<InitPacket>;
-  stream: MessageHandler<StreamPacket>;
-}
-export interface Session extends RequireCommandSession, ExtendedCommandSession {
-  init: (port: number, hostname: string) => Promise<void>;
-}
-export type CommandSession = RequireCommandSession | ExtendedCommandSession;
-export interface RequireCommandSession {
-  sendStatusCommand: () => Promise<StatusResponse>;                                                                   // $ status -i TRANSACTION_ID
-  sendFeatureGetCommand: (featureName: FeatureName) => Promise<FeatureSetResponse>;                                   // $ feature_get -i TRANSACTION_ID -n FEATURE_NAME
-  sendFeatureSetCommand: (featureName: FeatureName, value: string) => Promise<FeatureSetResponse>;                    // $ feature_set -i TRANSACTION_ID -n FEATURE_NAME -v VALUE
-  sendRunCommand: () => Promise<ContinuationResponse>;                                                                // $ run -i TRANSACTION_ID
-  sendStepIntoCommand: () => Promise<ContinuationResponse>;                                                           // $ step_into -i TRANSACTION_ID
-  sendStepOverCommand: () => Promise<ContinuationResponse>;                                                           // $ step_over -i transaction_id
-  sendStepOutCommand: () => Promise<ContinuationResponse>;                                                            // $ step_out -i TRANSACTION_ID
-  sendStopCommand: () => Promise<ContinuationResponse>;                                                               // $ stop -i TRANSACTION_ID
-  sendDetachCommand: () => Promise<ContinuationResponse>;                                                             // $ detach -i TRANSACTION_ID
-  sendBreakpointGetCommand: () => Promise<BreakpointGetResponse>;                                                     // $ breakpoint_get -i TRANSACTION_ID -d BREAKPOINT_ID
-  sendBreakpointSetCommand: (fileName: FileName, line: LineNumber) => Promise<BreakpointSetResponse>;                 // $ breakpoint_set -i TRANSACTION_ID -t "line" -s STATE -f FILE_NAME -n LINE_NUMBER
-  sendExceptionBreakpointSetCommand: (exception: string) => Promise<BreakpointSetResponse>;                           // $ breakpoint_set -i TRANSACTION_ID -t "exception" -s STATE -x EXCEPTION_NAME
-  sendBreakpointUpdateCommand: (breakpointId: BreakpointId) => Promise<BreakpointUpdateResponse>;                     // $ breakpoint_update -i TRANSACTION_ID -d BREAKPOINT_ID
-  sendBreakpointRemoveCommand: (breakpointId: BreakpointId) => Promise<BreakpointRemoveResponse>;                     // $ breakpoint_remove -i TRANSACTION_ID -d BREAKPOINT_ID
-  sendBreakpointListCommand: () => Promise<BreakpointListResponse>;                                                   // $ breakpoint_list -i TRANSACTION_ID
-  sendStackDepthCommand: () => Promise<StackDepthResponse>;                                                           // $ stack_depth -i TRANSACTION_ID
-  sendStackGetCommand: (stackDepth?: number) => Promise<StackGetResponse>;                                            // $ stack_get -i TRANSACTION_ID [ -d STACK_DEPTH ]
-  sendContextNamesCommand: (stackDepth?: number) => Promise<ContextNamesResponse>;                                    // $ context_names -i TRANSACTION_ID [ -d STACK_DEPTH ]
-  sendContextGetCommand: (contextId?: ContextId, depth?: number) => Promise<ContextGetResponse>;                      // $ context_get -i TRANSACTION_ID [ -d STACK_DEPTH -c CONTEXT_NUMBER ]
-  sendTypeMapGetCommand: () => Promise<TypeMapGetResponse>;                                                           // $ typemap_get -i TRANSACTION_ID
-  sendPropertyGetCommand: (propertyLongName: string, depth?: number) => Promise<PropertyGetResponse>;                 // $ property_get -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
-  sendPropertySetCommand: (propertyLongName: string, value: string, depth?: number) => Promise<PropertySetResponse>;  // $ property_set -i TRANSACTION_ID -n PROPERTY_LONG_NAME -l DATA_LENGTH [ -d STACK_DEPTH ] -- DATA
-  sendPropertyValueCommand: (propertyLongName: string, depth?: number) => Promise<PropertyValueResponse>;             // $ property_value -i TRANSACTION_ID -n PROPERTY_LONG_NAME [ -d STACK_DEPTH ]
-  sendSourceCommand: (fileName: FileName) => Promise<SourceResponse>;                                                 // $ source -i TRANSACTION_ID -f FILEURI
-  sendStdOutCommand: (outputControl: OutputControl) => Promise<StdOutResponse>;                                       // $ stdout -i transaction_id -c OUTPUT_CONTROL
-  sendStdErrCommand: (outputControl: OutputControl) => Promise<StdOutResponse>;                                       // $ stderr -i transaction_id -c OUTPUT_CONTROL
-}
-export interface ExtendedCommandSession {
-  sendBreakCommand: () => Promise<BreakResponse>;                                                                     // $ break -i TRANSACTION_ID
-}
-// #endregion client

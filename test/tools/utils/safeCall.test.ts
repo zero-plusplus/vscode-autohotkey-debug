@@ -3,9 +3,9 @@ import { safeCall } from '../../../src/tools/utils';
 
 describe('safeCall', () => {
   test('no problem', () => {
-    expect(safeCall((value) => value, [ 'abc' ])).toBe('abc');
-    expect(safeCall(() => {
+    expect(safeCall(() => 'abc')).toBe('abc');
+    expect(safeCall((): void => {
       throw Error();
-    }, [], 123)).toBe(123);
+    })).toBe(undefined);
   });
 });

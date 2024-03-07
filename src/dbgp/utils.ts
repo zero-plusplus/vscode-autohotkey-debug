@@ -10,40 +10,27 @@ export const isDbgpFileName = (filePath: any): filePath is dbgp.FileName => {
     return false;
   }
 
-  if (toDbgpFileName(filePath, undefined) === undefined) {
+  if (toDbgpFileName(filePath) === undefined) {
     return false;
   }
   return true;
 };
-export const toDbgpFileName = <D = undefined>(filePath: string, defaultValue?: D): dbgp.FileName | D => {
-  const uri = safeCall(() => URI.parse(filePath).toString().toLowerCase());
-  if (uri) {
-    return uri as dbgp.FileName;
-  }
-
+export const toDbgpFileName = (filePath: string): string | undefined => {
   const uriFromFilePath = safeCall(() => URI.file(filePath).toString().toLowerCase());
   if (uriFromFilePath) {
     return uriFromFilePath as dbgp.FileName;
   }
-  return defaultValue as D;
+  return undefined;
 };
-export const toFsPath = <D = undefined>(fileName: string, defaultValue?: D): string | D => {
-  try {
-    const uriString = toDbgpFileName(fileName, undefined);
-    if (uriString) {
-      const fsPath = URI.parse(uriString).fsPath;
+export const toFsPath = <D = undefined>(fileName: string): string | D => {
+  const fsPath = URI.parse(fileName).fsPath;
 
-      // The UNC path is somehow converted as follows and needs to be corrected.
-      // "\\\\server\\share" -> "\\\\\\server\\share"
-      if (fsPath.startsWith('\\\\\\')) {
-        return fsPath.slice(1);
-      }
-      return fsPath;
-    }
+  // The UNC path is somehow converted as follows and needs to be corrected.
+  // "\\\\server\\share" -> "\\\\\\server\\share"
+  if (fsPath.startsWith('\\\\\\')) {
+    return fsPath.slice(1);
   }
-  catch {
-  }
-  return defaultValue as D;
+  return fsPath;
 };
 
 export const escapeCommandArgValue = (value: string): string => {
@@ -64,7 +51,7 @@ export const createCommandArgs = (...args: Array<string | number | boolean | und
       if (shouldRemoveFlag) {
         return [];
       }
-      return String(arg);
+      return [ String(arg) ];
     }
     else if (arg === undefined) {
       return [];
@@ -75,8 +62,13 @@ export const createCommandArgs = (...args: Array<string | number | boolean | und
       return arg ? '1' : '0';
     }
     if (typeof arg === 'number') {
-      return String(arg);
+      return [ String(arg) ];
     }
-    return [ escapeCommandArgValue(String(arg)) ];
+
+    const hasEscapeChar = (/\s|\0/u).test(String(arg));
+    if (hasEscapeChar) {
+      return [ escapeCommandArgValue(String(arg)) ];
+    }
+    return [ String(arg) ];
   });
 };

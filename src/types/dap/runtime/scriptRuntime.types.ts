@@ -1,6 +1,7 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { NormalizedDebugConfig } from '../config.types';
 import { LogCategory } from '../adapter.types';
+import { Session } from '../session.types';
 
 export type RunCommand = string; // e.g. AutoHotkey.exe /Debug script.ahk
 export type LaunchMethod
@@ -13,6 +14,7 @@ export interface ScriptRuntimeLauncher {
 }
 export type ScriptRuntimeCreateor = (config: NormalizedDebugConfig) => ScriptRuntime;
 export interface ScriptRuntime {
+  session: Session;
   config: NormalizedDebugConfig;
   close: () => Promise<Error | undefined>;
   detach: () => Promise<Error | undefined>;
