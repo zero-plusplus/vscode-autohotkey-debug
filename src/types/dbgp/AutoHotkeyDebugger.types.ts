@@ -5,7 +5,6 @@
  */
 // #region data
 
-import { AnyMxRecord } from 'dns';
 import { AutoHotkeyVersion } from '../tools/autohotkey/version/common.types';
 
 // #region FileName
@@ -399,7 +398,7 @@ export interface BreakpointRemoveResponse extends CommandResponseBase {
 }
 export interface BreakpointListResponse extends CommandResponseBase {
   command: 'breakpoint_list';
-  breakpoints: AnyMxRecord[];
+  breakpoints: any[];
 }
 export interface StackDepthResponse extends CommandResponseBase {
   command: 'stack_depth';
