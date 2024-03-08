@@ -6,7 +6,6 @@ import { attachAutoHotkeyScript } from '../../tools/autohotkey';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { Process } from '../../types/dbgp/session.types';
 import { createScriptRuntime } from './scriptRuntime';
-import { InitPacket } from '../../types/dbgp/ExtendAutoHotkeyDebugger.types';
 
 export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): ScriptRuntimeLauncher => {
   const connector = createSessionConnector();
@@ -27,8 +26,8 @@ export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): Scri
           : spawn(runtime, launchArgs, { cwd, env })) as Process;
         process.invocationCommand = `"${runtime}" ${launchArgs.join(' ')}`;
         connector.connect(config.port, config.hostname, process).then((session) => {
-          session.once('debugger:init', (initPacket: InitPacket) => {
-            resolve(createScriptRuntime(session, config, initPacket));
+          session.once('debugger:init', () => {
+            resolve(createScriptRuntime(session, config));
           });
         });
       });
@@ -39,8 +38,8 @@ export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): Scri
         attachAutoHotkeyScript(runtime, program, hostname, port);
 
         connector.connect(config.port, config.hostname).then((session) => {
-          session.once('debugger:init', (initPacket: InitPacket) => {
-            resolve(createScriptRuntime(session, config, initPacket));
+          session.once('debugger:init', () => {
+            resolve(createScriptRuntime(session, config));
           });
         });
       });

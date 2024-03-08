@@ -287,7 +287,7 @@ export interface StreamPacket {
   stream: { attributes: StreamResponse };
 }
 export interface ResponsePacket {
-  response: { attributes: CommandResponse };
+  response: CommandResponse;
 }
 // #endregion Packet
 
@@ -323,28 +323,27 @@ export interface ErrorResponse {
     code: string;
   };
 }
-export type CommandResponse
-  = StatusResponse
-  | FeatureGetResponse
-  | FeatureSetResponse
+export type CommandResponse =
+  // | StatusResponse
+  // | FeatureGetResponse
+  // | FeatureSetResponse
   | ContinuationResponse
   | BreakpointGetResponse
   | BreakpointSetResponse
-  | BreakpointUpdateResponse
   | BreakpointRemoveResponse
-  | BreakpointListResponse
+  // | BreakpointListResponse
   | StackDepthResponse
-  | StackGetResponse
-  | ContextNamesResponse
-  | ContextGetResponse
-  | PropertyGetResponse
-  | PropertySetResponse
-  | PropertyValueResponse
-  | SourceResponse
-  | StdOutResponse
-  | StdErrResponse;
+  | StackGetResponse;
+  // | ContextNamesResponse
+  // | ContextGetResponse
+  // | PropertyGetResponse
+  // | PropertySetResponse
+  // | PropertyValueResponse
+  // | SourceResponse
+  // | StdOutResponse
+  // | StdErrResponse;
 
-export interface StatusResponse extends CommandResponseBase {
+export interface StatusAttributes extends CommandResponseBase {
   status: RunState;
   reason: StatusReason;
 }
@@ -361,8 +360,12 @@ export interface FeatureSetResponse extends CommandResponseBase {
   featureName: FeatureName;
   success: boolean;
 }
-export interface ContinuationResponse extends StatusResponse {
-  command: ContinuationCommandName;
+export interface ContinuationResponse extends CommandResponseBase {
+  attributes: {
+    command: ContinuationCommandName;
+    reason: StatusReason;
+    status: RunState;
+  } & AttributeBase & StatusAttributes;
   breakpoint?: any;
 }
 export type BreakpointId = number;
@@ -390,23 +393,38 @@ export interface BreakpointGetResponse extends CommandResponseBase {
     };
   };
 }
-export interface BreakpointUpdateResponse extends CommandResponseBase {
-  command: 'breakpoint_update';
-}
+// export interface BreakpointUpdateResponse extends CommandResponseBase {
+//   command: 'breakpoint_update';
+// }
 export interface BreakpointRemoveResponse extends CommandResponseBase {
-  command: 'breakpoint_remove';
+  attributes: {
+    command: 'breakpoint_remove';
+  } & AttributeBase;
 }
 export interface BreakpointListResponse extends CommandResponseBase {
   command: 'breakpoint_list';
   breakpoints: any[];
 }
 export interface StackDepthResponse extends CommandResponseBase {
-  command: 'stack_depth';
-  depth: number;
+  attributes: {
+    command: 'stack_depth';
+    depth: string;
+  } & AttributeBase;
+}
+export interface StackFrame {
+  attributes: {
+    filename: string;
+    level: string;
+    lineno: string;
+    type: StackType;
+    where: string;
+  };
 }
 export interface StackGetResponse extends CommandResponseBase {
-  command: 'stack_get';
-  stacks: Stack[];
+  attributes: {
+    command: 'stack_get';
+  } & AttributeBase;
+  stack: StackFrame | StackFrame[];
 }
 export interface ContextNamesResponse extends CommandResponseBase {
   command: 'context_names';

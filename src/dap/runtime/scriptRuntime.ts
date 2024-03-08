@@ -1,9 +1,8 @@
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { Session } from '../../types/dbgp/session.types';
-import { InitPacket } from '../../types/dbgp/ExtendAutoHotkeyDebugger.types';
 
-export const createScriptRuntime = (session: Session, config: NormalizedDebugConfig, initPacket: InitPacket): ScriptRuntime => {
+export const createScriptRuntime = (session: Session, config: NormalizedDebugConfig): ScriptRuntime => {
   const runtime: ScriptRuntime = {
     session,
     config,

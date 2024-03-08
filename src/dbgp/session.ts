@@ -2,7 +2,7 @@ import { Server, Socket, createServer } from 'net';
 import EventEmitter from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { Breakpoint, CommandSender, ExceptionBreakpoint, LineBreakpoint, Process, Session, SessionConnector } from '../types/dbgp/session.types';
+import { Breakpoint, CallStack, CommandSender, ExceptionBreakpoint, LineBreakpoint, Process, Session, SessionConnector } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
@@ -87,6 +87,29 @@ export const createSessionConnector = (): SessionConnector => {
         return this;
       },
       sendCommand,
+      async exec(command: dbgp.ContinuationCommandName): Promise<void> {
+        const response = await sendCommand<dbgp.ContinuationResponse>(command);
+        if (response.error) {
+          throw new DbgpError(Number(response.error.attributes.code));
+        }
+      },
+      async getCallStack(): Promise<CallStack> {
+        const response = await sendCommand<dbgp.StackGetResponse>('stack_get');
+        if (response.error) {
+          throw new DbgpError(Number(response.error.attributes.code));
+        }
+
+        const stackFrames = (Array.isArray(response.stack) ? response.stack : [ response.stack ]).map((stack) => stack.attributes);
+        return stackFrames.map((stackFrame) => {
+          return {
+            fileName: toFsPath(stackFrame.filename),
+            line: Number(stackFrame.lineno),
+            level: Number(stackFrame.level),
+            type: stackFrame.type,
+            where: stackFrame.where,
+          };
+        });
+      },
       async getBreakpointById<T extends Breakpoint = Breakpoint>(id: number): Promise<T> {
         const getResponse = await sendCommand<dbgp.BreakpointGetResponse>('breakpoint_get', [ '-d', id ]);
         if (getResponse.error) {
@@ -127,6 +150,12 @@ export const createSessionConnector = (): SessionConnector => {
           type: 'exception',
           state: setResponse.attributes.state,
         };
+      },
+      async removeBreakpointById(id: number): Promise<void> {
+        const response = await sendCommand<dbgp.BreakpointRemoveResponse>('breakpoint_remove', [ '-d', id ]);
+        if (response.error) {
+          throw new DbgpError(Number(response.error.attributes.code));
+        }
       },
       async close(timeout_ms = 500): Promise<Error | undefined> {
         await closeProcess(timeout_ms);
@@ -235,11 +264,11 @@ export const createSessionConnector = (): SessionConnector => {
             if (err) {
               reject(new Error('Some error occurred when writing.'));
             }
-            socket.once(responseEventName, (packet: dbgp.CommandResponse) => {
+            socket.once(responseEventName, (packet: dbgp.ResponsePacket) => {
               if ('response' in packet) {
-                const response = packet.response as dbgp.CommandResponseBase;
+                const response = packet.response;
                 response.command = command_str;
-                resolve(packet.response as T);
+                resolve(response as T);
               }
             });
           });

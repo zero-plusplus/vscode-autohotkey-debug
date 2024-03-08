@@ -5,6 +5,8 @@ import { createScriptRuntimeLauncher } from '../../src/dap/runtime/launcher';
 import { createDefaultDebugConfig } from '../../src/client/config/default';
 import { ScriptRuntime } from '../../src/types/dap/runtime/scriptRuntime.types';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../src/tools/autohotkey';
+import { DbgpError } from '../../src/dbgp/error';
+import { CallStack } from '../../src/types/dbgp/session.types';
 
 describe('session', () => {
   describe('v1', () => {
@@ -12,8 +14,12 @@ describe('session', () => {
     let testFile: TemporaryResource;
     beforeAll(async() => {
       const text = [
-        'a := "foo"',
+        'a()',
         'return',
+        '',
+        'a() {',
+        '  a := "foo"',
+        '}',
       ].join('\n');
 
       testFile = await createTempDirectoryWithFile('utf8-with-bom', '.ahk', `${utf8BomText}${text}`);
@@ -25,13 +31,49 @@ describe('session', () => {
       runtime.close();
     });
 
-    test('setLineBreakpoint', async() => {
+    test('getBreakpointById / setLineBreakpoint / removeBreakpointById / exec', async() => {
+      const exceptionBreakpoint = await runtime.session.setExceptionBreakpoint(true);
+      expect(exceptionBreakpoint).toEqual({ type: 'exception', state: 'enabled' } as typeof exceptionBreakpoint);
+
       const breakpoint = await runtime.session.setLineBreakpoint(testFile.path, 1);
-      expect({ ...breakpoint, fileName: breakpoint.fileName.toLowerCase() }).toEqual({ id: 1, type: 'line', fileName: testFile.path.toLowerCase(), line: 1, state: 'enabled' } as typeof breakpoint);
-    });
-    test('setExceptionBreakpoint', async() => {
-      const breakpoint = await runtime.session.setExceptionBreakpoint(true);
-      expect(breakpoint).toEqual({ type: 'exception', state: 'enabled' } as typeof breakpoint);
+      expect({ ...breakpoint, fileName: breakpoint.fileName.toLowerCase() }).toEqual({ id: 2, type: 'line', fileName: testFile.path.toLowerCase(), line: 1, state: 'enabled' } as typeof breakpoint);
+
+      await runtime.session.exec('run');
+      const callStack = await runtime.session.getCallStack();
+      expect(callStack.map((stackFrame) => ({ ...stackFrame, fileName: stackFrame.fileName.toLowerCase() }))).toEqual([
+        {
+          fileName: testFile.path.toLowerCase(),
+          line: 1,
+          level: 0,
+          type: 'file',
+          where: 'Auto-execute thread',
+        },
+      ] as CallStack);
+
+      const breakpoint2 = await runtime.session.setLineBreakpoint(testFile.path, 6);
+      expect({ ...breakpoint2, fileName: breakpoint.fileName.toLowerCase() }).toEqual({ id: 3, type: 'line', fileName: testFile.path.toLowerCase(), line: 6, state: 'enabled' } as typeof breakpoint);
+
+      await runtime.session.exec('run');
+      const callStack2 = await runtime.session.getCallStack();
+      expect(callStack2.map((stackFrame) => ({ ...stackFrame, fileName: stackFrame.fileName.toLowerCase() }))).toEqual([
+        {
+          fileName: testFile.path.toLowerCase(),
+          line: 6,
+          level: 0,
+          type: 'file',
+          where: 'a()',
+        },
+        {
+          fileName: testFile.path.toLowerCase(),
+          line: 1,
+          level: 1,
+          type: 'file',
+          where: 'Auto-execute thread',
+        },
+      ] as CallStack);
+
+      await runtime.session.removeBreakpointById(breakpoint.id);
+      await expect(async() => runtime.session.getBreakpointById(breakpoint.id)).rejects.toThrow(DbgpError);
     });
   });
 });

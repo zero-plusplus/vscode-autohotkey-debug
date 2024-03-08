@@ -1,15 +1,13 @@
-import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { CommandSender } from '../../types/dbgp/session.types';
-import { Breakpoint, BreakpointData, BreakpointManager, LineBreakpoint } from '../../types/dap/runtime/breakpoint.types';
-import { toDbgpFileName, toFsPath } from '../../dbgp/utils';
-import { DbgpError } from '../../dbgp/error';
+import { Session } from '../../types/dbgp/session.types';
+import { Breakpoint, BreakpointData, BreakpointManager, LineBreakpoint, LineBreakpointData } from '../../types/dap/runtime/breakpoint.types';
+import { toDbgpFileName } from '../../dbgp/utils';
 
 let breakpointId = 0;
 export const createBreakpointId = (): number => {
   return breakpointId++;
 };
 
-export const createBreakpointManager = (sendCommand: CommandSender): BreakpointManager => {
+export const createBreakpointManager = (session: Session): BreakpointManager => {
   const breakpointsByFile = new Map<string, Map<number, Breakpoint[]>>();
   return {
     getBreakpointById,
@@ -17,7 +15,7 @@ export const createBreakpointManager = (sendCommand: CommandSender): BreakpointM
     getAllBreakpoints,
     async setBreakpoint(breakpointData: BreakpointData): Promise<Breakpoint> {
       switch (breakpointData.kind) {
-        case 'line': return setLineBreakpoint(breakpointData.fileName, breakpointData.line);
+        case 'line': return setLineBreakpoint(breakpointData);
         default: break;
       }
       throw Error();
@@ -46,29 +44,21 @@ export const createBreakpointManager = (sendCommand: CommandSender): BreakpointM
     }
     return breakpointsByFile.get(dbgpFileName)?.get(line_0base) ?? [];
   }
-  async function setLineBreakpoint(fileName: string, line: number, condition?: string, temporary = false): Promise<LineBreakpoint> {
-    const type: dbgp.BreakpointType = 'line';
-    const response = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', type, '-f', toDbgpFileName(fileName), '-r', temporary ]);
-    if (response.error) {
-      throw new DbgpError(Number(response.error.attributes.code));
-    }
-    const breakpoint: LineBreakpoint = {
+  async function setLineBreakpoint(breakpointData: LineBreakpointData): Promise<LineBreakpoint> {
+    const breakpoint = await session.setLineBreakpoint(breakpointData.fileName, breakpointData.line);
+    return {
       id: createBreakpointId(),
-      kind: type,
-      fileName: toFsPath(fileName),
-      verified: response.attributes.resolved,
-      line,
-      state: response.attributes.state,
-      temporary,
-      unverifiedLine: line,
+      kind: breakpointData.kind,
+      fileName: breakpointData.fileName,
+      line: breakpoint.line,
+      verified: true,
+      state: breakpoint.state,
+      temporary: breakpointData.temporary ?? false,
+      unverifiedLine: breakpointData.line,
     };
-    return breakpoint;
   }
   async function removeBreakpointById(breakpointId: number): Promise<void> {
-    const response = await sendCommand('breakpoint_remove', [ '-d', breakpointId ]);
-    if (response.error) {
-      throw new DbgpError(Number(response.error));
-    }
+    return session.removeBreakpointById(breakpointId);
   }
   async function removeBreakpointsByLine(fileName: string, line_0base: number): Promise<void> {
     const dbgpFileName = toDbgpFileName(fileName);
