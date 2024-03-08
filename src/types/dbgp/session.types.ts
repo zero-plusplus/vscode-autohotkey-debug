@@ -7,7 +7,10 @@ export interface Process extends ChildProcessWithoutNullStreams {
 export interface SessionConnector {
   connect: (port: number, hostname: string, process?: Process) => Promise<Session>;
 }
-export interface Breakpoint {
+export type Breakpoint =
+  | LineBreakpoint
+  | ExceptionBreakpoint;
+export interface LineBreakpoint {
   id: number;
   type: dbgp.BreakpointType;
   fileName: string;
@@ -37,7 +40,8 @@ export interface Session {
   once: (eventName: SessionEventName, litener: (...args: any[]) => void) => this;
   off: (eventName: SessionEventName, litener: (...args: any[]) => void) => this;
   sendCommand: CommandSender;
-  setLineBreakpoint: (fileName: string, line: number) => Promise<Breakpoint>;
+  getBreakpointById: <T extends Breakpoint = Breakpoint>(id: number) => Promise<T>;
+  setLineBreakpoint: (fileName: string, line: number) => Promise<LineBreakpoint>;
   setExceptionBreakpoint: (enabled: boolean) => Promise<ExceptionBreakpoint>;
   close: () => Promise<Error | undefined>;
   detach: () => Promise<Error | undefined>;

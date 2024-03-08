@@ -2,7 +2,7 @@ import { Server, Socket, createServer } from 'net';
 import EventEmitter from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { Breakpoint, CommandSender, ExceptionBreakpoint, Process, Session, SessionConnector } from '../types/dbgp/session.types';
+import { Breakpoint, CommandSender, ExceptionBreakpoint, LineBreakpoint, Process, Session, SessionConnector } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
@@ -87,26 +87,36 @@ export const createSessionConnector = (): SessionConnector => {
         return this;
       },
       sendCommand,
-      async setLineBreakpoint(fileName: string, line_1base: number): Promise<Breakpoint> {
+      async getBreakpointById<T extends Breakpoint = Breakpoint>(id: number): Promise<T> {
+        const getResponse = await sendCommand<dbgp.BreakpointGetResponse>('breakpoint_get', [ '-d', id ]);
+        if (getResponse.error) {
+          throw new DbgpError(Number(getResponse.error.attributes.code));
+        }
+
+        const attributes = getResponse.breakpoint.attributes;
+        if (attributes.type === 'exception') {
+          return {
+            id,
+            type: attributes.type,
+            state: attributes.state,
+          } as T;
+        }
+        return {
+          id,
+          type: attributes.type,
+          fileName: toFsPath(attributes.filename),
+          line: Number(attributes.lineno),
+          state: attributes.state,
+        } as T;
+      },
+      async setLineBreakpoint(fileName: string, line_1base: number): Promise<LineBreakpoint> {
         const fileUri = toDbgpFileName(fileName);
         const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'line', '-f', fileUri, '-n', line_1base ]);
         if (setResponse.error) {
           throw new DbgpError(Number(setResponse.error.attributes.code));
         }
 
-        const getResponse = await sendCommand<dbgp.BreakpointGetResponse>('breakpoint_get', [ '-d', setResponse.attributes.id ]);
-        if (getResponse.error) {
-          throw new DbgpError(Number(getResponse.error.attributes.code));
-        }
-
-        const { filename, id, lineno, state, type } = getResponse.breakpoint.attributes;
-        return {
-          id: Number(id),
-          fileName: toFsPath(filename),
-          line: Number(lineno),
-          state,
-          type,
-        };
+        return this.getBreakpointById<LineBreakpoint>(Number(setResponse.attributes.id));
       },
       async setExceptionBreakpoint(enabled: boolean): Promise<ExceptionBreakpoint> {
         const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'exception', '-s', enabled ? 'enabled' : 'disabled' ]);
