@@ -2,15 +2,15 @@ import { Server, Socket, createServer } from 'net';
 import EventEmitter from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { Breakpoint, CallStack, CommandSender, ExceptionBreakpoint, LineBreakpoint, Process, Session, SessionConnector } from '../types/dbgp/session.types';
+import { Breakpoint, CallStack, CommandSender, ExceptionBreakpoint, ExecResult, LineBreakpoint, Process, Session, SessionConnector } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
+import { measureAsyncExecutionTime } from '../tools/time';
 
 const responseEventName = 'response';
 export const createSessionConnector = (): SessionConnector => {
   let packetBuffer: Buffer | undefined;
-  let isTerminatedProcess = false;
 
   return {
     async connect(port: number, hostname: string, process?: Process): Promise<Session> {
@@ -70,9 +70,10 @@ export const createSessionConnector = (): SessionConnector => {
   };
 
   function createSession(server: Server, socket: Socket, process?: Process): Session {
+    let isTerminatedProcess = false;
+
     const emitter = registerEvents();
     const sendCommand = createCommandSender(socket);
-
     return {
       on(eventName, litener): Session {
         emitter.on(eventName, litener);
@@ -86,12 +87,21 @@ export const createSessionConnector = (): SessionConnector => {
         emitter.off(eventName, litener);
         return this;
       },
+      get isTerminatedProcess(): boolean {
+        return isTerminatedProcess;
+      },
       sendCommand,
-      async exec(command: dbgp.ContinuationCommandName): Promise<void> {
-        const response = await sendCommand<dbgp.ContinuationResponse>(command);
+      async exec(command: dbgp.ContinuationCommandName): Promise<ExecResult> {
+        const [ response, elapsedTime ] = await measureAsyncExecutionTime(async() => sendCommand<dbgp.ContinuationResponse>(command));
         if (response.error) {
           throw new DbgpError(Number(response.error.attributes.code));
         }
+
+        return {
+          elapsedTime,
+          runState: response.attributes.status,
+          reason: response.attributes.reason,
+        };
       },
       async getCallStack(): Promise<CallStack> {
         const response = await sendCommand<dbgp.StackGetResponse>('stack_get');
@@ -246,6 +256,10 @@ export const createSessionConnector = (): SessionConnector => {
       return sendCommand;
 
       async function sendCommandRaw<T extends dbgp.CommandResponse = dbgp.CommandResponse>(transactionId: number, commandName: string, args?: Array<string | number | boolean | undefined>, data?: string): Promise<T> {
+        if (isTerminatedProcess) {
+          throw Error(`Session closed. Transmission of command "${commandName}" has been cancelled.`);
+        }
+
         return new Promise((resolve, reject) => {
           let command_str = `${commandName} -i ${transactionId}`;
           if (Array.isArray(args)) {

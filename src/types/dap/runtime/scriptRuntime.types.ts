@@ -1,7 +1,8 @@
 import { NormalizedDebugConfig } from '../config.types';
 import { LogCategory } from '../adapter.types';
-import { Session } from '../../dbgp/session.types';
+import { ExecResult, Session } from '../../dbgp/session.types';
 import { LineBreakpoint, LineBreakpointData } from './breakpoint.types';
+import * as dbgp from '../../dbgp/AutoHotkeyDebugger.types';
 
 export type RunCommand = string; // e.g. AutoHotkey.exe /Debug script.ahk
 export type LaunchMethod
@@ -14,11 +15,13 @@ export interface ScriptRuntimeLauncher {
 }
 export type ScriptRuntimeCreateor = (config: NormalizedDebugConfig) => ScriptRuntime;
 export interface ScriptRuntime {
+  readonly threadId: number;
   session: Session;
   config: NormalizedDebugConfig;
+  isClosed: boolean;
   close: () => Promise<Error | undefined>;
   detach: () => Promise<Error | undefined>;
-  run: () => Promise<void>;
+  exec: (command: dbgp.ContinuationCommandName) => Promise<ExecResult>;
   setLineBreakpoint: (breakpointDataList: LineBreakpointData) => Promise<LineBreakpoint>;
   setLineBreakpoints: (breakpointDataList: LineBreakpointData[]) => Promise<LineBreakpoint[]>;
   /**

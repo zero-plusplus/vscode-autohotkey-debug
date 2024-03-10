@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/lines-between-class-members */
-import { InitializedEvent, LoggingDebugSession } from '@vscode/debugadapter';
+import { InitializedEvent, LoggingDebugSession, StoppedEvent, TerminatedEvent } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { initializeRequest } from './requests/initializeRequest';
@@ -27,11 +27,36 @@ import { completionsRequest } from './requests/completionsRequest';
 import { evaluateRequest } from './requests/evaluateRequest';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { RequestQueue } from '../utils/RequestQueue';
+import { ExecResult } from '../../types/dbgp/session.types';
+import { StopReason } from '../../types/dap/adapter/adapter.types';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   public runtime!: Readonly<ScriptRuntime>;
   public config!: Readonly<NormalizedDebugConfig>;
   private readonly requestQueue = new RequestQueue();
+  // #region public methods
+  public sendStoppedEvent(reason: StopReason | ExecResult): void {
+    this.sendEvent(new StoppedEvent(toStopReason(reason), this.runtime.threadId));
+
+    function toStopReason(execResult: StopReason | ExecResult): StopReason {
+      if (typeof execResult === 'string') {
+        return execResult;
+      }
+
+      switch (execResult.reason) {
+        case 'aborted':
+        case 'error': return 'error';
+        case 'exception': return 'exception';
+        default: break;
+      }
+      return 'breakpoint';
+    }
+  }
+  public sendTerminatedEvent(): void {
+    this.sendEvent(new TerminatedEvent());
+  }
+  // #endregion public methods
+
   // #region initialize requests
   protected async initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): Promise<void> {
     await this.request('initializeRequest', async() => {
@@ -127,7 +152,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   // #region stop-event lifecycle requests
   protected async threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('threadsRequest', async() => {
-      this.sendResponse(await threadsRequest(this.runtime, response));
+      this.sendResponse(await threadsRequest(this, response));
     });
   }
   protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
@@ -180,6 +205,12 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   }
   private async request<T>(requestName: string, handler: () => Promise<T>): Promise<void> {
     console.log(requestName);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (this.runtime?.isClosed) {
+      this.sendTerminatedEvent();
+      return;
+    }
+
     this.requestQueue.enqueue(handler);
     await this.requestQueue.flush();
   }
