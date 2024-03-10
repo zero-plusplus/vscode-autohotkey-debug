@@ -29,8 +29,8 @@ import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { RequestQueue } from '../utils/RequestQueue';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
-  private runtime!: ScriptRuntime;
-  private config!: NormalizedDebugConfig;
+  public runtime!: Readonly<ScriptRuntime>;
+  public config!: Readonly<NormalizedDebugConfig>;
   private readonly requestQueue = new RequestQueue();
   // #region initialize requests
   protected async initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): Promise<void> {
@@ -39,8 +39,8 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
     });
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, config: NormalizedDebugConfig): Promise<void> {
-    this.config = config;
     await this.request('launchRequest', async() => {
+      this.config = config;
       const [ runtime, newResponse ] = await launchRequest(this.config, response);
       runtime.config = this.config;
       this.runtime = runtime;
@@ -62,7 +62,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('configurationDoneRequest', async() => {
-      this.sendResponse(await configurationDoneRequest(this.runtime, response, args));
+      this.sendResponse(await configurationDoneRequest(this, response, args));
     });
   }
   // #endregion initialize requests
@@ -70,7 +70,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   // #region termination requests
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('disconnectRequest', async() => {
-      this.sendResponse(await disconnectRequest(this.runtime, response, args));
+      this.sendResponse(await disconnectRequest(this, response, args));
     });
   }
   protected async restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
@@ -84,7 +84,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   // #region user-interaction requests
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('setBreakPointsRequest', async() => {
-      this.sendResponse(await setBreakPointsRequest(this.runtime, response, args));
+      this.sendResponse(await setBreakPointsRequest(this, response, args));
     });
   }
   protected async setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {

@@ -1,7 +1,7 @@
-import { DebugProtocol } from '@vscode/debugprotocol';
 import { NormalizedDebugConfig } from '../config.types';
 import { LogCategory } from '../adapter.types';
 import { Session } from '../../dbgp/session.types';
+import { LineBreakpoint, LineBreakpointData } from './breakpoint.types';
 
 export type RunCommand = string; // e.g. AutoHotkey.exe /Debug script.ahk
 export type LaunchMethod
@@ -18,13 +18,15 @@ export interface ScriptRuntime {
   config: NormalizedDebugConfig;
   close: () => Promise<Error | undefined>;
   detach: () => Promise<Error | undefined>;
-
+  run: () => Promise<void>;
+  setLineBreakpoint: (breakpointDataList: LineBreakpointData) => Promise<LineBreakpoint>;
+  setLineBreakpoints: (breakpointDataList: LineBreakpointData[]) => Promise<LineBreakpoint[]>;
   /**
    * The handler is called only once for each script retrieved by loadedSourcesRequest.
    * @param args
    * @returns
    */
-  setDebugDirectives: (args: { source: DebugProtocol.Source }) => Promise<void>;
+  setDebugDirectives: () => Promise<void>;
   /**
    * Provides a way to execute OutputEvents from the client.
    * @param args

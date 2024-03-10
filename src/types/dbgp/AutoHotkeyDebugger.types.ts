@@ -366,7 +366,6 @@ export interface ContinuationResponse extends CommandResponseBase {
     reason: StatusReason;
     status: RunState;
   } & AttributeBase & StatusAttributes;
-  breakpoint?: any;
 }
 export type BreakpointId = number;
 export type BreakpointType = 'line' | 'exception';

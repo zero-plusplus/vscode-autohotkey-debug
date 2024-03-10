@@ -1,7 +1,7 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { ScriptRuntime } from '../../../types/dap/runtime/scriptRuntime.types';
+import { AutoHotkeyDebugAdapter } from '../adapter';
 
-export const disconnectRequest = async <R extends DebugProtocol.DisconnectRequest>(runtime: ScriptRuntime, response: R, args: DebugProtocol.DisconnectArguments): Promise<R> => {
-  await runtime.close();
+export const disconnectRequest = async <R extends DebugProtocol.DisconnectRequest>(adapter: AutoHotkeyDebugAdapter, response: R, args: DebugProtocol.DisconnectArguments): Promise<R> => {
+  await adapter.runtime.close();
   return Promise.resolve(response);
 };

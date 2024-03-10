@@ -1,6 +1,7 @@
 import { Session } from '../../types/dbgp/session.types';
 import { Breakpoint, BreakpointData, BreakpointManager, LineBreakpoint, LineBreakpointData } from '../../types/dap/runtime/breakpoint.types';
 import { toDbgpFileName } from '../../dbgp/utils';
+import { DbgpError } from '../../dbgp/error';
 
 let breakpointId = 0;
 export const createBreakpointId = (): number => {
@@ -20,6 +21,7 @@ export const createBreakpointManager = (session: Session): BreakpointManager => 
       }
       throw Error();
     },
+    setLineBreakpoint,
     removeBreakpointById,
     removeBreakpointsByLine,
     removeBreakpointsByFile,
@@ -45,17 +47,34 @@ export const createBreakpointManager = (session: Session): BreakpointManager => 
     return breakpointsByFile.get(dbgpFileName)?.get(line_0base) ?? [];
   }
   async function setLineBreakpoint(breakpointData: LineBreakpointData): Promise<LineBreakpoint> {
-    const breakpoint = await session.setLineBreakpoint(breakpointData.fileName, breakpointData.line);
-    return {
-      id: createBreakpointId(),
-      kind: breakpointData.kind,
-      fileName: breakpointData.fileName,
-      line: breakpoint.line,
-      verified: true,
-      state: breakpoint.state,
-      temporary: breakpointData.temporary ?? false,
-      unverifiedLine: breakpointData.line,
-    };
+    try {
+      const breakpoint = await session.setLineBreakpoint(breakpointData.fileName, breakpointData.line);
+      return {
+        id: createBreakpointId(),
+        kind: breakpointData.kind,
+        fileName: breakpointData.fileName,
+        line: breakpoint.line,
+        verified: true,
+        state: breakpoint.state,
+        temporary: breakpointData.temporary ?? false,
+        unverifiedLine: breakpointData.line,
+      };
+    }
+    catch (e: unknown) {
+      if (e instanceof DbgpError) {
+        return {
+          id: -1,
+          kind: breakpointData.kind,
+          fileName: breakpointData.fileName,
+          line: breakpointData.line,
+          verified: false,
+          state: 'disabled',
+          temporary: breakpointData.temporary ?? false,
+          unverifiedLine: breakpointData.line,
+        };
+      }
+      throw e;
+    }
   }
   async function removeBreakpointById(breakpointId: number): Promise<void> {
     return session.removeBreakpointById(breakpointId);

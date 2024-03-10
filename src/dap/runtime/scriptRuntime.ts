@@ -1,8 +1,11 @@
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
+import { LineBreakpoint } from '../../types/dap/runtime/breakpoint.types';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { Session } from '../../types/dbgp/session.types';
+import { createBreakpointManager } from './breakpoint';
 
 export const createScriptRuntime = (session: Session, config: NormalizedDebugConfig): ScriptRuntime => {
+  const breakpointManager = createBreakpointManager(session);
   const runtime: ScriptRuntime = {
     session,
     config,
@@ -14,9 +17,21 @@ export const createScriptRuntime = (session: Session, config: NormalizedDebugCon
     },
     async echo(args) {
     },
-    async setDebugDirectives(args) {
+    async setDebugDirectives() {
     },
-
+    async run() {
+      await session.exec('run');
+    },
+    async setLineBreakpoint(breakpointData) {
+      return breakpointManager.setLineBreakpoint(breakpointData);
+    },
+    async setLineBreakpoints(breakpointDataList) {
+      const breakpoints: LineBreakpoint[] = [];
+      for await (const breakpointData of breakpointDataList) {
+        breakpoints.push(await this.setLineBreakpoint(breakpointData));
+      }
+      return breakpoints;
+    },
     onStdOut() {
     },
     onStdErr(message) {

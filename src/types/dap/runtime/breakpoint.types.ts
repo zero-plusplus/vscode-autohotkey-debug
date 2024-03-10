@@ -113,6 +113,7 @@ export interface BreakpointManager {
   getBreakpointsByLine: (fileName: string, line_0base: number) => Breakpoint[];
   getAllBreakpoints: () => Breakpoint[];
   setBreakpoint: (breakpointData: BreakpointData) => Promise<Breakpoint>;
+  setLineBreakpoint: (breakpointData: LineBreakpointData) => Promise<LineBreakpoint>;
   removeBreakpointById: (breakpointId: number) => Promise<void>;
   removeBreakpointsByLine: (fileName: string, line_0base: number) => Promise<void>;
   removeBreakpointsByFile: (fileName: string) => Promise<void>;
