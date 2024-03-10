@@ -194,9 +194,10 @@ export const createSessionConnector = (): SessionConnector => {
       process?.kill();
     }
     async function detachProcess(timeout_ms: number): Promise<void> {
-      if (isTerminatedProcess) {
-        await timeoutPromise(sendCommand('detach'), timeout_ms);
+      if (!isTerminatedProcess) {
+        return;
       }
+      await timeoutPromise(sendCommand('detach'), timeout_ms);
     }
 
     function registerEvents(): EventEmitter {

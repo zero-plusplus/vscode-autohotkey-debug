@@ -1,12 +1,12 @@
 import { NormalizedDebugConfig } from '../config.types';
 import { LogCategory } from '../adapter.types';
-import { ExecResult, Session } from '../../dbgp/session.types';
+import { Session } from '../../dbgp/session.types';
 import { LineBreakpoint, LineBreakpointData } from './breakpoint.types';
-import * as dbgp from '../../dbgp/AutoHotkeyDebugger.types';
+import { ContinuationCommandExecutor } from './executor.types';
 
 export type RunCommand = string; // e.g. AutoHotkey.exe /Debug script.ahk
-export type LaunchMethod
-  = 'node'
+export type LaunchMethod =
+  | 'node'
   | 'cmd'; // Security may not allow execution on `node`, so as a workaround, execute on command prompt
 
 export interface ScriptRuntimeLauncher {
@@ -21,7 +21,12 @@ export interface ScriptRuntime {
   isClosed: boolean;
   close: () => Promise<Error | undefined>;
   detach: () => Promise<Error | undefined>;
-  exec: (command: dbgp.ContinuationCommandName) => Promise<ExecResult>;
+  exec: ContinuationCommandExecutor;
+  run: ContinuationCommandExecutor;
+  stepIn: ContinuationCommandExecutor;
+  stepOut: ContinuationCommandExecutor;
+  stepOver: ContinuationCommandExecutor;
+  stop: ContinuationCommandExecutor;
   setLineBreakpoint: (breakpointDataList: LineBreakpointData) => Promise<LineBreakpoint>;
   setLineBreakpoints: (breakpointDataList: LineBreakpointData[]) => Promise<LineBreakpoint[]>;
   /**
