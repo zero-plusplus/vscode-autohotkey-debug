@@ -124,7 +124,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   }
   protected async exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('exceptionInfoRequest', async() => {
-      this.sendResponse(await exceptionInfoRequest(this.runtime, response, args));
+      this.sendResponse(await exceptionInfoRequest(this, response, args));
     });
   }
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
