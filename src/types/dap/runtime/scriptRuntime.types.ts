@@ -1,8 +1,9 @@
 import { NormalizedDebugConfig } from '../config.types';
 import { LogCategory } from '../adapter.types';
 import { Session } from '../../dbgp/session.types';
-import { LineBreakpoint, LineBreakpointData } from './breakpoint.types';
+import { BreakpointManager } from './breakpoint.types';
 import { ContinuationCommandExecutor } from './executor.types';
+import { CallStackManager } from './callstack.types';
 
 export type RunCommand = string; // e.g. AutoHotkey.exe /Debug script.ahk
 export type LaunchMethod =
@@ -14,7 +15,7 @@ export interface ScriptRuntimeLauncher {
   attach: () => Promise<ScriptRuntime>;
 }
 export type ScriptRuntimeCreateor = (config: NormalizedDebugConfig) => ScriptRuntime;
-export interface ScriptRuntime {
+export interface ScriptRuntime extends CallStackManager, BreakpointManager {
   readonly threadId: number;
   session: Session;
   config: NormalizedDebugConfig;
@@ -27,8 +28,6 @@ export interface ScriptRuntime {
   stepOut: ContinuationCommandExecutor;
   stepOver: ContinuationCommandExecutor;
   stop: ContinuationCommandExecutor;
-  setLineBreakpoint: (breakpointDataList: LineBreakpointData) => Promise<LineBreakpoint>;
-  setLineBreakpoints: (breakpointDataList: LineBreakpointData[]) => Promise<LineBreakpoint[]>;
   /**
    * The handler is called only once for each script retrieved by loadedSourcesRequest.
    * @param args

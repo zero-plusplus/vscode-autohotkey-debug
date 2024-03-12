@@ -157,7 +157,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   }
   protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('stackTraceRequest', async() => {
-      this.sendResponse(await stackTraceRequest(this.runtime, response, args));
+      this.sendResponse(await stackTraceRequest(this, response, args));
     });
   }
   protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
