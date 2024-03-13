@@ -203,7 +203,7 @@ export interface PrimitiveProperty {
     // key?: string;
     encoding: Encoding;
   };
-  content: string;
+  content?: string;
 }
 export interface ObjectProperty {
   attributes: {
@@ -439,13 +439,13 @@ export interface ContextNamesResponse extends CommandResponseBase {
   attributes: {
     command: 'context_names';
   } & AttributeBase;
-  contexts: Context[];
+  context: Context[];
 }
 export interface ContextGetResponse extends CommandResponseBase {
   attributes: {
     command: 'context_get';
   } & AttributeBase;
-  property: Property | Property[];
+  property?: Property | Property[];
 }
 export interface TypeMapGetResponse extends CommandResponseBase {
   types: TypeMap[];

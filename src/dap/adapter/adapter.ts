@@ -152,6 +152,8 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   // #region stop-event lifecycle requests
   protected async threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('threadsRequest', async() => {
+      this.resetLifetimeOfObjectsReferences();
+
       this.sendResponse(await threadsRequest(this, response));
     });
   }
@@ -162,12 +164,12 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   }
   protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('scopesRequest', async() => {
-      this.sendResponse(await scopesRequest(this.runtime, response, args));
+      this.sendResponse(await scopesRequest(this, response, args));
     });
   }
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('variablesRequest', async() => {
-      this.sendResponse(await variablesRequest(this.runtime, response, args));
+      this.sendResponse(await variablesRequest(this, response, args));
     });
   }
   // #endregion stop-event lifecycle requests
@@ -215,4 +217,12 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
     await this.requestQueue.flush();
   }
   // #endregion execution requests
+
+  // #region private methods
+  private async resetLifetimeOfObjectsReferences(): Promise<void> {
+    // https://microsoft.github.io/debug-adapter-protocol/overview#lifetime-of-objects-references
+    this.runtime.resetVariableReference();
+    return Promise.resolve();
+  }
+  // #endregion private methods
 }

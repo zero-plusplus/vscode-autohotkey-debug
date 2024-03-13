@@ -4,15 +4,18 @@ import { Session } from '../../types/dbgp/session.types';
 import { createBreakpointManager } from './breakpoint';
 import { createCallStackManager } from './callstack';
 import { createContinuationCommandExecutor } from './executor';
+import { createVariableManager } from './variable';
 
 export const createScriptRuntime = (session: Session, config: NormalizedDebugConfig): ScriptRuntime => {
   const callStackManager = createCallStackManager(session);
   const breakpointManager = createBreakpointManager(session);
-  const exec = createContinuationCommandExecutor(session);
+  const variableManager = createVariableManager(session);
+  const exec = createContinuationCommandExecutor(session, callStackManager);
 
   const runtime: ScriptRuntime = {
     ...breakpointManager,
     ...callStackManager,
+    ...variableManager,
     threadId: 1,
     session,
     config,

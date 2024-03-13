@@ -22,6 +22,7 @@ export const createBreakpointManager = (session: Session): BreakpointManager => 
       throw Error();
     },
     setLineBreakpoint,
+    setLineBreakpoints,
     removeBreakpointById,
     removeBreakpointsByLine,
     removeBreakpointsByFile,
@@ -75,6 +76,13 @@ export const createBreakpointManager = (session: Session): BreakpointManager => 
       }
       throw e;
     }
+  }
+  async function setLineBreakpoints(breakpointDataList: LineBreakpointData[]): Promise<LineBreakpoint[]> {
+    const breakpoints: LineBreakpoint[] = [];
+    for await (const breakpointData of breakpointDataList) {
+      breakpoints.push(await setLineBreakpoint(breakpointData));
+    }
+    return breakpoints;
   }
   async function removeBreakpointById(breakpointId: number): Promise<void> {
     return session.removeBreakpointById(breakpointId);

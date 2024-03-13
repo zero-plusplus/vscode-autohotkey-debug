@@ -11,8 +11,8 @@ export const setBreakPointsRequest = async <R extends DebugProtocol.SetBreakpoin
   }
 
   const fileName = args.source.path;
-  const breakpointData = toLineBreakpointDataList(args.breakpoints);
-  const lineBreakpoints = (await adapter.runtime.setLineBreakpoints(breakpointData));
+  const breakpointDataList = toLineBreakpointDataList(args.breakpoints);
+  const lineBreakpoints = (await adapter.runtime.setLineBreakpoints(breakpointDataList));
   response.body = {
     breakpoints: toDapBreakpoints(lineBreakpoints),
   };

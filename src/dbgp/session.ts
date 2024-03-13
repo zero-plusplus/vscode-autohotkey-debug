@@ -179,7 +179,11 @@ export const createSessionConnector = (): SessionConnector => {
           properties: toProperties(response.property),
         };
 
-        function toProperties(dbgpProperty: dbgp.Property | dbgp.Property[]): Property[] {
+        function toProperties(dbgpProperty?: dbgp.Property | dbgp.Property[]): Property[] {
+          if (!dbgpProperty) {
+            return [];
+          }
+
           const rawProperties = Array.isArray(dbgpProperty) ? dbgpProperty : [ dbgpProperty ];
           return rawProperties.map((rawProperty) => {
             if (rawProperty.attributes.type === 'object') {
@@ -195,7 +199,7 @@ export const createSessionConnector = (): SessionConnector => {
             constant: rawProperty.attributes.constant === '1',
             size: Number(rawProperty.attributes.size),
             type: rawProperty.attributes.type,
-            value: Buffer.from(rawProperty.content, 'base64').toString(),
+            value: Buffer.from(rawProperty.content ?? '', 'base64').toString(),
           };
         }
         function toObjectProperty(rawProperty: dbgp.ObjectProperty): ObjectProperty {
@@ -215,7 +219,7 @@ export const createSessionConnector = (): SessionConnector => {
       async getContexts(depth): Promise<Context[]> {
         const contexts: Context[] = [];
         const response = await sendCommand<dbgp.ContextNamesResponse>('context_names');
-        for await (const context of response.contexts) {
+        for await (const context of response.context) {
           contexts.push(await this.getContext(context.attributes.name, depth));
         }
         return contexts;
