@@ -305,14 +305,14 @@ export interface ResponsePacket {
 // https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L2369C8-L2369C8
 // https://github.com/HotKeyIt/ahkdll/blob/6d186f5f7eced1b252bfc66eb9b361ff03aa3c0c/source/Debugger.cpp#L2300
 export interface InitResponse {
-  fileName: FileName;
-  appId: AppId;
-  ideKey: number;
-  session: number;
-  thread: number;
+  appid: AppId;
+  ide_key: string;
+  session: string;
+  thread: string;
   parent: DebuggerParent;
   language: LanguageName;
-  protocolVersion: ProtocolVersion;
+  protocol_version: ProtocolVersion;
+  fileuri: string;
 }
 export interface StreamResponse {
   type: StreamType;
@@ -336,7 +336,7 @@ export interface ErrorResponse {
 export type CommandResponse =
   // | StatusResponse
   // | FeatureGetResponse
-  // | FeatureSetResponse
+  | FeatureSetResponse
   | ContinuationResponse
   | BreakpointGetResponse
   | BreakpointSetResponse
@@ -366,9 +366,11 @@ export interface FeatureGetResponse extends CommandResponseBase {
 
 // https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L538
 export interface FeatureSetResponse extends CommandResponseBase {
-  command: 'feature_set';
-  featureName: FeatureName;
-  success: boolean;
+  attributes: {
+    command: 'feature_set';
+    feature: FeatureName;
+    success: boolean;
+  } & AttributeBase & StatusAttributes;
 }
 export interface ContinuationResponse extends CommandResponseBase {
   attributes: {

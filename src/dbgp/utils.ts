@@ -1,24 +1,13 @@
 import { URI } from 'vscode-uri';
-import * as dbgp from '../types/dbgp/ExtendAutoHotkeyDebugger.types';
 import { safeCall } from '../tools/utils';
 
 export const isUncPath = (fileName: string): boolean => {
   return fileName.startsWith('\\\\');
 };
-export const isDbgpFileName = (filePath: any): filePath is dbgp.FileName => {
-  if (typeof filePath !== 'string') {
-    return false;
-  }
-
-  if (toDbgpFileName(filePath) === undefined) {
-    return false;
-  }
-  return true;
-};
 export const toDbgpFileName = (filePath: string): string | undefined => {
   const uriFromFilePath = safeCall(() => URI.file(filePath).toString().toLowerCase());
   if (uriFromFilePath) {
-    return uriFromFilePath as dbgp.FileName;
+    return uriFromFilePath;
   }
   return undefined;
 };

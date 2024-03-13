@@ -1,6 +1,6 @@
-import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../types/dbgp/ExtendAutoHotkeyDebugger.types';
 import { BinaryExpressionNode, NumberLiteralNode, StringLiteralNode, SyntaxKind } from '../../types/tools/AELL/common.types';
 import { EvalFunc } from '../../types/tools/AELL/evaluator.types';
+import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../types/tools/autohotkey/version/common.types';
 import { createAELLParser } from './parser';
 
 const createEvalFuncMap = <Value, Evaluated extends Promise<Value>, Func extends EvalFunc<Evaluated>, FuncMap extends Record<SyntaxKind, Func>>(version: AutoHotkeyVersion | ParsedAutoHotkeyVersion, overrides?: FuncMap): FuncMap => {

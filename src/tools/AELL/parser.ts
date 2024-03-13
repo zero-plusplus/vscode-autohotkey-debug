@@ -4,7 +4,7 @@ import * as ohm from 'ohm-js';
 import { parseAutoHotkeyVersion } from '../autohotkey';
 import * as extras from 'ohm-js/extras';
 import { Node, SyntaxKind } from '../../types/tools/AELL/common.types';
-import { ParsedAutoHotkeyVersion } from '../../types/dbgp/ExtendAutoHotkeyDebugger.types';
+import { ParsedAutoHotkeyVersion } from '../../types/tools/autohotkey/version/common.types';
 
 export const grammarText_v1 = `
   Expression_for_v1 {

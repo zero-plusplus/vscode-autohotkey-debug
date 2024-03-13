@@ -1,13 +1,9 @@
 import { describe, expect, test } from '@jest/globals';
-import { createCommandArgs, encodeToBase64, escapeCommandArgValue, isDbgpFileName, isUncPath, toDbgpFileName, toFsPath } from '../../src/dbgp/utils';
+import { createCommandArgs, encodeToBase64, escapeCommandArgValue, isUncPath, toDbgpFileName, toFsPath } from '../../src/dbgp/utils';
 
 describe('utils', () => {
   test('isUncPath', () => {
     expect(isUncPath('\\\\server\\share')).toBeTruthy();
-  });
-  test('isDbgpFileName', () => {
-    expect(isDbgpFileName('\\\\server\\share')).toBeTruthy();
-    expect(isDbgpFileName('file:C:\\')).toBeTruthy();
   });
   test('toDbgpFileName', () => {
     expect(toDbgpFileName('C:\\foo.ts')).toBe('file:///c%3a/foo.ts');

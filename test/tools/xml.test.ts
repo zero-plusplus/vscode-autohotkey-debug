@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { describe, expect, test } from '@jest/globals';
 import { parseXml } from '../../src/tools/xml';
-import { FeatureSetResponse, InitPacket, ResponsePacket } from '../../src/types/dbgp/ExtendAutoHotkeyDebugger.types';
+import { FeatureSetResponse, InitPacket, ResponsePacket } from '../../src/types/dbgp/AutoHotkeyDebugger.types';
 
 describe('xml', () => {
   describe('parseXml', () => {
@@ -40,11 +40,11 @@ describe('xml', () => {
             transaction_id="2"
           />
         `;
-        const response = (parseXml(xmlString) as ResponsePacket).response.attributes as FeatureSetResponse;
-        expect(response.command).toBe('feature_set');
-        expect(response.feature).toBe('max_depth');
-        expect(response.success).toBe('1');
-        expect(response.transaction_id).toBe('2');
+        const response = (parseXml(xmlString) as ResponsePacket).response as FeatureSetResponse;
+        expect(response.attributes.command).toBe('feature_set');
+        expect(response.attributes.feature).toBe('max_depth');
+        expect(response.attributes.success).toBe('1');
+        expect(response.attributes.transaction_id).toBe('2');
       });
     });
   });
