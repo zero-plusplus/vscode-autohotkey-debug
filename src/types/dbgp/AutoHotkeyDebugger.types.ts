@@ -171,16 +171,19 @@ export const enum ContextId {
 }
 export type ContextName = 'Local' | 'Global' | 'Static';
 export interface Context {
-  id: ContextId;
-  name: ContextName;
+  attributes: {
+    id: ContextId;
+    name: ContextName;
+  };
 }
 // #endregion Context
 
 // #region TypeMap
-export type DataTypeName = 'string' | 'integer' | 'float';
-export type DataType = 'string' | 'int' | 'float' | 'object';
+export type PrimitiveDataType = 'string' | 'integer' | 'float';
+export type ObjectDataType = 'object';
+export type DataType = PrimitiveDataType | ObjectDataType;
 export interface TypeMap {
-  name: DataTypeName;
+  name: PrimitiveDataType;
   type: DataType;
 }
 // #endregion TypeMap
@@ -189,27 +192,34 @@ export interface TypeMap {
 export type UndefinedType = 'undefined';
 export type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll';
 export type Property = PrimitiveProperty | ObjectProperty;
-export interface PropertyBase {
-  name: string;
-  fullName: string;
-  type: DataType | UndefinedType;
-  constant: boolean;
-  facet?: PropertyFacet;
-  size: number;
-  key?: number;
-  address: number;
-  encoding: Encoding;
+export interface PrimitiveProperty {
+  attributes: {
+    name: string;
+    fullname: string;
+    type: PrimitiveDataType;
+    constant: string;
+    facet?: PropertyFacet;
+    size: string;
+    // key?: string;
+    encoding: Encoding;
+  };
+  content: string;
 }
-export interface PrimitiveProperty extends PropertyBase {
-  value: string;
-}
-export interface ObjectProperty extends PropertyBase {
-  className: string;
-  page: number;
-  pageSize: number;
-  hasChildren: boolean;
-  children: Property[];
-  numChildren?: number;
+export interface ObjectProperty {
+  attributes: {
+    address: string;
+    children: string;
+    classname: string;
+    facet: PropertyFacet;
+    fullname: string;
+    name: string;
+    numchildren: string;
+    page: string;
+    pagesize: string;
+    size: string;
+    type: ObjectDataType;
+  };
+  property: Property | Property[];
 }
 // #endregion Property
 
@@ -333,9 +343,9 @@ export type CommandResponse =
   | BreakpointRemoveResponse
   // | BreakpointListResponse
   | StackDepthResponse
-  | StackGetResponse;
-  // | ContextNamesResponse
-  // | ContextGetResponse
+  | StackGetResponse
+  | ContextNamesResponse
+  | ContextGetResponse;
   // | PropertyGetResponse
   // | PropertySetResponse
   // | PropertyValueResponse
@@ -426,12 +436,16 @@ export interface StackGetResponse extends CommandResponseBase {
   stack: StackFrame | StackFrame[];
 }
 export interface ContextNamesResponse extends CommandResponseBase {
-  command: 'context_names';
+  attributes: {
+    command: 'context_names';
+  } & AttributeBase;
   contexts: Context[];
 }
 export interface ContextGetResponse extends CommandResponseBase {
-  command: 'context_get';
-  context: Context;
+  attributes: {
+    command: 'context_get';
+  } & AttributeBase;
+  property: Property | Property[];
 }
 export interface TypeMapGetResponse extends CommandResponseBase {
   types: TypeMap[];

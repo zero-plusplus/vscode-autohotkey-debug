@@ -35,6 +35,37 @@ export interface ExceptionBreakpoint {
   type: 'exception';
   state: dbgp.BreakpointState;
 }
+
+export const contextIdByName: Record<dbgp.ContextName, number> = {
+  'Local': dbgp.ContextId.Local,
+  'Global': dbgp.ContextId.Global,
+  'Static': dbgp.ContextId.Static,
+};
+export type Property = PrimitiveProperty | ObjectProperty;
+export interface PropertyBase {
+  name: string;
+  fullName: string;
+  size: number;
+  type: dbgp.DataType;
+}
+export interface PrimitiveProperty extends PropertyBase {
+  type: dbgp.PrimitiveDataType;
+  constant: boolean;
+  value: string;
+}
+export interface ObjectProperty extends PropertyBase {
+  type: dbgp.ObjectDataType;
+  className: string;
+  facet: dbgp.PropertyFacet;
+  hasChildren: boolean;
+  address: number;
+  children: Property[];
+}
+export interface Context {
+  name: dbgp.ContextName;
+  properties: Property[];
+}
+
 export type CommandSender = <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: dbgp.CommandName, args?: Array<string | number | boolean | undefined>, data?: string) => Promise<T>;
 export type SessionEventName =
 | 'process:close'
@@ -61,6 +92,8 @@ export interface Session {
   setLineBreakpoint: (fileName: string, line: number) => Promise<LineBreakpoint>;
   setExceptionBreakpoint: (enabled: boolean) => Promise<ExceptionBreakpoint>;
   removeBreakpointById: (id: number) => Promise<void>;
+  getContext: (contextName: dbgp.ContextName, depth?: number) => Promise<Context>;
+  getContexts: (depth?: number) => Promise<Context[]>;
   close: () => Promise<Error | undefined>;
   detach: () => Promise<Error | undefined>;
 }
