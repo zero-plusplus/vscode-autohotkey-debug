@@ -4,7 +4,7 @@ import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { ExecResult, Session } from '../../types/dbgp/session.types';
 
 export const createContinuationCommandExecutor = (session: Session, callStackManager: CallStackManager): ContinuationCommandExecutor => {
-  return async(command: dbgp.RequireContinuationCommandName): Promise<ExecResult> => {
+  return async(command: dbgp.ContinuationCommandName): Promise<ExecResult> => {
     const result = await session.exec(command);
     return extraContinuationProcess(result);
   };

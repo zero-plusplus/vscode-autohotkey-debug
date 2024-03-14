@@ -38,6 +38,7 @@ export const createScriptRuntime = (session: Session, config: NormalizedDebugCon
     stepOut: async() => exec('step_out'),
     stepOver: async() => exec('step_over'),
     stop: async() => exec('stop'),
+    pause: async() => session.break(),
     onStdOut() {
     },
     onStdErr(message) {

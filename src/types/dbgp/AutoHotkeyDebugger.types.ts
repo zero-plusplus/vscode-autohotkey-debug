@@ -345,13 +345,14 @@ export type CommandResponse =
   | StackDepthResponse
   | StackGetResponse
   | ContextNamesResponse
-  | ContextGetResponse;
+  | ContextGetResponse
   // | PropertyGetResponse
   // | PropertySetResponse
   // | PropertyValueResponse
   // | SourceResponse
   // | StdOutResponse
-  // | StdErrResponse;
+  // | StdErrResponse
+  | BreakResponse;
 
 export interface StatusAttributes extends CommandResponseBase {
   status: RunState;
@@ -480,7 +481,8 @@ export interface StdErrResponse extends CommandResponseBase {
   success: boolean;
 }
 export interface BreakResponse extends CommandResponseBase {
-  command: 'break';
-  success: boolean;
+  attributes: {
+    command: 'break';
+  } & AttributeBase;
 }
 // #endregion Response

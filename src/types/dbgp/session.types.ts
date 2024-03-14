@@ -86,7 +86,8 @@ export interface Session {
   once: (eventName: SessionEventName, litener: (...args: any[]) => void) => this;
   off: (eventName: SessionEventName, litener: (...args: any[]) => void) => this;
   sendCommand: CommandSender;
-  exec: (commandName: dbgp.RequireContinuationCommandName) => Promise<ExecResult>;
+  exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
+  break: () => Promise<void>;
   getCallStack: () => Promise<CallStack>;
   getBreakpointById: <T extends Breakpoint = Breakpoint>(id: number) => Promise<T>;
   setLineBreakpoint: (fileName: string, line: number) => Promise<LineBreakpoint>;

@@ -1,6 +1,9 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { ScriptRuntime } from '../../../types/dap/runtime/scriptRuntime.types';
+import { AutoHotkeyDebugAdapter } from '../adapter';
 
-export const pauseRequest = async <R extends DebugProtocol.PauseResponse>(runtime: ScriptRuntime, response: R, args: DebugProtocol.PauseArguments): Promise<R> => {
-  return Promise.resolve(response);
+export const pauseRequest = async <R extends DebugProtocol.PauseResponse>(adapter: AutoHotkeyDebugAdapter, response: R, args: DebugProtocol.PauseArguments): Promise<R> => {
+  await adapter.runtime.pause();
+  adapter.sendStoppedEvent('pause');
+
+  return response;
 };

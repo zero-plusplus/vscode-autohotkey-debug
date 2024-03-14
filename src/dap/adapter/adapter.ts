@@ -36,11 +36,20 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   private readonly requestQueue = new RequestQueue();
   // #region public methods
   public sendStoppedEvent(reason: StopReason | ExecResult): void {
-    this.sendEvent(new StoppedEvent(toStopReason(reason), this.runtime.threadId));
+    const stopReason = toStopReason(reason);
+    if (stopReason === 'exit') {
+      this.sendTerminatedEvent();
+      return;
+    }
+    this.sendEvent(new StoppedEvent(stopReason, this.runtime.threadId));
 
     function toStopReason(execResult: StopReason | ExecResult): StopReason {
       if (typeof execResult === 'string') {
         return execResult;
+      }
+
+      if (execResult.runState === 'stopped') {
+        return 'exit';
       }
 
       switch (execResult.reason) {
@@ -94,9 +103,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
 
   // #region termination requests
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('disconnectRequest', async() => {
-      this.sendResponse(await disconnectRequest(this, response, args));
-    });
+    this.sendResponse(await disconnectRequest(this, response, args));
   }
   protected async restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('restartRequest', async() => {
@@ -177,17 +184,17 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   // #region execution requests
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('continueRequest', async() => {
-      this.sendResponse(await continueRequest(this.runtime, response, args));
+      this.sendResponse(await continueRequest(this, response, args));
     });
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('nextRequest', async() => {
-      this.sendResponse(await nextRequest(this.runtime, response, args));
+      this.sendResponse(await nextRequest(this, response, args));
     });
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('stepInRequest', async() => {
-      this.sendResponse(await stepInRequest(this.runtime, response, args));
+      this.sendResponse(await stepInRequest(this, response, args));
     });
   }
   protected async stepInTargetsRequest(response: DebugProtocol.StepInTargetsResponse, args: DebugProtocol.StepInTargetsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
@@ -197,12 +204,12 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('stepOutRequest', async() => {
-      this.sendResponse(await stepOutRequest(this.runtime, response, args));
+      this.sendResponse(await stepOutRequest(this, response, args));
     });
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
     await this.request('pauseRequest', async() => {
-      this.sendResponse(await pauseRequest(this.runtime, response, args));
+      this.sendResponse(await pauseRequest(this, response, args));
     });
   }
   private async request<T>(requestName: string, handler: () => Promise<T>): Promise<void> {

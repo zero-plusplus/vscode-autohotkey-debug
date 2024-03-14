@@ -103,6 +103,12 @@ export const createSessionConnector = (): SessionConnector => {
           reason: response.attributes.reason,
         };
       },
+      async break(): Promise<void> {
+        const response = await sendCommand<dbgp.BreakResponse>('break');
+        if (response.error) {
+          throw new DbgpError(Number(response.error.attributes.code));
+        }
+      },
       async getCallStack(): Promise<CallStack> {
         const response = await sendCommand<dbgp.StackGetResponse>('stack_get');
         if (response.error) {
@@ -244,7 +250,7 @@ export const createSessionConnector = (): SessionConnector => {
       });
     }
     async function closeProcess(timeout_ms: number): Promise<void> {
-      if (isTerminatedProcess) {
+      if (!isTerminatedProcess) {
         await timeoutPromise(sendCommand('stop'), timeout_ms);
         return;
       }
