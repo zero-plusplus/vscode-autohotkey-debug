@@ -43,7 +43,7 @@ export type CommandName
   | 'stderr'
   | 'typemap_get'
   | 'source'
-  | ExtendedCommandName;
+  | ExtendedContinuationCommandName;
 
 export type RequireContinuationCommandName
   = 'run'
@@ -52,7 +52,8 @@ export type RequireContinuationCommandName
   | 'step_out'
   | 'stop';
 export type OptionalContinuationCommandName = 'detach';
-export type ContinuationCommandName = RequireContinuationCommandName | OptionalContinuationCommandName;
+export type ExtendedContinuationCommandName = 'break';
+export type ContinuationCommandName = RequireContinuationCommandName | OptionalContinuationCommandName | ExtendedContinuationCommandName;
 
 export type BreakpointCommandName
   = 'breakpoint_set'
@@ -70,7 +71,6 @@ export type PropertyCommandName
   = 'property_get'
   | 'property_set'
   | 'property_value';
-export type ExtendedCommandName = 'break';
 // #endregion Command
 
 // #region Feature
@@ -334,7 +334,7 @@ export interface ErrorResponse {
   };
 }
 export type CommandResponse =
-  // | StatusResponse
+  | StatusResponse
   // | FeatureGetResponse
   | FeatureSetResponse
   | ContinuationResponse
@@ -354,9 +354,14 @@ export type CommandResponse =
   // | StdErrResponse
   | BreakResponse;
 
-export interface StatusAttributes extends CommandResponseBase {
+export interface StatusAttributes {
   status: RunState;
   reason: StatusReason;
+}
+export interface StatusResponse extends CommandResponseBase {
+  attributes: {
+    command: 'status';
+  } & AttributeBase & StatusAttributes;
 }
 // https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L482
 export interface FeatureGetResponse extends CommandResponseBase {
@@ -436,7 +441,7 @@ export interface StackGetResponse extends CommandResponseBase {
   attributes: {
     command: 'stack_get';
   } & AttributeBase;
-  stack: StackFrame | StackFrame[];
+  stack?: StackFrame | StackFrame[];
 }
 export interface ContextNamesResponse extends CommandResponseBase {
   attributes: {

@@ -213,15 +213,23 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
     });
   }
   private async request<T>(requestName: string, handler: () => Promise<T>): Promise<void> {
-    console.log(requestName);
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (this.runtime?.isClosed) {
-      this.sendTerminatedEvent();
-      return;
-    }
+    try {
+      console.log(requestName);
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (this.runtime?.isClosed) {
+        this.sendTerminatedEvent();
+        return;
+      }
 
-    this.requestQueue.enqueue(handler);
-    await this.requestQueue.flush();
+      this.requestQueue.enqueue(handler);
+      await this.requestQueue.flush();
+    }
+    catch (e: unknown) {
+      if (e instanceof Error) {
+        console.log(e);
+      }
+      this.sendTerminatedEvent();
+    }
   }
   // #endregion execution requests
 

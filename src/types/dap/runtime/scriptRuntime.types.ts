@@ -1,6 +1,6 @@
 import { NormalizedDebugConfig } from '../config.types';
 import { LogCategory } from '../adapter.types';
-import { ExecResult, Session } from '../../dbgp/session.types';
+import { ExecResult, ScriptStatus, Session } from '../../dbgp/session.types';
 import { BreakpointManager } from './breakpoint.types';
 import { ContinuationCommandExecutor } from './executor.types';
 import { CallStackManager } from './callstack.types';
@@ -29,7 +29,7 @@ export interface ScriptRuntime extends CallStackManager, BreakpointManager, Vari
   stepOut: () => Promise<ExecResult>;
   stepOver: () => Promise<ExecResult>;
   stop: () => Promise<ExecResult>;
-  pause: () => Promise<void>;
+  pause: () => Promise<ScriptStatus>;
   /**
    * The handler is called only once for each script retrieved by loadedSourcesRequest.
    * @param args

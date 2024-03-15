@@ -2,16 +2,20 @@ import { Time } from '../tools/time.types';
 import * as dbgp from './AutoHotkeyDebugger.types';
 import { ChildProcessWithoutNullStreams } from 'child_process';
 
-export interface Process extends ChildProcessWithoutNullStreams {
+export interface AutoHotkeyProcess extends ChildProcessWithoutNullStreams {
+  program: string;
   invocationCommand: string;
 }
 export interface SessionConnector {
-  connect: (port: number, hostname: string, process?: Process) => Promise<Session>;
+  connect: (port: number, hostname: string, process?: AutoHotkeyProcess) => Promise<Session>;
 }
-export interface ExecResult {
-  elapsedTime: Time;
+export interface ScriptStatus {
   runState: dbgp.RunState;
   reason: dbgp.StatusReason;
+}
+export interface ExecResult extends ScriptStatus {
+  command: dbgp.ContinuationCommandName;
+  elapsedTime: Time;
 }
 export type CallStack = StackFrame[];
 export interface StackFrame {
@@ -87,7 +91,8 @@ export interface Session {
   off: (eventName: SessionEventName, litener: (...args: any[]) => void) => this;
   sendCommand: CommandSender;
   exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
-  break: () => Promise<void>;
+  break: () => Promise<ScriptStatus>;
+  getScriptStatus: () => Promise<ScriptStatus>;
   getCallStack: () => Promise<CallStack>;
   getBreakpointById: <T extends Breakpoint = Breakpoint>(id: number) => Promise<T>;
   setLineBreakpoint: (fileName: string, line: number) => Promise<LineBreakpoint>;

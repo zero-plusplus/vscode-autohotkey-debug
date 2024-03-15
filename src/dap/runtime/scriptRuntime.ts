@@ -10,7 +10,7 @@ export const createScriptRuntime = (session: Session, config: NormalizedDebugCon
   const callStackManager = createCallStackManager(session);
   const breakpointManager = createBreakpointManager(session);
   const variableManager = createVariableManager(session);
-  const exec = createContinuationCommandExecutor(session, callStackManager);
+  const exec = createContinuationCommandExecutor(session, config, breakpointManager);
 
   const runtime: ScriptRuntime = {
     ...breakpointManager,

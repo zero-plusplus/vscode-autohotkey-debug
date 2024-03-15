@@ -4,7 +4,7 @@ import { ScriptRuntime, ScriptRuntimeLauncher } from '../../types/dap/runtime/sc
 import { spawn } from 'child_process';
 import { attachAutoHotkeyScript } from '../../tools/autohotkey';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
-import { Process } from '../../types/dbgp/session.types';
+import { AutoHotkeyProcess } from '../../types/dbgp/session.types';
 import { createScriptRuntime } from './scriptRuntime';
 
 export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): ScriptRuntimeLauncher => {
@@ -23,7 +23,8 @@ export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): Scri
 
         const process = (useUIAVersion
           ? spawn('cmd', [ '/c', '"', `"${runtime}"`, ...launchArgs, '"' ], { cwd: path.dirname(program), env, shell: true })
-          : spawn(runtime, launchArgs, { cwd, env })) as Process;
+          : spawn(runtime, launchArgs, { cwd, env })) as AutoHotkeyProcess;
+        process.program = program;
         process.invocationCommand = `"${runtime}" ${launchArgs.join(' ')}`;
         connector.connect(config.port, config.hostname, process).then((session) => {
           session.once('debugger:init', () => {

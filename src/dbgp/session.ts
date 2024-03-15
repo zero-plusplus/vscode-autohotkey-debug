@@ -2,7 +2,7 @@ import { Server, Socket, createServer } from 'net';
 import EventEmitter from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { Breakpoint, CallStack, CommandSender, Context, ExceptionBreakpoint, ExecResult, LineBreakpoint, ObjectProperty, PrimitiveProperty, Process, Property, Session, SessionConnector, contextIdByName } from '../types/dbgp/session.types';
+import { AutoHotkeyProcess, Breakpoint, CallStack, CommandSender, Context, ExceptionBreakpoint, ExecResult, LineBreakpoint, ObjectProperty, PrimitiveProperty, Property, ScriptStatus, Session, SessionConnector, contextIdByName } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
@@ -13,7 +13,7 @@ export const createSessionConnector = (): SessionConnector => {
   let packetBuffer: Buffer | undefined;
 
   return {
-    async connect(port: number, hostname: string, process?: Process): Promise<Session> {
+    async connect(port: number, hostname: string, process?: AutoHotkeyProcess): Promise<Session> {
       return new Promise((resolve) => {
         const server = createServer((socket) => {
           socket.on('data', handlePacket);
@@ -69,7 +69,7 @@ export const createSessionConnector = (): SessionConnector => {
     },
   };
 
-  function createSession(server: Server, socket: Socket, process?: Process): Session {
+  function createSession(server: Server, socket: Socket, process?: AutoHotkeyProcess): Session {
     let isTerminatedProcess = false;
 
     const emitter = registerEvents();
@@ -96,18 +96,37 @@ export const createSessionConnector = (): SessionConnector => {
         if (response.error) {
           throw new DbgpError(Number(response.error.attributes.code));
         }
+        if (response.attributes.status === 'stopped') {
+          isTerminatedProcess = true;
+        }
 
         return {
           elapsedTime,
+          command,
           runState: response.attributes.status,
           reason: response.attributes.reason,
         };
       },
-      async break(): Promise<void> {
+      async break(): Promise<ScriptStatus> {
         const response = await sendCommand<dbgp.BreakResponse>('break');
         if (response.error) {
           throw new DbgpError(Number(response.error.attributes.code));
         }
+        return {
+          reason: 'ok',
+          runState: 'break',
+        };
+      },
+      async getScriptStatus(): Promise<ScriptStatus> {
+        const response = await sendCommand<dbgp.StatusResponse>('status');
+        if (response.error) {
+          throw new DbgpError(Number(response.error.attributes.code));
+        }
+
+        return {
+          reason: response.attributes.reason,
+          runState: response.attributes.status,
+        };
       },
       async getCallStack(): Promise<CallStack> {
         const response = await sendCommand<dbgp.StackGetResponse>('stack_get');
@@ -115,7 +134,19 @@ export const createSessionConnector = (): SessionConnector => {
           throw new DbgpError(Number(response.error.attributes.code));
         }
 
-        const stackFrames = (Array.isArray(response.stack) ? response.stack : [ response.stack ]).map((stack) => stack.attributes);
+        if (!response.stack) {
+          return [
+            {
+              where: 'Standby',
+              fileName: process?.program ?? '',
+              level: 0,
+              line: 0,
+              type: 'file',
+            },
+          ];
+        }
+
+        const stackFrames = (Array.isArray(response.stack) ? response.stack : [ response.stack ]).map((frame) => frame.attributes);
         return stackFrames.map((stackFrame) => {
           return {
             fileName: toFsPath(stackFrame.filename),
@@ -342,13 +373,16 @@ export const createSessionConnector = (): SessionConnector => {
             if (err) {
               reject(new Error('Some error occurred when writing.'));
             }
-            socket.once(responseEventName, (packet: dbgp.ResponsePacket) => {
-              if ('response' in packet) {
+
+            const listener = (packet: dbgp.ResponsePacket): void => {
+              if ('response' in packet && Number(packet.response.attributes.transaction_id) === transactionId) {
                 const response = packet.response;
                 response.command = command_str;
+                socket.off(responseEventName, listener);
                 resolve(response as T);
               }
-            });
+            };
+            socket.on(responseEventName, listener);
           });
         });
       }
