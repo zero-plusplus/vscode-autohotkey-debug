@@ -1,3 +1,5 @@
+import EventEmitter from 'events';
+import { safeCall } from '../../tools/utils';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { Session } from '../../types/dbgp/session.types';
@@ -6,7 +8,7 @@ import { createCallStackManager } from './callstack';
 import { createContinuationCommandExecutor } from './executor';
 import { createVariableManager } from './variable';
 
-export const createScriptRuntime = (session: Session, config: NormalizedDebugConfig): ScriptRuntime => {
+export const createScriptRuntime = (session: Readonly<Session>, eventEmitter: Readonly<EventEmitter>, config: Readonly<NormalizedDebugConfig>): ScriptRuntime => {
   const callStackManager = createCallStackManager(session);
   const breakpointManager = createBreakpointManager(session);
   const variableManager = createVariableManager(session);
@@ -32,6 +34,12 @@ export const createScriptRuntime = (session: Session, config: NormalizedDebugCon
     },
     async setDebugDirectives() {
     },
+    async suppressException() {
+      return Boolean(await safeCall(async() => session.suppressException()));
+    },
+    async setExceptionBreakpoint(state: boolean) {
+      return Boolean(await safeCall(async() => session.setExceptionBreakpoint(state)));
+    },
     exec,
     run: async() => exec('run'),
     stepIn: async() => exec('step_into'),
@@ -39,33 +47,6 @@ export const createScriptRuntime = (session: Session, config: NormalizedDebugCon
     stepOver: async() => exec('step_over'),
     stop: async() => exec('stop'),
     pause: async() => session.break(),
-    onStdOut() {
-    },
-    onStdErr(message) {
-    },
-    onOutputDebug(message) {
-    },
-    onWarning(message) {
-    },
-    onError(error) {
-    },
-    onProcessClose(exitCode) {
-    },
-    onServerClose() {
-    },
-    onSocketClose() {
-    },
   };
-
-  session.on('process:close', runtime.onProcessClose);
-  session.on('process:error', runtime.onError);
-  session.on('process:stdout', runtime.onStdOut);
-  session.on('process:stderr', runtime.onStdErr);
-  session.on('debugger:close', runtime.onSocketClose);
-  session.on('debugger:error', runtime.onError);
-  session.on('debugger:stdout', runtime.onStdOut);
-  session.on('debugger:stderr', runtime.onOutputDebug);
-  session.on('server:close', runtime.onServerClose);
-  session.on('server:error', runtime.onError);
   return runtime;
 };

@@ -3,8 +3,10 @@ import { BreakpointDataArray } from './runtime/breakpoint.types';
 import { VariableCategory } from './variableCategory.types';
 import { PerfTipsConfig } from './perftips.types.';
 import { LoadedScriptsConfig } from './loadedScripts.types';
-import { AnnounceLevel, DebugDirectiveConfig, OutputDebugConfig } from './adapter.types';
 import { LiteralUnion } from 'type-fest';
+import { DebugDirectiveConfig } from '../client/config/attributes/useDebugDirective.types';
+import { OutputDebugConfig } from '../client/config/attributes/useOutputDebug.types';
+import { AnnounceLevel } from '../client/config/attributes/useAnnounce.types';
 
 export type AttributeType = LiteralUnion<'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]' | 'object', string>;
 export interface AttributeCheckerFactoryUtils {

@@ -1,5 +1,5 @@
 import { deepDefaults } from '../../../tools/utils';
-import { OutputDebugConfig } from '../../../types/dap/adapter.types';
+import { OutputDebugConfig } from '../../../types/client/config/attributes/useOutputDebug.types';
 import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'useOutputDebug';

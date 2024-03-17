@@ -7,6 +7,7 @@ import { ScriptRuntime } from '../../src/types/dap/runtime/scriptRuntime.types';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../src/tools/autohotkey';
 import { DbgpError } from '../../src/dbgp/error';
 import { CallStack } from '../../src/types/dbgp/session.types';
+import EventEmitter from 'events';
 
 describe('session', () => {
   describe('v1', () => {
@@ -23,7 +24,7 @@ describe('session', () => {
       ].join('\n');
 
       testFile = await createTempDirectoryWithFile('utf8-with-bom', '.ahk', `${utf8BomText}${text}`);
-      const launcher = createScriptRuntimeLauncher({ ...createDefaultDebugConfig(testFile.path), hostname: '127.0.0.1', runtime: defaultAutoHotkeyRuntimePath_v1 });
+      const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), hostname: '127.0.0.1', runtime: defaultAutoHotkeyRuntimePath_v1 });
       runtime = await launcher.launch();
     });
     afterAll(() => {

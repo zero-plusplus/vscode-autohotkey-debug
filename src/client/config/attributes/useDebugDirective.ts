@@ -1,5 +1,5 @@
 import { deepDefaults } from '../../../tools/utils';
-import { DebugDirectiveConfig } from '../../../types/dap/adapter.types';
+import { DebugDirectiveConfig } from '../../../types/client/config/attributes/useDebugDirective.types';
 import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'useDebugDirective';

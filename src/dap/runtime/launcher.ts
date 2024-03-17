@@ -6,9 +6,10 @@ import { attachAutoHotkeyScript } from '../../tools/autohotkey';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { AutoHotkeyProcess } from '../../types/dbgp/session.types';
 import { createScriptRuntime } from './scriptRuntime';
+import EventEmitter from 'events';
 
-export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): ScriptRuntimeLauncher => {
-  const connector = createSessionConnector();
+export const createScriptRuntimeLauncher = (eventEmitter: Readonly<EventEmitter>, config: Readonly<NormalizedDebugConfig>): ScriptRuntimeLauncher => {
+  const connector = createSessionConnector(eventEmitter);
   return {
     async launch(): Promise<ScriptRuntime> {
       return new Promise((resolve) => {
@@ -26,9 +27,21 @@ export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): Scri
           : spawn(runtime, launchArgs, { cwd, env })) as AutoHotkeyProcess;
         process.program = program;
         process.invocationCommand = `"${runtime}" ${launchArgs.join(' ')}`;
+        process.on('close', (exitCode?: number) => {
+          eventEmitter.emit('process:close', exitCode);
+        });
+        process.on('error', (exitCode?: number) => {
+          eventEmitter.emit('process:error', exitCode);
+        });
+        process.stdout.on('data', (data) => {
+          eventEmitter.emit('process:message', 'stdout', data ? String(data) : undefined);
+        });
+        process.stderr.on('data', (data?) => {
+          eventEmitter.emit('process:message', 'stderr', data ? String(data) : undefined);
+        });
         connector.connect(config.port, config.hostname, process).then((session) => {
-          session.once('debugger:init', () => {
-            resolve(createScriptRuntime(session, config));
+          eventEmitter.once('debugger:init', () => {
+            resolve(createScriptRuntime(session, eventEmitter, config));
           });
         });
       });
@@ -39,8 +52,8 @@ export const createScriptRuntimeLauncher = (config: NormalizedDebugConfig): Scri
         attachAutoHotkeyScript(runtime, program, hostname, port);
 
         connector.connect(config.port, config.hostname).then((session) => {
-          session.once('debugger:init', () => {
-            resolve(createScriptRuntime(session, config));
+          eventEmitter.once('debugger:init', () => {
+            resolve(createScriptRuntime(session, eventEmitter, config));
           });
         });
       });

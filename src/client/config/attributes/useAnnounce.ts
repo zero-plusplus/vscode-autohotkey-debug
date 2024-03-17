@@ -1,4 +1,4 @@
-import { AnnounceLevel } from '../../../types/dap/adapter.types';
+import { AnnounceLevel } from '../../../types/client/config/attributes/useAnnounce.types';
 import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'useAnnounce';

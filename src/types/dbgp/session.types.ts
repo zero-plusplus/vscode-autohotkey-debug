@@ -86,17 +86,15 @@ export type SessionEventName =
 
 export interface Session {
   isTerminatedProcess: boolean;
-  on: (eventName: SessionEventName, litener: (...args: any[]) => void) => this;
-  once: (eventName: SessionEventName, litener: (...args: any[]) => void) => this;
-  off: (eventName: SessionEventName, litener: (...args: any[]) => void) => this;
   sendCommand: CommandSender;
   exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
   break: () => Promise<ScriptStatus>;
   getScriptStatus: () => Promise<ScriptStatus>;
   getCallStack: () => Promise<CallStack>;
+  suppressException: () => Promise<boolean>;
+  setExceptionBreakpoint: (enabled: boolean) => Promise<ExceptionBreakpoint>;
   getBreakpointById: <T extends Breakpoint = Breakpoint>(id: number) => Promise<T>;
   setLineBreakpoint: (fileName: string, line: number) => Promise<LineBreakpoint>;
-  setExceptionBreakpoint: (enabled: boolean) => Promise<ExceptionBreakpoint>;
   removeBreakpointById: (id: number) => Promise<void>;
   getContext: (contextName: dbgp.ContextName, depth?: number) => Promise<Context>;
   getContexts: (depth?: number) => Promise<Context[]>;

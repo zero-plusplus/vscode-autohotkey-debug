@@ -1,6 +1,7 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { ScriptRuntime } from '../../../types/dap/runtime/scriptRuntime.types';
+import { AutoHotkeyDebugAdapter } from '../adapter';
 
-export const setExceptionBreakPointsRequest = async <R extends DebugProtocol.SetExceptionBreakpointsResponse>(runtime: ScriptRuntime, response: R, args: DebugProtocol.SetExceptionBreakpointsArguments): Promise<R> => {
-  return Promise.resolve(response);
+export const setExceptionBreakPointsRequest = async <R extends DebugProtocol.SetExceptionBreakpointsResponse>(adapter: AutoHotkeyDebugAdapter, response: R, args: DebugProtocol.SetExceptionBreakpointsArguments): Promise<R> => {
+  await adapter.runtime.setExceptionBreakpoint(true);
+  return response;
 };

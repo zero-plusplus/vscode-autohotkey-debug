@@ -1,5 +1,5 @@
 import { Server, Socket, createServer } from 'net';
-import EventEmitter from 'events';
+import { EventEmitter } from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
 import { AutoHotkeyProcess, Breakpoint, CallStack, CommandSender, Context, ExceptionBreakpoint, ExecResult, LineBreakpoint, ObjectProperty, PrimitiveProperty, Property, ScriptStatus, Session, SessionConnector, contextIdByName } from '../types/dbgp/session.types';
@@ -9,7 +9,7 @@ import { DbgpError } from './error';
 import { measureAsyncExecutionTime } from '../tools/time';
 
 const responseEventName = 'response';
-export const createSessionConnector = (): SessionConnector => {
+export const createSessionConnector = (eventEmitter: EventEmitter): SessionConnector => {
   let packetBuffer: Buffer | undefined;
 
   return {
@@ -72,21 +72,9 @@ export const createSessionConnector = (): SessionConnector => {
   function createSession(server: Server, socket: Socket, process?: AutoHotkeyProcess): Session {
     let isTerminatedProcess = false;
 
-    const emitter = registerEvents();
+    registerEvents();
     const sendCommand = createCommandSender(socket);
     return {
-      on(eventName, litener): Session {
-        emitter.on(eventName, litener);
-        return this;
-      },
-      once(eventName, litener): Session {
-        emitter.once(eventName, litener);
-        return this;
-      },
-      off(eventName, litener): Session {
-        emitter.off(eventName, litener);
-        return this;
-      },
       get isTerminatedProcess(): boolean {
         return isTerminatedProcess;
       },
@@ -126,6 +114,23 @@ export const createSessionConnector = (): SessionConnector => {
         return {
           reason: response.attributes.reason,
           runState: response.attributes.status,
+        };
+      },
+      async suppressException(): Promise<boolean> {
+        const response = await sendCommand('property_set', [ '-n', '<exception>' ], '');
+        if (response.error) {
+          throw new DbgpError(Number(response.error.attributes.code));
+        }
+        return true;
+      },
+      async setExceptionBreakpoint(state: boolean): Promise<ExceptionBreakpoint> {
+        const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'exception', '-s', state ? 'enabled' : 'disabled' ]);
+        if (setResponse.error) {
+          throw new DbgpError(Number(setResponse.error.attributes.code));
+        }
+        return {
+          type: 'exception',
+          state: setResponse.attributes.state,
         };
       },
       async getCallStack(): Promise<CallStack> {
@@ -187,16 +192,6 @@ export const createSessionConnector = (): SessionConnector => {
         }
 
         return this.getBreakpointById<LineBreakpoint>(Number(setResponse.attributes.id));
-      },
-      async setExceptionBreakpoint(enabled: boolean): Promise<ExceptionBreakpoint> {
-        const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'exception', '-s', enabled ? 'enabled' : 'disabled' ]);
-        if (setResponse.error) {
-          throw new DbgpError(Number(setResponse.error.attributes.code));
-        }
-        return {
-          type: 'exception',
-          state: setResponse.attributes.state,
-        };
       },
       async removeBreakpointById(id: number): Promise<void> {
         const response = await sendCommand<dbgp.BreakpointRemoveResponse>('breakpoint_remove', [ '-d', id ]);
@@ -294,31 +289,17 @@ export const createSessionConnector = (): SessionConnector => {
       await timeoutPromise(sendCommand('detach'), timeout_ms);
     }
 
-    function registerEvents(): EventEmitter {
-      const responseEmitter = new EventEmitter();
-      process?.on('close', (exitCode?: number) => {
-        isTerminatedProcess = true;
-        responseEmitter.emit('process:close', exitCode);
-      });
-      process?.on('error', (err) => {
-        responseEmitter.emit('process:error', err);
-      });
-      process?.stdout.on('data', (data: Buffer) => {
-        responseEmitter.emit('process:stdout', data.toString('utf-8'));
-      });
-      process?.stderr.on('data', (data: Buffer) => {
-        responseEmitter.emit('process:stderr', data.toString('utf-8'));
-      });
+    function registerEvents(): void {
       socket.on('close', () => {
         isTerminatedProcess = true;
-        responseEmitter.emit('debugger:close');
+        eventEmitter.emit('debugger:close');
       });
       socket.on('error', () => {
-        responseEmitter.emit('debugger:error');
+        eventEmitter.emit('debugger:error');
       });
       socket.on(responseEventName, (packet: dbgp.Packet) => {
         if ('init' in packet) {
-          responseEmitter.emit('debugger:init', packet.init.attributes);
+          eventEmitter.emit('debugger:init', packet.init.attributes);
           return;
         }
 
@@ -329,16 +310,15 @@ export const createSessionConnector = (): SessionConnector => {
             .toString('utf8')
             .replace('\0', '')
             .toString();
-          responseEmitter.emit(`debugger:${type}`, message);
+          eventEmitter.emit(`debugger:${type}`, message);
         }
       });
       server.on('close', () => {
-        responseEmitter.emit('server:close');
+        eventEmitter.emit('server:close');
       });
       server.on('error', (err) => {
-        responseEmitter.emit('server:error', err);
+        eventEmitter.emit('server:error', err);
       });
-      return responseEmitter;
     }
 
     function createCommandSender(socket: Socket): CommandSender {
