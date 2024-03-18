@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/lines-between-class-members */
-import EventEmitter from 'events';
+import { EventEmitter } from 'events';
 import { InitializedEvent, LoggingDebugSession, OutputEvent, StoppedEvent, TerminatedEvent } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
@@ -73,7 +73,25 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
     if (message === undefined || message === '') {
       return;
     }
-    this.sendEvent(new OutputEvent(message, category));
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (this.config === undefined) {
+      return;
+    }
+
+    const convertedMessage = fixPathLink(message, this.config.program);
+    this.sendEvent(new OutputEvent(convertedMessage, category));
+
+    function fixPathLink(message: string, program: string): string {
+      // Convert to `path/to:line` format so that vscode can treat paths as links.
+      // If an error occurs in the following source code, the message is fixed as follows.
+      // ```ahk
+      // 001| a :
+      // 002: return
+      // ```
+      // Before: "path/to.ahk (1) : ==> This line does not contain a recognized action.\n     Specifically: a :\n"
+      // After:  "path/to.ahk:1 ==> This line does not contain a recognized action.\n     Specifically: a :\n"
+      return message.replace(/^([^\r\n]+)(?=\s\(\d)\s\((\d+)\)\s:/mu, `$1:$2 :`);
+    }
   }
   // #endregion public methods
 
