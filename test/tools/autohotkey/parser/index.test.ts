@@ -40,8 +40,8 @@ describe('index', () => {
 
     test.each`
       text                    | expected
-      ${'a'}                  | ${source([ identifier ])}
       ${'a := ""'}            | ${source([ varDeclaration([ varDeclarator(identifier, stringLiteral) ]) ])}
+      ${'a := "", b := ""'}   | ${source([ varDeclaration([ varDeclarator(identifier, stringLiteral), varDeclarator(identifier, stringLiteral) ]) ])}
       ${'global a := ""'}     | ${source([ varDeclaration([ varDeclarator(identifier, stringLiteral) ], globalKeyword) ])}
       ${'local a := ""'}     | ${source([ varDeclaration([ varDeclarator(identifier, stringLiteral) ], localKeyword) ])}
       ${'static a := ""'}     | ${source([ varDeclaration([ varDeclarator(identifier, stringLiteral) ], staticKeyword) ])}
