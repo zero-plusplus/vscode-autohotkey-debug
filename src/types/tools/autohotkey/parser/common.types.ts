@@ -20,10 +20,19 @@ export enum SyntaxKind {
   NewLineTrivia = 'NewLineTrivia',
   HorizSpaceTrivia = 'HorizSpaceTrivia',
   // #endregion trivia
+
+  // #region Statement
+  Block = 'Block',
+  VariableDeclaration = 'VariableDeclaration',
+  VariableDeclarator = 'VariableDeclarator',
+  FunctionDeclaration = 'FunctionDeclaration',
+  // #endregion Statement
+
   // #region expression
   Identifier = 'Identifier',
   StringLiteral = 'StringLiteral',
   NumberLiteral = 'NumberLiteral',
+  BooleanLiteral = 'BooleanLiteral',
   RawString = 'RawString',
   LegacyExpression = 'LegacyExpression',
   DereferenceExpression = 'DereferenceExpression',
@@ -31,7 +40,17 @@ export enum SyntaxKind {
   PrefixUnaryExpression = 'PrefixUnaryExpression',
   PostfixUnaryExpression = 'PostfixUnaryExpression',
   BinaryExpression = 'BinaryExpression',
+  AssignExpression = 'AssignExpression',
+  CallExpression = 'CallExpression',
+  PropertyAccessExpression = 'PropertyAccessExpression',
+  ElementAccessExpression = 'ElementAccessExpression',
+  DereferencePropertyAccessExpression = 'DereferencePropertyAccessExpression',
+  UnaryExpression = 'UnaryExpression',
+  PreFixUnaryExpression = 'PreFixUnaryExpression',
+  PostFixUnaryExpression = 'PostFixUnaryExpression',
+  TernaryExpression = 'TernaryExpression',
   // #endregion expression
+
   // #region reserved words
   AsKeyword = 'AsKeyword',
   AndKeyword = 'AndKeyword',
@@ -71,6 +90,7 @@ export enum SyntaxKind {
   UntilKeyword = 'UntilKeyword',
   WhileKeyword = 'WhileKeyword',
   // #endregion reserved words
+
   // #region token
   PlusToken = 'PlusToken',
   PlusPlusToken = 'PlusPlusToken',
@@ -146,17 +166,89 @@ export const enum TokenFlags {
 // #region enum
 
 // #region green node
-export interface Syntax {
+export interface GreenSyntax {
   kind: SyntaxKind;
 }
-export interface GreenToken extends Syntax {
+export interface GreenToken extends GreenSyntax {
   text: string;
   flags: TokenFlags;
 }
-export interface GreenNode extends Syntax {
+export interface GreenNode extends GreenSyntax {
   width: number;
   children: GreenElement[];
 }
 export type GreenElement = GreenNode | GreenToken;
 // #endregion green node
 
+
+export interface Position {
+  line: number;
+  character: number;
+}
+export interface Range {
+  start: Position;
+  end: Position;
+}
+export interface Syntax {
+  kind: SyntaxKind;
+  startPosition: number;
+  endPosition: number;
+}
+export type SyntaxNode =
+  | BinaryExpression;
+export type SyntaxElement = Token<SyntaxKind> | SyntaxNode;
+
+// #region root
+export interface SourceFile extends Syntax {
+  kind: SyntaxKind.SourceFile;
+  statements: Array<Bom | Statement>;
+}
+// #endregion root
+// #region token
+export interface Token<Kind extends SyntaxKind> extends Syntax {
+  kind: Kind;
+  text: string;
+}
+export type Bom = Token<SyntaxKind.Bom>;
+export type OperatorToken =
+  | Token<SyntaxKind.ColonEqualsToken>;
+// #endregion token
+
+// #region statement
+export type Statement =
+  | Block
+  | Declaration;
+
+export interface Block extends Syntax {
+  kind: SyntaxKind.Block;
+}
+// #endregion statement
+// #region declaration
+export type Declaration =
+  | VariableDeclaration
+  | FunctionDeclaration;
+
+export type Identifier = Token<SyntaxKind.Identifier>;
+export type Modifier = Token<SyntaxKind.GlobalKeyword> | Token<SyntaxKind.LocalKeyword> | Token<SyntaxKind.StaticKeyword>;
+
+export interface VariableDeclaration extends Syntax {
+  kind: SyntaxKind.VariableDeclaration;
+  modifier?: Modifier;
+  name: Identifier;
+  initializer: SyntaxElement;
+}
+export interface FunctionDeclaration extends Syntax {
+  kind: SyntaxKind.FunctionDeclaration;
+  name: Identifier;
+  block: Block;
+}
+// #endregion declaration
+
+// #region expression
+export interface BinaryExpression extends Syntax {
+  kind: SyntaxKind.BinaryExpression;
+  left: SyntaxElement;
+  operator: OperatorToken;
+  right: SyntaxElement;
+}
+// #endregion expression
