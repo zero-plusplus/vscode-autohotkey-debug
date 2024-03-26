@@ -6,11 +6,13 @@ export const enum RuntimeTarget {
   v2 = 2000,
   v2_1 = 2100,
 }
+export type Parser = { parse: (input: string, startRule?: string) => SyntaxNode };
 
 export enum SyntaxKind {
   Unknown = 'Unknown',
   Bom = 'Bom',
   SourceFile = 'SourceFile',
+  Program = 'Program',
   EndOfFileToken = 'EndOfFileToken',
 
   // #region trivia

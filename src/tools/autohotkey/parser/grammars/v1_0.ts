@@ -1,24 +1,15 @@
 /* eslint-disable key-spacing */
 import * as ohm from 'ohm-js';
 import { SyntaxKind } from '../../../../types/tools/autohotkey/parser/common.types';
+import { createParser } from './utils';
 
 export const grammar = ohm.grammar(`
   AutoHotkey_v1_1 {
-    SourceFile = bom? Statement* endOfFileToken
-
-    Statement
-      = Declaration
-      | Expressions
-      | unknown
-
-    Declaration
-      = VariableDeclaration
-      | FunctionDeclaration
+    _Program = VariableDeclaration | Expressions
 
     _varialbeModifier = globalKeyword | localKeyword | staticKeyword
     VariableDeclaration = _varialbeModifier? NonemptyListOf<VariableDeclarator, ",">
     VariableDeclarator = identifier colonEqualsToken Expression
-    FunctionDeclaration = identifier openParenToken Arguments closeParenToken
 
     Expressions
       = Expression
@@ -261,9 +252,6 @@ export const grammar = ohm.grammar(`
     closeBracketToken = "]"
     closeBraceToken = "}"
     endOfFileToken = end
-
-    unknown = any
-    bom = "\\uFEFF"
   }
 `);
 
@@ -273,7 +261,6 @@ export const astMapping = (() => {
   const token = (kind: SyntaxKind) => ({ kind, text, startPosition, endPosition, type: undefined });
   const binaryExpression = { kind: SyntaxKind.BinaryExpression, left: 0, operator: 1, right: 2, startPosition, endPosition };
   const mapping = {
-    SourceFile:                                         { kind: SyntaxKind.SourceFile, bom: 0, statements: 1, endOfFile: 2 },
     VariableDeclaration:                                { kind: SyntaxKind.VariableDeclaration, modifier: 0, declarators: 1 },
     VariableDeclarator:                                 { kind: SyntaxKind.VariableDeclarator, name: 0, operator: 1, initializer: 2 },
     // AssignmentExpression_assign:                        binaryExpression,
@@ -465,3 +452,5 @@ export const astMapping = (() => {
     return lastNode?.source.endIdx ?? firstNode?.source.endIdx ?? 0;
   }
 })();
+
+export const parser = createParser(grammar, astMapping);
