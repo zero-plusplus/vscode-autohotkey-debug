@@ -1,6 +1,6 @@
 /* eslint-disable no-bitwise */
-import { GreenToken, RuntimeTarget, SyntaxKind, TokenFlags } from '../../../types/tools/autohotkey/parser/common.types';
-import { CharacterCodes, ErrorCallback, ScannerHelpers, TokenResolverMap } from '../../../types/tools/autohotkey/parser/scanner.types';
+import { GreenToken, RuntimeTarget, SyntaxKind, TokenFlags } from '../../../../types/tools/autohotkey/parser/common.types';
+import { CharacterCodes, ErrorCallback, ScannerHelpers, TokenResolverMap } from '../../../../types/tools/autohotkey/parser/prototype/scanner.types';
 import { createGreenNodeFactory } from './greenNodeFactory';
 
 export const supportedTokenMap = {

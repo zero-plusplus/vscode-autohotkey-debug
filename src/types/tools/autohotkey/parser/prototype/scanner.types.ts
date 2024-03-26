@@ -1,5 +1,5 @@
 /* eslint-disable no-bitwise, no-multi-spaces, @typescript-eslint/prefer-literal-enum-member */
-import { GreenToken, RuntimeTarget, SyntaxKind, TokenFlags } from './common.types';
+import { GreenToken, RuntimeTarget, SyntaxKind, TokenFlags } from '../common.types';
 
 export const enum CharacterCodes {
   Null = 0,

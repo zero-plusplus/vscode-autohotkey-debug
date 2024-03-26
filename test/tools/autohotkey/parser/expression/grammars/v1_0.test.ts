@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/explicit-function-return-type */
 import { describe, expect, test } from '@jest/globals';
-import { SyntaxKind } from '../../../../../src/types/tools/autohotkey/parser/common.types';
-import { createParser } from '../../../../../src/tools/autohotkey/parser';
+import { SyntaxKind } from '../../../../../../src/types/tools/autohotkey/parser/common.types';
+import { createParser } from '../../../../../../src/tools/autohotkey/parser/expression';
 
 // #region utils
 const globalKeyword = { kind: SyntaxKind.GlobalKeyword };

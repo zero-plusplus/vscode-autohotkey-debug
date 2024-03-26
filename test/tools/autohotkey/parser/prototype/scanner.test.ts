@@ -1,8 +1,8 @@
 /* eslint-disable no-bitwise */
 import { describe, expect, test } from '@jest/globals';
-import { createScanner } from '../../../../src/tools/autohotkey/parser/scanner';
-import { RuntimeTarget, TokenFlags } from '../../../../src/types/tools/autohotkey/parser/common.types';
-import { createGreenNodeFactory } from '../../../../src/tools/autohotkey/parser/greenNodeFactory';
+import { createScanner } from '../../../../../src/tools/autohotkey/parser/prototype/scanner';
+import { RuntimeTarget, TokenFlags } from '../../../../../src/types/tools/autohotkey/parser/common.types';
+import { createGreenNodeFactory } from '../../../../../src/tools/autohotkey/parser/prototype/greenNodeFactory';
 
 describe('scanner', () => {
   const factory = createGreenNodeFactory();

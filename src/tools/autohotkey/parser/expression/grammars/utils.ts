@@ -1,6 +1,6 @@
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { Parser, SyntaxNode } from '../../../../types/tools/autohotkey/parser/common.types';
+import { Parser, SyntaxNode } from '../../../../../types/tools/autohotkey/parser/common.types';
 
 export const createParser = (grammar: ohm.Grammar, astMapping: Record<string, any>): Parser => {
   return {

@@ -1,6 +1,6 @@
-import { Parser } from '../../../types/tools/autohotkey/parser/common.types';
-import { ParsedAutoHotkeyVersion } from '../../../types/tools/autohotkey/version/common.types';
-import { parseAutoHotkeyVersion } from '../version';
+import { Parser } from '../../../../types/tools/autohotkey/parser/common.types';
+import { ParsedAutoHotkeyVersion } from '../../../../types/tools/autohotkey/version/common.types';
+import { parseAutoHotkeyVersion } from '../../version';
 import * as v1_0 from './grammars/v1_0';
 
 export const createParser = (ahkVersionOrText: string | ParsedAutoHotkeyVersion): Parser => {

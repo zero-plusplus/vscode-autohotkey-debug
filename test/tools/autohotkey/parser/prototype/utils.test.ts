@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
-import { createGreenNodeFactory } from '../../../../src/tools/autohotkey/parser/greenNodeFactory';
-import { SyntaxKind } from '../../../../src/types/tools/autohotkey/parser/common.types';
-import { printGreenNode } from '../../../../src/tools/autohotkey/parser/utils';
+import { createGreenNodeFactory } from '../../../../../src/tools/autohotkey/parser/prototype/greenNodeFactory';
+import { SyntaxKind } from '../../../../../src/types/tools/autohotkey/parser/common.types';
+import { printGreenNode } from '../../../../../src/tools/autohotkey/parser/prototype/utils';
 
 describe('utils', () => {
   describe('printGreenNode', () => {

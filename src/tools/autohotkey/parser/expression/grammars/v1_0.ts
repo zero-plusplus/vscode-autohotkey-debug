@@ -1,6 +1,6 @@
 /* eslint-disable key-spacing */
 import * as ohm from 'ohm-js';
-import { SyntaxKind } from '../../../../types/tools/autohotkey/parser/common.types';
+import { SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.types';
 import { createParser } from './utils';
 
 export const grammar = ohm.grammar(`
