@@ -119,7 +119,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
     await this.request('attachRequest', async() => {
       this.eventEmitter = this.createAdapterEventEmitter();
 
-      const [ runtime, newResponse ] = await attachRequest(this.config, response);
+      const [ runtime, newResponse ] = await attachRequest(this, response);
       runtime.config = this.config;
       this.runtime = runtime;
 
