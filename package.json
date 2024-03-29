@@ -1502,7 +1502,7 @@
   "dependencies": {
     "@zero-plusplus/autohotkey-utilities": "github:zero-plusplus/node-autohotkey-utilities#develop",
     "fast-glob": "^3.2.7",
-    "fast-xml-parser": "^3.21.1",
+    "fast-xml-parser": "^4.3.6",
     "he": "^1.2.0",
     "jsonc-parser": "^3.2.0",
     "ohm-js": "^17.1.0",
@@ -1513,7 +1513,7 @@
     "@types/fs-extra": "^9.0.13",
     "@types/he": "^1.1.1",
     "@types/jest": "^29.2.3",
-    "@types/node": "^13.13.2",
+    "@types/node": "^20.11.30",
     "@types/vscode": "^1.87.0",
     "@vscode/debugadapter": "^1.65.0",
     "@vscode/debugprotocol": "^1.65.0",
