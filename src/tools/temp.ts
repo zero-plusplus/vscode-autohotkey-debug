@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { promises as fs, rmdirSync, unlinkSync } from 'fs';
+import { promises as fs, rmSync, unlinkSync } from 'fs';
 import { randomBytes } from 'crypto';
 
 export const createRandomFileName = (prefix: string): string => {
@@ -17,7 +17,7 @@ export const createTempDirectory = async(prefix: string): Promise<TemporaryResou
   return {
     path: dirPath,
     cleanup: (): void => {
-      rmdirSync(dirPath, { recursive: true });
+      rmSync(dirPath, { recursive: true });
     },
   };
 };
