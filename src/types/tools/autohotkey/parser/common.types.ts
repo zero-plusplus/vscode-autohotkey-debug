@@ -10,6 +10,7 @@ export type Parser = { parse: (input: string, startRule?: string) => SyntaxNode 
 
 export enum SyntaxKind {
   Unknown = 'Unknown',
+  Skip = 'Skip',
   Bom = 'Bom',
   SourceFile = 'SourceFile',
   Program = 'Program',
@@ -21,13 +22,21 @@ export enum SyntaxKind {
   CommentDirectiveTrivia = 'CommentDirectiveTrivia',
   NewLineTrivia = 'NewLineTrivia',
   HorizSpaceTrivia = 'HorizSpaceTrivia',
+  DebugDirectiveTrivia = 'DebugDirectiveTrivia',
   // #endregion trivia
 
   // #region Statement
   Block = 'Block',
+  IncludeStatement = 'IncludeStatement',
   VariableDeclaration = 'VariableDeclaration',
   VariableDeclarator = 'VariableDeclarator',
   FunctionDeclaration = 'FunctionDeclaration',
+  ClassDeclaration = 'ClassDeclaration',
+  MethodDeclaration = 'MethodDeclaration',
+  FieldDeclaration = 'FieldDeclaration',
+  PropertyDeclaration = 'PropertyDeclaration',
+  GetterDeclaration = 'GetterDeclaration',
+  SetterDeclaration = 'SetterDeclaration',
   // #endregion Statement
 
   // #region expression
