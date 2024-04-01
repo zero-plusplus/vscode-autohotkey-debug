@@ -24,7 +24,9 @@ describe('parser', () => {
     const sourceText = `
       Foo() {
       }
-    `;
+      Foo2(a := "", b := {}) {
+      }
+    `.replaceAll('\n', '\r\n');
     await fs.promises.writeFile(mainPath, sourceText, 'utf-8');
 
     const programSymbol = await parser.parse(mainPath);
@@ -35,17 +37,29 @@ describe('parser', () => {
         kind: SyntaxKind.SourceFile,
         text: sourceText,
         startPosition: 0,
-        endPosition: 27,
+        endPosition: 71,
         symbols: [
           {
             kind: SyntaxKind.FunctionDeclaration,
             name: 'Foo',
-            startPosition: 7,
-            endPosition: 22,
+            startPosition: 8,
+            endPosition: 24,
             block: {
               kind: SyntaxKind.Block,
-              startPosition: 13,
-              endPosition: 22,
+              startPosition: 14,
+              endPosition: 24,
+              symbols: [],
+            },
+          },
+          {
+            kind: SyntaxKind.FunctionDeclaration,
+            name: 'Foo2',
+            startPosition: 32,
+            endPosition: 65,
+            block: {
+              kind: SyntaxKind.Block,
+              startPosition: 55,
+              endPosition: 65,
               symbols: [],
             },
           },

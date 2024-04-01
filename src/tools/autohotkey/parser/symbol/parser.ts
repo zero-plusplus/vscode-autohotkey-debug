@@ -80,12 +80,7 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
       };
     }
 
-    async function parseSymbol(symbolNameOrNames: SymbolName | SymbolName[], isBlock = false): Promise<SymbolNode | undefined> {
-      const result = matchSymbol(symbolNameOrNames, isBlock);
-      if (!result) {
-        return undefined;
-      }
-
+    async function parseSymbol(result: MatcherResult): Promise<SymbolNode | undefined> {
       consumeSkipNode(result);
       if (result.kind === SyntaxKind.FunctionDeclaration) {
         // eslint-disable-next-line no-await-in-loop
@@ -95,10 +90,19 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
       return undefined;
     }
     async function parseSymbols(symbolNameOrNames: SymbolName | SymbolName[], isBlock = false): Promise<SymbolNode[]> {
+      const symbolNames = Array.isArray(symbolNameOrNames) ? symbolNameOrNames : [ symbolNameOrNames ];
       const symbols: SymbolNode[] = [];
       while (context.index < sourceLength) {
+        const result = matchSymbol(isBlock ? [ ...symbolNames, 'endBlock' ] : symbolNames);
+        if (!result) {
+          break;
+        }
+        if (isBlock && result.kind === SyntaxKind.CloseBraceToken) {
+          break;
+        }
+
         // eslint-disable-next-line no-await-in-loop
-        const symbol = await parseSymbol(symbolNameOrNames, isBlock);
+        const symbol = await parseSymbol(result);
         if (symbol) {
           symbols.push(symbol);
           continue;
@@ -136,12 +140,12 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
   function createSymbolMatcherMap(version: ParsedAutoHotkeyVersion): SymbolMatcherMap {
     const identifierRegExp = 2 <= version.mejor ? /[\w_]+/u : /[\w_$#@]+/u;
     const startStatementRegExp = /(?<skip>.*?)(?<=^|\r\n|\n|\uFEFF)(?<indent>[^\S\r\n]*)/u;
-    const startBlockRegExp = /\s*(?:\{(?:\s*$|\s;)|(?:((\r\n|\n)[^\S\r\n]*)*\s*)\{)/u;
+    const startBlockRegExp = /[^\r\n]*(?:\{(?:\s*$|\s;)|(?:((\r\n|\n)[^\S\r\n]*)*\s*)\{)/u;
     const includeRegExp = new RegExp(`${startStatementRegExp.source}(?<include>#(?<includeKind>Include|IncludeAgain)\\s+(?<optional>\\*i)?\\s*(?<includePath>[^\r\n]+))`, 'siu');
-    const functionRegExp = new RegExp(`${startStatementRegExp.source}(?<function>)(?<name>${identifierRegExp.source})\\(.*${startBlockRegExp.source}`, 'siu');
+    const functionRegExp = new RegExp(`${startStatementRegExp.source}(?<function>(?<name>${identifierRegExp.source})\\([^\r\n]*${startBlockRegExp.source})`, 'siu');
     const classRegExp = new RegExp(`${startStatementRegExp.source}(?<class>class\\s+(?<name>${identifierRegExp.source}))(?:\\s+extends\\s+(?<superClassName>(${identifierRegExp.source}[.]?)*))?${startBlockRegExp.source}`, 'siu');
-    const methodRegExp = new RegExp(`${startStatementRegExp.source}(?<method>)(?<modifier>static\\s+)?(?<name>${identifierRegExp.source})\\(.*${startBlockRegExp.source}`, 'siu');
-    const propertyRegExp = new RegExp(`${startStatementRegExp.source}(?<property>)(?<name>${identifierRegExp.source})${startBlockRegExp.source}`, 'siu');
+    const methodRegExp = new RegExp(`${startStatementRegExp.source}(?<method>(?<modifier>static\\s+)?(?<name>${identifierRegExp.source})\\(.*${startBlockRegExp.source})`, 'siu');
+    const propertyRegExp = new RegExp(`${startStatementRegExp.source}(?<property>(?<name>${identifierRegExp.source})${startBlockRegExp.source})`, 'siu');
     const getterRegExp = new RegExp(`${startStatementRegExp.source}(?<getter>get${startBlockRegExp.source})`, 'siu');
     const setterRegExp = new RegExp(`${startStatementRegExp.source}(?<setter>set${startBlockRegExp.source})`, 'siu');
     const endBlockRegExp = new RegExp(`${startStatementRegExp.source}\\}`, 'siu');
@@ -170,7 +174,7 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
 
         const startIndex = index + (match.groups?.skip.length ?? 0) + (match.groups?.indent.length ?? 0);
         const name = match.groups?.name ?? '';
-        const blockStartIndex = index + match[0].indexOf('{');
+        const blockStartIndex = startIndex + (match.groups?.function ?? '').lastIndexOf('{');
         return { kind: SyntaxKind.FunctionDeclaration, startIndex, name, blockStartIndex };
       },
       class(sourceText, index) {
