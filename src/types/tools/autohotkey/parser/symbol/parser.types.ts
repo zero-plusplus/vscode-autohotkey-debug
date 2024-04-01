@@ -17,17 +17,19 @@ export type SymbolName =
   | 'method'
   | 'property'
   | 'getter'
-  | 'setter';
+  | 'setter'
+  | 'endBlock';
 export type Modifier = 'static';
 export interface SymbolMatcherMap {
-  include: (sourceText: string) => IncludeMatcherResult | undefined;
-  function: (sourceText: string) => FunctionMatcherResult | undefined;
-  class: (sourceText: string) => ClassMatcherResult | undefined;
+  include: (sourceText: string, index: number) => IncludeMatcherResult | undefined;
+  function: (sourceText: string, index: number) => FunctionMatcherResult | undefined;
+  class: (sourceText: string, index: number) => ClassMatcherResult | undefined;
   // field: () => { startIndex: number; name: string };
-  method: (sourceText: string) => MethodMatcherResult | undefined;
-  property: (sourceText: string) => PropertyMatcherResult | undefined;
-  getter: (sourceText: string) => AccesorMatcherResult | undefined;
-  setter: (sourceText: string) => AccesorMatcherResult | undefined;
+  method: (sourceText: string, index: number) => MethodMatcherResult | undefined;
+  property: (sourceText: string, index: number) => PropertyMatcherResult | undefined;
+  getter: (sourceText: string, index: number) => AccesorMatcherResult | undefined;
+  setter: (sourceText: string, index: number) => AccesorMatcherResult | undefined;
+  endBlock: (sourceText: string, index: number) => EndBlockMatcherResult | undefined;
 }
 export type MatcherResult =
   | IncludeMatcherResult
@@ -35,7 +37,8 @@ export type MatcherResult =
   | ClassMatcherResult
   | MethodMatcherResult
   | PropertyMatcherResult
-  | AccesorMatcherResult;
+  | AccesorMatcherResult
+  | EndBlockMatcherResult;
 export interface MatcherResultBase {
   kind: SyntaxKind;
   startIndex: number;
@@ -47,31 +50,31 @@ export interface IncludeMatcherResult extends MatcherResultBase {
 }
 export interface FunctionMatcherResult extends MatcherResultBase {
   kind: SyntaxKind.FunctionDeclaration;
-  endIndex: number;
   name: string;
+  blockStartIndex: number;
 }
 export interface ClassMatcherResult extends MatcherResultBase {
   kind: SyntaxKind.ClassDeclaration;
   startIndex: number;
-  endIndex: number;
+  blockStartIndex: number;
   name: string;
-  extends: string;
+  superClassName: string;
 }
 export interface MethodMatcherResult extends MatcherResultBase {
   kind: SyntaxKind.MethodDeclaration;
-  endIndex: number;
   modifier?: Modifier;
   name: string;
 }
 export interface PropertyMatcherResult extends MatcherResultBase {
   kind: SyntaxKind.PropertyDeclaration;
-  endIndex: number;
   modifier?: Modifier;
   name: string;
 }
 export interface AccesorMatcherResult extends MatcherResultBase {
   kind: SyntaxKind.GetterDeclaration | SyntaxKind.SetterDeclaration;
-  endIndex: number;
+}
+export interface EndBlockMatcherResult extends MatcherResultBase {
+  kind: SyntaxKind.CloseBraceToken;
 }
 
 export type SymbolTable = Record<string, any>;
@@ -79,6 +82,7 @@ export type SymbolSyntaxKind =
   | SyntaxKind.Skip
   | SyntaxKind.Program
   | SyntaxKind.SourceFile
+  | SyntaxKind.Block
   | SyntaxKind.IncludeStatement
   | SyntaxKind.VariableDeclaration
   | SyntaxKind.FunctionDeclaration
@@ -99,8 +103,10 @@ export interface SymbolRange {
 }
 export type SymbolNode =
   | SourceFileSymbol
+  | BlockSymbol
+  | DebugDirectiveSymbol
   | IncludeSymbolNode
-  | DebugDirectiveSymbol;
+  | FunctionSymbol;
 
 export interface SymbolNodeBase {
   kind: SymbolSyntaxKind;
@@ -137,4 +143,13 @@ export interface DebugDirectiveSymbol extends SymbolNodeBase {
   action: DebugDirectiveAction;
   condition: string;
   logMessage: string;
+}
+export interface BlockSymbol extends SymbolNodeBase {
+  kind: SyntaxKind.Block;
+  symbols: SymbolNode[];
+}
+export interface FunctionSymbol extends SymbolNodeBase {
+  kind: SyntaxKind.FunctionDeclaration;
+  name: string;
+  block: BlockSymbol;
 }

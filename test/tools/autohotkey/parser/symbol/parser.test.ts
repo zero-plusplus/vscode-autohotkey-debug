@@ -17,16 +17,15 @@ describe('parser', () => {
     testDir.cleanup();
   });
 
-  test('parse', async() => {
+  test('FunctionDeclaration', async() => {
     const mainPath = path.resolve(testDir.path, 'main.ahk');
     const libPath = path.resolve(testDir.path, 'lib');
     await fs.promises.mkdir(libPath);
     const sourceText = `
-      #Include <Foo>
-
+      Foo() {
+      }
     `;
     await fs.promises.writeFile(mainPath, sourceText, 'utf-8');
-
 
     const programSymbol = await parser.parse(mainPath);
     const expected: ProgramSymbol = {
@@ -36,8 +35,21 @@ describe('parser', () => {
         kind: SyntaxKind.SourceFile,
         text: sourceText,
         startPosition: 0,
-        endPosition: 0,
-        symbols: [],
+        endPosition: 27,
+        symbols: [
+          {
+            kind: SyntaxKind.FunctionDeclaration,
+            name: 'Foo',
+            startPosition: 7,
+            endPosition: 22,
+            block: {
+              kind: SyntaxKind.Block,
+              startPosition: 13,
+              endPosition: 22,
+              symbols: [],
+            },
+          },
+        ],
       },
     };
     expect(programSymbol).toEqual(expected);
