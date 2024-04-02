@@ -54,6 +54,7 @@ export const supportedAutoHotkeyEnvironments_v2 = [
   'A_WinDir',
 ] as const;
 
+export type AutoHotkeyEnvironmentName = typeof supportedAutoHotkeyEnvironments_v1[number] | typeof supportedAutoHotkeyEnvironments_v2[number];
 export type AutoHotkeyEnvironments =
   | AutoHotkeyEnvironments_v1
   | AutoHotkeyEnvironments_v2;
