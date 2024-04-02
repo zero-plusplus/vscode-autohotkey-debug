@@ -91,6 +91,7 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
         return undefined;
       }
       async function parseIncludeSymbol(result: IncludeMatcherResult): Promise<IncludeSymbolNode | undefined> {
+        const cwd = pathResolver.getCurrentDirectory();
         const filePath = pathResolver.resolve(result.path)?.toLowerCase();
         if (!filePath || !fileExists(filePath)) {
           return undefined;
@@ -98,9 +99,10 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
         if (context.dependencyFiles.includes(filePath)) {
           return undefined;
         }
-
         context.dependencyFiles.push(filePath);
+
         const symbol = await parseSourceFile(context, filePath, resolver);
+        pathResolver.setCurrentDirectory(cwd);
         return Promise.resolve({
           kind: SyntaxKind.IncludeStatement,
           path: filePath,

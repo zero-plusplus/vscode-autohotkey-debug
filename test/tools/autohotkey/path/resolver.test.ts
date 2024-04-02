@@ -34,6 +34,14 @@ describe('resolver', () => {
       resolver.setEnv(targetKey, overwriteUserName);
       expect(resolver.getEnv(targetKey)).toBe(overwriteUserName);
     });
+    test('cwd', () => {
+      const mainPath = createFile('ABC.ahk');
+      const resolver = createPathResolver('1.0.0');
+      resolver.resolve(testDir.path);
+
+      const resolved = resolver.resolve(`.\\ABC.ahk`);
+      expect(resolved).toBe(mainPath);
+    });
     test('variable', () => {
       const mainPath = createFile('ABC.ahk');
       const resolver = createPathResolver('1.0.0', { A_UserName: 'ABC' });

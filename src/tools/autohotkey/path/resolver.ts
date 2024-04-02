@@ -2,7 +2,7 @@ import * as path from 'path';
 import { AutoHotkeyEnvironmentName, AutoHotkeyEnvironments, AutoHotkeyEnvironments_v1, AutoHotkeyEnvironments_v2, PartialedAutoHotkeyEnvironments, PartialedAutoHotkeyEnvironments_v1, PartialedAutoHotkeyEnvironments_v2 } from '../../../types/tools/autohotkey/path/resolver.types';
 import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../../types/tools/autohotkey/version/common.types';
 import { parseAutoHotkeyVersion } from '../version';
-import { fileExists } from '../../predicate';
+import { directoryExists, fileExists } from '../../predicate';
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const createPathResolver = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVersion, rawEnv: PartialedAutoHotkeyEnvironments = {}) => {
@@ -14,10 +14,10 @@ export const createPathResolver = (rawVersion: AutoHotkeyVersion | ParsedAutoHot
     resetCurrentDirectory(): void {
       cwd = undefined;
     },
-    setCurrentDirectory(newCwd: string): void {
+    setCurrentDirectory(newCwd?: string): void {
       cwd = newCwd;
     },
-    get cwd(): string | undefined {
+    getCurrentDirectory(): string | undefined {
       if (cwd) {
         return cwd;
       }
@@ -49,7 +49,11 @@ export const createPathResolver = (rawVersion: AutoHotkeyVersion | ParsedAutoHot
       }
 
       const expandedPath = expandVariable(rawPath);
-      const resolvedPath = toFullPath(expandedPath, this.cwd);
+      const resolvedPath = toFullPath(expandedPath, this.getCurrentDirectory());
+      if (directoryExists(resolvedPath)) {
+        cwd = resolvedPath;
+        return undefined;
+      }
       if (fileExists(resolvedPath)) {
         return resolvedPath;
       }
