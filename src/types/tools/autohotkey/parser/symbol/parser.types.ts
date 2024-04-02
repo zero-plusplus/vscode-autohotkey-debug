@@ -1,4 +1,3 @@
-import { TimeoutError } from '../../../../../tools/promise';
 import { SyntaxKind } from '../common.types';
 
 export interface ParserContext {
@@ -6,7 +5,7 @@ export interface ParserContext {
   dependencyFiles: string[];
 }
 export interface Parser {
-  parse: (rootFilePath: string) => Promise<ProgramSymbol | TimeoutError>;
+  parse: (rootFilePath: string) => Promise<ProgramSymbol>;
 }
 export type SourceFileResolver = (uri: string) => Promise<string>;
 export type SymbolName =
@@ -45,8 +44,8 @@ export interface MatcherResultBase {
 }
 export interface IncludeMatcherResult extends MatcherResultBase {
   kind: SyntaxKind.IncludeStatement;
-  type: 'library' | 'file' | 'directory';
   path: string;
+  endIndex: number;
 }
 export interface FunctionMatcherResult extends MatcherResultBase {
   kind: SyntaxKind.FunctionDeclaration;
@@ -120,7 +119,8 @@ export interface SkipNode extends SymbolNodeBase {
 
 export interface IncludeSymbolNode extends SymbolNodeBase {
   kind: SyntaxKind.IncludeStatement;
-
+  path: string;
+  symbol: SourceFileSymbol;
 }
 export interface ProgramSymbol {
   kind: SymbolSyntaxKind;
