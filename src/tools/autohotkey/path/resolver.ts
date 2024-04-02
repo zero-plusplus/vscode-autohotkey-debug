@@ -33,8 +33,15 @@ export const createPathResolver = (rawVersion: AutoHotkeyVersion | ParsedAutoHot
     resetEnv(rawEnv: PartialedAutoHotkeyEnvironments): void {
       env = createAutoHotkeyEnvironments(rawEnv);
     },
-    setEnv(key: AutoHotkeyEnvironmentName, value: string): void {
+    setEnv(key: AutoHotkeyEnvironmentName, value: string, overwrite = true): void {
+      if (!overwrite && key in env && env[key]) {
+        return;
+      }
+
       env[key] = value;
+    },
+    getEnv(key: AutoHotkeyEnvironmentName): string | undefined {
+      return env[key] as string | undefined;
     },
     resolve(rawPath: string): string | undefined {
       if (rawPath.startsWith('<') && rawPath.endsWith('>')) {

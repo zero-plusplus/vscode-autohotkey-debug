@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, test } from '@jest/globals';
 import { createPathResolver } from '../../../../src/tools/autohotkey/path/resolver';
 import { TemporaryResource, createTempDirectory } from '../../../../src/tools/temp';
 import { afterEach } from 'node:test';
+import { AutoHotkeyEnvironmentName } from '../../../../src/types/tools/autohotkey/path/resolver.types';
 
 describe('resolver', () => {
   let testDir: TemporaryResource;
@@ -21,6 +22,18 @@ describe('resolver', () => {
   });
 
   describe('v1', () => {
+    test('set/get Env', () => {
+      const targetKey: AutoHotkeyEnvironmentName = 'A_UserName';
+      const defaultUserName = 'ABC';
+      const overwriteUserName = 'OverWrite';
+      const resolver = createPathResolver('1.0.0', { [targetKey]: defaultUserName });
+
+      resolver.setEnv(targetKey, overwriteUserName, false);
+      expect(resolver.getEnv(targetKey)).toBe(defaultUserName);
+
+      resolver.setEnv(targetKey, overwriteUserName);
+      expect(resolver.getEnv(targetKey)).toBe(overwriteUserName);
+    });
     test('variable', () => {
       const mainPath = createFile('ABC.ahk');
       const resolver = createPathResolver('1.0.0', { A_UserName: 'ABC' });
