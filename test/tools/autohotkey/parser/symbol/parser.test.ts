@@ -138,6 +138,70 @@ describe('parser', () => {
       };
       expect(programSymbol).toEqual(expected);
     });
+    test('MethodDeclaration', async() => {
+      const [ mainPath, sourceText ] = await createFile('main.ahk', `
+        class A {
+          instanceMethod() {
+          }
+          static staticMethod() {
+          }
+        }
+      `);
+
+      const programSymbol = await parser.parse(mainPath);
+      const expected: ProgramSymbol = {
+        kind: SyntaxKind.Program,
+        dependencyFiles: [],
+        symbol: {
+          kind: SyntaxKind.SourceFile,
+          text: sourceText,
+          startPosition: 0,
+          endPosition: sourceText.length,
+          symbols: [
+            {
+              kind: SyntaxKind.ClassDeclaration,
+              name: 'A',
+              startPosition: 11,
+              endPosition: 122,
+              block: {
+                kind: SyntaxKind.Block,
+                startPosition: 19,
+                endPosition: 122,
+                symbols: [
+                  {
+                    kind: SyntaxKind.MethodDeclaration,
+                    modifier: undefined,
+                    name: 'instanceMethod',
+                    startPosition: 32,
+                    endPosition: 63,
+                    block: {
+                      kind: SyntaxKind.Block,
+                      startPosition: 49,
+                      endPosition: 63,
+                      symbols: [],
+                    },
+                  },
+                  {
+                    kind: SyntaxKind.MethodDeclaration,
+                    modifier: 'static',
+                    name: 'staticMethod',
+                    startPosition: 75,
+                    endPosition: 111,
+                    block: {
+                      kind: SyntaxKind.Block,
+                      startPosition: 97,
+                      endPosition: 111,
+                      symbols: [],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      };
+      expect(programSymbol).toEqual(expected);
+    });
   });
 
   test('Include Statement', async() => {
