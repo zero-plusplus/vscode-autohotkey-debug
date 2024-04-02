@@ -141,7 +141,7 @@ describe('parser', () => {
     test('MethodDeclaration', async() => {
       const [ mainPath, sourceText ] = await createFile('main.ahk', `
         class A {
-          instanceMethod() {
+          instanceMethod(a, b := "abc") {
           }
           static staticMethod() {
           }
@@ -161,23 +161,24 @@ describe('parser', () => {
             {
               kind: SyntaxKind.ClassDeclaration,
               name: 'A',
+              extends: undefined,
               startPosition: 11,
-              endPosition: 122,
+              endPosition: 135,
               block: {
                 kind: SyntaxKind.Block,
                 startPosition: 19,
-                endPosition: 122,
+                endPosition: 135,
                 symbols: [
                   {
                     kind: SyntaxKind.MethodDeclaration,
                     modifier: undefined,
                     name: 'instanceMethod',
                     startPosition: 32,
-                    endPosition: 63,
+                    endPosition: 76,
                     block: {
                       kind: SyntaxKind.Block,
-                      startPosition: 49,
-                      endPosition: 63,
+                      startPosition: 62,
+                      endPosition: 76,
                       symbols: [],
                     },
                   },
@@ -185,12 +186,102 @@ describe('parser', () => {
                     kind: SyntaxKind.MethodDeclaration,
                     modifier: 'static',
                     name: 'staticMethod',
-                    startPosition: 75,
-                    endPosition: 111,
+                    startPosition: 88,
+                    endPosition: 124,
                     block: {
                       kind: SyntaxKind.Block,
-                      startPosition: 97,
-                      endPosition: 111,
+                      startPosition: 110,
+                      endPosition: 124,
+                      symbols: [],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      };
+      expect(programSymbol).toEqual(expected);
+    });
+    test('PropertyDeclaration', async() => {
+      const [ mainPath, sourceText ] = await createFile('main.ahk', `
+        class A {
+          property[a, b := "abc"] {
+            get {
+            }
+            set {
+            }
+          }
+          propertyWithout {
+          }
+        }
+      `);
+
+      const programSymbol = await parser.parse(mainPath);
+      const expected: ProgramSymbol = {
+        kind: SyntaxKind.Program,
+        dependencyFiles: [],
+        symbol: {
+          kind: SyntaxKind.SourceFile,
+          text: sourceText,
+          startPosition: 0,
+          endPosition: sourceText.length,
+          symbols: [
+            {
+              kind: SyntaxKind.ClassDeclaration,
+              name: 'A',
+              extends: undefined,
+              startPosition: 11,
+              endPosition: 191,
+              block: {
+                kind: SyntaxKind.Block,
+                startPosition: 19,
+                endPosition: 191,
+                symbols: [
+                  {
+                    kind: SyntaxKind.PropertyDeclaration,
+                    name: 'property',
+                    startPosition: 32,
+                    endPosition: 138,
+                    block: {
+                      kind: SyntaxKind.Block,
+                      startPosition: 56,
+                      endPosition: 138,
+                      symbols: [
+                        {
+                          kind: SyntaxKind.GetterDeclaration,
+                          startPosition: 71,
+                          endPosition: 91,
+                          block: {
+                            kind: SyntaxKind.Block,
+                            startPosition: 75,
+                            endPosition: 91,
+                            symbols: [],
+                          },
+                        },
+                        {
+                          kind: SyntaxKind.SetterDeclaration,
+                          startPosition: 105,
+                          endPosition: 125,
+                          block: {
+                            kind: SyntaxKind.Block,
+                            startPosition: 109,
+                            endPosition: 125,
+                            symbols: [],
+                          },
+                        },
+                      ],
+                    },
+                  },
+                  {
+                    kind: SyntaxKind.PropertyDeclaration,
+                    name: 'propertyWithout',
+                    startPosition: 150,
+                    endPosition: 180,
+                    block: {
+                      kind: SyntaxKind.Block,
+                      startPosition: 166,
+                      endPosition: 180,
                       symbols: [],
                     },
                   },
