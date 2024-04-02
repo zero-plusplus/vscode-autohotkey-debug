@@ -74,6 +74,72 @@ describe('parser', () => {
     expect(programSymbol).toEqual(expected);
   });
 
+  describe('ClassDeclaration', () => {
+    test('ClassDeclaration', async() => {
+      const [ mainPath, sourceText ] = await createFile('main.ahk', `
+        class A extends B.C {
+        }
+        class B {
+          class C {
+          }
+        }
+      `);
+
+      const programSymbol = await parser.parse(mainPath);
+      const expected: ProgramSymbol = {
+        kind: SyntaxKind.Program,
+        dependencyFiles: [],
+        symbol: {
+          kind: SyntaxKind.SourceFile,
+          startPosition: 0,
+          endPosition: sourceText.length,
+          text: sourceText,
+          symbols: [
+            {
+              kind: SyntaxKind.ClassDeclaration,
+              name: 'A',
+              extends: 'B.C',
+              startPosition: 11,
+              endPosition: 43,
+              block: {
+                kind: SyntaxKind.Block,
+                startPosition: 31,
+                endPosition: 43,
+                symbols: [],
+              },
+            },
+            {
+              kind: SyntaxKind.ClassDeclaration,
+              name: 'B',
+              startPosition: 53,
+              endPosition: 107,
+              block: {
+                kind: SyntaxKind.Block,
+                startPosition: 61,
+                endPosition: 107,
+                symbols: [
+                  {
+                    kind: SyntaxKind.ClassDeclaration,
+                    name: 'C',
+                    startPosition: 74,
+                    endPosition: 96,
+                    block: {
+                      kind: SyntaxKind.Block,
+                      startPosition: 82,
+                      endPosition: 96,
+                      symbols: [],
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      };
+      expect(programSymbol).toEqual(expected);
+    });
+  });
+
   test('Include Statement', async() => {
     const [ mainPath, mainSourceText ] = await createFile('main.ahk', `
       #Include <Foo>
