@@ -1,14 +1,12 @@
-import * as parser from 'fast-xml-parser';
-import * as he from 'he';
+import { XMLParser } from 'fast-xml-parser';
 
+const parser = new XMLParser({
+  attributeNamePrefix: '',
+  attributesGroupName: 'attributes',
+  textNodeName: 'content',
+  ignoreAttributes: false,
+  parseAttributeValue: false,
+});
 export const parseXml = (source: string): Record<string, any> => {
-  return parser.parse(source, {
-    attributeNamePrefix: '',
-    attrNodeName: 'attributes',
-    textNodeName: 'content',
-    ignoreAttributes: false,
-    parseNodeValue: false,
-    attrValueProcessor: (value: string, attrName: string) => String(he.decode(value, { isAttributeValue: true })),
-    tagValueProcessor: (value: string, tagName: string) => String(he.decode(value)),
-  }) as Record<string, any>;
+  return parser.parse(source) as Record<string, any>;
 };
