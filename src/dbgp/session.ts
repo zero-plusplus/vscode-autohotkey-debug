@@ -34,11 +34,11 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
             const terminatorIndex = currentPacket.indexOf(0);
             const isCompleteReceived = -1 < terminatorIndex;
             if (isCompleteReceived) {
-              const data = currentPacket.slice(0, terminatorIndex);
+              const data = Uint8Array.prototype.slice.call(currentPacket, 0, terminatorIndex);
               const isReceivedDataLength = !isNaN(parseInt(data.toString(), 10));
               if (isReceivedDataLength) {
-                const responsePacket = currentPacket.slice(terminatorIndex + 1);
-                handlePacket(responsePacket);
+                const responsePacket = Uint8Array.prototype.slice.call(currentPacket, terminatorIndex + 1);
+                handlePacket(Buffer.from(responsePacket));
                 return;
               }
 
