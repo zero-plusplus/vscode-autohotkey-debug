@@ -4,7 +4,7 @@ import { SyntaxKind } from '../../../../types/tools/autohotkey/parser/common.typ
 import { BlockSymbol, ClassMatcherResult, ClassSymbol, DebugDirectiveMatcherResult, DebugDirectiveSymbol, FunctionMatcherResult, FunctionSymbol, GetterMatcherResult, GetterSymbol, IncludeMatcherResult, IncludeSymbol, MatcherResult, MethodMatcherResult, MethodSymbol, Parser, ParserContext, ProgramSymbol, PropertyMatcherResult, PropertySymbol, SetterMatcherResult, SetterSymbol, SourceFileResolver, SourceFileSymbol, SymbolMatcherMap, SymbolName, SymbolNode } from '../../../../types/tools/autohotkey/parser/symbol/parser.types';
 import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../../../types/tools/autohotkey/version/common.types';
 import { parseAutoHotkeyVersion } from '../../version';
-import { maskBlockComments } from './utils';
+import { maskBlockComments, maskContinuationSection } from './utils';
 import { PartialedAutoHotkeyEnvironments } from '../../../../types/tools/autohotkey/path/resolver.types';
 import { createPathResolver } from '../../path/resolver';
 import { fileExists } from '../../../predicate';
@@ -46,7 +46,7 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
 
       const sourceText = await resolver(uri);
       const sourceLength = sourceText.length;
-      const maskedSourceText = maskBlockComments(sourceText);
+      const maskedSourceText = maskContinuationSection(maskBlockComments(sourceText));
       const symbols = await parseGlobalSymbols();
 
       return {
