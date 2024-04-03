@@ -1,7 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import { SyntaxKind } from '../../../../types/tools/autohotkey/parser/common.types';
-import { BlockSymbol, ClassMatcherResult, ClassSymbol, FunctionMatcherResult, FunctionSymbol, GetterMatcherResult, GetterSymbol, IncludeMatcherResult, IncludeSymbolNode, MatcherResult, MethodMatcherResult, MethodSymbol, Parser, ParserContext, ProgramSymbol, PropertyMatcherResult, PropertySymbol, SetterMatcherResult, SetterSymbol, SourceFileResolver, SourceFileSymbol, SymbolMatcherMap, SymbolName, SymbolNode } from '../../../../types/tools/autohotkey/parser/symbol/parser.types';
+import { BlockSymbol, ClassMatcherResult, ClassSymbol, DebugDirectiveMatcherResult, DebugDirectiveSymbol, FunctionMatcherResult, FunctionSymbol, GetterMatcherResult, GetterSymbol, IncludeMatcherResult, IncludeSymbol, MatcherResult, MethodMatcherResult, MethodSymbol, Parser, ParserContext, ProgramSymbol, PropertyMatcherResult, PropertySymbol, SetterMatcherResult, SetterSymbol, SourceFileResolver, SourceFileSymbol, SymbolMatcherMap, SymbolName, SymbolNode } from '../../../../types/tools/autohotkey/parser/symbol/parser.types';
 import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../../../types/tools/autohotkey/version/common.types';
 import { parseAutoHotkeyVersion } from '../../version';
 import { maskBlockComments } from './utils';
@@ -14,10 +14,10 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
   const version = typeof rawVersion === 'string' ? parseAutoHotkeyVersion(rawVersion) : rawVersion;
 
   const symbolMatcherMap = createSymbolMatcherMap(version);
-  const globalSymbolNames: SymbolName[] = [ 'include', 'function', 'class' ];
-  const localSymbolNames: SymbolName[] = [ 'include', 'function', 'class' ];
-  const classSymbolNames: SymbolName[] = [ 'include', 'class', 'method', 'property' ];
-  const propertySymbolNames: SymbolName[] = [ 'include', 'getter', 'setter' ];
+  const globalSymbolNames: SymbolName[] = [ 'directive', 'include', 'function', 'class' ];
+  const localSymbolNames: SymbolName[] = [ 'directive', 'include', 'function', 'class' ];
+  const classSymbolNames: SymbolName[] = [ 'directive', 'include', 'class', 'method', 'property' ];
+  const propertySymbolNames: SymbolName[] = [ 'directive', 'include', 'getter', 'setter' ];
 
   return {
     parse,
@@ -63,6 +63,7 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
 
         let symbol: SymbolNode | undefined;
         switch (result.kind) {
+          case SyntaxKind.DebugDirectiveTrivia: symbol = await parseDebugDirectiveSymbol(result); break;
           case SyntaxKind.IncludeStatement: symbol = await parseIncludeSymbol(result); break;
           case SyntaxKind.FunctionDeclaration: symbol = await parseFunctionSymbol(result); break;
           case SyntaxKind.ClassDeclaration: symbol = await parseClassSymbol(result); break;
@@ -115,7 +116,16 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
           symbols,
         };
       }
-      async function parseIncludeSymbol(result: IncludeMatcherResult): Promise<IncludeSymbolNode | undefined> {
+      async function parseDebugDirectiveSymbol(result: DebugDirectiveMatcherResult): Promise<DebugDirectiveSymbol> {
+        return Promise.resolve({
+          kind: SyntaxKind.DebugDirectiveTrivia,
+          action: result.action,
+          argsText: result.argsText,
+          startPosition: result.startIndex,
+          endPosition: result.endIndex,
+        });
+      }
+      async function parseIncludeSymbol(result: IncludeMatcherResult): Promise<IncludeSymbol | undefined> {
         const cwd = pathResolver.getCurrentDirectory();
         const filePath = pathResolver.resolve(result.path)?.toLowerCase();
         if (!filePath || !fileExists(filePath)) {
@@ -238,9 +248,22 @@ export const createParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVer
     const propertyRegExp = new RegExp(`${startStatementRegExp.source}(?<property>(?<name>${identifierRegExp.source})${startBlockRegExp.source})`, 'siu');
     const getterRegExp = new RegExp(`${startStatementRegExp.source}(?<getter>get${startBlockRegExp.source})`, 'siu');
     const setterRegExp = new RegExp(`${startStatementRegExp.source}(?<setter>set${startBlockRegExp.source})`, 'siu');
+    const debugDirectiveRegExp = new RegExp(`${startStatementRegExp.source}(?<directive>;\\s*@Debug-(?<action>[\\w_]+)\\s*(?<arguments>[^\r\n]*))[^\\S\\r\\n]*`, 'siu');
     const endBlockRegExp = new RegExp(`${startStatementRegExp.source}\\}`, 'siu');
 
     return {
+      directive(sourceText, index) {
+        const match = sourceText.slice(index).match(debugDirectiveRegExp);
+        if (match?.index === undefined) {
+          return undefined;
+        }
+
+        const action = match.groups?.action;
+        const argsText = match.groups?.arguments;
+        const startIndex = index + (match.groups?.skip.length ?? 0) + (match.groups?.indent.length ?? 0);
+        const endIndex = startIndex + (match.groups?.directive.length ?? 0);
+        return { kind: SyntaxKind.DebugDirectiveTrivia, action, argsText, startIndex, endIndex };
+      },
       include(sourceText, index) {
         const match = sourceText.slice(index).match(includeRegExp);
         if (match?.index === undefined) {

@@ -9,6 +9,7 @@ export interface Parser {
 }
 export type SourceFileResolver = (uri: string) => Promise<string>;
 export type SymbolName =
+  | 'directive'
   | 'include'
   | 'function'
   | 'class'
@@ -20,6 +21,7 @@ export type SymbolName =
   | 'endBlock';
 export type Modifier = 'static';
 export interface SymbolMatcherMap {
+  directive: (sourceText: string, index: number) => DebugDirectiveMatcherResult | undefined;
   include: (sourceText: string, index: number) => IncludeMatcherResult | undefined;
   function: (sourceText: string, index: number) => FunctionMatcherResult | undefined;
   class: (sourceText: string, index: number) => ClassMatcherResult | undefined;
@@ -31,6 +33,7 @@ export interface SymbolMatcherMap {
   endBlock: (sourceText: string, index: number) => EndBlockMatcherResult | undefined;
 }
 export type MatcherResult =
+  | DebugDirectiveMatcherResult
   | IncludeMatcherResult
   | FunctionMatcherResult
   | ClassMatcherResult
@@ -42,6 +45,12 @@ export type MatcherResult =
 export interface MatcherResultBase {
   kind: SyntaxKind;
   startIndex: number;
+}
+export interface DebugDirectiveMatcherResult extends MatcherResultBase {
+  kind: SyntaxKind.DebugDirectiveTrivia;
+  action?: DebugDirectiveAction;
+  argsText?: string;
+  endIndex: number;
 }
 export interface IncludeMatcherResult extends MatcherResultBase {
   kind: SyntaxKind.IncludeStatement;
@@ -114,7 +123,7 @@ export type SymbolNode =
   | SourceFileSymbol
   | BlockSymbol
   | DebugDirectiveSymbol
-  | IncludeSymbolNode
+  | IncludeSymbol
   | FunctionSymbol
   | ClassSymbol
   | MethodSymbol
@@ -131,7 +140,7 @@ export interface SkipNode extends SymbolNodeBase {
   kind: SyntaxKind.Skip;
 }
 
-export interface IncludeSymbolNode extends SymbolNodeBase {
+export interface IncludeSymbol extends SymbolNodeBase {
   kind: SyntaxKind.IncludeStatement;
   path: string;
   symbol: SourceFileSymbol;
@@ -154,9 +163,8 @@ export enum DebugDirectiveAction {
 }
 export interface DebugDirectiveSymbol extends SymbolNodeBase {
   kind: SyntaxKind.DebugDirectiveTrivia;
-  action: DebugDirectiveAction;
-  condition: string;
-  logMessage: string;
+  action?: DebugDirectiveAction;
+  argsText?: string;
 }
 export interface BlockSymbol extends SymbolNodeBase {
   kind: SyntaxKind.Block;

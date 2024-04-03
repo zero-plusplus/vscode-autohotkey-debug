@@ -3,7 +3,7 @@ import * as path from 'path';
 import { afterEach, beforeEach, describe, expect, test } from '@jest/globals';
 import { createParser } from '../../../../../src/tools/autohotkey/parser/symbol/parser';
 import { TemporaryResource, createTempDirectory } from '../../../../../src/tools/temp';
-import { ProgramSymbol } from '../../../../../src/types/tools/autohotkey/parser/symbol/parser.types';
+import { DebugDirectiveAction, ProgramSymbol } from '../../../../../src/types/tools/autohotkey/parser/symbol/parser.types';
 import { SyntaxKind } from '../../../../../src/types/tools/autohotkey/parser/common.types';
 
 describe('parser', () => {
@@ -295,7 +295,7 @@ describe('parser', () => {
     });
   });
 
-  test('Include Statement', async() => {
+  test('IncludeStatement', async() => {
     const [ mainPath, mainSourceText ] = await createFile('main.ahk', `
       #Include <Foo>
     `);
@@ -344,6 +344,34 @@ describe('parser', () => {
       },
     };
 
+    expect(programSymbol).toEqual(expected);
+  });
+
+  test('DebugDirectiveTrivia', async() => {
+    const [ mainPath, mainSourceText ] = await createFile('main.ahk', `
+      ; @Debug-Output => {foo}bar
+    `);
+
+    const programSymbol = await parser.parse(mainPath);
+    const expected: ProgramSymbol = {
+      kind: SyntaxKind.Program,
+      dependencyFiles: [],
+      symbol: {
+        kind: SyntaxKind.SourceFile,
+        text: mainSourceText,
+        startPosition: 0,
+        endPosition: mainSourceText.length,
+        symbols: [
+          {
+            kind: SyntaxKind.DebugDirectiveTrivia,
+            action: DebugDirectiveAction.Output,
+            argsText: '=> {foo}bar',
+            startPosition: 9,
+            endPosition: 36,
+          },
+        ],
+      },
+    };
     expect(programSymbol).toEqual(expected);
   });
 });
