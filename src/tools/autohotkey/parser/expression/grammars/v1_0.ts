@@ -3,7 +3,7 @@ import * as ohm from 'ohm-js';
 import { SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.types';
 import { createParser } from './utils';
 
-export const grammar = ohm.grammar(`
+export const grammarText = `
   AutoHotkey_v1_1 {
     _Program = VariableDeclaration | Expressions
 
@@ -147,13 +147,10 @@ export const grammar = ohm.grammar(`
       | "\\n"
 
     identifier = rawIdentifier ~percentToken
-    rawIdentifier = normalIdentifier | metaIdentifier
+    rawIdentifier = normalIdentifier
     normalIdentifier = identifierStart identifierPart*
     identifierStart = letter | "_" | "$" | "@" | "#" ~ "%"
     identifierPart = identifierStart | digit
-
-    metaIdentifier = "<" metaIdentifierStart identifierPart* ">"
-    metaIdentifierStart = "$" | identifierStart
 
     stringLiteral = "\\"" doubleCharacter* "\\""
     commonEscapeSequence = "\`\`" | "\`," | "\`%" | "\`;" | "\`::" | "\`r" | "\`n" | "\`b" | "\`t" | "\`v" | "\`a" | "\`f"
@@ -253,7 +250,8 @@ export const grammar = ohm.grammar(`
     closeBraceToken = "}"
     endOfFileToken = end
   }
-`);
+`;
+export const grammar = ohm.grammar(grammarText);
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const astMapping = (() => {
