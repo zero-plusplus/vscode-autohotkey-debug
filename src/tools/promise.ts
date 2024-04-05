@@ -1,10 +1,8 @@
-let timeoutId: number | undefined;
-export const sleep = async(delay_ms: number): Promise<void> => new Promise((resolve) => {
-  if (timeoutId) {
-    clearTimeout(timeoutId);
-  }
-  timeoutId = setTimeout(resolve, delay_ms);
-});
+export const sleep = async(delay_ms: number): Promise<void> => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, delay_ms);
+  });
+};
 
 export class TimeoutError extends Error {
   constructor(timeout_ms: number) {

@@ -4,20 +4,17 @@ import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { Session } from '../../types/dbgp/session.types';
 import { createBreakpointManager } from './breakpoint';
-import { createCallStackManager } from './callstack';
 import { createContinuationCommandExecutor } from './executor';
-import { createVariableManager } from './variable';
+import { createExecutionContextManager } from './context';
 
 export const createScriptRuntime = (session: Readonly<Session>, eventEmitter: Readonly<EventEmitter>, config: Readonly<NormalizedDebugConfig>): ScriptRuntime => {
-  const callStackManager = createCallStackManager(session);
+  const contextManager = createExecutionContextManager(session);
   const breakpointManager = createBreakpointManager(session);
-  const variableManager = createVariableManager(session);
   const exec = createContinuationCommandExecutor(session, config, breakpointManager);
 
   const runtime: ScriptRuntime = {
     ...breakpointManager,
-    ...callStackManager,
-    ...variableManager,
+    ...contextManager,
     threadId: 1,
     session,
     config,

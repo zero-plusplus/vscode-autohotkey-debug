@@ -346,8 +346,8 @@ export type CommandResponse =
   | StackGetResponse
   | ContextNamesResponse
   | ContextGetResponse
-  // | PropertyGetResponse
-  // | PropertySetResponse
+  | PropertyGetResponse
+  | PropertySetResponse
   // | PropertyValueResponse
   // | SourceResponse
   // | StdOutResponse
@@ -459,11 +459,15 @@ export interface TypeMapGetResponse extends CommandResponseBase {
   types: TypeMap[];
 }
 export interface PropertySetResponse extends CommandResponseBase {
-  command: 'property_set';
-  success: boolean;
+  attributes: {
+    command: 'property_set';
+    success: boolean;
+  } & AttributeBase;
 }
 export interface PropertyGetResponse extends CommandResponseBase {
-  command: 'property_get';
+  attributes: {
+    command: 'property_get';
+  } & AttributeBase;
   property: Property;
 }
 export interface PropertyValueResponse extends CommandResponseBase {

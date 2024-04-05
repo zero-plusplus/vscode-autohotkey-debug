@@ -2,9 +2,8 @@ import { NormalizedDebugConfig } from '../config.types';
 import { ExecResult, ScriptStatus, Session } from '../../dbgp/session.types';
 import { BreakpointManager } from './breakpoint.types';
 import { ContinuationCommandExecutor } from './executor.types';
-import { CallStackManager } from './callstack.types';
-import { VariableManager } from './variable.types';
 import { MessageCategory } from '../adapter/adapter.types';
+import { ExecutionContextManager } from './context.types';
 
 export type RunCommand = string; // e.g. AutoHotkey.exe /Debug script.ahk
 export type LaunchMethod =
@@ -16,7 +15,7 @@ export interface ScriptRuntimeLauncher {
   attach: () => Promise<ScriptRuntime>;
 }
 export type ScriptRuntimeCreateor = (config: NormalizedDebugConfig) => ScriptRuntime;
-export interface ScriptRuntime extends CallStackManager, BreakpointManager, VariableManager {
+export interface ScriptRuntime extends BreakpointManager, ExecutionContextManager {
   readonly threadId: number;
   session: Session;
   config: NormalizedDebugConfig;

@@ -2,7 +2,7 @@ import { Server, Socket, createServer } from 'net';
 import { EventEmitter } from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { AutoHotkeyProcess, Breakpoint, CallStack, CommandSender, Context, ExceptionBreakpoint, ExecResult, LineBreakpoint, ObjectProperty, PrimitiveProperty, Property, ScriptStatus, Session, SessionConnector, contextIdByName } from '../types/dbgp/session.types';
+import { AutoHotkeyProcess, Breakpoint, CallStack, CommandSender, Context, ContextName, ExceptionBreakpoint, ExecResult, LineBreakpoint, ObjectProperty, PrimitiveProperty, Property, ScriptStatus, Session, SessionConnector, contextIdByName } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
@@ -199,7 +199,7 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
           throw new DbgpError(Number(response.error.attributes.code));
         }
       },
-      async getContext(contextName, depth?): Promise<Context> {
+      async getContext(contextName: ContextName, depth?: number): Promise<Context> {
         const contextId = contextIdByName[contextName];
         const response = await sendCommand<dbgp.ContextGetResponse>('context_get', [ '-c', contextId, '-d', depth ]);
         if (response.error) {
@@ -207,6 +207,7 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
         }
 
         return {
+          id: contextId,
           name: contextName,
           properties: toProperties(response.property),
         };
@@ -248,13 +249,20 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
           };
         }
       },
-      async getContexts(depth): Promise<Context[]> {
+      async getContexts(depth?: number): Promise<Context[]> {
         const contexts: Context[] = [];
         const response = await sendCommand<dbgp.ContextNamesResponse>('context_names');
         for await (const context of response.context) {
           contexts.push(await this.getContext(context.attributes.name, depth));
         }
         return contexts;
+      },
+      async getProperty(contextId: number, name: string, depth?: number): Promise<void> {
+        const response = await sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', depth ]);
+        if (response.error) {
+          throw new DbgpError(Number(response.error.attributes.code));
+        }
+        console.log(response);
       },
       async close(timeout_ms = 500): Promise<Error | undefined> {
         await closeProcess(timeout_ms);

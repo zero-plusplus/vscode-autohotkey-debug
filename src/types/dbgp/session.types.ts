@@ -40,7 +40,8 @@ export interface ExceptionBreakpoint {
   state: dbgp.BreakpointState;
 }
 
-export const contextIdByName: Record<dbgp.ContextName, number> = {
+export type ContextName = dbgp.ContextName;
+export const contextIdByName: Record<ContextName, number> = {
   'Local': dbgp.ContextId.Local,
   'Global': dbgp.ContextId.Global,
   'Static': dbgp.ContextId.Static,
@@ -66,7 +67,8 @@ export interface ObjectProperty extends PropertyBase {
   children: Property[];
 }
 export interface Context {
-  name: dbgp.ContextName;
+  id: dbgp.ContextId;
+  name: ContextName;
   properties: Property[];
 }
 
@@ -98,6 +100,7 @@ export interface Session {
   removeBreakpointById: (id: number) => Promise<void>;
   getContext: (contextName: dbgp.ContextName, depth?: number) => Promise<Context>;
   getContexts: (depth?: number) => Promise<Context[]>;
+  getProperty: (contextId: number, name: string, depth?: number) => Promise<void>; // <Property>;
   close: () => Promise<Error | undefined>;
   detach: () => Promise<Error | undefined>;
 }
