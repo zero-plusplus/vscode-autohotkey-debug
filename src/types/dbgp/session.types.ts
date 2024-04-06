@@ -46,6 +46,11 @@ export const contextIdByName: Record<ContextName, number> = {
   'Global': dbgp.ContextId.Global,
   'Static': dbgp.ContextId.Static,
 };
+export const contextNameById: Record<number, ContextName> = {
+  [dbgp.ContextId.Local]: 'Local',
+  [dbgp.ContextId.Global]: 'Global',
+  [dbgp.ContextId.Static]: 'Static',
+};
 export type Property = PrimitiveProperty | ObjectProperty;
 export interface PropertyBase {
   name: string;
@@ -98,9 +103,9 @@ export interface Session {
   getBreakpointById: <T extends Breakpoint = Breakpoint>(id: number) => Promise<T>;
   setLineBreakpoint: (fileName: string, line: number) => Promise<LineBreakpoint>;
   removeBreakpointById: (id: number) => Promise<void>;
-  getContext: (contextName: dbgp.ContextName, depth?: number) => Promise<Context>;
+  getContext: (contextId: number, depth?: number) => Promise<Context>;
   getContexts: (depth?: number) => Promise<Context[]>;
-  getProperty: (contextId: number, name: string, depth?: number) => Promise<void>; // <Property>;
+  getProperty: (contextId: number, name: string, depth?: number) => Promise<Property>;
   close: () => Promise<Error | undefined>;
   detach: () => Promise<Error | undefined>;
 }

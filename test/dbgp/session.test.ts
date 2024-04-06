@@ -6,7 +6,7 @@ import { createDefaultDebugConfig } from '../../src/client/config/default';
 import { ScriptRuntime } from '../../src/types/dap/runtime/scriptRuntime.types';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../src/tools/autohotkey';
 import { DbgpError } from '../../src/dbgp/error';
-import { CallStack } from '../../src/types/dbgp/session.types';
+import { CallStack, PrimitiveProperty } from '../../src/types/dbgp/session.types';
 import EventEmitter from 'events';
 
 describe('session', () => {
@@ -20,6 +20,9 @@ describe('session', () => {
         '',
         'a() {',
         '  a := "foo"',
+        '  b := {}',
+        '  c := { a: { b: { c: { d: "foo" } } }, e: a }',
+        '  d := [ a, b, c ]',
         '}',
       ].join('\n');
 
@@ -51,15 +54,15 @@ describe('session', () => {
         },
       ] as CallStack);
 
-      const breakpoint2 = await runtime.session.setLineBreakpoint(testFile.path, 6);
-      expect({ ...breakpoint2, fileName: breakpoint.fileName.toLowerCase() }).toEqual({ id: 3, type: 'line', fileName: testFile.path.toLowerCase(), line: 6, state: 'enabled' } as typeof breakpoint);
+      const breakpoint2 = await runtime.session.setLineBreakpoint(testFile.path, 9);
+      expect({ ...breakpoint2, fileName: breakpoint.fileName.toLowerCase() }).toEqual({ id: 3, type: 'line', fileName: testFile.path.toLowerCase(), line: 9, state: 'enabled' } as typeof breakpoint);
 
       await runtime.session.exec('run');
       const callStack2 = await runtime.session.getCallStack();
       expect(callStack2.map((stackFrame) => ({ ...stackFrame, fileName: stackFrame.fileName.toLowerCase() }))).toEqual([
         {
           fileName: testFile.path.toLowerCase(),
-          line: 6,
+          line: 9,
           level: 0,
           type: 'file',
           where: 'a()',
@@ -75,6 +78,17 @@ describe('session', () => {
 
       await runtime.session.removeBreakpointById(breakpoint.id);
       await expect(async() => runtime.session.getBreakpointById(breakpoint.id)).rejects.toThrow(DbgpError);
+
+      const localContext = await runtime.session.getContext(0);
+      const a = await runtime.session.getProperty(localContext.id, 'a');
+      expect(a).toEqual({
+        name: 'a',
+        fullName: 'a',
+        type: 'string',
+        value: 'foo',
+        size: 3,
+        constant: false,
+      } as PrimitiveProperty);
     });
   });
 });

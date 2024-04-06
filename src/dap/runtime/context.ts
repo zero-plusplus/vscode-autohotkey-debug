@@ -52,6 +52,7 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
       }
       return (await session.getContexts(stackFrame.level)).map((context) => {
         const scope: Scope = {
+          id: context.id,
           variablesReference: variablesReference++,
           stackFrame,
           name: context.name,
@@ -100,7 +101,12 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
       }
 
       const variable = variableOrScope;
-      variable;
+      if (variable.evaluateName === undefined) {
+        return undefined;
+      }
+
+      const fetchVariableDepth = 1; // Depth at which child elements of a variable are retrieved. The depth is fixed at 1 in order to retrieve recursively
+      await session.getProperty(variable.scope.id, variable.evaluateName, fetchVariableDepth);
       return Promise.resolve([]);
     },
   };

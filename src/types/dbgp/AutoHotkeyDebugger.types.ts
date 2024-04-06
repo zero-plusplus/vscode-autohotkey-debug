@@ -194,21 +194,22 @@ export type PropertyFacet = '' | 'Alias' | 'Builtin' | 'Static' | 'ClipboardAll'
 export type Property = PrimitiveProperty | ObjectProperty;
 export interface PrimitiveProperty {
   attributes: {
-    name: string;
-    fullname: string;
-    type: PrimitiveDataType;
-    constant: string;
-    facet?: PropertyFacet;
-    size: string;
-    // key?: string;
+    children: '0';
     encoding: Encoding;
+    facet: PropertyFacet;
+    fullname: string;
+    name: string;
+    size: string;
+    type: PrimitiveDataType;
+    constant?: string;
+    // key?: string;
   };
   content?: string;
 }
 export interface ObjectProperty {
   attributes: {
     address: string;
-    children: string;
+    children: '0' | '1';
     classname: string;
     facet: PropertyFacet;
     fullname: string;
@@ -219,7 +220,7 @@ export interface ObjectProperty {
     size: string;
     type: ObjectDataType;
   };
-  property: Property | Property[];
+  property?: Property | Property[];
 }
 // #endregion Property
 
