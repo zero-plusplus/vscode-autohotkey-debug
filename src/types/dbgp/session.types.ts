@@ -1,3 +1,4 @@
+import { ParsedAutoHotkeyVersion } from '../tools/autohotkey/version/common.types';
 import { Time } from '../tools/time.types';
 import * as dbgp from './AutoHotkeyDebugger.types';
 import { ChildProcessWithoutNullStreams } from 'child_process';
@@ -92,21 +93,33 @@ export type SessionEventName =
 | 'server:error';
 
 export interface Session {
+  initPacket: dbgp.InitPacket;
+  version: ParsedAutoHotkeyVersion;
   isTerminatedProcess: boolean;
   sendCommand: CommandSender;
+  // #region setting
+  suppressException: () => Promise<boolean>;
+  setLanguageVersion: () => Promise<ParsedAutoHotkeyVersion>;
+  // #endregion setting
+  // #region execuation
   exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
   break: () => Promise<ScriptStatus>;
+  close: () => Promise<Error | undefined>;
+  detach: () => Promise<Error | undefined>;
+  // #endregion execuation
+  // #region execuation context
   getScriptStatus: () => Promise<ScriptStatus>;
   getCallStack: () => Promise<CallStack>;
-  suppressException: () => Promise<boolean>;
+  getContext: (contextId: number, depth?: number) => Promise<Context>;
+  getContexts: (depth?: number) => Promise<Context[]>;
+  getProperty: (contextId: number, name: string, depth?: number) => Promise<Property>;
+  // #endregion execuation context
+  // #region breakpoint
   setExceptionBreakpoint: (enabled: boolean) => Promise<ExceptionBreakpoint>;
   getBreakpointById: <T extends Breakpoint = Breakpoint>(id: number) => Promise<T>;
   setLineBreakpoint: (fileName: string, line: number) => Promise<LineBreakpoint>;
   removeBreakpointById: (id: number) => Promise<void>;
-  getContext: (contextId: number, depth?: number) => Promise<Context>;
-  getContexts: (depth?: number) => Promise<Context[]>;
-  getProperty: (contextId: number, name: string, depth?: number) => Promise<Property>;
-  close: () => Promise<Error | undefined>;
-  detach: () => Promise<Error | undefined>;
+  // #endregion breakpoint
+
 }
 

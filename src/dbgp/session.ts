@@ -7,6 +7,8 @@ import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './u
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
 import { measureAsyncExecutionTime } from '../tools/time';
+import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
+import { parseAutoHotkeyVersion } from '../tools/autohotkey';
 
 const responseEventName = 'response';
 export const createSessionConnector = (eventEmitter: EventEmitter): SessionConnector => {
@@ -63,190 +65,234 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
         })
           .listen(port, hostname)
           .on('connection', (socket) => {
-            resolve(createSession(server, socket, process));
+            createSession(server, socket, process).then((session) => {
+              resolve(session);
+            });
           });
       });
     },
   };
 
-  function createSession(server: Server, socket: Socket, process?: AutoHotkeyProcess): Session {
+  async function createSession(server: Server, socket: Socket, process?: AutoHotkeyProcess): Promise<Session> {
     let isTerminatedProcess = false;
-
-    registerEvents();
     const sendCommand = createCommandSender(socket);
-    return {
-      get isTerminatedProcess(): boolean {
-        return isTerminatedProcess;
-      },
-      sendCommand,
-      // #region setting
-      async suppressException(): Promise<boolean> {
-        const response = await sendCommand('property_set', [ '-n', '<exception>' ], '');
-        if (response.error) {
-          throw new DbgpError(Number(response.error.attributes.code));
-        }
-        return true;
-      },
-      // #endregion setting
-      // #region execuation
-      async exec(command: dbgp.ContinuationCommandName): Promise<ExecResult> {
-        const [ response, elapsedTime ] = await measureAsyncExecutionTime(async() => sendCommand<dbgp.ContinuationResponse>(command));
-        if (response.error) {
-          throw new DbgpError(Number(response.error.attributes.code));
-        }
-        if (response.attributes.status === 'stopped') {
-          isTerminatedProcess = true;
+    return new Promise((resolve) => {
+      socket.on('close', () => {
+        isTerminatedProcess = true;
+        eventEmitter.emit('debugger:close');
+      });
+      socket.on('error', () => {
+        eventEmitter.emit('debugger:error');
+      });
+      socket.on(responseEventName, (packet: dbgp.Packet) => {
+        if ('init' in packet) {
+          setLanguageVersion().then((version) => {
+            const session: Session = {
+              initPacket: packet,
+              version,
+              get isTerminatedProcess(): boolean {
+                return isTerminatedProcess;
+              },
+              sendCommand,
+              // #region setting
+              async suppressException(): Promise<boolean> {
+                const response = await sendCommand('property_set', [ '-n', '<exception>' ], '');
+                if (response.error) {
+                  throw new DbgpError(Number(response.error.attributes.code));
+                }
+                return true;
+              },
+              setLanguageVersion,
+              // #endregion setting
+              // #region execuation
+              async exec(command: dbgp.ContinuationCommandName): Promise<ExecResult> {
+                const [ response, elapsedTime ] = await measureAsyncExecutionTime(async() => sendCommand<dbgp.ContinuationResponse>(command));
+                if (response.error) {
+                  throw new DbgpError(Number(response.error.attributes.code));
+                }
+                if (response.attributes.status === 'stopped') {
+                  isTerminatedProcess = true;
+                }
+
+                return {
+                  elapsedTime,
+                  command,
+                  runState: response.attributes.status,
+                  reason: response.attributes.reason,
+                };
+              },
+              async break(): Promise<ScriptStatus> {
+                const response = await sendCommand<dbgp.BreakResponse>('break');
+                if (response.error) {
+                  throw new DbgpError(Number(response.error.attributes.code));
+                }
+                return {
+                  reason: 'ok',
+                  runState: 'break',
+                };
+              },
+              async close(timeout_ms = 500): Promise<Error | undefined> {
+                await closeProcess(timeout_ms);
+                return closeSession();
+              },
+              async detach(timeout_ms = 500): Promise<Error | undefined> {
+                await detachProcess(timeout_ms);
+                return closeSession();
+              },
+              // #endregion execuation
+              // #region execuation context
+              async getScriptStatus(): Promise<ScriptStatus> {
+                const response = await sendCommand<dbgp.StatusResponse>('status');
+                if (response.error) {
+                  throw new DbgpError(Number(response.error.attributes.code));
+                }
+
+                return {
+                  reason: response.attributes.reason,
+                  runState: response.attributes.status,
+                };
+              },
+              async getCallStack(): Promise<CallStack> {
+                const response = await sendCommand<dbgp.StackGetResponse>('stack_get');
+                if (response.error) {
+                  throw new DbgpError(Number(response.error.attributes.code));
+                }
+
+                if (!response.stack) {
+                  return [
+                    {
+                      where: 'Standby',
+                      fileName: process?.program ?? '',
+                      level: 0,
+                      line: 0,
+                      type: 'file',
+                    },
+                  ];
+                }
+
+                const stackFrames = (Array.isArray(response.stack) ? response.stack : [ response.stack ]).map((frame) => frame.attributes);
+                return stackFrames.map((stackFrame) => {
+                  return {
+                    fileName: toFsPath(stackFrame.filename),
+                    line: Number(stackFrame.lineno),
+                    level: Number(stackFrame.level),
+                    type: stackFrame.type,
+                    where: stackFrame.where,
+                  };
+                });
+              },
+              async getContext(contextId: number, depth?: number): Promise<Context> {
+                const response = await sendCommand<dbgp.ContextGetResponse>('context_get', [ '-c', contextId, '-d', depth ]);
+                if (response.error) {
+                  throw new DbgpError(Number(response.error.attributes.code));
+                }
+
+                return {
+                  id: contextId,
+                  name: contextNameById[contextId],
+                  properties: toProperties(response.property),
+                };
+              },
+              async getContexts(depth?: number): Promise<Context[]> {
+                const contexts: Context[] = [];
+                const response = await sendCommand<dbgp.ContextNamesResponse>('context_names');
+                for await (const context of response.context) {
+                  contexts.push(await this.getContext(context.attributes.id, depth));
+                }
+                return contexts;
+              },
+              async getProperty(contextId: number, name: string, depth?: number): Promise<Property> {
+                const response = await sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', depth ]);
+                if (response.error) {
+                  throw new DbgpError(Number(response.error.attributes.code));
+                }
+
+                if (response.property.attributes.type === 'object') {
+                  return toObjectProperty(response.property as dbgp.ObjectProperty);
+                }
+                return toPrimitiveProperty(response.property as dbgp.PrimitiveProperty);
+              },
+              // #endregion execuation context
+              // #region breakpoint
+              async setExceptionBreakpoint(state: boolean): Promise<ExceptionBreakpoint> {
+                const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'exception', '-s', state ? 'enabled' : 'disabled' ]);
+                if (setResponse.error) {
+                  throw new DbgpError(Number(setResponse.error.attributes.code));
+                }
+                return {
+                  type: 'exception',
+                  state: setResponse.attributes.state,
+                };
+              },
+              async getBreakpointById<T extends Breakpoint = Breakpoint>(id: number): Promise<T> {
+                const getResponse = await sendCommand<dbgp.BreakpointGetResponse>('breakpoint_get', [ '-d', id ]);
+                if (getResponse.error) {
+                  throw new DbgpError(Number(getResponse.error.attributes.code));
+                }
+
+                const attributes = getResponse.breakpoint.attributes;
+                if (attributes.type === 'exception') {
+                  return {
+                    id,
+                    type: attributes.type,
+                    state: attributes.state,
+                  } as T;
+                }
+                return {
+                  id,
+                  type: attributes.type,
+                  fileName: toFsPath(attributes.filename),
+                  line: Number(attributes.lineno),
+                  state: attributes.state,
+                } as T;
+              },
+              async setLineBreakpoint(fileName: string, line_1base: number): Promise<LineBreakpoint> {
+                const fileUri = toDbgpFileName(fileName);
+                const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'line', '-f', fileUri, '-n', line_1base ]);
+                if (setResponse.error) {
+                  throw new DbgpError(Number(setResponse.error.attributes.code));
+                }
+
+                return this.getBreakpointById<LineBreakpoint>(Number(setResponse.attributes.id));
+              },
+              async removeBreakpointById(id: number): Promise<void> {
+                const response = await sendCommand<dbgp.BreakpointRemoveResponse>('breakpoint_remove', [ '-d', id ]);
+                if (response.error) {
+                  throw new DbgpError(Number(response.error.attributes.code));
+                }
+              },
+              // #endregion breakpoint
+            };
+            resolve(session);
+          });
+          return;
         }
 
-        return {
-          elapsedTime,
-          command,
-          runState: response.attributes.status,
-          reason: response.attributes.reason,
-        };
-      },
-      async break(): Promise<ScriptStatus> {
-        const response = await sendCommand<dbgp.BreakResponse>('break');
-        if (response.error) {
-          throw new DbgpError(Number(response.error.attributes.code));
+        if ('stream' in packet) {
+          const { type, content } = packet.stream.attributes;
+          const message = Buffer
+            .from(content, 'base64')
+            .toString('utf8')
+            .replace('\0', '')
+            .toString();
+          eventEmitter.emit(`debugger:${type}`, message);
         }
-        return {
-          reason: 'ok',
-          runState: 'break',
-        };
-      },
-      async close(timeout_ms = 500): Promise<Error | undefined> {
-        await closeProcess(timeout_ms);
-        return closeSession();
-      },
-      async detach(timeout_ms = 500): Promise<Error | undefined> {
-        await detachProcess(timeout_ms);
-        return closeSession();
-      },
-      // #endregion execuation
-      // #region execuation context
-      async getScriptStatus(): Promise<ScriptStatus> {
-        const response = await sendCommand<dbgp.StatusResponse>('status');
-        if (response.error) {
-          throw new DbgpError(Number(response.error.attributes.code));
-        }
+      });
+      server.on('close', () => {
+        eventEmitter.emit('server:close');
+      });
+      server.on('error', (err) => {
+        eventEmitter.emit('server:error', err);
+      });
+    });
 
-        return {
-          reason: response.attributes.reason,
-          runState: response.attributes.status,
-        };
-      },
-      async getCallStack(): Promise<CallStack> {
-        const response = await sendCommand<dbgp.StackGetResponse>('stack_get');
-        if (response.error) {
-          throw new DbgpError(Number(response.error.attributes.code));
-        }
-
-        if (!response.stack) {
-          return [
-            {
-              where: 'Standby',
-              fileName: process?.program ?? '',
-              level: 0,
-              line: 0,
-              type: 'file',
-            },
-          ];
-        }
-
-        const stackFrames = (Array.isArray(response.stack) ? response.stack : [ response.stack ]).map((frame) => frame.attributes);
-        return stackFrames.map((stackFrame) => {
-          return {
-            fileName: toFsPath(stackFrame.filename),
-            line: Number(stackFrame.lineno),
-            level: Number(stackFrame.level),
-            type: stackFrame.type,
-            where: stackFrame.where,
-          };
-        });
-      },
-      async getContext(contextId: number, depth?: number): Promise<Context> {
-        const response = await sendCommand<dbgp.ContextGetResponse>('context_get', [ '-c', contextId, '-d', depth ]);
-        if (response.error) {
-          throw new DbgpError(Number(response.error.attributes.code));
-        }
-
-        return {
-          id: contextId,
-          name: contextNameById[contextId],
-          properties: toProperties(response.property),
-        };
-      },
-      async getContexts(depth?: number): Promise<Context[]> {
-        const contexts: Context[] = [];
-        const response = await sendCommand<dbgp.ContextNamesResponse>('context_names');
-        for await (const context of response.context) {
-          contexts.push(await this.getContext(context.attributes.id, depth));
-        }
-        return contexts;
-      },
-      async getProperty(contextId: number, name: string, depth?: number): Promise<Property> {
-        const response = await sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', depth ]);
-        if (response.error) {
-          throw new DbgpError(Number(response.error.attributes.code));
-        }
-
-        if (response.property.attributes.type === 'object') {
-          return toObjectProperty(response.property as dbgp.ObjectProperty);
-        }
-        return toPrimitiveProperty(response.property as dbgp.PrimitiveProperty);
-      },
-      // #endregion execuation context
-      // #region breakpoint
-      async setExceptionBreakpoint(state: boolean): Promise<ExceptionBreakpoint> {
-        const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'exception', '-s', state ? 'enabled' : 'disabled' ]);
-        if (setResponse.error) {
-          throw new DbgpError(Number(setResponse.error.attributes.code));
-        }
-        return {
-          type: 'exception',
-          state: setResponse.attributes.state,
-        };
-      },
-      async getBreakpointById<T extends Breakpoint = Breakpoint>(id: number): Promise<T> {
-        const getResponse = await sendCommand<dbgp.BreakpointGetResponse>('breakpoint_get', [ '-d', id ]);
-        if (getResponse.error) {
-          throw new DbgpError(Number(getResponse.error.attributes.code));
-        }
-
-        const attributes = getResponse.breakpoint.attributes;
-        if (attributes.type === 'exception') {
-          return {
-            id,
-            type: attributes.type,
-            state: attributes.state,
-          } as T;
-        }
-        return {
-          id,
-          type: attributes.type,
-          fileName: toFsPath(attributes.filename),
-          line: Number(attributes.lineno),
-          state: attributes.state,
-        } as T;
-      },
-      async setLineBreakpoint(fileName: string, line_1base: number): Promise<LineBreakpoint> {
-        const fileUri = toDbgpFileName(fileName);
-        const setResponse = await sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'line', '-f', fileUri, '-n', line_1base ]);
-        if (setResponse.error) {
-          throw new DbgpError(Number(setResponse.error.attributes.code));
-        }
-
-        return this.getBreakpointById<LineBreakpoint>(Number(setResponse.attributes.id));
-      },
-      async removeBreakpointById(id: number): Promise<void> {
-        const response = await sendCommand<dbgp.BreakpointRemoveResponse>('breakpoint_remove', [ '-d', id ]);
-        if (response.error) {
-          throw new DbgpError(Number(response.error.attributes.code));
-        }
-      },
-      // #endregion breakpoint
-    };
+    async function setLanguageVersion(): Promise<ParsedAutoHotkeyVersion> {
+      const response = await sendCommand<dbgp.FeatureGetResponse>('feature_get', [ '-n', 'language_version' ]);
+      if (response.error) {
+        throw new DbgpError(Number(response.error.attributes.code));
+      }
+      return parseAutoHotkeyVersion(response.content);
+    }
 
     // #region utils
     function toProperties(dbgpProperty?: dbgp.Property | dbgp.Property[]): Property[] {
@@ -308,38 +354,6 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
       await timeoutPromise(sendCommand('detach'), timeout_ms);
     }
     // #endregion utils
-
-    function registerEvents(): void {
-      socket.on('close', () => {
-        isTerminatedProcess = true;
-        eventEmitter.emit('debugger:close');
-      });
-      socket.on('error', () => {
-        eventEmitter.emit('debugger:error');
-      });
-      socket.on(responseEventName, (packet: dbgp.Packet) => {
-        if ('init' in packet) {
-          eventEmitter.emit('debugger:init', packet.init.attributes);
-          return;
-        }
-
-        if ('stream' in packet) {
-          const { type, content } = packet.stream.attributes;
-          const message = Buffer
-            .from(content, 'base64')
-            .toString('utf8')
-            .replace('\0', '')
-            .toString();
-          eventEmitter.emit(`debugger:${type}`, message);
-        }
-      });
-      server.on('close', () => {
-        eventEmitter.emit('server:close');
-      });
-      server.on('error', (err) => {
-        eventEmitter.emit('server:error', err);
-      });
-    }
 
     function createCommandSender(socket: Socket): CommandSender {
       let currentTransactionId = 1;

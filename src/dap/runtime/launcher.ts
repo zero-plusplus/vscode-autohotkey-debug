@@ -40,9 +40,7 @@ export const createScriptRuntimeLauncher = (eventEmitter: Readonly<EventEmitter>
           eventEmitter.emit('process:message', 'stderr', data ? String(data) : undefined);
         });
         connector.connect(config.port, config.hostname, process).then((session) => {
-          eventEmitter.once('debugger:init', () => {
-            resolve(createScriptRuntime(session, eventEmitter, config));
-          });
+          resolve(createScriptRuntime(session, eventEmitter, config));
         });
       });
     },

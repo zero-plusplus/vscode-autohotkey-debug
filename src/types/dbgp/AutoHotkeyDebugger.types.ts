@@ -336,7 +336,7 @@ export interface ErrorResponse {
 }
 export type CommandResponse =
   | StatusResponse
-  // | FeatureGetResponse
+  | FeatureGetResponse
   | FeatureSetResponse
   | ContinuationResponse
   | BreakpointGetResponse
@@ -366,9 +366,12 @@ export interface StatusResponse extends CommandResponseBase {
 }
 // https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L482
 export interface FeatureGetResponse extends CommandResponseBase {
-  command: 'feature_get';
-  featureName: FeatureName;
-  supported: boolean;
+  attributes: {
+    command: 'feature_get';
+    feature_name: FeatureName;
+    supported: '0' | '1';
+  } & AttributeBase;
+  content: string;
 }
 
 // https://github.com/AutoHotkey/AutoHotkey/blob/31de9087734f049c82c790b79e6c51316cb575f4/source/Debugger.cpp#L538

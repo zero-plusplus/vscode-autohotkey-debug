@@ -27,7 +27,7 @@ describe('session', () => {
       ].join('\n');
 
       testFile = await createTempDirectoryWithFile('utf8-with-bom', '.ahk', `${utf8BomText}${text}`);
-      const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), hostname: '127.0.0.1', runtime: defaultAutoHotkeyRuntimePath_v1 });
+      const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1 });
       runtime = await launcher.launch();
     });
     afterAll(() => {
@@ -36,6 +36,8 @@ describe('session', () => {
     });
 
     test('getBreakpointById / setLineBreakpoint / removeBreakpointById / exec', async() => {
+      expect(runtime.session.version.mejor).toBe(1.1);
+
       const exceptionBreakpoint = await runtime.session.setExceptionBreakpoint(true);
       expect(exceptionBreakpoint).toEqual({ type: 'exception', state: 'enabled' } as typeof exceptionBreakpoint);
 
