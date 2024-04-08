@@ -8,7 +8,7 @@ import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
 import { measureAsyncExecutionTime } from '../tools/time';
 import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
-import { parseAutoHotkeyVersion } from '../tools/autohotkey';
+import { parseAutoHotkeyVersion } from '../tools/autohotkey/version';
 
 const responseEventName = 'response';
 export const createSessionConnector = (eventEmitter: EventEmitter): SessionConnector => {

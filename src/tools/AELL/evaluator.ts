@@ -1,56 +1,52 @@
-// import { BinaryExpressionNode, NumberLiteralNode, StringLiteralNode, SyntaxKind } from '../../types/tools/AELL/common.types';
-// import { EvalFunc } from '../../types/tools/AELL/evaluator.types';
-// import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../types/tools/autohotkey/version/common.types';
-// import { createAELLParser } from './parser';
-//
-// const createEvalFuncMap = <Value, Evaluated extends Promise<Value>, Func extends EvalFunc<Evaluated>, FuncMap extends Record<SyntaxKind, Func>>(version: AutoHotkeyVersion | ParsedAutoHotkeyVersion, overrides?: FuncMap): FuncMap => {
-//   const funcMap = {
-//     async [SyntaxKind.StringLiteral](node: StringLiteralNode) {
-//       return Promise.resolve(node.value);
-//     },
-//     async [SyntaxKind.NumberLiteral](node: NumberLiteralNode) {
-//       return Promise.resolve(node.value);
-//     },
-//     async [SyntaxKind.BooleanLiteral](node: StringLiteralNode) {
-//       return Promise.resolve(node.value ? '1' : '0');
-//     },
-//     async [SyntaxKind.BinaryExpression](node: BinaryExpressionNode) {
-//       const left = await this[node.left.kind](node.left);
-//       const right = await this[node.right.kind](node.right);
-//
-//       switch (node.operator) {
-//         case '+': return checkNumber(Number(left) + Number(right));
-//         case '-': return checkNumber(Number(left) - Number(right));
-//         case '*': return checkNumber(Number(left) * Number(right));
-//         case '/': return checkNumber(Number(left) / Number(right));
-//         case '//': return checkNumber(Number(left) / Number(right));
-//         default: break;
-//       }
-//       return Promise.resolve('');
-//     },
-//     ...overrides,
-//   } as FuncMap;
-//   return funcMap;
-//
-//   function checkNumber(num: number): number | '' {
-//     if (isNaN(num)) {
-//       return '';
-//     }
-//     return num;
-//   }
-// };
-//
-// // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-// export const createEvaluator = <Value, Evaluated extends Promise<Value>, Func extends EvalFunc<Evaluated>, FuncMap extends Record<SyntaxKind, Func>>(version: AutoHotkeyVersion | ParsedAutoHotkeyVersion, overrides?: FuncMap) => {
-//   // const evalFuncMap = createEvalFuncMap(version, overrides);
-//   // const parser = createAELLParser(version);
-//
-//   return {
-//     eval: async(text: string): Promise<Evaluated> => {
-//       // const node = parser.parse(text);
-//       return undefined;
-//       // return evalFuncMap[node.kind](node);
-//     },
-//   };
-// };
-//
+import { Session } from '../../types/dbgp/session.types';
+import { AELLEvaluator, BooleanValue, EvaluatedValue, NumberValue, StringValue } from '../../types/tools/AELL/evaluator.types';
+import { BooleanLiteral, NumberLiteral, StringLiteral, SyntaxKind, SyntaxNode } from '../../types/tools/autohotkey/parser/common.types';
+import { createAELLParser } from './parser';
+
+export const createEvaluator = (session: Session): AELLEvaluator => {
+  const parser = createAELLParser(session.version);
+
+  return {
+    eval: async(text: string): Promise<EvaluatedValue> => {
+      const node = parser.parse(text);
+      return evalNode(node);
+    },
+  };
+
+  async function evalNode(node: SyntaxNode): Promise<EvaluatedValue> {
+    switch (node.kind) {
+      case SyntaxKind.StringLiteral: return evalStringLiteral(node);
+      case SyntaxKind.NumberLiteral: return evalNumberLiteral(node);
+      case SyntaxKind.BooleanLiteral: return evalBooleanLiteral(node);
+      default: break;
+    }
+    return undefined;
+  }
+  async function evalStringLiteral(node: StringLiteral): Promise<StringValue> {
+    return Promise.resolve({
+      kind: node.kind,
+      type: 'string',
+      value: node.value,
+      text: node.text,
+    });
+  }
+  async function evalNumberLiteral(node: NumberLiteral): Promise<NumberValue> {
+    return Promise.resolve({
+      kind: node.kind,
+      type: node.text.includes('.') ? 'float' : 'integer',
+      value: Number(node.value),
+      text: node.text,
+    });
+  }
+  async function evalBooleanLiteral(node: BooleanLiteral): Promise<BooleanValue> {
+    const bool = node.text.toLowerCase() === 'true';
+    return Promise.resolve({
+      kind: node.kind,
+      type: 'string',
+      value: bool ? '1' : '0',
+      bool,
+      text: node.text,
+    });
+  }
+};
+

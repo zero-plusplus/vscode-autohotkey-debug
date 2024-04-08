@@ -206,7 +206,7 @@ export interface Syntax {
   endPosition: number;
 }
 export type SyntaxNode =
-  | BinaryExpression;
+  | Expression;
 export type SyntaxElement = Token<SyntaxKind> | SyntaxNode;
 
 // #region root
@@ -256,6 +256,25 @@ export interface FunctionDeclaration extends Syntax {
 // #endregion declaration
 
 // #region expression
+export type Expression =
+  | StringLiteral
+  | NumberLiteral
+  | BooleanLiteral
+  | BinaryExpression;
+export interface Primitive extends Syntax {
+  kind: SyntaxKind;
+  value: string;
+  text: string;
+}
+export interface StringLiteral extends Primitive {
+  kind: SyntaxKind.StringLiteral;
+}
+export interface NumberLiteral extends Primitive {
+  kind: SyntaxKind.NumberLiteral;
+}
+export interface BooleanLiteral extends Primitive {
+  kind: SyntaxKind.BooleanLiteral;
+}
 export interface BinaryExpression extends Syntax {
   kind: SyntaxKind.BinaryExpression;
   left: SyntaxElement;
