@@ -52,9 +52,9 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
               const xmlDocument = parseXml(xml_str);
               socket.emit(responseEventName, xmlDocument);
 
-              const restPacket = currentPacket.slice(terminatorIndex + 1);
+              const restPacket = Uint8Array.prototype.slice.call(currentPacket, terminatorIndex + 1);
               if (0 < restPacket.length) {
-                handlePacket(restPacket);
+                handlePacket(Buffer.from(restPacket));
               }
               return;
             }
@@ -392,11 +392,10 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
               if ('response' in packet && Number(packet.response.attributes.transaction_id) === transactionId) {
                 const response = packet.response;
                 response.command = command_str;
-                socket.off(responseEventName, listener);
                 resolve(response as T);
               }
             };
-            socket.on(responseEventName, listener);
+            socket.once(responseEventName, listener);
           });
         });
       }
