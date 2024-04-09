@@ -1,96 +1,90 @@
-import { BooleanValue, EvaluatedValue, NumberValue, StringValue, UnsetValue } from '../../types/tools/AELL/evaluator.types';
-import { SyntaxKind } from '../../types/tools/autohotkey/parser/common.types';
+import { PrimitiveProperty } from '../../types/dbgp/session.types';
+import { EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 
-export const createUnsetValue = (): UnsetValue => {
-  return { kind: SyntaxKind.UnsetKeyword, type: 'undefined' };
-};
-export const createStringValue = (value: string, quoteOrText = '"'): StringValue => {
-  const quote = [ `"`, `'` ].includes(quoteOrText.charAt(0)) ? quoteOrText.charAt(0) : '"';
+export const createStringProperty = (value: string): PrimitiveProperty => {
   return {
-    kind: SyntaxKind.StringLiteral,
+    constant: false,
+    fullName: '',
+    name: '',
+    size: value.length,
     type: 'string',
     value,
-    text: `${quote}${value}${quote}`,
   };
 };
-export const createNumberValue = (value: string | number): NumberValue => {
+export const createNumberProperty = (value: string | number): PrimitiveProperty => {
   const numValue = Number(value);
   if (isNaN(numValue)) {
-    return createNumberValue(0);
+    return createNumberProperty(0);
   }
 
-  const text = String(value);
+  const propertyValue = String(value);
   return {
-    kind: SyntaxKind.NumberLiteral,
-    value: numValue,
-    text,
-    type: text.includes('.') ? 'float' : 'integer',
+    constant: false,
+    fullName: '',
+    name: '',
+    size: propertyValue.length,
+    value: propertyValue,
+    type: propertyValue.includes('.') ? 'float' : 'integer',
   };
 };
-export const createBooleanValue = (value: string | boolean): BooleanValue => {
+export const createBooleanProperty = (value: string | boolean): PrimitiveProperty => {
   if (typeof value === 'boolean') {
-    return value ? createBooleanValue('true') : createBooleanValue('false');
+    return value ? createBooleanProperty('true') : createBooleanProperty('false');
   }
   if (value === '1') {
-    return createBooleanValue(true);
+    return createBooleanProperty(true);
   }
   if (value === '0') {
-    return createBooleanValue(false);
+    return createBooleanProperty(false);
   }
   if (value.toLowerCase() === 'true') {
-    const text = value;
     return {
-      kind: SyntaxKind.BooleanLiteral,
+      constant: false,
       type: 'string',
+      fullName: '',
+      name: '',
+      size: 1,
       value: '1',
-      text,
-      bool: true,
     };
   }
   if (value.toLowerCase() === 'false') {
-    const text = value;
     return {
-      kind: SyntaxKind.BooleanLiteral,
+      constant: false,
       type: 'string',
+      fullName: '',
+      name: '',
+      size: 1,
       value: '0',
-      text,
-      bool: false,
     };
   }
-  return createBooleanValue(false);
+  return createBooleanProperty(false);
 };
 
-export const toNumberValue = (value: EvaluatedValue): NumberValue | undefined => {
-  if (!value) {
-    return undefined;
-  }
-  if (!('kind' in value)) {
-    return undefined;
-  }
-  switch (value.kind) {
-    case SyntaxKind.StringLiteral:
-    case SyntaxKind.BooleanLiteral: {
-      const num = Number(value.value);
+export const toNumberByProperty = (evaluated: EvaluatedValue): number | undefined => {
+  switch (evaluated?.type) {
+    case 'string':
+    case 'integer':
+    case 'float': {
+      const num = Number(evaluated.value);
       if (isNaN(num)) {
         return undefined;
       }
-      return createNumberValue(num);
+      return num;
     }
-    case SyntaxKind.NumberLiteral: return value;
     default: break;
   }
 
   return undefined;
 };
 
-export const calc = (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: (a: number, b: number) => number): NumberValue | StringValue => {
-  const left = toNumberValue(leftValue);
-  const right = toNumberValue(rightValue);
+export const calc = (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: (a: number, b: number) => number): PrimitiveProperty => {
+  const left = toNumberByProperty(leftValue);
+  const right = toNumberByProperty(rightValue);
 
-  if (left?.kind === SyntaxKind.NumberLiteral && right?.kind === SyntaxKind.NumberLiteral) {
-    const calcedNumber = callback(left.value, right.value);
-    return createNumberValue(calcedNumber);
+  if (left && right) {
+    const calcedNumber = callback(left, right);
+    return createNumberProperty(calcedNumber);
   }
 
-  return createStringValue('');
+  return createStringProperty('');
 };

@@ -8,7 +8,7 @@ import EventEmitter from 'events';
 import { createDefaultDebugConfig } from '../../../src/client/config/default';
 import { utf8BomText } from '../../../src/tools/utils/checkUtf8WithBom';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../../src/tools/autohotkey';
-import { createBooleanValue, createNumberValue, createStringValue } from '../../../src/tools/AELL/utils';
+import { createBooleanProperty, createNumberProperty, createStringProperty } from '../../../src/tools/AELL/utils';
 
 describe('evaluator', () => {
   let evaluator: AELLEvaluator;
@@ -44,26 +44,26 @@ describe('evaluator', () => {
 
   test.each`
     text          | expected
-    ${'"foo"'}    | ${createStringValue('foo')}
-    ${'123'}      | ${createNumberValue(123)}
-    ${'123.456'}  | ${createNumberValue(123.456)}
-    ${'true'}     | ${createBooleanValue('true')}
-    ${'false'}    | ${createBooleanValue('false')}
+    ${'"foo"'}    | ${createStringProperty('foo')}
+    ${'123'}      | ${createNumberProperty(123)}
+    ${'123.456'}  | ${createNumberProperty(123.456)}
+    ${'true'}     | ${createBooleanProperty('true')}
+    ${'false'}    | ${createBooleanProperty('false')}
   `('Primitive', async({ text, expected }) => {
     expect(await evaluator.eval(String(text))).toEqual(expected);
   });
 
   test.each`
-    text          | expected
-    ${'-1'}    | ${createNumberValue(-1)}
+    text       | expected
+    ${'-1'}    | ${createNumberProperty(-1)}
   `('UnaryExpression', async({ text, expected }) => {
     expect(await evaluator.eval(String(text))).toEqual(expected);
   });
 
   test.each`
     text          | expected
-    ${'1 + 1'}    | ${createNumberValue(1 + 1)}
-    ${'-1 + -1'}  | ${createNumberValue(-1 + -1)}
+    ${'1 + 1'}    | ${createNumberProperty(1 + 1)}
+    ${'-1 + -1'}  | ${createNumberProperty(-1 + -1)}
   `('BinaryExpression', async({ text, expected }) => {
     expect(await evaluator.eval(String(text))).toEqual(expected);
   });

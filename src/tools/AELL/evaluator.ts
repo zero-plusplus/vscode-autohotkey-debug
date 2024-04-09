@@ -1,8 +1,8 @@
-import { Property, Session, UnsetProperty } from '../../types/dbgp/session.types';
-import { AELLEvaluator, BooleanValue, EvaluatedValue, NumberValue, PrimitiveValue, StringValue } from '../../types/tools/AELL/evaluator.types';
+import { PrimitiveProperty, Property, Session, UnsetProperty } from '../../types/dbgp/session.types';
+import { AELLEvaluator, EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 import { BinaryExpression, BooleanLiteral, Expression, Identifier, NumberLiteral, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
 import { createAELLParser } from './parser';
-import { calc, createBooleanValue, createNumberValue, createStringValue, toNumberValue } from './utils';
+import { calc, createBooleanProperty, createNumberProperty, createStringProperty } from './utils';
 
 export const createEvaluator = (session: Session): AELLEvaluator => {
   const parser = createAELLParser(session.version);
@@ -40,24 +40,24 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
     }
     return unsetProperty!;
   }
-  async function evalStringLiteral(node: StringLiteral): Promise<StringValue> {
-    return Promise.resolve(createStringValue(node.value, node.text));
+  async function evalStringLiteral(node: StringLiteral): Promise<PrimitiveProperty> {
+    return Promise.resolve(createStringProperty(node.value));
   }
-  async function evalNumberLiteral(node: NumberLiteral): Promise<NumberValue> {
-    return Promise.resolve(createNumberValue(node.value));
+  async function evalNumberLiteral(node: NumberLiteral): Promise<PrimitiveProperty> {
+    return Promise.resolve(createNumberProperty(node.value));
   }
-  async function evalBooleanLiteral(node: BooleanLiteral): Promise<BooleanValue> {
-    return Promise.resolve(createBooleanValue(node.text));
+  async function evalBooleanLiteral(node: BooleanLiteral): Promise<PrimitiveProperty> {
+    return Promise.resolve(createBooleanProperty(node.text));
   }
-  async function evalUnaryExpression(node: UnaryExpression): Promise<PrimitiveValue> {
+  async function evalUnaryExpression(node: UnaryExpression): Promise<PrimitiveProperty> {
     switch (node.operator.kind) {
-      case SyntaxKind.PlusToken: return toNumberValue(await evalNode(node.operand)) ?? createStringValue('');
-      case SyntaxKind.MinusToken: return calc(createNumberValue(-1), toNumberValue(await evalNode(node.operand)), (a, b) => a * b);
+      case SyntaxKind.PlusToken: return calc(await evalNode(node.operand), undefined, (a) => a);
+      case SyntaxKind.MinusToken: return calc(createNumberProperty(-1), await evalNode(node.operand), (a, b) => a * b);
       default: break;
     }
-    return createStringValue('');
+    return createStringProperty('');
   }
-  async function evalBinaryExpression(node: BinaryExpression): Promise<PrimitiveValue> {
+  async function evalBinaryExpression(node: BinaryExpression): Promise<PrimitiveProperty> {
     const leftValue = await evalNode(node.left);
     const operator = node.operator;
     const rightValue = await evalNode(node.right);
@@ -65,7 +65,7 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
       case '+': return calc(leftValue, rightValue, (a, b) => a + b);
       default: break;
     }
-    return createStringValue('');
+    return createStringProperty('');
   }
 };
 
