@@ -53,6 +53,8 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
     switch (node.operator.kind) {
       case SyntaxKind.PlusToken: return calc(createNumberProperty(1), await evalNode(node.operand), (a, b) => a * b);
       case SyntaxKind.MinusToken: return calc(createNumberProperty(-1), await evalNode(node.operand), (a, b) => a * b);
+      // eslint-disable-next-line no-bitwise
+      case SyntaxKind.TildeToken: return calc(createNumberProperty(0), await evalNode(node.operand), (_, b) => ~b);
       case SyntaxKind.ExclamationToken: return invertBoolean(toBooleanByProperty(await evalNode(node.operand)));
       default: break;
     }

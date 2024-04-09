@@ -101,7 +101,7 @@ export const calc = (leftValue: EvaluatedValue, rightValue: EvaluatedValue, call
   const left = toNumberByProperty(leftValue);
   const right = toNumberByProperty(rightValue);
 
-  if (left && right) {
+  if (typeof left === 'number' && typeof right === 'number') {
     const calcedNumber = callback(left, right);
     return createNumberProperty(calcedNumber);
   }

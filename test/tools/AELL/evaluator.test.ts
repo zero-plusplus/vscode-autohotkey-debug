@@ -63,6 +63,7 @@ describe('evaluator', () => {
       ${'!!"abc"'}  | ${createBooleanProperty(true)}
       ${'!!"1"'}    | ${createBooleanProperty(true)}
       ${'!!"0"'}    | ${createBooleanProperty(false)}
+      ${'~"0"'}     | ${createNumberProperty(-1)}
     `('UnaryExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toEqual(expected);
     });
