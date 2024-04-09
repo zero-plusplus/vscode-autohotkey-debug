@@ -1,8 +1,8 @@
 import { Session } from '../../types/dbgp/session.types';
 import { AELLEvaluator, BooleanValue, EvaluatedValue, NumberValue, PrimitiveValue, StringValue } from '../../types/tools/AELL/evaluator.types';
-import { BinaryExpression, BooleanLiteral, NumberLiteral, StringLiteral, SyntaxKind, SyntaxNode } from '../../types/tools/autohotkey/parser/common.types';
+import { BinaryExpression, BooleanLiteral, Expression, NumberLiteral, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
 import { createAELLParser } from './parser';
-import { createNumberValue, createStringValue, toNumber } from './utils';
+import { calc, createBooleanValue, createNumberValue, createStringValue, toNumberValue } from './utils';
 
 export const createEvaluator = (session: Session): AELLEvaluator => {
   const parser = createAELLParser(session.version);
@@ -14,61 +14,43 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
     },
   };
 
-  async function evalNode(node: SyntaxNode): Promise<EvaluatedValue> {
+  async function evalNode(node: Expression): Promise<EvaluatedValue> {
     switch (node.kind) {
       case SyntaxKind.StringLiteral: return evalStringLiteral(node);
       case SyntaxKind.NumberLiteral: return evalNumberLiteral(node);
       case SyntaxKind.BooleanLiteral: return evalBooleanLiteral(node);
+      case SyntaxKind.UnaryExpression: return evalUnaryExpression(node);
       case SyntaxKind.BinaryExpression: return evalBinaryExpression(node);
       default: break;
     }
     return undefined;
   }
   async function evalStringLiteral(node: StringLiteral): Promise<StringValue> {
-    return Promise.resolve({
-      kind: node.kind,
-      type: 'string',
-      value: node.value,
-      text: node.text,
-    });
+    return Promise.resolve(createStringValue(node.value, node.text));
   }
   async function evalNumberLiteral(node: NumberLiteral): Promise<NumberValue> {
-    return Promise.resolve({
-      kind: node.kind,
-      type: node.text.includes('.') ? 'float' : 'integer',
-      value: Number(node.value),
-      text: node.text,
-    });
+    return Promise.resolve(createNumberValue(node.value));
   }
   async function evalBooleanLiteral(node: BooleanLiteral): Promise<BooleanValue> {
-    const bool = node.text.toLowerCase() === 'true';
-    return Promise.resolve({
-      kind: node.kind,
-      type: 'string',
-      value: bool ? '1' : '0',
-      bool,
-      text: node.text,
-    });
+    return Promise.resolve(createBooleanValue(node.text));
   }
-  async function evalBinaryExpression(node: BinaryExpression): Promise<PrimitiveValue> {
-    const operator = node.operator;
-    switch (operator.text) {
-      case '+': return calc((a, b) => a + b);
+  async function evalUnaryExpression(node: UnaryExpression): Promise<PrimitiveValue> {
+    switch (node.operator.kind) {
+      case SyntaxKind.PlusToken: return toNumberValue(await evalNode(node.operand)) ?? createStringValue('');
+      case SyntaxKind.MinusToken: return calc(createNumberValue(-1), toNumberValue(await evalNode(node.operand)), (a, b) => a * b);
       default: break;
     }
     return createStringValue('');
-
-    async function calc(callback: (a: number, b: number) => number): Promise<NumberValue | StringValue> {
-      const left = toNumber(await evalNode(node.left));
-      const right = toNumber(await evalNode(node.right));
-
-      if (left?.kind === SyntaxKind.NumberLiteral && right?.kind === SyntaxKind.NumberLiteral) {
-        const calcedNumber = callback(left.value, right.value);
-        return createNumberValue(calcedNumber);
-      }
-
-      return createStringValue('');
+  }
+  async function evalBinaryExpression(node: BinaryExpression): Promise<PrimitiveValue> {
+    const leftValue = await evalNode(node.left);
+    const operator = node.operator;
+    const rightValue = await evalNode(node.right);
+    switch (operator.text) {
+      case '+': return calc(leftValue, rightValue, (a, b) => a + b);
+      default: break;
     }
+    return createStringValue('');
   }
 };
 

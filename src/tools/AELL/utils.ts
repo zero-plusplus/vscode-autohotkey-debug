@@ -1,7 +1,8 @@
 import { BooleanValue, EvaluatedValue, NumberValue, StringValue } from '../../types/tools/AELL/evaluator.types';
 import { SyntaxKind } from '../../types/tools/autohotkey/parser/common.types';
 
-export const createStringValue = (value: string, quote = '"'): StringValue => {
+export const createStringValue = (value: string, quoteOrText = '"'): StringValue => {
+  const quote = [ `"`, `'` ].includes(quoteOrText.charAt(0)) ? quoteOrText.charAt(0) : '"';
   return {
     kind: SyntaxKind.StringLiteral,
     type: 'string',
@@ -56,7 +57,7 @@ export const createBooleanValue = (value: string | boolean): BooleanValue => {
   return createBooleanValue(false);
 };
 
-export const toNumber = (value: EvaluatedValue): NumberValue | undefined => {
+export const toNumberValue = (value: EvaluatedValue): NumberValue | undefined => {
   if (!value) {
     return undefined;
   }
@@ -77,4 +78,16 @@ export const toNumber = (value: EvaluatedValue): NumberValue | undefined => {
   }
 
   return undefined;
+};
+
+export const calc = (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: (a: number, b: number) => number): NumberValue | StringValue => {
+  const left = toNumberValue(leftValue);
+  const right = toNumberValue(rightValue);
+
+  if (left?.kind === SyntaxKind.NumberLiteral && right?.kind === SyntaxKind.NumberLiteral) {
+    const calcedNumber = callback(left.value, right.value);
+    return createNumberValue(calcedNumber);
+  }
+
+  return createStringValue('');
 };

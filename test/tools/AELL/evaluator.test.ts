@@ -55,7 +55,15 @@ describe('evaluator', () => {
 
   test.each`
     text          | expected
+    ${'-1'}    | ${createNumberValue(-1)}
+  `('UnaryExpression', async({ text, expected }) => {
+    expect(await evaluator.eval(String(text))).toEqual(expected);
+  });
+
+  test.each`
+    text          | expected
     ${'1 + 1'}    | ${createNumberValue(1 + 1)}
+    ${'-1 + -1'}  | ${createNumberValue(-1 + -1)}
   `('BinaryExpression', async({ text, expected }) => {
     expect(await evaluator.eval(String(text))).toEqual(expected);
   });

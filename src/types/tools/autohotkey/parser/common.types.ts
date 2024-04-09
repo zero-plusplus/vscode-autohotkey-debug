@@ -223,6 +223,9 @@ export interface Token<Kind extends SyntaxKind> extends Syntax {
 export type Bom = Token<SyntaxKind.Bom>;
 export type OperatorToken =
   | Token<SyntaxKind.ColonEqualsToken>;
+export type UnaryOperatorToken =
+  | Token<SyntaxKind.PlusToken>
+  | Token<SyntaxKind.MinusToken>;
 // #endregion token
 
 // #region statement
@@ -261,6 +264,7 @@ export type Expression =
   | StringLiteral
   | NumberLiteral
   | BooleanLiteral
+  | UnaryExpression
   | BinaryExpression;
 export interface Primitive extends Syntax {
   kind: SyntaxKind;
@@ -275,6 +279,11 @@ export interface NumberLiteral extends Primitive {
 }
 export interface BooleanLiteral extends Primitive {
   kind: SyntaxKind.BooleanLiteral;
+}
+export interface UnaryExpression extends Syntax {
+  kind: SyntaxKind.UnaryExpression;
+  operator: UnaryOperatorToken;
+  operand: Expression;
 }
 export interface BinaryExpression extends Syntax {
   kind: SyntaxKind.BinaryExpression;
