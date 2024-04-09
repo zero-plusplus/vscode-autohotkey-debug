@@ -1,4 +1,4 @@
-import { PrimitiveProperty } from '../../types/dbgp/session.types';
+import { PrimitiveProperty, Property } from '../../types/dbgp/session.types';
 import { EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 
 export const createStringProperty = (value: string): PrimitiveProperty => {
@@ -60,12 +60,12 @@ export const createBooleanProperty = (value: string | boolean): PrimitivePropert
   return createBooleanProperty(false);
 };
 
-export const toNumberByProperty = (evaluated: EvaluatedValue): number | undefined => {
-  switch (evaluated?.type) {
+export const toNumberByProperty = (property: Property | undefined): number | undefined => {
+  switch (property?.type) {
     case 'string':
     case 'integer':
     case 'float': {
-      const num = Number(evaluated.value);
+      const num = Number(property.value);
       if (isNaN(num)) {
         return undefined;
       }
@@ -75,6 +75,26 @@ export const toNumberByProperty = (evaluated: EvaluatedValue): number | undefine
   }
 
   return undefined;
+};
+export const toBooleanByProperty = (property: Property | undefined): PrimitiveProperty => {
+  if (!property) {
+    return createBooleanProperty(false);
+  }
+  if (property.type === 'undefined') {
+    return createBooleanProperty(false);
+  }
+  if (property.type === 'string' && (property.value === '' || property.value === '0')) {
+    return createBooleanProperty(false);
+  }
+  if ((property.type === 'integer' || property.type === 'float') && Number(property.value) === 0) {
+    return createBooleanProperty(false);
+  }
+  return createBooleanProperty(true);
+};
+export const invertBoolean = (property: Property | undefined): PrimitiveProperty => {
+  const bool = toBooleanByProperty(property);
+  bool.value = bool.value === '1' ? '0' : '1';
+  return bool;
 };
 
 export const calc = (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: (a: number, b: number) => number): PrimitiveProperty => {

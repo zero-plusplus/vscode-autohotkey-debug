@@ -2,7 +2,7 @@ import { PrimitiveProperty, Property, Session, UnsetProperty } from '../../types
 import { AELLEvaluator, EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 import { BinaryExpression, BooleanLiteral, Expression, Identifier, NumberLiteral, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
 import { createAELLParser } from './parser';
-import { calc, createBooleanProperty, createNumberProperty, createStringProperty } from './utils';
+import { calc, createBooleanProperty, createNumberProperty, createStringProperty, invertBoolean, toBooleanByProperty } from './utils';
 
 export const createEvaluator = (session: Session): AELLEvaluator => {
   const parser = createAELLParser(session.version);
@@ -51,8 +51,9 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
   }
   async function evalUnaryExpression(node: UnaryExpression): Promise<PrimitiveProperty> {
     switch (node.operator.kind) {
-      case SyntaxKind.PlusToken: return calc(await evalNode(node.operand), undefined, (a) => a);
+      case SyntaxKind.PlusToken: return calc(createNumberProperty(1), await evalNode(node.operand), (a, b) => a * b);
       case SyntaxKind.MinusToken: return calc(createNumberProperty(-1), await evalNode(node.operand), (a, b) => a * b);
+      case SyntaxKind.ExclamationToken: return invertBoolean(toBooleanByProperty(await evalNode(node.operand)));
       default: break;
     }
     return createStringProperty('');

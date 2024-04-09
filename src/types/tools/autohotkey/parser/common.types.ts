@@ -227,7 +227,8 @@ export type OperatorToken =
   | Token<SyntaxKind.ColonEqualsToken>;
 export type UnaryOperatorToken =
   | Token<SyntaxKind.PlusToken>
-  | Token<SyntaxKind.MinusToken>;
+  | Token<SyntaxKind.MinusToken>
+  | Token<SyntaxKind.ExclamationToken>;
 // #endregion token
 
 // #region statement
