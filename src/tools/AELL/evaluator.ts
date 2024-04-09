@@ -1,6 +1,6 @@
-import { Session } from '../../types/dbgp/session.types';
+import { Property, Session, UnsetProperty } from '../../types/dbgp/session.types';
 import { AELLEvaluator, BooleanValue, EvaluatedValue, NumberValue, PrimitiveValue, StringValue } from '../../types/tools/AELL/evaluator.types';
-import { BinaryExpression, BooleanLiteral, Expression, NumberLiteral, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
+import { BinaryExpression, BooleanLiteral, Expression, Identifier, NumberLiteral, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
 import { createAELLParser } from './parser';
 import { calc, createBooleanValue, createNumberValue, createStringValue, toNumberValue } from './utils';
 
@@ -16,6 +16,7 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
 
   async function evalNode(node: Expression): Promise<EvaluatedValue> {
     switch (node.kind) {
+      case SyntaxKind.Identifier: return evalIdentifier(node);
       case SyntaxKind.StringLiteral: return evalStringLiteral(node);
       case SyntaxKind.NumberLiteral: return evalNumberLiteral(node);
       case SyntaxKind.BooleanLiteral: return evalBooleanLiteral(node);
@@ -24,6 +25,20 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
       default: break;
     }
     return undefined;
+  }
+  async function evalIdentifier(node: Identifier): Promise<Property> {
+    const contexts = await session.getContexts();
+
+    let unsetProperty: UnsetProperty;
+    for await (const context of contexts) {
+      const property = await session.getProperty(context.id, node.text);
+      if (property.type === 'undefined') {
+        unsetProperty = property;
+        continue;
+      }
+      return property;
+    }
+    return unsetProperty!;
   }
   async function evalStringLiteral(node: StringLiteral): Promise<StringValue> {
     return Promise.resolve(createStringValue(node.value, node.text));

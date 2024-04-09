@@ -52,12 +52,16 @@ export const contextNameById: Record<number, ContextName> = {
   [dbgp.ContextId.Global]: 'Global',
   [dbgp.ContextId.Static]: 'Static',
 };
-export type Property = PrimitiveProperty | ObjectProperty;
+export type Property = UnsetProperty | PrimitiveProperty | ObjectProperty;
 export interface PropertyBase {
   name: string;
   fullName: string;
   size: number;
   type: dbgp.DataType;
+}
+export interface UnsetProperty extends PropertyBase {
+  type: dbgp.UnsetDataType;
+  value: '';
 }
 export interface PrimitiveProperty extends PropertyBase {
   type: dbgp.PrimitiveDataType;

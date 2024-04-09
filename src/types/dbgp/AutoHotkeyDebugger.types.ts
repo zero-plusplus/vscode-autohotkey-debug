@@ -179,9 +179,10 @@ export interface Context {
 // #endregion Context
 
 // #region TypeMap
+export type UnsetDataType = 'undefined';
 export type PrimitiveDataType = 'string' | 'integer' | 'float';
 export type ObjectDataType = 'object';
-export type DataType = PrimitiveDataType | ObjectDataType;
+export type DataType = PrimitiveDataType | ObjectDataType | UnsetDataType;
 export interface TypeMap {
   name: PrimitiveDataType;
   type: DataType;

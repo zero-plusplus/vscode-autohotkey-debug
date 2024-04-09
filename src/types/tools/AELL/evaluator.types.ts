@@ -4,20 +4,24 @@ import { SyntaxKind } from '../autohotkey/parser/common.types';
 
 export type EvalFunc<Result> = (node: Node) => Result;
 export type EvaluatedValue =
-  | StringValue
-  | NumberValue
-  | BooleanValue
+  | PrimitiveValue
   | Property
   | undefined;
 
 export type PrimitiveValue =
+  | UnsetValue
   | StringValue
   | NumberValue
   | BooleanValue;
+
 export interface PrimitiveValueBase {
   kind: SyntaxKind;
   type: dbgp.PrimitiveDataType;
   text: string;
+}
+export interface UnsetValue {
+  kind: SyntaxKind.UnsetKeyword;
+  type: 'undefined';
 }
 export interface StringValue extends PrimitiveValueBase {
   kind: SyntaxKind.StringLiteral;

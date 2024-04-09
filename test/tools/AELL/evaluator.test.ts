@@ -67,4 +67,18 @@ describe('evaluator', () => {
   `('BinaryExpression', async({ text, expected }) => {
     expect(await evaluator.eval(String(text))).toEqual(expected);
   });
+
+  test('UnsetProperty', async() => {
+    expect(await evaluator.eval('unknown')).toEqual({ constant: false, fullName: 'unknown', name: 'unknown', size: 0, type: 'undefined', value: '' });
+  });
+
+  test.each`
+    text          | expected
+    ${'str'}      | ${{ constant: false, fullName: 'str', name: 'str', size: 3, type: 'string', value: 'foo' }}
+    ${'int'}      | ${{ constant: false, fullName: 'int', name: 'int', size: 3, type: 'integer', value: '123' }}
+    ${'float'}    | ${{ constant: false, fullName: 'float', name: 'float', size: 7, type: 'string', value: '123.456' }}
+    ${'bool'}     | ${{ constant: false, fullName: 'bool', name: 'bool', size: 1, type: 'string', value: '1' }}
+  `('Identifier (Primitive)', async({ text, expected }) => {
+    expect(await evaluator.eval(String(text))).toEqual(expected);
+  });
 });

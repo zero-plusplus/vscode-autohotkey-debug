@@ -1,6 +1,9 @@
-import { BooleanValue, EvaluatedValue, NumberValue, StringValue } from '../../types/tools/AELL/evaluator.types';
+import { BooleanValue, EvaluatedValue, NumberValue, StringValue, UnsetValue } from '../../types/tools/AELL/evaluator.types';
 import { SyntaxKind } from '../../types/tools/autohotkey/parser/common.types';
 
+export const createUnsetValue = (): UnsetValue => {
+  return { kind: SyntaxKind.UnsetKeyword, type: 'undefined' };
+};
 export const createStringValue = (value: string, quoteOrText = '"'): StringValue => {
   const quote = [ `"`, `'` ].includes(quoteOrText.charAt(0)) ? quoteOrText.charAt(0) : '"';
   return {

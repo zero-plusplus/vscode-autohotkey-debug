@@ -45,6 +45,8 @@ export enum SyntaxKind {
   NumberLiteral = 'NumberLiteral',
   BooleanLiteral = 'BooleanLiteral',
   RawString = 'RawString',
+  ObjectLiteral = 'ObjectLiteral',
+  ArrayLiteral = 'ArrayLiteral',
   LegacyExpression = 'LegacyExpression',
   DereferenceExpression = 'DereferenceExpression',
   NameSubstitutionExpression = 'NameSubstitutionExpression',
