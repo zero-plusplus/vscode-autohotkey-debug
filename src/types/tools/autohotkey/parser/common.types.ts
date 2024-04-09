@@ -257,6 +257,7 @@ export interface FunctionDeclaration extends Syntax {
 
 // #region expression
 export type Expression =
+  | Identifier
   | StringLiteral
   | NumberLiteral
   | BooleanLiteral
@@ -277,8 +278,8 @@ export interface BooleanLiteral extends Primitive {
 }
 export interface BinaryExpression extends Syntax {
   kind: SyntaxKind.BinaryExpression;
-  left: SyntaxElement;
+  left: Expression;
   operator: OperatorToken;
-  right: SyntaxElement;
+  right: Expression;
 }
 // #endregion expression

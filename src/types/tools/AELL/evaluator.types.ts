@@ -12,7 +12,8 @@ export type EvaluatedValue =
 
 export type PrimitiveValue =
   | StringValue
-  | NumberValue;
+  | NumberValue
+  | BooleanValue;
 export interface PrimitiveValueBase {
   kind: SyntaxKind;
   type: dbgp.PrimitiveDataType;

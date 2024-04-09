@@ -8,7 +8,7 @@ import EventEmitter from 'events';
 import { createDefaultDebugConfig } from '../../../src/client/config/default';
 import { utf8BomText } from '../../../src/tools/utils/checkUtf8WithBom';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../../src/tools/autohotkey';
-import { SyntaxKind } from '../../../src/types/tools/autohotkey/parser/common.types';
+import { createBooleanValue, createNumberValue, createStringValue } from '../../../src/tools/AELL/utils';
 
 describe('evaluator', () => {
   let evaluator: AELLEvaluator;
@@ -44,12 +44,19 @@ describe('evaluator', () => {
 
   test.each`
     text          | expected
-    ${'"foo"'}    | ${{ kind: SyntaxKind.StringLiteral, type: 'string', value: 'foo', text: '"foo"' }}
-    ${'123'}      | ${{ kind: SyntaxKind.NumberLiteral, type: 'integer', value: 123, text: '123' }}
-    ${'123.456'}  | ${{ kind: SyntaxKind.NumberLiteral, type: 'float', value: 123.456, text: '123.456' }}
-    ${'true'}     | ${{ kind: SyntaxKind.BooleanLiteral, type: 'string', value: '1', text: 'true', bool: true }}
-    ${'false'}    | ${{ kind: SyntaxKind.BooleanLiteral, type: 'string', value: '0', text: 'false', bool: false }}
+    ${'"foo"'}    | ${createStringValue('foo')}
+    ${'123'}      | ${createNumberValue(123)}
+    ${'123.456'}  | ${createNumberValue(123.456)}
+    ${'true'}     | ${createBooleanValue('true')}
+    ${'false'}    | ${createBooleanValue('false')}
   `('Primitive', async({ text, expected }) => {
+    expect(await evaluator.eval(String(text))).toEqual(expected);
+  });
+
+  test.each`
+    text          | expected
+    ${'1 + 1'}    | ${createNumberValue(1 + 1)}
+  `('BinaryExpression', async({ text, expected }) => {
     expect(await evaluator.eval(String(text))).toEqual(expected);
   });
 });
