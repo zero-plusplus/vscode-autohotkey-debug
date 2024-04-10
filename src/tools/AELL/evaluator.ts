@@ -101,6 +101,7 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
         case '+': return calc(leftValue, rightValue, (a, b) => a + b);
         case '-': return calc(leftValue, rightValue, (a, b) => a - b);
         case '*': return calc(leftValue, rightValue, (a, b) => a * b);
+        case '**': return calc(leftValue, rightValue, (a, b) => a ** b);
         case '/': return calc(leftValue, rightValue, (a, b) => a / b);
         case '//': return calc(leftValue, rightValue, (a, b) => {
           const containsFloat = isFloat(a) || isFloat(b);
