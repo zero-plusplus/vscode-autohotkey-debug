@@ -50,8 +50,6 @@ export enum SyntaxKind {
   LegacyExpression = 'LegacyExpression',
   DereferenceExpression = 'DereferenceExpression',
   NameSubstitutionExpression = 'NameSubstitutionExpression',
-  PrefixUnaryExpression = 'PrefixUnaryExpression',
-  PostfixUnaryExpression = 'PostfixUnaryExpression',
   BinaryExpression = 'BinaryExpression',
   AssignExpression = 'AssignExpression',
   CallExpression = 'CallExpression',
@@ -59,8 +57,8 @@ export enum SyntaxKind {
   ElementAccessExpression = 'ElementAccessExpression',
   DereferencePropertyAccessExpression = 'DereferencePropertyAccessExpression',
   UnaryExpression = 'UnaryExpression',
-  PreFixUnaryExpression = 'PreFixUnaryExpression',
-  PostFixUnaryExpression = 'PostFixUnaryExpression',
+  PrefixUnaryExpression = 'PrefixUnaryExpression',
+  PostfixUnaryExpression = 'PostfixUnaryExpression',
   TernaryExpression = 'TernaryExpression',
   // #endregion expression
 
@@ -269,6 +267,8 @@ export type Expression =
   | NumberLiteral
   | BooleanLiteral
   | UnaryExpression
+  | PrefixUnaryExpression
+  | PostfixUnaryExpression
   | BinaryExpression;
 export interface Primitive extends Syntax {
   kind: SyntaxKind;

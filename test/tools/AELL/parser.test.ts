@@ -43,10 +43,10 @@ xdescribe('parser', () => {
       ${'~a'}            | ${SyntaxKind.UnaryExpression}            | ${'~'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
       ${'*a'}            | ${SyntaxKind.UnaryExpression}            | ${'*'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
       ${'^a'}            | ${SyntaxKind.UnaryExpression}            | ${'^'}           | ${{ kind: SyntaxKind.Identifier, value: 'a' }}
-      ${'++1'}           | ${SyntaxKind.PreFixUnaryExpression}      | ${'++'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
-      ${'--1'}           | ${SyntaxKind.PreFixUnaryExpression}      | ${'--'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
-      ${'1++'}           | ${SyntaxKind.PostFixUnaryExpression}     | ${'++'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
-      ${'1--'}           | ${SyntaxKind.PostFixUnaryExpression}     | ${'--'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
+      ${'++1'}           | ${SyntaxKind.PrefixUnaryExpression}      | ${'++'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
+      ${'--1'}           | ${SyntaxKind.PrefixUnaryExpression}      | ${'--'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
+      ${'1++'}           | ${SyntaxKind.PostfixUnaryExpression}     | ${'++'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
+      ${'1--'}           | ${SyntaxKind.PostfixUnaryExpression}     | ${'--'}          | ${{ kind: SyntaxKind.NumberLiteral, value: 1 }}
     `('unary expression', ({ text, expectedKind, expectedOperator, expectedOperand }) => {
       const ast = parseAELL(String(text));
       expect(ast.kind).toBe(expectedKind);
