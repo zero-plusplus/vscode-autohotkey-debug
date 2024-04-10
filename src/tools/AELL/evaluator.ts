@@ -146,6 +146,12 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
             return BigInt(a_64bit >> b_64bit).toString(10);
           });
         }
+        // eslint-disable-next-line no-bitwise
+        case '&': return calc(leftValue, rightValue, (a, b) => a & b);
+        // eslint-disable-next-line no-bitwise
+        case '^': return calc(leftValue, rightValue, (a, b) => a ^ b);
+        // eslint-disable-next-line no-bitwise
+        case '|': return calc(leftValue, rightValue, (a, b) => a | b);
         default: break;
       }
       return createStringProperty('');

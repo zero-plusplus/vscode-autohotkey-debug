@@ -105,6 +105,9 @@ describe('evaluator', () => {
       ${'2 << 2'}     | ${createNumberProperty(2 << 2)}
       ${'-3 >> 1'}    | ${createNumberProperty(-3 >> 1)}
       ${'-1 >>> 1'}   | ${createNumberProperty(9223372036854775807n)}
+      ${'1 & 1'}      | ${createNumberProperty(1 & 1)}
+      ${'1 ^ 1'}      | ${createNumberProperty(1 ^ 1)}
+      ${'1 | 1'}      | ${createNumberProperty(1 | 1)}
     `('BinaryExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toEqual(expected);
     });
