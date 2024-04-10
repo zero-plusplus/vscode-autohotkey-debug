@@ -54,6 +54,8 @@ export const contextNameById: Record<number, ContextName> = {
 };
 export type Property = UnsetProperty | PrimitiveProperty | ObjectProperty;
 export interface PropertyBase {
+  contextId: dbgp.ContextId | -1;
+  depth?: number;
   name: string;
   fullName: string;
   size: number;
@@ -77,8 +79,8 @@ export interface ObjectProperty extends PropertyBase {
   children: Property[];
 }
 export interface Context {
-  id: dbgp.ContextId;
-  name: ContextName;
+  id: dbgp.ContextId | -1;
+  name: ContextName | 'None';
   properties: Property[];
 }
 
@@ -117,6 +119,7 @@ export interface Session {
   getContext: (contextId: number, depth?: number) => Promise<Context>;
   getContexts: (depth?: number) => Promise<Context[]>;
   getProperty: (contextId: number, name: string, depth?: number) => Promise<Property>;
+  setProperty: (matcher: { contextId: number; name: string; value: string | number | boolean; type?: dbgp.DataType; depth?: number }) => Promise<Property>;
   // #endregion execuation context
   // #region breakpoint
   setExceptionBreakpoint: (enabled: boolean) => Promise<ExceptionBreakpoint>;

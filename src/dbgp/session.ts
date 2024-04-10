@@ -190,27 +190,44 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
                 return {
                   id: contextId,
                   name: contextNameById[contextId],
-                  properties: toProperties(response.property),
+                  properties: toProperties(response.property, contextId, depth),
                 };
               },
               async getContexts(depth?: number): Promise<Context[]> {
                 const contexts: Context[] = [];
                 const response = await sendCommand<dbgp.ContextNamesResponse>('context_names');
                 for await (const context of response.context) {
-                  contexts.push(await this.getContext(context.attributes.id, depth));
+                  contexts.push(await this.getContext(Number(context.attributes.id), depth));
                 }
                 return contexts;
               },
-              async getProperty(contextId: number, name: string, depth?: number): Promise<Property> {
+              async getProperty(contextId: dbgp.ContextId, name: string, depth?: number): Promise<Property> {
                 const response = await sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', depth ]);
                 if (response.error) {
                   throw new DbgpError(Number(response.error.attributes.code));
                 }
-
                 if (response.property.attributes.type === 'object') {
-                  return toObjectProperty(response.property as dbgp.ObjectProperty);
+                  return toObjectProperty(response.property as dbgp.ObjectProperty, contextId, depth);
                 }
-                return toPrimitiveProperty(response.property as dbgp.PrimitiveProperty);
+                return toPrimitiveProperty(response.property as dbgp.PrimitiveProperty, contextId, depth);
+              },
+              async setProperty({ contextId, name, value, type, depth }): Promise<Property> {
+                let propertyValue = String(value);
+                if (typeof value === 'boolean') {
+                  propertyValue = value ? '1' : '0';
+                }
+
+                let dataType = type;
+                if (dataType === undefined) {
+                  switch (typeof value) {
+                    case 'string':
+                    case 'boolean': dataType = 'string'; break;
+                    case 'number': dataType = String(value).includes('.') ? 'float' : 'integer'; break;
+                    default: break;
+                  }
+                }
+                await sendCommand('property_set', [ '-c', contextId, '-n', name, '-t', dataType ], propertyValue);
+                return this.getProperty(contextId, name, depth);
               },
               // #endregion execuation context
               // #region breakpoint
@@ -295,7 +312,7 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
     }
 
     // #region utils
-    function toProperties(dbgpProperty?: dbgp.Property | dbgp.Property[]): Property[] {
+    function toProperties(dbgpProperty: dbgp.Property | dbgp.Property[] | undefined, contextId: dbgp.ContextId, depth?: number): Property[] {
       if (!dbgpProperty) {
         return [];
       }
@@ -303,13 +320,15 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
       const rawProperties = Array.isArray(dbgpProperty) ? dbgpProperty : [ dbgpProperty ];
       return rawProperties.map((rawProperty) => {
         if (rawProperty.attributes.type === 'object') {
-          return toObjectProperty(rawProperty as dbgp.ObjectProperty);
+          return toObjectProperty(rawProperty as dbgp.ObjectProperty, contextId, depth);
         }
-        return toPrimitiveProperty(rawProperty as dbgp.PrimitiveProperty);
+        return toPrimitiveProperty(rawProperty as dbgp.PrimitiveProperty, contextId, depth);
       });
     }
-    function toPrimitiveProperty(rawProperty: dbgp.PrimitiveProperty): PrimitiveProperty {
+    function toPrimitiveProperty(rawProperty: dbgp.PrimitiveProperty, contextId: dbgp.ContextId, depth?: number): PrimitiveProperty {
       return {
+        contextId,
+        depth,
         name: rawProperty.attributes.name,
         fullName: rawProperty.attributes.fullname,
         constant: rawProperty.attributes.constant === '1',
@@ -318,15 +337,17 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
         value: Buffer.from(rawProperty.content ?? '', 'base64').toString(),
       };
     }
-    function toObjectProperty(rawProperty: dbgp.ObjectProperty): ObjectProperty {
+    function toObjectProperty(rawProperty: dbgp.ObjectProperty, contextId: dbgp.ContextId, depth?: number): ObjectProperty {
       return {
+        contextId,
+        depth,
         name: rawProperty.attributes.name,
         fullName: rawProperty.attributes.fullname,
         className: rawProperty.attributes.classname,
         facet: rawProperty.attributes.facet,
         address: Number(rawProperty.attributes.address),
         hasChildren: rawProperty.attributes.children === '1',
-        children: toProperties(rawProperty.property),
+        children: toProperties(rawProperty.property, contextId, depth),
         size: Number(rawProperty.attributes.size),
         type: 'object',
       };

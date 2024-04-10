@@ -8,7 +8,8 @@ import EventEmitter from 'events';
 import { createDefaultDebugConfig } from '../../../src/client/config/default';
 import { utf8BomText } from '../../../src/tools/utils/checkUtf8WithBom';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../../src/tools/autohotkey';
-import { createBooleanProperty, createNumberProperty, createStringProperty } from '../../../src/tools/AELL/utils';
+import { createBooleanProperty, createIdentifierProperty, createNumberProperty, createStringProperty } from '../../../src/tools/AELL/utils';
+import { ContextId } from '../../../src/types/dbgp/AutoHotkeyDebugger.types';
 
 describe('evaluator', () => {
   const text = [
@@ -16,6 +17,7 @@ describe('evaluator', () => {
     'return',
     '',
     'a() {',
+    '  count := 0',
     '  str := "foo"',
     '  int := 123',
     '  float := 123.456',
@@ -34,7 +36,7 @@ describe('evaluator', () => {
       testFile = await createTempDirectoryWithFile('evaluator-v1', '.ahk', `${utf8BomText}${text}`);
       const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1 });
       runtime = await launcher.launch();
-      await runtime.session.setLineBreakpoint(testFile.path, 11);
+      await runtime.session.setLineBreakpoint(testFile.path, 12);
       await runtime.session.exec('run');
       evaluator = createEvaluator(runtime.session);
     });
@@ -70,6 +72,18 @@ describe('evaluator', () => {
 
     test.each`
       text          | expected
+      ${'count'}    | ${createIdentifierProperty('count', createNumberProperty(0, ContextId.Local))}
+      ${'++count'}  | ${createIdentifierProperty('count', createNumberProperty(1, ContextId.Local))}
+      ${'count++'}  | ${createIdentifierProperty('count', createNumberProperty(1, ContextId.Local))}
+      ${'--count'}  | ${createIdentifierProperty('count', createNumberProperty(1, ContextId.Local))}
+      ${'count--'}  | ${createIdentifierProperty('count', createNumberProperty(1, ContextId.Local))}
+      ${'count'}    | ${createIdentifierProperty('count', createNumberProperty(0, ContextId.Local))}
+      `('Increment / Decrement', async({ text, expected }) => {
+      expect(await evaluator.eval(String(text))).toEqual(expected);
+    });
+
+    test.each`
+      text          | expected
       ${'1 + 1'}    | ${createNumberProperty(1 + 1)}
       ${'-1 + -1'}  | ${createNumberProperty(-1 + -1)}
     `('BinaryExpression', async({ text, expected }) => {
@@ -77,7 +91,7 @@ describe('evaluator', () => {
     });
 
     test('UnsetProperty', async() => {
-      expect(await evaluator.eval('unknown')).toEqual({ constant: false, fullName: 'unknown', name: 'unknown', size: 0, type: 'undefined', value: '' });
+      expect(await evaluator.eval('unknown')).toEqual({ contextId: ContextId.Global, constant: false, fullName: 'unknown', name: 'unknown', size: 0, type: 'undefined', value: '' });
     });
 
     test.each`

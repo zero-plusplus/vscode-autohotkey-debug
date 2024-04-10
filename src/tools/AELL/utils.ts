@@ -1,8 +1,11 @@
 import { PrimitiveProperty, Property } from '../../types/dbgp/session.types';
 import { EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
+import { CalcCallback } from '../../types/tools/AELL/utils.types';
 
-export const createStringProperty = (value: string): PrimitiveProperty => {
+export const createStringProperty = (value: string, contextId = -1, depth?: number): PrimitiveProperty => {
   return {
+    contextId,
+    depth,
     constant: false,
     fullName: '',
     name: '',
@@ -11,14 +14,16 @@ export const createStringProperty = (value: string): PrimitiveProperty => {
     value,
   };
 };
-export const createNumberProperty = (value: string | number): PrimitiveProperty => {
+export const createNumberProperty = (value: string | number, contextId = -1, depth?: number): PrimitiveProperty => {
   const numValue = Number(value);
   if (isNaN(numValue)) {
-    return createNumberProperty(0);
+    return createNumberProperty(0, contextId, depth);
   }
 
   const propertyValue = String(value);
   return {
+    contextId,
+    depth,
     constant: false,
     fullName: '',
     name: '',
@@ -27,18 +32,20 @@ export const createNumberProperty = (value: string | number): PrimitiveProperty 
     type: propertyValue.includes('.') ? 'float' : 'integer',
   };
 };
-export const createBooleanProperty = (value: string | boolean): PrimitiveProperty => {
+export const createBooleanProperty = (value: string | boolean, contextId = -1, depth?: number): PrimitiveProperty => {
   if (typeof value === 'boolean') {
-    return value ? createBooleanProperty('true') : createBooleanProperty('false');
+    return value ? createBooleanProperty('true', contextId, depth) : createBooleanProperty('false', contextId, depth);
   }
   if (value === '1') {
-    return createBooleanProperty(true);
+    return createBooleanProperty(true, contextId, depth);
   }
   if (value === '0') {
-    return createBooleanProperty(false);
+    return createBooleanProperty(false, contextId, depth);
   }
   if (value.toLowerCase() === 'true') {
     return {
+      contextId,
+      depth,
       constant: false,
       type: 'string',
       fullName: '',
@@ -49,6 +56,8 @@ export const createBooleanProperty = (value: string | boolean): PrimitivePropert
   }
   if (value.toLowerCase() === 'false') {
     return {
+      contextId,
+      depth,
       constant: false,
       type: 'string',
       fullName: '',
@@ -57,8 +66,16 @@ export const createBooleanProperty = (value: string | boolean): PrimitivePropert
       value: '0',
     };
   }
-  return createBooleanProperty(false);
+  return createBooleanProperty(false, contextId, depth);
 };
+export const createIdentifierProperty = <T extends Property>(name: string, property: T): T => {
+  return {
+    ...property,
+    fullName: name,
+    name,
+  };
+};
+
 
 export const toNumberByProperty = (property: Property | undefined): number | undefined => {
   switch (property?.type) {
@@ -76,33 +93,36 @@ export const toNumberByProperty = (property: Property | undefined): number | und
 
   return undefined;
 };
-export const toBooleanByProperty = (property: Property | undefined): PrimitiveProperty => {
+export const toBooleanPropertyByProperty = (property: Property | undefined): PrimitiveProperty => {
   if (!property) {
     return createBooleanProperty(false);
   }
   if (property.type === 'undefined') {
-    return createBooleanProperty(false);
+    return createBooleanProperty(false, property.contextId, property.depth);
   }
   if (property.type === 'string' && (property.value === '' || property.value === '0')) {
-    return createBooleanProperty(false);
+    return createBooleanProperty(false, property.contextId, property.depth);
   }
   if ((property.type === 'integer' || property.type === 'float') && Number(property.value) === 0) {
-    return createBooleanProperty(false);
+    return createBooleanProperty(false, property.contextId, property.depth);
   }
-  return createBooleanProperty(true);
+  return createBooleanProperty(true, property.contextId, property.depth);
 };
 export const invertBoolean = (property: Property | undefined): PrimitiveProperty => {
-  const bool = toBooleanByProperty(property);
+  const bool = toBooleanPropertyByProperty(property);
   bool.value = bool.value === '1' ? '0' : '1';
   return bool;
 };
 
-export const calc = (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: (a: number, b: number) => number): PrimitiveProperty => {
+export const calc = (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: CalcCallback): PrimitiveProperty => {
   const left = toNumberByProperty(leftValue);
   const right = toNumberByProperty(rightValue);
 
   if (typeof left === 'number' && typeof right === 'number') {
     const calcedNumber = callback(left, right);
+    if (calcedNumber === undefined) {
+      return createStringProperty('');
+    }
     return createNumberProperty(calcedNumber);
   }
 

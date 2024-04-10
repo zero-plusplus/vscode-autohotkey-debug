@@ -228,6 +228,12 @@ export type UnaryOperatorToken =
   | Token<SyntaxKind.MinusToken>
   | Token<SyntaxKind.ExclamationToken>
   | Token<SyntaxKind.TildeToken>;
+export type PrefixUnaryOperatorToken =
+  | Token<SyntaxKind.PlusPlusToken>
+  | Token<SyntaxKind.MinusMinusToken>;
+export type PostfixUnaryOperatorToken =
+  | Token<SyntaxKind.PlusPlusToken>
+  | Token<SyntaxKind.MinusMinusToken>;
 // #endregion token
 
 // #region statement
@@ -287,6 +293,16 @@ export interface BooleanLiteral extends Primitive {
 export interface UnaryExpression extends Syntax {
   kind: SyntaxKind.UnaryExpression;
   operator: UnaryOperatorToken;
+  operand: Expression;
+}
+export interface PrefixUnaryExpression extends Syntax {
+  kind: SyntaxKind.PrefixUnaryExpression;
+  operator: PrefixUnaryOperatorToken;
+  operand: Expression;
+}
+export interface PostfixUnaryExpression extends Syntax {
+  kind: SyntaxKind.PostfixUnaryExpression;
+  operator: PostfixUnaryOperatorToken;
   operand: Expression;
 }
 export interface BinaryExpression extends Syntax {
