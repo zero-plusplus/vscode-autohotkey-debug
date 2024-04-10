@@ -96,6 +96,7 @@ describe('evaluator', () => {
       ${'5.0 // 3'}   | ${createNumberProperty(1.0)}
       ${'5 // 3.0'}   | ${createNumberProperty(1.0)}
       ${'2 << 2'}     | ${createNumberProperty(2 << 2)}
+      ${'-3 >> 1'}    | ${createNumberProperty(-3 >> 1)}
     `('BinaryExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toEqual(expected);
     });

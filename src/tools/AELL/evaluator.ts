@@ -113,6 +113,8 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
         });
         // eslint-disable-next-line no-bitwise
         case '<<': return calc(leftValue, rightValue, (a, b) => a << b);
+        // eslint-disable-next-line no-bitwise
+        case '>>': return calc(leftValue, rightValue, (a, b) => a >> b);
         default: break;
       }
       return createStringProperty('');
