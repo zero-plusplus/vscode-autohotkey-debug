@@ -16,3 +16,7 @@ export const fileExists = (filePath: string): boolean => {
   }
   return false;
 };
+export const isFloat = (value: any): boolean => {
+  const num = Number(value);
+  return !Number.isInteger(num) && Number.isFinite(num);
+};

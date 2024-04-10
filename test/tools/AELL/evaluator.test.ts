@@ -88,6 +88,11 @@ describe('evaluator', () => {
       ${'-1 + -1'}    | ${createNumberProperty(-1 + -1)}
       ${'1 - 1'}      | ${createNumberProperty(1 - 1)}
       ${'1 * 2 + 3'}  | ${createNumberProperty((1 * 2) + 3)}
+      ${'1 / 2'}      | ${createNumberProperty(1 / 2)}
+      ${'5 // 3'}     | ${createNumberProperty(1)}
+      ${'5 // -3'}    | ${createNumberProperty(-1)}
+      ${'5.0 // 3'}   | ${createNumberProperty(1.0)}
+      ${'5 // 3.0'}   | ${createNumberProperty(1.0)}
     `('BinaryExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toEqual(expected);
     });

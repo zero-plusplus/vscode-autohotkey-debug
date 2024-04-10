@@ -2,6 +2,7 @@ import { PrimitiveProperty, Property, Session, UnsetProperty } from '../../types
 import { AELLEvaluator, EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 import { CalcCallback } from '../../types/tools/AELL/utils.types';
 import { BinaryExpression, BooleanLiteral, Expression, Identifier, NumberLiteral, PostfixUnaryExpression, PrefixUnaryExpression, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
+import { isFloat } from '../predicate';
 import { createAELLParser } from './parser';
 import { calc, createBooleanProperty, createNumberProperty, createStringProperty, invertBoolean, toBooleanPropertyByProperty } from './utils';
 
@@ -100,6 +101,15 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
         case '+': return calc(leftValue, rightValue, (a, b) => a + b);
         case '-': return calc(leftValue, rightValue, (a, b) => a - b);
         case '*': return calc(leftValue, rightValue, (a, b) => a * b);
+        case '/': return calc(leftValue, rightValue, (a, b) => a / b);
+        case '//': return calc(leftValue, rightValue, (a, b) => {
+          const containsFloat = isFloat(a) || isFloat(b);
+          const result = Math.trunc(a / b);
+          if (2 <= session.version.mejor && containsFloat) {
+            return undefined;
+          }
+          return containsFloat ? Number(result.toFixed(1)) : result;
+        });
         default: break;
       }
       return createStringProperty('');
