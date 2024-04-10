@@ -98,6 +98,7 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
       const rightValue = await evalNode(node.right);
       switch (operator.text) {
         case '+': return calc(leftValue, rightValue, (a, b) => a + b);
+        case '-': return calc(leftValue, rightValue, (a, b) => a - b);
         default: break;
       }
       return createStringProperty('');
