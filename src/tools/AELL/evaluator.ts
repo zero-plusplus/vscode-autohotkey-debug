@@ -99,6 +99,7 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
       switch (operator.text) {
         case '+': return calc(leftValue, rightValue, (a, b) => a + b);
         case '-': return calc(leftValue, rightValue, (a, b) => a - b);
+        case '*': return calc(leftValue, rightValue, (a, b) => a * b);
         default: break;
       }
       return createStringProperty('');

@@ -83,10 +83,11 @@ describe('evaluator', () => {
     });
 
     test.each`
-      text          | expected
-      ${'1 + 1'}    | ${createNumberProperty(1 + 1)}
-      ${'-1 + -1'}  | ${createNumberProperty(-1 + -1)}
-      ${'1 - 1'}    | ${createNumberProperty(1 - 1)}
+      text            | expected
+      ${'1 + 1'}      | ${createNumberProperty(1 + 1)}
+      ${'-1 + -1'}    | ${createNumberProperty(-1 + -1)}
+      ${'1 - 1'}      | ${createNumberProperty(1 - 1)}
+      ${'1 * 2 + 3'}  | ${createNumberProperty((1 * 2) + 3)}
     `('BinaryExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toEqual(expected);
     });
