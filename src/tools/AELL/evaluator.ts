@@ -111,6 +111,8 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
           }
           return containsFloat ? Number(result.toFixed(1)) : result;
         });
+        // eslint-disable-next-line no-bitwise
+        case '<<': return calc(leftValue, rightValue, (a, b) => a << b);
         default: break;
       }
       return createStringProperty('');
