@@ -9,7 +9,7 @@ import EventEmitter from 'events';
 import { createDefaultDebugConfig } from '../../../src/client/config/default';
 import { utf8BomText } from '../../../src/tools/utils/checkUtf8WithBom';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../../src/tools/autohotkey';
-import { createBooleanProperty, createIdentifierProperty, createNumberProperty, createStringProperty } from '../../../src/tools/AELL/utils';
+import { createAELLUtils } from '../../../src/tools/AELL/utils';
 import { ContextId } from '../../../src/types/dbgp/AutoHotkeyDebugger.types';
 
 describe('evaluator', () => {
@@ -33,6 +33,13 @@ describe('evaluator', () => {
     let evaluator: AELLEvaluator;
     let runtime: ScriptRuntime;
     let testFile: TemporaryResource;
+    const {
+      createBooleanProperty,
+      createIdentifierProperty,
+      createNumberProperty,
+      createStringProperty,
+    } = createAELLUtils('1.0.0');
+
     beforeAll(async() => {
       testFile = await createTempDirectoryWithFile('evaluator-v1', '.ahk', `${utf8BomText}${text}`);
       const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1 });
@@ -97,6 +104,7 @@ describe('evaluator', () => {
       ${'5 // 3.0'}   | ${createNumberProperty(1.0)}
       ${'2 << 2'}     | ${createNumberProperty(2 << 2)}
       ${'-3 >> 1'}    | ${createNumberProperty(-3 >> 1)}
+      ${'-1 >>> 1'}   | ${createNumberProperty(9223372036854775807n)}
     `('BinaryExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toEqual(expected);
     });

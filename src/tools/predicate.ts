@@ -16,6 +16,17 @@ export const fileExists = (filePath: string): boolean => {
   }
   return false;
 };
+
+export const isNumberLike = (value: any): boolean => {
+  if (value === '') {
+    return false;
+  }
+  const converted = Number(value);
+  if (isNaN(converted)) {
+    return false;
+  }
+  return true;
+};
 export const isFloat = (value: any): boolean => {
   const num = Number(value);
   return !Number.isInteger(num) && Number.isFinite(num);

@@ -2,12 +2,21 @@ import { PrimitiveProperty, Property, Session, UnsetProperty } from '../../types
 import { AELLEvaluator, EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 import { CalcCallback } from '../../types/tools/AELL/utils.types';
 import { BinaryExpression, BooleanLiteral, Expression, Identifier, NumberLiteral, PostfixUnaryExpression, PrefixUnaryExpression, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
+import { toSigned64BitBinary } from '../convert';
 import { isFloat } from '../predicate';
 import { createAELLParser } from './parser';
-import { calc, createBooleanProperty, createNumberProperty, createStringProperty, invertBoolean, toBooleanPropertyByProperty } from './utils';
+import { createAELLUtils } from './utils';
 
 export const createEvaluator = (session: Session): AELLEvaluator => {
   const parser = createAELLParser(session.version);
+  const {
+    calc,
+    createBooleanProperty,
+    createNumberProperty,
+    createStringProperty,
+    invertBoolean,
+    toBooleanPropertyByProperty,
+  } = createAELLUtils(session.version);
 
   return {
     eval: async(text: string): Promise<EvaluatedValue> => {
@@ -111,17 +120,39 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
           }
           return containsFloat ? Number(result.toFixed(1)) : result;
         });
-        // eslint-disable-next-line no-bitwise
-        case '<<': return calc(leftValue, rightValue, (a, b) => a << b);
-        // eslint-disable-next-line no-bitwise
-        case '>>': return calc(leftValue, rightValue, (a, b) => a >> b);
+        case '<<':
+        case '>>':
+        case '>>>': {
+          return calc(leftValue, rightValue, (a, b) => {
+            if (b < 0) {
+              return undefined;
+            }
+            if (63 < b) {
+              return undefined;
+            }
+
+            if (node.operator.text === '<<') {
+              // eslint-disable-next-line no-bitwise
+              return Math.trunc(a) << Math.trunc(b);
+            }
+            if (node.operator.text === '>>') {
+              // eslint-disable-next-line no-bitwise
+              return Math.trunc(a) >> Math.trunc(b);
+            }
+
+            const a_64bit = BigInt(`0b${toSigned64BitBinary(a)}`);
+            const b_64bit = BigInt(b);
+            // eslint-disable-next-line no-bitwise
+            return BigInt(a_64bit >> b_64bit).toString(10);
+          });
+        }
         default: break;
       }
       return createStringProperty('');
     }
     async function assignCalculatedNumber(property: Property, calcCallback: CalcCallback): Promise<Property> {
       const calculated = calc(property, createNumberProperty(1), calcCallback);
-      return session.setProperty({ ...property, value: Number(calculated.value) });
+      return session.setProperty({ ...property, value: calculated.value, type: 'integer' });
     }
   }
 };

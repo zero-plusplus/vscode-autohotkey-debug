@@ -218,7 +218,10 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
                 }
 
                 let dataType = type;
-                if (dataType === undefined) {
+                if (dataType === 'integer' && String(value).includes('.')) {
+                  dataType = 2 <= version.mejor ? 'float' : 'string';
+                }
+                else if (dataType === undefined) {
                   switch (typeof value) {
                     case 'string':
                     case 'boolean': dataType = 'string'; break;
