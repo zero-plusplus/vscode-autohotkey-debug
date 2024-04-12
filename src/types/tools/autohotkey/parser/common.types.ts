@@ -60,6 +60,7 @@ export enum SyntaxKind {
   PrefixUnaryExpression = 'PrefixUnaryExpression',
   PostfixUnaryExpression = 'PostfixUnaryExpression',
   TernaryExpression = 'TernaryExpression',
+  SequenceExpression = 'SequenceExpression',
   // #endregion expression
 
   // #region reserved words
@@ -161,6 +162,7 @@ export enum SyntaxKind {
   CloseParenToken = 'CloseParenToken',
   CloseBracketToken = 'CloseBracketToken',
   CloseBraceToken = 'CloseBraceToken',
+  ImplicitConcatenateToken = 'ImplicitConcatenateToken',
 }
 export const enum TokenFlags {
   None = 0,
@@ -252,7 +254,14 @@ export type Declaration =
 
 export type Identifier = Token<SyntaxKind.Identifier>;
 export type Modifier = Token<SyntaxKind.GlobalKeyword> | Token<SyntaxKind.LocalKeyword> | Token<SyntaxKind.StaticKeyword>;
-
+export interface NameSubstitutionExpression extends Syntax {
+  kind: SyntaxKind.NameSubstitutionExpression;
+  expressions: Expression[];
+}
+export interface DereferenceExpression extends Syntax {
+  kind: SyntaxKind.DereferenceExpression;
+  expression: Expression;
+}
 export interface VariableDeclaration extends Syntax {
   kind: SyntaxKind.VariableDeclaration;
   modifier?: Modifier;
@@ -272,10 +281,13 @@ export type Expression =
   | StringLiteral
   | NumberLiteral
   | BooleanLiteral
+  | NameSubstitutionExpression
+  | DereferenceExpression
   | UnaryExpression
   | PrefixUnaryExpression
   | PostfixUnaryExpression
-  | BinaryExpression;
+  | BinaryExpression
+  | SequenceExpression;
 export interface Primitive extends Syntax {
   kind: SyntaxKind;
   value: string;
@@ -311,4 +323,9 @@ export interface BinaryExpression extends Syntax {
   operator: OperatorToken;
   right: Expression;
 }
+export interface SequenceExpression extends Syntax {
+  kind: SyntaxKind.SequenceExpression;
+  expressions: Expression[];
+}
+
 // #endregion expression

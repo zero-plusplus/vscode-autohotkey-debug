@@ -1,25 +1,26 @@
 /* eslint-disable key-spacing */
 import * as ohm from 'ohm-js';
-import { SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.types';
-import { createParser } from './utils';
+import { DereferenceExpression, Identifier, SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.types';
+import { createAstMappingUtils, createParser } from './utils';
 
 export const grammarText = `
   AutoHotkey_v1_1 {
     _Program = VariableDeclaration | Expressions
 
     _varialbeModifier = globalKeyword | localKeyword | staticKeyword
-    VariableDeclaration = _varialbeModifier? NonemptyListOf<VariableDeclarator, ",">
+    VariableDeclaration = _varialbeModifier NonemptyListOf<VariableDeclarator, ",">
     VariableDeclarator = identifier colonEqualsToken Expression
 
     Expressions
-      = Expression
-      | Expressions commaToken Expression -- comma_sequence
+      = Expression ~commaToken
+      | NonemptyListOf<Expression, commaToken> -- comma_sequence
 
     Expression
       = AssignmentExpression
 
     AssignmentExpression
-      = AssignmentExpression dotEqualsToken ReAssignmentExpression -- assign
+      = AssignmentExpression colonEqualsToken ReAssignmentExpression -- assign
+      | AssignmentExpression dotEqualsToken ReAssignmentExpression -- concatenate
       | ReAssignmentExpression
 
     ReAssignmentExpression
@@ -68,7 +69,7 @@ export const grammarText = `
       | ConcatenateExpression
 
     ConcatenateExpression
-      = ConcatenateExpression #(whitespace) BitwiseExpression -- space
+      = ConcatenateExpression #implicitConcatenateToken BitwiseExpression -- space
       | ConcatenateExpression #(&space) dotToken #(&space) BitwiseExpression -- dot
       | BitwiseExpression
 
@@ -137,8 +138,8 @@ export const grammarText = `
       | ParenthesizedExpression
 
     ParenthesizedExpression = openParenToken Expressions closeParenToken
-    NameSubstitutionExpression = ((#(rawIdentifier) | #nameDereferenceExpression) ~#(whitespace))+
-    DereferenceExpression = #nameDereferenceExpression
+    DereferenceExpression = ~rawIdentifier #nameDereferenceExpression
+    NameSubstitutionExpression = #((((rawIdentifier &nameDereferenceExpression) | (nameDereferenceExpression &rawIdentifier)))+ (rawIdentifier ~nameDereferenceExpression | nameDereferenceExpression ~rawIdentifier))
     nameDereferenceExpression = #(percentToken rawIdentifier percentToken)
 
     whitespace = " " | "\\t"
@@ -149,7 +150,7 @@ export const grammarText = `
     identifier = rawIdentifier ~percentToken
     rawIdentifier = normalIdentifier
     normalIdentifier = identifierStart identifierPart*
-    identifierStart = letter | "_" | "$" | "@" | "#" ~ "%"
+    identifierStart = letter | "_" | "$" | "@" | "#"
     identifierPart = identifierStart | digit
 
     stringLiteral = "\\"" doubleCharacter* "\\""
@@ -216,7 +217,7 @@ export const grammarText = `
     barToken = "|"
     barBarToken = "||"
     barEqualsToken = "|="
-    ampersandToken = "&"
+    ampersandToken = "&" ~("&" | "=")
     ampersandAmpersandToken = "&&"
     ampersandEqualToken = "&="
     caretToken = "^"
@@ -248,6 +249,8 @@ export const grammarText = `
     closeParenToken = ")"
     closeBracketToken = "]"
     closeBraceToken = "}"
+
+    implicitConcatenateToken = #space
     endOfFileToken = end
   }
 `;
@@ -255,27 +258,38 @@ export const grammar = ohm.grammar(grammarText);
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const astMapping = (() => {
+  const {
+    endPosition,
+    identifierKind,
+    identifierValue,
+    slicedText,
+    startPosition,
+    text,
+  } = createAstMappingUtils();
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const token = (kind: SyntaxKind) => ({ kind, text, startPosition, endPosition, type: undefined });
+  const assignExpression = { kind: SyntaxKind.AssignExpression, left: 0, operator: 1, right: 2, startPosition, endPosition };
   const binaryExpression = { kind: SyntaxKind.BinaryExpression, left: 0, operator: 1, right: 2, startPosition, endPosition };
+
   const mapping = {
     VariableDeclaration:                                { kind: SyntaxKind.VariableDeclaration, modifier: 0, declarators: 1 },
     VariableDeclarator:                                 { kind: SyntaxKind.VariableDeclarator, name: 0, operator: 1, initializer: 2 },
-    // AssignmentExpression_assign:                        binaryExpression,
-    // ReAssignmentExpression_addition:                    assignExpression,
-    // ReAssignmentExpression_subtraction:                 assignExpression,
-    // ReAssignmentExpression_multiplication:              assignExpression,
-    // ReAssignmentExpression_division:                    assignExpression,
-    // ReAssignmentExpression_floor_division:              assignExpression,
-    // ReAssignmentExpression_concatenate:                 assignExpression,
-    // ReAssignmentExpression_bitwise_or:                  assignExpression,
-    // ReAssignmentExpression_bitwise_xor:                 assignExpression,
-    // ReAssignmentExpression_bitwise_and:                 assignExpression,
-    // ReAssignmentExpression_bitshift_left:               assignExpression,
-    // ReAssignmentExpression_bitshift_right:              assignExpression,
-    // ReAssignmentExpression_bitshift_logical_right:      assignExpression,
+    AssignmentExpression_assign:                        assignExpression,
+    AssignmentExpression_concatenate:                   assignExpression,
+    ReAssignmentExpression_addition:                    assignExpression,
+    ReAssignmentExpression_subtraction:                 assignExpression,
+    ReAssignmentExpression_multiplication:              assignExpression,
+    ReAssignmentExpression_division:                    assignExpression,
+    ReAssignmentExpression_floor_division:              assignExpression,
+    ReAssignmentExpression_concatenate:                 assignExpression,
+    ReAssignmentExpression_bitwise_or:                  assignExpression,
+    ReAssignmentExpression_bitwise_xor:                 assignExpression,
+    ReAssignmentExpression_bitwise_and:                 assignExpression,
+    ReAssignmentExpression_bitshift_left:               assignExpression,
+    ReAssignmentExpression_bitshift_right:              assignExpression,
+    ReAssignmentExpression_bitshift_logical_right:      assignExpression,
     // #region binary
-    Expression_comma_sequence:                          binaryExpression,
+    Expressions_comma_sequence:                         { kind: SyntaxKind.SequenceExpression, expressions: 0 },
     LogicalOrExpression_or:                             binaryExpression,
     LogicalAndExpression_and:                           binaryExpression,
     EqualityExpression_loose_equal:                     binaryExpression,
@@ -288,7 +302,7 @@ export const astMapping = (() => {
     RelationalExpression_greaterthan_equal:             binaryExpression,
     RegExMatchExpression_regex_match:                   binaryExpression,
     ConcatenateExpression_space:                        binaryExpression,
-    ConcatenateExpression_dot:                          binaryExpression,
+    ConcatenateExpression_dot:                          { kind: SyntaxKind.BinaryExpression, left: 0, operator: 2, right: 4, startPosition, endPosition },
     BitwiseExpression_or:                               binaryExpression,
     BitwiseExpression_xor:                              binaryExpression,
     BitwiseExpression_and:                              binaryExpression,
@@ -305,8 +319,8 @@ export const astMapping = (() => {
     ExponentiationExpression_power:                     binaryExpression,
     // #endregion binary
     // #region primary
-    NameSubstitutionExpression:                         { kind: SyntaxKind.NameSubstitutionExpression, value: text, text, startPosition, endPosition },
-    DereferenceExpression:                              { kind: SyntaxKind.DereferenceExpression, value: text, text, startPosition, endPosition },
+    NameSubstitutionExpression:                         { kind: SyntaxKind.NameSubstitutionExpression, expressions: extraceNameSubstitutionExpressions, startPosition, endPosition },
+    DereferenceExpression:                              { kind: SyntaxKind.DereferenceExpression, expression: 1, startPosition, endPosition },
     CallExpression_call:                                { kind: SyntaxKind.CallExpression, caller: 0, arguments: 2, startPosition, endPosition },
     CallExpression_propertyaccess:                      { kind: SyntaxKind.PropertyAccessExpression, object: 0, property: 2, startPosition, endPosition },
     CallExpression_elementaccess:                       { kind: SyntaxKind.ElementAccessExpression, object: 0, arguments: 3, startPosition, endPosition },
@@ -408,46 +422,33 @@ export const astMapping = (() => {
     closeParenToken:                                    token(SyntaxKind.CloseParenToken),
     closeBracketToken:                                  token(SyntaxKind.CloseBracketToken),
     closeBraceToken:                                    token(SyntaxKind.CloseBraceToken),
+    implicitConcatenateToken:                           token(SyntaxKind.ImplicitConcatenateToken),
     bom:                                                token(SyntaxKind.Bom),
     // #endregion token
   };
   return mapping;
 
-  function identifierKind(nodes: ohm.Node[]): SyntaxKind {
-    const identifierName = text(nodes);
-    switch (identifierName.toLowerCase()) {
-      case 'true':
-      case 'false':
-        return SyntaxKind.BooleanLiteral;
-      default: break;
-    }
-    return SyntaxKind.Identifier;
+  function extraceNameSubstitutionExpressions(nodes: ohm.Node[]): Array<Identifier | DereferenceExpression> {
+    return [
+      ...(nodes.at(0)?.children.map((child) => extraceNameSubstitutionExpression(child)) ?? []),
+      ...(nodes.at(-1)?.children.map((child) => extraceNameSubstitutionExpression(child)) ?? []),
+    ];
   }
-  function identifierValue(nodes: ohm.Node[]): string | boolean {
-    const identifierName = text(nodes);
-    switch (identifierName.toLowerCase()) {
-      case 'true': return true;
-      case 'false': return false;
-      default: break;
+  function extraceNameSubstitutionExpression(node: ohm.Node): Identifier | DereferenceExpression {
+    if (node.ctorName === 'nameDereferenceExpression') {
+      return {
+        kind: SyntaxKind.DereferenceExpression,
+        startPosition: startPosition([ node ]),
+        endPosition: endPosition([ node ]),
+        expression: extraceNameSubstitutionExpression(node.children[1]),
+      };
     }
-    return text(nodes);
-  }
-  function slicedText(start: number, end?: number) {
-    return (nodes: ohm.Node[]): string => {
-      return text(nodes.slice(start, end));
+    return {
+      kind: SyntaxKind.Identifier,
+      startPosition: startPosition([ node ]),
+      endPosition: endPosition([ node ]),
+      text: text([ node ]),
     };
-  }
-  function text(nodes: ohm.Node[]): string {
-    return nodes.map((node) => node.source.contents).join('');
-  }
-  function startPosition(nodes: ohm.Node[]): number {
-    const firstNode = nodes.at(0);
-    return firstNode?.source.startIdx ?? 0;
-  }
-  function endPosition(nodes: ohm.Node[]): number {
-    const firstNode = nodes.at(0);
-    const lastNode = nodes.at(-1);
-    return lastNode?.source.endIdx ?? firstNode?.source.endIdx ?? 0;
   }
 })();
 

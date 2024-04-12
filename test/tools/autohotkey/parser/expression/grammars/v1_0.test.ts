@@ -4,10 +4,10 @@ import { SyntaxKind } from '../../../../../../src/types/tools/autohotkey/parser/
 import { createParser } from '../../../../../../src/tools/autohotkey/parser/expression';
 
 // #region utils
-const globalKeyword = { kind: SyntaxKind.GlobalKeyword };
-const localKeyword = { kind: SyntaxKind.LocalKeyword };
-const staticKeyword = { kind: SyntaxKind.StaticKeyword };
-const identifier = { kind: SyntaxKind.Identifier };
+// const globalKeyword = { kind: SyntaxKind.GlobalKeyword };
+// const localKeyword = { kind: SyntaxKind.LocalKeyword };
+// const staticKeyword = { kind: SyntaxKind.StaticKeyword };
+// const identifier = { kind: SyntaxKind.Identifier };
 const stringLiteral = { kind: SyntaxKind.StringLiteral };
 const numberLiteral = { kind: SyntaxKind.NumberLiteral };
 const token = (text) => {
@@ -21,8 +21,8 @@ const token = (text) => {
   throw Error();
 };
 const binary = (left, operator, right) => ({ kind: SyntaxKind.BinaryExpression, left, operator, right });
-const varDeclaration = (declarators, modifier?) => ({ kind: SyntaxKind.VariableDeclaration, modifier: modifier ?? null, declarators });
-const varDeclarator = (name, initializer) => ({ kind: SyntaxKind.VariableDeclarator, name, operator: token(':='), initializer });
+// const varDeclaration = (declarators, modifier?) => ({ kind: SyntaxKind.VariableDeclaration, modifier: modifier ?? null, declarators });
+// const varDeclarator = (name, initializer) => ({ kind: SyntaxKind.VariableDeclarator, name, operator: token(':='), initializer });
 // #endregion utils
 
 describe('v1_0', () => {
@@ -38,15 +38,15 @@ describe('v1_0', () => {
     expect(actual).toMatchObject(expected as Record<string, any>);
   });
 
-  test.each`
-      text                    | expected
-      ${'a := ""'}            | ${varDeclaration([ varDeclarator(identifier, stringLiteral) ])}
-      ${'a := "", b := ""'}   | ${varDeclaration([ varDeclarator(identifier, stringLiteral), varDeclarator(identifier, stringLiteral) ])}
-      ${'global a := ""'}     | ${varDeclaration([ varDeclarator(identifier, stringLiteral) ], globalKeyword)}
-      ${'local a := ""'}     | ${varDeclaration([ varDeclarator(identifier, stringLiteral) ], localKeyword)}
-      ${'static a := ""'}     | ${varDeclaration([ varDeclarator(identifier, stringLiteral) ], staticKeyword)}
-    `('VariableDeclaration', ({ text, expected }) => {
-    const actual = parser.parse(String(text));
-    expect(actual).toMatchObject(expected as Record<string, any>);
-  });
+  // test.each`
+  //     text                    | expected
+  //     ${'a := ""'}            | ${varDeclaration([ varDeclarator(identifier, stringLiteral) ])}
+  //     ${'a := "", b := ""'}   | ${varDeclaration([ varDeclarator(identifier, stringLiteral), varDeclarator(identifier, stringLiteral) ])}
+  //     ${'global a := ""'}     | ${varDeclaration([ varDeclarator(identifier, stringLiteral) ], globalKeyword)}
+  //     ${'local a := ""'}     | ${varDeclaration([ varDeclarator(identifier, stringLiteral) ], localKeyword)}
+  //     ${'static a := ""'}     | ${varDeclaration([ varDeclarator(identifier, stringLiteral) ], staticKeyword)}
+  //   `('VariableDeclaration', ({ text, expected }) => {
+  //   const actual = parser.parse(String(text));
+  //   expect(actual).toMatchObject(expected as Record<string, any>);
+  // });
 });

@@ -8,15 +8,17 @@ import { createAELLParser } from './parser';
 import { createAELLUtils } from './utils';
 
 export const createEvaluator = (session: Session): AELLEvaluator => {
-  const parser = createAELLParser(session.version);
+  const version = session.version;
+  const parser = createAELLParser(version);
   const {
     calc,
     createBooleanProperty,
     createNumberProperty,
     createStringProperty,
+    equiv,
     invertBoolean,
     toBooleanPropertyByProperty,
-  } = createAELLUtils(session.version);
+  } = createAELLUtils(version);
 
   return {
     eval: async(text: string): Promise<EvaluatedValue> => {
@@ -152,6 +154,15 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
         case '^': return calc(leftValue, rightValue, (a, b) => a ^ b);
         // eslint-disable-next-line no-bitwise
         case '|': return calc(leftValue, rightValue, (a, b) => a | b);
+        case '=': return equiv(leftValue, rightValue, (a, b) => String(a).toLowerCase() === String(b).toLowerCase());
+        case '==': return equiv(leftValue, rightValue, (a, b) => String(a) === String(b));
+        case '!=': return equiv(leftValue, rightValue, (a, b) => String(a).toLowerCase() !== String(b).toLowerCase());
+        case '!==': {
+          if (2 <= version.mejor) {
+            return equiv(leftValue, rightValue, (a, b) => String(a) !== String(b));
+          }
+          return createStringProperty('');
+        }
         default: break;
       }
       return createStringProperty('');

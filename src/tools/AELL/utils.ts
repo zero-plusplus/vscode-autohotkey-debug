@@ -1,7 +1,7 @@
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { PrimitiveProperty, Property } from '../../types/dbgp/session.types';
 import { EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
-import { CalcCallback } from '../../types/tools/AELL/utils.types';
+import { CalcCallback, EquivCallback } from '../../types/tools/AELL/utils.types';
 import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../types/tools/autohotkey/version/common.types';
 import { parseAutoHotkeyVersion } from '../autohotkey/version';
 import { isNumberLike } from '../predicate';
@@ -136,6 +136,19 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       }
 
       return utils.createStringProperty('');
+    },
+    equiv: (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: EquivCallback): PrimitiveProperty => {
+      if (leftValue === undefined || rightValue === undefined) {
+        return utils.createBooleanProperty(false);
+      }
+
+      if (leftValue.type === 'object' || rightValue.type === 'object') {
+        if (leftValue.type === 'object' && rightValue.type === 'object') {
+          return utils.createBooleanProperty(callback(leftValue.address, rightValue.address));
+        }
+        return utils.createBooleanProperty(false);
+      }
+      return utils.createBooleanProperty(callback(leftValue.value, rightValue.value));
     },
   };
   return utils;

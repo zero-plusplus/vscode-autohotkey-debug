@@ -1,9 +1,9 @@
-import { describe, expect, test, xdescribe } from '@jest/globals';
+import { describe, expect, test } from '@jest/globals';
 import { createAELLParser } from '../../../src/tools/AELL/parser';
 import { ParseError } from '../../../src/tools/autohotkey/parser/expression/grammars/utils';
-import { SyntaxKind } from '../../../src/types/tools/autohotkey/parser/common.types';
+import { DereferenceExpression, Identifier, NameSubstitutionExpression, SequenceExpression, SyntaxKind } from '../../../src/types/tools/autohotkey/parser/common.types';
 
-xdescribe('parser', () => {
+describe('parser', () => {
   describe('v1.1', () => {
     const { parse: parseAELL } = createAELLParser('1.1.30');
 
@@ -14,8 +14,6 @@ xdescribe('parser', () => {
       ${'<$hitCount>'}    | ${SyntaxKind.Identifier}                  | ${'<$hitCount>'}
       ${'"abc"'}          | ${SyntaxKind.StringLiteral}               | ${'abc'}
       ${'1'}              | ${SyntaxKind.NumberLiteral}               | ${1}
-      ${'%abc%'}          | ${SyntaxKind.DereferenceExpression}       | ${'%abc%'}
-      ${'a%b%c'}          | ${SyntaxKind.NameSubstitutionExpression}  | ${'a%b%c'}
       ${'true'}           | ${SyntaxKind.BooleanLiteral}              | ${true}
     `('primary expression', ({ text, expectedKind, expectedValue }) => {
       const ast = parseAELL(String(text));
@@ -32,6 +30,33 @@ xdescribe('parser', () => {
         throw Error();
       }
       expect(ast.text).toBe(text);
+    });
+
+    test.each`
+      text                | expectedKind                              | expectedValue
+      ${'%1 + 1%'}        | ${SyntaxKind.DereferenceExpression}       | ${'%1 + 1%'}
+    `('DereferenceExpression', ({ text, expectedKind, expectedValue }) => {
+      expect(() => parseAELL(String(text))).toThrow(ParseError);
+    });
+
+    test('NameSubstitutionExpression', () => {
+      const ast = parseAELL<NameSubstitutionExpression>('a%b%c%d%e');
+      expect(ast.kind).toBe(SyntaxKind.NameSubstitutionExpression);
+
+      expect(ast.expressions[0].kind).toBe(SyntaxKind.Identifier);
+      expect((ast.expressions[0] as Identifier).text).toBe('a');
+
+      expect(ast.expressions[1].kind).toBe(SyntaxKind.DereferenceExpression);
+      expect(((ast.expressions[1] as DereferenceExpression).expression as Identifier).text).toBe('b');
+
+      expect(ast.expressions[2].kind).toBe(SyntaxKind.Identifier);
+      expect((ast.expressions[2] as Identifier).text).toBe('c');
+
+      expect(ast.expressions[3].kind).toBe(SyntaxKind.DereferenceExpression);
+      expect(((ast.expressions[3] as DereferenceExpression).expression as Identifier).text).toBe('d');
+
+      expect(ast.expressions[4].kind).toBe(SyntaxKind.Identifier);
+      expect((ast.expressions[4] as Identifier).text).toBe('e');
     });
 
     test.each`
@@ -57,7 +82,7 @@ xdescribe('parser', () => {
       if (!('operator' in ast)) {
         throw Error();
       }
-      expect(ast.operator).toBe(expectedOperator);
+      expect(ast.operator.text).toBe(expectedOperator);
 
       if (!('operand' in ast)) {
         throw Error();
@@ -99,8 +124,8 @@ xdescribe('parser', () => {
       ${'1 !== 1.2'}    | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'!=='}          | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 || 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'||'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 && 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'&&'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 . 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'.'}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 1.2'}        | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${' '}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
-      ${'1, 1.2'}       | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${','}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
     `('binary expression', ({ text, expectedKind, expectedLeft, expectedOperator, expectedRight }) => {
       const ast = parseAELL(String(text));
       expect(ast.kind).toBe(expectedKind);
@@ -112,12 +137,17 @@ xdescribe('parser', () => {
       if (!('operator' in ast)) {
         throw Error();
       }
-      expect(ast.operator).toBe(expectedOperator);
+      expect(ast.operator.text).toBe(expectedOperator);
 
       if (!('right' in ast)) {
         throw Error();
       }
       expect(ast.right).toMatchObject(expectedRight as Record<any, any>);
+    });
+
+    test('SequenceExpression', () => {
+      const ast = parseAELL<SequenceExpression>('1, 1');
+      expect(ast.kind).toBe(SyntaxKind.SequenceExpression);
     });
 
     test('precedence', () => {
@@ -126,17 +156,17 @@ xdescribe('parser', () => {
       if (!('left' in ast)) {
         throw Error();
       }
-      expect(ast.left).toMatchObject({ kind: SyntaxKind.BinaryExpression, left: { kind: SyntaxKind.NumberLiteral, value: 1 }, operator: '*', right: { kind: SyntaxKind.NumberLiteral, value: 2 } });
+      expect(ast.left).toMatchObject({ kind: SyntaxKind.BinaryExpression, left: { kind: SyntaxKind.NumberLiteral, value: 1 }, operator: { kind: SyntaxKind.AsteriskToken, text: '*' }, right: { kind: SyntaxKind.NumberLiteral, value: 2 } });
 
       if (!('operator' in ast)) {
         throw Error();
       }
-      expect(ast.operator).toBe('+');
+      expect(ast.operator.text).toBe('+');
 
       if (!('right' in ast)) {
         throw Error();
       }
-      expect(ast.right).toMatchObject({ kind: SyntaxKind.BinaryExpression, left: { kind: SyntaxKind.NumberLiteral, value: 3 }, operator: '*', right: { kind: SyntaxKind.NumberLiteral, value: 4 } });
+      expect(ast.right).toMatchObject({ kind: SyntaxKind.BinaryExpression, left: { kind: SyntaxKind.NumberLiteral, value: 3 }, operator: { kind: SyntaxKind.AsteriskToken, text: '*' }, right: { kind: SyntaxKind.NumberLiteral, value: 4 } });
     });
   });
 
@@ -148,38 +178,25 @@ xdescribe('parser', () => {
       ${'#abc'} | ${ParseError}
       ${'$abc'} | ${ParseError}
       ${'@abc'} | ${ParseError}
-    `('identifier', () => {
-      expect(() => parseAELL('$abc')).toThrow(ParseError);
+    `('identifier', ({ text, expected }) => {
+      expect(() => parseAELL(String(text))).toThrow(expected);
+    });
+
+    test.each`
+      text      | expected
+      ${'"abc"'} | ${'abc'}
+      ${`'abc'`} | ${'abc'}
+    `('string', ({ text, expected }) => {
+      expect(parseAELL(String(text))).toMatchObject({ value: expected });
     });
 
     test.each`
       text                | expectedKind                              | expectedValue
       ${'%1 + 1%'}        | ${SyntaxKind.DereferenceExpression}       | ${'%1 + 1%'}
-      ${'a%b%c'}          | ${SyntaxKind.NameSubstitutionExpression}  | ${'a%b%c'}
-    `('primary expression', ({ text, expectedKind, expectedValue }) => {
-      const ast = parseAELL(String(text));
-      expect(ast.kind).toBe(expectedKind);
-      if (ast.kind !== expectedKind) {
-        throw Error();
-      }
-
-      if (!('value' in ast)) {
-        throw Error();
-      }
-      expect(ast.value).toBe(expectedValue);
-      if (!('text' in ast)) {
-        throw Error();
-      }
-      expect(ast.text).toBe(text);
-    });
-
-    test('meta identifier', () => {
-      const ast = parseAELL('<$meta>');
-      expect(ast.kind).toBe(SyntaxKind.Identifier);
-      // if (ast.kind !== SyntaxKind.Identifier) {
-      //   throw Error();
-      // }
-      // expect(ast.value).toBe('<$meta>');
+    `('DereferenceExpression', ({ text, expectedKind, expectedValue }) => {
+      const ast = parseAELL<DereferenceExpression>(String(text));
+      expect(ast.kind).toBe(SyntaxKind.DereferenceExpression);
+      expect(ast.expression.kind).toBe(SyntaxKind.BinaryExpression);
     });
   });
 });

@@ -8,7 +8,7 @@ import { createScriptRuntimeLauncher } from '../../../src/dap/runtime/launcher';
 import EventEmitter from 'events';
 import { createDefaultDebugConfig } from '../../../src/client/config/default';
 import { utf8BomText } from '../../../src/tools/utils/checkUtf8WithBom';
-import { defaultAutoHotkeyRuntimePath_v1 } from '../../../src/tools/autohotkey';
+import { defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2 } from '../../../src/tools/autohotkey';
 import { createAELLUtils } from '../../../src/tools/AELL/utils';
 import { ContextId } from '../../../src/types/dbgp/AutoHotkeyDebugger.types';
 
@@ -108,6 +108,11 @@ describe('evaluator', () => {
       ${'1 & 1'}      | ${createNumberProperty(1 & 1)}
       ${'1 ^ 1'}      | ${createNumberProperty(1 ^ 1)}
       ${'1 | 1'}      | ${createNumberProperty(1 | 1)}
+      ${'"a" = "A"'}  | ${createBooleanProperty(true)}
+      ${'"a" == "A"'}  | ${createBooleanProperty(false)}
+      ${'"a" == "a"'}  | ${createBooleanProperty(true)}
+      ${'"a" != "A"'}  | ${createBooleanProperty(false)}
+      ${'"a" != "a"'}  | ${createBooleanProperty(false)}
     `('BinaryExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toEqual(expected);
     });
@@ -127,21 +132,32 @@ describe('evaluator', () => {
     });
   });
 
-  // describe('v2', () => {
-  //   let evaluator: AELLEvaluator;
-  //   let runtime: ScriptRuntime;
-  //   let testFile: TemporaryResource;
-  //   beforeAll(async() => {
-  //     testFile = await createTempDirectoryWithFile('evaluator-v2', '.ahk', `${utf8BomText}${text}`);
-  //     const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2 });
-  //     runtime = await launcher.launch();
-  //     await runtime.session.setLineBreakpoint(testFile.path, 13);
-  //     await runtime.session.exec('run');
-  //     evaluator = createEvaluator(runtime.session);
-  //   });
-  //   afterAll(() => {
-  //     runtime.close();
-  //     testFile.cleanup();
-  //   });
-  // });
+  describe('v2', () => {
+    let evaluator: AELLEvaluator;
+    let runtime: ScriptRuntime;
+    let testFile: TemporaryResource;
+    const {
+      createBooleanProperty,
+    } = createAELLUtils('2.0.0');
+
+    beforeAll(async() => {
+      testFile = await createTempDirectoryWithFile('evaluator-v2', '.ahk', `${utf8BomText}${text}`);
+      const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2 });
+      runtime = await launcher.launch();
+      await runtime.session.setLineBreakpoint(testFile.path, 13);
+      await runtime.session.exec('run');
+      evaluator = createEvaluator(runtime.session);
+    });
+    afterAll(() => {
+      runtime.close();
+      testFile.cleanup();
+    });
+
+    test.each`
+      text              | expected
+      ${'"a" !== "A"'}  | ${createBooleanProperty(true)}
+    `('BinaryExpression', async({ text, expected }) => {
+      expect(await evaluator.eval(String(text))).toEqual(expected);
+    });
+  });
 });

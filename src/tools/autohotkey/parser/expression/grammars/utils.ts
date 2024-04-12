@@ -1,6 +1,6 @@
 import * as ohm from 'ohm-js';
 import { toAST } from 'ohm-js/extras';
-import { Parser, SyntaxNode } from '../../../../../types/tools/autohotkey/parser/common.types';
+import { Parser, SyntaxKind, SyntaxNode } from '../../../../../types/tools/autohotkey/parser/common.types';
 
 export const createParser = (grammar: ohm.Grammar, astMapping: Record<string, any>): Parser => {
   return {
@@ -15,6 +15,48 @@ export const createParser = (grammar: ohm.Grammar, astMapping: Record<string, an
       return node as SyntaxNode;
     },
   };
+};
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export const createAstMappingUtils = () => {
+  const utils = {
+    identifierKind: (nodes: ohm.Node[]): SyntaxKind => {
+      const identifierName = utils.text(nodes);
+      switch (identifierName.toLowerCase()) {
+        case 'true':
+        case 'false':
+          return SyntaxKind.BooleanLiteral;
+        default: break;
+      }
+      return SyntaxKind.Identifier;
+    },
+    identifierValue: (nodes: ohm.Node[]): string | boolean => {
+      const identifierName = utils.text(nodes);
+      switch (identifierName.toLowerCase()) {
+        case 'true': return true;
+        case 'false': return false;
+        default: break;
+      }
+      return utils.text(nodes);
+    },
+    slicedText: (start: number, end?: number) => {
+      return (nodes: ohm.Node[]): string => {
+        return utils.text(nodes.slice(start, end));
+      };
+    },
+    text: (nodes: ohm.Node[]): string => {
+      return nodes.map((node) => node.source.contents).join('');
+    },
+    startPosition: (nodes: ohm.Node[]): number => {
+      const firstNode = nodes.at(0);
+      return firstNode?.source.startIdx ?? 0;
+    },
+    endPosition: (nodes: ohm.Node[]): number => {
+      const firstNode = nodes.at(0);
+      const lastNode = nodes.at(-1);
+      return lastNode?.source.endIdx ?? firstNode?.source.endIdx ?? 0;
+    },
+  };
+  return utils;
 };
 
 export class ParseError extends Error {
