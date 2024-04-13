@@ -121,6 +121,7 @@ describe('parser', () => {
       ${'1 = 1.2'}      | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'='}            | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 == 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'=='}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 != 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'!='}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
+      ${'1 <> 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'<>'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 !== 1.2'}    | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'!=='}          | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 || 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'||'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
       ${'1 or 1.2'}     | ${SyntaxKind.BinaryExpression}  | ${{ kind: SyntaxKind.NumberLiteral, text: '1' }}  | ${'or'}           | ${{ kind: SyntaxKind.NumberLiteral, text: '1.2' }}
@@ -185,7 +186,7 @@ describe('parser', () => {
     });
 
     test.each`
-      text      | expected
+      text       | expected
       ${'"abc"'} | ${'abc'}
       ${`'abc'`} | ${'abc'}
     `('string', ({ text, expected }) => {
@@ -199,6 +200,13 @@ describe('parser', () => {
       const ast = parseAELL<DereferenceExpression>(String(text));
       expect(ast.kind).toBe(SyntaxKind.DereferenceExpression);
       expect(ast.expression.kind).toBe(SyntaxKind.BinaryExpression);
+    });
+
+    test.each`
+      text
+      ${'1 <> 1'}
+    `('not support', ({ text, expectedKind, expectedValue }) => {
+      expect(() => parseAELL<DereferenceExpression>(String(text))).toThrow(ParseError);
     });
   });
 });

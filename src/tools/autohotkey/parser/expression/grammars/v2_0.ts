@@ -8,6 +8,14 @@ export const grammarText = `
   AutoHotkey_v2_0 <: AutoHotkey_v1_1 {
     DereferenceExpression := ~rawIdentifier percentToken ~percentToken Expressions percentToken
 
+    EqualityExpression
+      := EqualityExpression equalsToken RelationalExpression -- loose_equal
+       | EqualityExpression equalsEqualsToken RelationalExpression -- equal
+       | EqualityExpression exclamationEqualsToken RelationalExpression -- not_loose_equal
+       | EqualityExpression exclamationEqualsEqualsToken RelationalExpression -- not_equal
+       | RelationalExpression
+    lessThanGreaterThanToken :=
+
     identifierStart := (letter | "_")
 
     stringLiteral := doubleStringLiteral | singleStringLiteral
@@ -36,8 +44,6 @@ export const astMapping = (() => {
     ...v1_0.astMapping,
     // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
     stringLiteral:  { kind: SyntaxKind.StringLiteral, value: (nodes: ohm.Node[]) => slicedText(1, -1)(nodes[0].children), text, startPosition, endPosition },
-    // doubleStringLiteral: { kind: SyntaxKind.StringLiteral, value: slicedText(1, -1), text, startPosition, endPosition },
-    // singleStringLiteral:{ kind: SyntaxKind.StringLiteral, value: slicedText(1, -1), text, startPosition, endPosition },
   };
   return mapping;
 })();

@@ -56,6 +56,7 @@ export const grammarText = `
       = EqualityExpression equalsToken RelationalExpression -- loose_equal
       | EqualityExpression equalsEqualsToken RelationalExpression -- equal
       | EqualityExpression exclamationEqualsToken RelationalExpression -- not_loose_equal
+      | EqualityExpression lessThanGreaterThanToken RelationalExpression -- not_loose_equal_old
       | EqualityExpression exclamationEqualsEqualsToken RelationalExpression -- not_equal
       | RelationalExpression
 
@@ -300,6 +301,7 @@ export const astMapping = (() => {
     LogicalAndExpression_and_keyword:                   binaryExpression,
     EqualityExpression_loose_equal:                     binaryExpression,
     EqualityExpression_not_loose_equal:                 binaryExpression,
+    EqualityExpression_not_loose_equal_old:             binaryExpression,
     EqualityExpression_equal:                           binaryExpression,
     EqualityExpression_not_equal:                       binaryExpression,
     RelationalExpression_lessthan:                      binaryExpression,
