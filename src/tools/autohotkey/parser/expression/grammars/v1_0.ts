@@ -144,7 +144,7 @@ export const grammarText = `
       | PrimaryExpression
 
     PrimaryExpression
-      = ~notKeyword identifier
+      = identifier
       | stringLiteral
       | numericLiteral
       | DereferenceExpression
