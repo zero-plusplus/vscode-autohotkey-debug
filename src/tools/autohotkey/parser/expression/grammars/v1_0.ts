@@ -57,7 +57,6 @@ export const grammarText = `
       | EqualityExpression equalsEqualsToken RelationalExpression -- equal
       | EqualityExpression exclamationEqualsToken RelationalExpression -- not_loose_equal
       | EqualityExpression lessThanGreaterThanToken RelationalExpression -- not_loose_equal_old
-      | EqualityExpression exclamationEqualsEqualsToken RelationalExpression -- not_equal
       | RelationalExpression
 
     RelationalExpression
@@ -72,7 +71,7 @@ export const grammarText = `
       | ConcatenateExpression
 
     ConcatenateExpression
-      = ConcatenateExpression #implicitConcatenateToken BitwiseExpression -- space
+      = ~#(notKeyword) ConcatenateExpression #implicitConcatenateToken BitwiseExpression -- space
       | ConcatenateExpression #(&space) dotToken #(&space) BitwiseExpression -- dot
       | BitwiseExpression
 
@@ -104,21 +103,33 @@ export const grammarText = `
       | UnaryExpression
 
     UnaryExpression
-      = plusPlusToken UnaryExpression -- increment
-      | minusMinusToken UnaryExpression -- decrement
-      | plusToken UnaryExpression -- positive
-      | minusToken UnaryExpression -- negative
-      | exclamationToken UnaryExpression -- not
-      | ampersandToken UnaryExpression -- address
-      | tildeToken UnaryExpression -- bitwise_not
-      | caretToken UnaryExpression -- bitwise_exclusive_or
-      | asteriskToken UnaryExpression -- dereference
+      = notKeyword PrefixUnaryExpression -- not_keyword
+      | plusToken PrefixUnaryExpression -- positive
+      | minusToken PrefixUnaryExpression -- negative
+      | exclamationToken PrefixUnaryExpression -- not
+      | ampersandToken PrefixUnaryExpression -- address
+      | tildeToken PrefixUnaryExpression -- bitwise_not
+      | caretToken PrefixUnaryExpression -- bitwise_exclusive_or
+      | asteriskToken PrefixUnaryExpression -- dereference
+      | PrefixUnaryExpression
+
+    PrefixUnaryExpression
+      = plusPlusToken PostfixUnaryExpression -- increment
+      | minusMinusToken PostfixUnaryExpression -- decrement
       | PostfixUnaryExpression
 
     PostfixUnaryExpression
-      = PostfixUnaryExpression plusPlusToken -- increment
-      | PostfixUnaryExpression minusMinusToken -- decrement
-      | CallExpression
+      = LeftHandSideExpression plusPlusToken -- increment
+      | LeftHandSideExpression minusMinusToken -- decrement
+      | LeftHandSideExpression
+
+    LeftHandSideExpression
+      = CallExpression
+      | NewExpression
+
+    NewExpression
+      = MemberExpression
+      | newKeyword NewExpression -- new
 
     CallExpression
       = CallExpression dotToken #(identifier)  -- propertyaccess
@@ -133,7 +144,7 @@ export const grammarText = `
       | PrimaryExpression
 
     PrimaryExpression
-      = identifier
+      = ~notKeyword identifier
       | stringLiteral
       | numericLiteral
       | DereferenceExpression
@@ -189,6 +200,8 @@ export const grammarText = `
     ifKeyword = caseInsensitive<"if"> ~identifierPart
     localKeyword = caseInsensitive<"local"> ~identifierPart
     loopKeyword = caseInsensitive<"loop"> ~identifierPart
+    newKeyword = caseInsensitive<"new"> ~identifierPart
+    notKeyword = caseInsensitive<"not"> (~identifierPart)
     orKeyword = caseInsensitive<"or"> ~identifierPart
     returnKeyword = caseInsensitive<"return"> ~identifierPart
     staticKeyword = caseInsensitive<"static"> ~identifierPart
@@ -242,7 +255,6 @@ export const grammarText = `
     tildeEqualsToken = "~="
     exclamationToken = "!"
     exclamationEqualsToken = "!="
-    exclamationEqualsEqualsToken = "!=="
     percentToken = "%"
     semiColonToken = ";"
     questionToken = "?"
@@ -338,12 +350,13 @@ export const astMapping = (() => {
     UnaryExpression_positive:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
     UnaryExpression_negative:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
     UnaryExpression_not:                                { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    UnaryExpression_not_keyword:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
     UnaryExpression_address:                            { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
     UnaryExpression_bitwise_not:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
     UnaryExpression_bitwise_exclusive_or:               { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
     UnaryExpression_dereference:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    UnaryExpression_increment:                          { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    UnaryExpression_decrement:                          { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    PrefixUnaryExpression_increment:                    { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
+    PrefixUnaryExpression_decrement:                    { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
     PostfixUnaryExpression_increment:                   { kind: SyntaxKind.PostfixUnaryExpression, operand: 0, operator: 1, startPosition, endPosition },
     PostfixUnaryExpression_decrement:                   { kind: SyntaxKind.PostfixUnaryExpression, operand: 0, operator: 1, startPosition, endPosition },
     TernaryExpression_ternary:                          { kind: SyntaxKind.TernaryExpression, condition: 0, whenTrue: 2, whenFalse: 4, startPosition, endPosition },
@@ -365,6 +378,8 @@ export const astMapping = (() => {
     ifKeyword:                                          token(SyntaxKind.IfKeyword),
     localKeyword:                                       token(SyntaxKind.LocalKeyword),
     loopKeyword:                                        token(SyntaxKind.LoopKeyword),
+    newKeyword:                                         token(SyntaxKind.NewKeyword),
+    notKeyword:                                         token(SyntaxKind.NotKeyword),
     orKeyword:                                          token(SyntaxKind.OrKeyword),
     returnKeyword:                                      token(SyntaxKind.ReturnKeyword),
     staticKeyword:                                      token(SyntaxKind.StaticKeyword),

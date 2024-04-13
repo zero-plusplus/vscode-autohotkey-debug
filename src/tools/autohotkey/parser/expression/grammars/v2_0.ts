@@ -14,7 +14,6 @@ export const grammarText = `
        | EqualityExpression exclamationEqualsToken RelationalExpression -- not_loose_equal
        | EqualityExpression exclamationEqualsEqualsToken RelationalExpression -- not_equal
        | RelationalExpression
-    lessThanGreaterThanToken :=
 
     identifierStart := (letter | "_")
 
@@ -26,6 +25,9 @@ export const grammarText = `
       | singleEscapeSequence
     singleEscapeSequence = "\`'" | commonEscapeSequence
     doubleEscapeSequence := "\`\\"" | commonEscapeSequence
+
+    lessThanGreaterThanToken :=
+    exclamationEqualsEqualsToken = "!=="
   }
 `;
 export const grammar = ohm.grammar(grammarText, ohm.grammars(v1_0.grammarText));

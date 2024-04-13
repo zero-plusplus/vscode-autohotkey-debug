@@ -93,6 +93,7 @@ export enum SyntaxKind {
   IfKeyword = 'IfKeyword',
   LocalKeyword = 'LocalKeyword',
   LoopKeyword = 'LoopKeyword',
+  NewKeyword = 'NewKeyword',
   ReturnKeyword = 'ReturnKeyword',
   SetKeyword = 'SetKeyword',
   StaticKeyword = 'StaticKeyword',
