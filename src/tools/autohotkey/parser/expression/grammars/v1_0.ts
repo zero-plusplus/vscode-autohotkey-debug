@@ -44,10 +44,12 @@ export const grammarText = `
 
     LogicalOrExpression
       = LogicalOrExpression barBarToken LogicalAndExpression -- or
+      | LogicalOrExpression orKeyword LogicalAndExpression -- or_keyword
       | LogicalAndExpression
 
     LogicalAndExpression
       = LogicalAndExpression ampersandAmpersandToken EqualityExpression -- and
+      | LogicalAndExpression andKeyword EqualityExpression -- and_keyword
       | EqualityExpression
 
     EqualityExpression
@@ -173,6 +175,7 @@ export const grammarText = `
     scientificNotationLiteral = floatLiteral ("e" | "E") ("+" | "-")? digit+ -- scientific_notation
     hexIntegerLiteral = "0" ("x" | "X") hexDigit+
 
+    andKeyword = caseInsensitive<"and"> ~identifierPart
     breakKeyword = caseInsensitive<"break"> ~identifierPart
     caseKeyword = caseInsensitive<"case"> ~identifierPart
     catchKeyword = caseInsensitive<"catch"> ~identifierPart
@@ -185,6 +188,7 @@ export const grammarText = `
     ifKeyword = caseInsensitive<"if"> ~identifierPart
     localKeyword = caseInsensitive<"local"> ~identifierPart
     loopKeyword = caseInsensitive<"loop"> ~identifierPart
+    orKeyword = caseInsensitive<"or"> ~identifierPart
     returnKeyword = caseInsensitive<"return"> ~identifierPart
     staticKeyword = caseInsensitive<"static"> ~identifierPart
     switchKeyword = caseInsensitive<"switch"> ~identifierPart
@@ -250,7 +254,7 @@ export const grammarText = `
     closeBracketToken = "]"
     closeBraceToken = "}"
 
-    implicitConcatenateToken = #space
+    implicitConcatenateToken = #space ~#(andKeyword | orKeyword)
     endOfFileToken = end
   }
 `;
@@ -291,7 +295,9 @@ export const astMapping = (() => {
     // #region binary
     Expressions_comma_sequence:                         { kind: SyntaxKind.SequenceExpression, expressions: 0 },
     LogicalOrExpression_or:                             binaryExpression,
+    LogicalOrExpression_or_keyword:                     binaryExpression,
     LogicalAndExpression_and:                           binaryExpression,
+    LogicalAndExpression_and_keyword:                   binaryExpression,
     EqualityExpression_loose_equal:                     binaryExpression,
     EqualityExpression_not_loose_equal:                 binaryExpression,
     EqualityExpression_equal:                           binaryExpression,
@@ -344,6 +350,7 @@ export const astMapping = (() => {
     identifier:                                         { kind: identifierKind, value: identifierValue, text, startPosition, endPosition },
     // #endregion primary
     // #region keyword
+    andKeyword:                                         token(SyntaxKind.AndKeyword),
     breakKeyword:                                       token(SyntaxKind.BreakKeyword),
     caseKeyword:                                        token(SyntaxKind.CaseKeyword),
     catchKeyword:                                       token(SyntaxKind.CatchKeyword),
@@ -356,6 +363,7 @@ export const astMapping = (() => {
     ifKeyword:                                          token(SyntaxKind.IfKeyword),
     localKeyword:                                       token(SyntaxKind.LocalKeyword),
     loopKeyword:                                        token(SyntaxKind.LoopKeyword),
+    orKeyword:                                          token(SyntaxKind.OrKeyword),
     returnKeyword:                                      token(SyntaxKind.ReturnKeyword),
     staticKeyword:                                      token(SyntaxKind.StaticKeyword),
     switchKeyword:                                      token(SyntaxKind.SwitchKeyword),
