@@ -103,14 +103,14 @@ export const grammarText = `
       | UnaryExpression
 
     UnaryExpression
-      = notKeyword PrefixUnaryExpression -- not_keyword
-      | plusToken PrefixUnaryExpression -- positive
-      | minusToken PrefixUnaryExpression -- negative
-      | exclamationToken PrefixUnaryExpression -- not
-      | ampersandToken PrefixUnaryExpression -- address
-      | tildeToken PrefixUnaryExpression -- bitwise_not
-      | caretToken PrefixUnaryExpression -- bitwise_exclusive_or
-      | asteriskToken PrefixUnaryExpression -- dereference
+      = notKeyword UnaryExpression -- not_keyword
+      | plusToken UnaryExpression -- positive
+      | minusToken UnaryExpression -- negative
+      | exclamationToken UnaryExpression -- not
+      | ampersandToken UnaryExpression -- address
+      | tildeToken UnaryExpression -- bitwise_not
+      | caretToken UnaryExpression -- bitwise_exclusive_or
+      | asteriskToken UnaryExpression -- dereference
       | PrefixUnaryExpression
 
     PrefixUnaryExpression
