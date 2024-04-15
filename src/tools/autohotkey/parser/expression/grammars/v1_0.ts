@@ -144,25 +144,24 @@ export const grammarText = `
       | PrimaryExpression
 
     PrimaryExpression
-      = identifier
-      | stringLiteral
+      = stringLiteral
       | numericLiteral
       | DereferenceExpression
       | NameSubstitutionExpression
+      | identifier
       | ParenthesizedExpression
 
     ParenthesizedExpression = openParenToken Expressions closeParenToken
-    DereferenceExpression = ~rawIdentifier #nameDereferenceExpression
-    NameSubstitutionExpression = #((((rawIdentifier &nameDereferenceExpression) | (nameDereferenceExpression &rawIdentifier)))+ (rawIdentifier ~nameDereferenceExpression | nameDereferenceExpression ~rawIdentifier))
-    nameDereferenceExpression = #(percentToken rawIdentifier percentToken)
+    DereferenceExpression = ~identifier #nameDereferenceExpression ~identifier
+    NameSubstitutionExpression = #((((identifier &nameDereferenceExpression) | (nameDereferenceExpression &identifier)))+ (identifier ~percentToken | nameDereferenceExpression ~identifier))
+    nameDereferenceExpression = #(percentToken identifier percentToken)
 
     whitespace = " " | "\\t"
     lineTerminator
       = "\\r\\n"
       | "\\n"
 
-    identifier = rawIdentifier ~percentToken
-    rawIdentifier = normalIdentifier
+    identifier = normalIdentifier
     normalIdentifier = identifierStart identifierPart*
     identifierStart = letter | "_" | "$" | "@" | "#"
     identifierPart = identifierStart | digit
@@ -340,13 +339,13 @@ export const astMapping = (() => {
     // #endregion binary
     // #region primary
     NameSubstitutionExpression:                         { kind: SyntaxKind.NameSubstitutionExpression, expressions: extraceNameSubstitutionExpressions, startPosition, endPosition },
-    DereferenceExpression:                              { kind: SyntaxKind.DereferenceExpression, expression: 1, startPosition, endPosition },
+    DereferenceExpression:                              { kind: SyntaxKind.DereferenceExpression, expression: 0, startPosition, endPosition },
     CallExpression_call:                                { kind: SyntaxKind.CallExpression, caller: 0, arguments: 2, startPosition, endPosition },
     CallExpression_propertyaccess:                      { kind: SyntaxKind.PropertyAccessExpression, object: 0, property: 2, startPosition, endPosition },
-    CallExpression_elementaccess:                       { kind: SyntaxKind.ElementAccessExpression, object: 0, arguments: 3, startPosition, endPosition },
+    CallExpression_elementaccess:                       { kind: SyntaxKind.ElementAccessExpression, object: 0, elements: 2, startPosition, endPosition },
     MemberExpression_propertyaccess:                    { kind: SyntaxKind.PropertyAccessExpression, object: 0, property: 2, startPosition, endPosition },
     MemberExpression_dereference_propertyaccess:        { kind: SyntaxKind.DereferencePropertyAccessExpression, object: 0, property: 2, startPosition, endPosition },
-    MemberExpression_elementaccess:                     { kind: SyntaxKind.ElementAccessExpression, object: 0, arguments: 3, startPosition, endPosition },
+    MemberExpression_elementaccess:                     { kind: SyntaxKind.ElementAccessExpression, object: 0, elements: 2, startPosition, endPosition },
     UnaryExpression_positive:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
     UnaryExpression_negative:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
     UnaryExpression_not:                                { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },

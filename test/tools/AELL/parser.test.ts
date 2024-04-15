@@ -1,7 +1,7 @@
 import { describe, expect, test } from '@jest/globals';
 import { createAELLParser } from '../../../src/tools/AELL/parser';
 import { ParseError } from '../../../src/tools/autohotkey/parser/expression/grammars/utils';
-import { DereferenceExpression, Identifier, NameSubstitutionExpression, SequenceExpression, StringLiteral, SyntaxKind } from '../../../src/types/tools/autohotkey/parser/common.types';
+import { DereferenceExpression, ElementAccessExpression, Identifier, NameSubstitutionExpression, PropertyAccessExpression, SequenceExpression, StringLiteral, SyntaxKind } from '../../../src/types/tools/autohotkey/parser/common.types';
 
 describe('parser', () => {
   describe('v1.1', () => {
@@ -32,11 +32,9 @@ describe('parser', () => {
       expect(ast.text).toBe(text);
     });
 
-    test.each`
-      text                | expectedKind                              | expectedValue
-      ${'%1 + 1%'}        | ${SyntaxKind.DereferenceExpression}       | ${'%1 + 1%'}
-    `('DereferenceExpression', ({ text, expectedKind, expectedValue }) => {
-      expect(() => parseAELL(String(text))).toThrow(ParseError);
+    test('DereferenceExpression', () => {
+      expect(parseAELL<DereferenceExpression>('%abc%').kind).toBe(SyntaxKind.DereferenceExpression);
+      expect(() => parseAELL('%1 + 1%')).toThrow(ParseError);
     });
 
     test('NameSubstitutionExpression', () => {
@@ -153,6 +151,21 @@ describe('parser', () => {
       expect(ast.kind).toBe(SyntaxKind.SequenceExpression);
     });
 
+    test('PropertyAccessExpression', () => {
+      const ast = parseAELL<PropertyAccessExpression>('a.b');
+      expect(ast.kind).toBe(SyntaxKind.PropertyAccessExpression);
+      expect(ast.property.kind).toBe(SyntaxKind.Identifier);
+
+      expect(() => parseAELL<PropertyAccessExpression>('a.%b%')).toThrow(ParseError);
+      expect(() => parseAELL<PropertyAccessExpression>('a.a%b%c')).toThrow(ParseError);
+    });
+    test('ElementAccessExpression', () => {
+      const ast = parseAELL<ElementAccessExpression>('a[b, "foo"]');
+      expect(ast.kind).toBe(SyntaxKind.ElementAccessExpression);
+      expect(ast.elements[0].kind).toBe(SyntaxKind.Identifier);
+      expect(ast.elements[1].kind).toBe(SyntaxKind.StringLiteral);
+    });
+
     test('precedence', () => {
       const ast = parseAELL('1 * 2 + 3 * 4');
       expect(ast.kind).toBe(SyntaxKind.BinaryExpression);
@@ -215,11 +228,22 @@ describe('parser', () => {
 
     test.each`
       text                | expectedKind                              | expectedValue
+      ${'%a%'}            | ${SyntaxKind.DereferenceExpression}       | ${'%a%'}
       ${'%1 + 1%'}        | ${SyntaxKind.DereferenceExpression}       | ${'%1 + 1%'}
     `('DereferenceExpression', ({ text, expectedKind, expectedValue }) => {
       const ast = parseAELL<DereferenceExpression>(String(text));
       expect(ast.kind).toBe(SyntaxKind.DereferenceExpression);
-      expect(ast.expression.kind).toBe(SyntaxKind.BinaryExpression);
+    });
+
+    test.each`
+      text          | expectedKind                            | expectedChildKind
+      ${'a.b'}      | ${SyntaxKind.PropertyAccessExpression}  | ${SyntaxKind.Identifier}
+      ${'a.%b%'}    | ${SyntaxKind.PropertyAccessExpression}  | ${SyntaxKind.DereferenceExpression}
+      ${'a.a%b%c'}  | ${SyntaxKind.PropertyAccessExpression}  | ${SyntaxKind.NameSubstitutionExpression}
+    `('PropertyAccessExpression', ({ text, expectedKind, expectedChildKind }) => {
+      const ast = parseAELL<PropertyAccessExpression>(text);
+      expect(ast.kind).toBe(expectedKind);
+      expect(ast.property.kind).toBe(expectedChildKind);
     });
 
     test.each`

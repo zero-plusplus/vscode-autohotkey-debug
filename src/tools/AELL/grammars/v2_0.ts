@@ -5,6 +5,8 @@ import * as v2_0 from '../../autohotkey/parser/expression/grammars/v2_0';
 
 export const grammarText = `
   A2ELL <: AutoHotkey_v2_0 {
+    identifier := normalIdentifier | metaIdentifier
+
     metaIdentifier = "<" metaIdentifierStart identifierPart* ">"
     metaIdentifierStart = "$" | identifierStart
   }

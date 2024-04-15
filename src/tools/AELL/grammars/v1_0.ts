@@ -4,7 +4,7 @@ import * as v1_0 from '../../autohotkey/parser/expression/grammars/v1_0';
 
 export const grammarText = `
 A1ELL <: AutoHotkey_v1_1 {
-  rawIdentifier := normalIdentifier | metaIdentifier
+  identifier := normalIdentifier | metaIdentifier
 
   metaIdentifier = "<" metaIdentifierStart identifierPart* ">"
   metaIdentifierStart = "$" | identifierStart

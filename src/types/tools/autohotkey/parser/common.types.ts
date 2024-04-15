@@ -288,7 +288,9 @@ export type Expression =
   | PrefixUnaryExpression
   | PostfixUnaryExpression
   | BinaryExpression
-  | SequenceExpression;
+  | SequenceExpression
+  | PropertyAccessExpression
+  | ElementAccessExpression;
 export interface Primitive extends Syntax {
   kind: SyntaxKind;
   value: string;
@@ -328,5 +330,14 @@ export interface SequenceExpression extends Syntax {
   kind: SyntaxKind.SequenceExpression;
   expressions: Expression[];
 }
-
+export interface PropertyAccessExpression extends Syntax {
+  kind: SyntaxKind.PropertyAccessExpression;
+  object: Expression;
+  property: Identifier | DereferenceExpression | NameSubstitutionExpression;
+}
+export interface ElementAccessExpression extends Syntax {
+  kind: SyntaxKind.PropertyAccessExpression;
+  object: Expression;
+  elements: Expression[];
+}
 // #endregion expression

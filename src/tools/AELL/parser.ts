@@ -15,8 +15,8 @@ export const createAELLParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotke
   })();
 
   return {
-    parse: <T extends SyntaxNode>(input: string): T => {
-      return parser.parse(input) as T;
+    parse: <T extends SyntaxNode>(input: string, startRule?: string): T => {
+      return parser.parse(input, startRule) as T;
     },
   };
 };

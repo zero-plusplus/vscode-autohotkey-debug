@@ -6,7 +6,7 @@ import { SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.
 
 export const grammarText = `
   AutoHotkey_v2_0 <: AutoHotkey_v1_1 {
-    DereferenceExpression := ~rawIdentifier percentToken ~percentToken Expressions percentToken
+    DereferenceExpression := ~identifier percentToken ~percentToken Expressions percentToken
 
     EqualityExpression
       := EqualityExpression equalsToken RelationalExpression -- loose_equal
@@ -14,6 +14,11 @@ export const grammarText = `
        | EqualityExpression exclamationEqualsToken RelationalExpression -- not_loose_equal
        | EqualityExpression exclamationEqualsEqualsToken RelationalExpression -- not_equal
        | RelationalExpression
+
+    MemberExpression
+      := MemberExpression dotToken ((identifier ~percentToken) | DereferenceExpression | NameSubstitutionExpression) -- propertyaccess
+       | MemberExpression ~whitespace openBracketToken Arguments closeBracketToken -- elementaccess
+       | PrimaryExpression
 
     identifierStart := (letter | "_")
 
@@ -44,8 +49,9 @@ export const astMapping = (() => {
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const mapping = {
     ...v1_0.astMapping,
-    // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-    stringLiteral:  { kind: SyntaxKind.StringLiteral, value: (nodes: ohm.Node[]) => slicedText(1, -1)(nodes[0].children), text, startPosition, endPosition },
+
+    DereferenceExpression:    { kind: SyntaxKind.DereferenceExpression, expression: 1, startPosition, endPosition },
+    stringLiteral:            { kind: SyntaxKind.StringLiteral, value: (nodes: ohm.Node[]): string => slicedText(1, -1)(nodes[0].children), text, startPosition, endPosition },
   };
   return mapping;
 })();
