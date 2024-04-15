@@ -334,10 +334,12 @@ export interface PropertyAccessExpression extends Syntax {
   kind: SyntaxKind.PropertyAccessExpression;
   object: Expression;
   property: Identifier | DereferenceExpression | NameSubstitutionExpression;
+  text: string;
 }
 export interface ElementAccessExpression extends Syntax {
-  kind: SyntaxKind.PropertyAccessExpression;
+  kind: SyntaxKind.ElementAccessExpression;
   object: Expression;
   elements: Expression[];
+  text: string;
 }
 // #endregion expression

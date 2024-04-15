@@ -23,8 +23,9 @@ describe('evaluator', () => {
     '  int := 123',
     '  float := 123.456',
     '  bool := true',
-    '  obj := { str: str, int: int }',
+    '  objKeys := [ "str", "int" ]',
     '  arr := [ str, int, float, bool ]',
+    '  obj := { str: str, int: int, arr: arr }',
     '  return',
     '}',
   ].join('\n');
@@ -44,7 +45,7 @@ describe('evaluator', () => {
       testFile = await createTempDirectoryWithFile('evaluator-v1', '.ahk', `${utf8BomText}${text}`);
       const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1 });
       runtime = await launcher.launch();
-      await runtime.session.setLineBreakpoint(testFile.path, 12);
+      await runtime.session.setLineBreakpoint(testFile.path, 13);
       await runtime.session.exec('run');
       evaluator = createEvaluator(runtime.session);
     });
@@ -128,6 +129,22 @@ describe('evaluator', () => {
       ${'float'}    | ${{ constant: false, fullName: 'float', name: 'float', size: 7, type: 'string', value: '123.456' }}
       ${'bool'}     | ${{ constant: false, fullName: 'bool', name: 'bool', size: 1, type: 'string', value: '1' }}
     `('Identifier (Primitive)', async({ text, expected }) => {
+      expect(await evaluator.eval(String(text))).toMatchObject(expected as Record<string, any>);
+    });
+
+    test.each`
+      text          | expected
+      ${'obj.str'}  | ${{ constant: false, fullName: 'obj.str', name: 'str', size: 3, type: 'string', value: 'foo' }}
+      ${'obj.int'}  | ${{ constant: false, fullName: 'obj.int', name: 'int', size: 3, type: 'integer', value: '123' }}
+    `('PropertyAccessExpression', async({ text, expected }) => {
+      expect(await evaluator.eval(String(text))).toMatchObject(expected as Record<string, any>);
+    });
+
+    test.each`
+      text          | expected
+      ${'arr[1]'}   | ${{ constant: false, fullName: 'arr[1]', name: '[1]', size: 3, type: 'string', value: 'foo' }}
+      ${'arr[2]'}   | ${{ constant: false, fullName: 'arr[2]', name: '[2]', size: 3, type: 'integer', value: '123' }}
+    `('ElementAccessExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toMatchObject(expected as Record<string, any>);
     });
   });

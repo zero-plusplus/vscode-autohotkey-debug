@@ -1,7 +1,7 @@
 import { PrimitiveProperty, Property, Session, UnsetProperty } from '../../types/dbgp/session.types';
 import { AELLEvaluator, EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 import { CalcCallback } from '../../types/tools/AELL/utils.types';
-import { BinaryExpression, BooleanLiteral, Expression, Identifier, NumberLiteral, PostfixUnaryExpression, PrefixUnaryExpression, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
+import { BinaryExpression, BooleanLiteral, ElementAccessExpression, Expression, Identifier, NumberLiteral, PostfixUnaryExpression, PrefixUnaryExpression, PropertyAccessExpression, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
 import { toSigned64BitBinary } from '../convert';
 import { isFloat } from '../predicate';
 import { createAELLParser } from './parser';
@@ -13,6 +13,7 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
   const {
     calc,
     createBooleanProperty,
+    createUnsetProperty,
     createNumberProperty,
     createStringProperty,
     equiv,
@@ -27,19 +28,21 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
     },
   };
 
-  async function evalNode(node: Expression): Promise<EvaluatedValue> {
+  async function evalNode(node: Expression): Promise<Property> {
     switch (node.kind) {
       case SyntaxKind.Identifier: return evalIdentifier(node);
       case SyntaxKind.StringLiteral: return evalStringLiteral(node);
       case SyntaxKind.NumberLiteral: return evalNumberLiteral(node);
       case SyntaxKind.BooleanLiteral: return evalBooleanLiteral(node);
+      case SyntaxKind.PropertyAccessExpression: return evalPropertyAccessExpression(node);
+      case SyntaxKind.ElementAccessExpression: return evalElementAccessExpression(node);
       case SyntaxKind.UnaryExpression: return evalUnaryExpression(node);
       case SyntaxKind.PrefixUnaryExpression: return evalPrefixUnaryExpression(node);
       case SyntaxKind.PostfixUnaryExpression: return evalPostfixUnaryExpression(node);
       case SyntaxKind.BinaryExpression: return evalBinaryExpression(node);
       default: break;
     }
-    return undefined;
+    return createUnsetProperty('');
 
     async function evalIdentifier(node: Identifier): Promise<Property> {
       const contexts = await session.getContexts();
@@ -64,6 +67,31 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
     async function evalBooleanLiteral(node: BooleanLiteral): Promise<PrimitiveProperty> {
       return Promise.resolve(createBooleanProperty(node.text));
     }
+    async function evalPropertyAccessExpression(node: PropertyAccessExpression): Promise<Property> {
+      const object = await evalNode(node.object);
+      const keyProperty = await evalNode(node.property);
+      const key = keyProperty.type === 'object' ? String(keyProperty.address) : keyProperty.name;
+
+      const child = await getPropertyByPrototypeChain(object, key);
+      child.fullName = node.text;
+      child.name = node.text.slice((node.object.endPosition - node.object.startPosition) + '.'.length);
+      return child;
+    }
+    async function evalElementAccessExpression(node: ElementAccessExpression): Promise<Property> {
+      const object = await evalNode(node.object);
+
+      let currentProperty: Property = object;
+      for await (const element of node.elements) {
+        const keyProperty = await evalNode(element);
+        const key = keyProperty.type === 'object' ? String(keyProperty.address) : keyProperty.value;
+
+        currentProperty = await getPropertyByPrototypeChain(currentProperty, key);
+      }
+
+      currentProperty.fullName = node.text;
+      currentProperty.name = node.text.slice(node.object.endPosition - node.object.startPosition);
+      return currentProperty;
+    }
     async function evalUnaryExpression(node: UnaryExpression): Promise<PrimitiveProperty> {
       switch (node.operator.kind) {
         case SyntaxKind.PlusToken: return calc(createNumberProperty(1), await evalNode(node.operand), (a, b) => a * b);
@@ -77,9 +105,7 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
     }
     async function evalPrefixUnaryExpression(node: PrefixUnaryExpression): Promise<EvaluatedValue> {
       const value = await evalNode(node.operand);
-      if (value === undefined) {
-        return undefined;
-      }
+
       return assignCalculatedNumber(value, (a, b) => {
         switch (node.operator.kind) {
           case SyntaxKind.PlusPlusToken: return a + b;
@@ -89,11 +115,9 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
         return undefined;
       });
     }
-    async function evalPostfixUnaryExpression(node: PostfixUnaryExpression): Promise<EvaluatedValue> {
+    async function evalPostfixUnaryExpression(node: PostfixUnaryExpression): Promise<Property> {
       const value = await evalNode(node.operand);
-      if (value === undefined) {
-        return undefined;
-      }
+
       await assignCalculatedNumber(value, (a, b) => {
         switch (node.operator.kind) {
           case SyntaxKind.PlusPlusToken: return a + b;
@@ -170,6 +194,23 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
     async function assignCalculatedNumber(property: Property, calcCallback: CalcCallback): Promise<Property> {
       const calculated = calc(property, createNumberProperty(1), calcCallback);
       return session.setProperty({ ...property, value: calculated.value, type: 'integer' });
+    }
+    async function getPropertyByPrototypeChain(object: Property, key: string): Promise<Property> {
+      const fullName = `${object.fullName}.${key}`;
+      if (object.type !== 'object') {
+        return createUnsetProperty(fullName, object.contextId, object.depth);
+      }
+
+      const child = object.children.find((child) => child.fullName.toLowerCase() === fullName.toLowerCase()) ?? await session.getProperty(object.contextId, fullName);
+      if (child.type !== 'undefined') {
+        return child;
+      }
+
+      const baseProperty = await session.getProperty(object.contextId, `${object.fullName}.<base>`, object.depth);
+      if (baseProperty.type === 'undefined') {
+        return createUnsetProperty(key, baseProperty.contextId, baseProperty.depth);
+      }
+      return getPropertyByPrototypeChain(baseProperty, key);
     }
   }
 };

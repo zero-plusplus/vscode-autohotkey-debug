@@ -1,5 +1,5 @@
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { PrimitiveProperty, Property } from '../../types/dbgp/session.types';
+import { PrimitiveProperty, Property, UnsetProperty } from '../../types/dbgp/session.types';
 import { EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 import { CalcCallback, EquivCallback } from '../../types/tools/AELL/utils.types';
 import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../types/tools/autohotkey/version/common.types';
@@ -84,6 +84,17 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
         ...property,
         fullName: name,
         name,
+      };
+    },
+    createUnsetProperty: (name: string, contextId = -1, depth?: number): UnsetProperty => {
+      return {
+        contextId,
+        depth,
+        fullName: name,
+        name,
+        size: 0,
+        type: 'undefined',
+        value: '',
       };
     },
     toNumberByProperty: (property: Property | undefined): number | undefined => {
