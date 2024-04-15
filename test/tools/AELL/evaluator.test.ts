@@ -141,9 +141,10 @@ describe('evaluator', () => {
     });
 
     test.each`
-      text          | expected
-      ${'arr[1]'}   | ${{ constant: false, fullName: 'arr[1]', name: '[1]', size: 3, type: 'string', value: 'foo' }}
-      ${'arr[2]'}   | ${{ constant: false, fullName: 'arr[2]', name: '[2]', size: 3, type: 'integer', value: '123' }}
+      text                | expected
+      ${'arr[1]'}         | ${{ constant: false, fullName: 'arr[1]', name: '[1]', size: 3, type: 'string', value: 'foo' }}
+      ${'arr[2]'}         | ${{ constant: false, fullName: 'arr[2]', name: '[2]', size: 3, type: 'integer', value: '123' }}
+      ${'obj["arr", 2]'}  | ${{ constant: false, fullName: 'obj["arr", 2]', name: '["arr", 2]', size: 3, type: 'integer', value: '123' }}
     `('ElementAccessExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toMatchObject(expected as Record<string, any>);
     });
