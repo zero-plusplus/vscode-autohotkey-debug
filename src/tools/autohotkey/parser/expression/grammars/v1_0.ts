@@ -104,8 +104,8 @@ export const grammarText = `
 
     UnaryExpression
       = notKeyword UnaryExpression -- not_keyword
-      | plusToken UnaryExpression -- positive
-      | minusToken UnaryExpression -- negative
+      | plusToken ~plusToken UnaryExpression -- positive
+      | minusToken ~minusToken UnaryExpression -- negative
       | exclamationToken UnaryExpression -- not
       | ampersandToken UnaryExpression -- address
       | tildeToken UnaryExpression -- bitwise_not
