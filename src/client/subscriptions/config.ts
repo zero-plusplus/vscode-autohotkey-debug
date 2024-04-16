@@ -2,11 +2,56 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import JSONC from 'jsonc-parser';
-import { validateDebugConfig } from '../config/validator';
 import { DebugConfig } from '../../types/dap/config.types';
 import { createDefaultDebugConfig } from '../config/default';
 import { readFileSync } from 'fs';
 import { deepDefaults } from '../../tools/utils';
+import * as attributes from '../config/attributes';
+import { createAttributesValidator } from '../config/validator';
+
+export const validateDebugConfig = createAttributesValidator([
+  attributes.name.validator,
+  attributes.type.validator,
+  attributes.request.validator,
+  attributes.stopOnEntry.validator,
+  attributes.args.validator,
+  attributes.port.validator,
+  attributes.hostname.validator,
+  attributes.skipFunctions.validator,
+  attributes.skipFiles.validator,
+  attributes.skipFiles.validator,
+  attributes.trace.validator,
+  attributes.noDebug.validator,
+  attributes.cwd.validator,
+  attributes.env.validator,
+  attributes.openFileOnExit.validator,
+  attributes.variableCategories.validator,
+  attributes.setBreakpoints.validator,
+  attributes.usePerfTips.validator,
+  attributes.useIntelliSenseInDebugging.validator,
+  attributes.useDebugDirective.validator,
+  attributes.useOutputDebug.validator,
+  attributes.useAutoJumpToError.validator,
+  attributes.useAnnounce.validator,
+  attributes.useLoadedScripts.validator,
+  attributes.useUIAVersion.validator,
+
+  attributes.program.validator,
+  attributes.runtime.validator,
+  attributes.runtimeArgs.validator,
+], {
+  async getCurrentFile() {
+    return Promise.resolve(vscode.window.activeTextEditor?.document.fileName);
+  },
+  async getLanguageId(programPath) {
+    const doc = await vscode.workspace.openTextDocument(programPath);
+    return doc.languageId;
+  },
+  async warning(message) {
+    await vscode.window.showWarningMessage(message);
+  },
+});
+
 
 const debugConfigurationProvider: vscode.DebugConfigurationProvider = {
   resolveDebugConfiguration(folder, config, token): vscode.ProviderResult<vscode.DebugConfiguration> {

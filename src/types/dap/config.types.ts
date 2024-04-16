@@ -11,7 +11,7 @@ import { AnnounceLevel } from '../client/config/attributes/useAnnounce.types';
 export type AttributeType = LiteralUnion<'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]' | 'object', string>;
 export interface AttributeCheckerFactoryUtils {
   getLanguageId?: (programPath: string) => Promise<string>;
-  getCurrentFile?: () => Promise<string>;
+  getCurrentFile?: () => Promise<string | undefined>;
   warning?: (message: string) => Promise<void>;
 }
 export type AttributeCheckerFactory = <K extends keyof DebugConfig>(attributeName: K, utils?: AttributeCheckerFactoryUtils) => AttributeChecker<K>;

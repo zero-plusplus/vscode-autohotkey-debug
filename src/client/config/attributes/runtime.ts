@@ -6,9 +6,7 @@ import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'runtime';
 export const dependedAttributeName = 'program';
-export const defaultValue = fileExists(defaultAutoHotkeyRuntimePath_v2)
-  ? defaultAutoHotkeyRuntimePath_v2
-  : defaultAutoHotkeyRuntimePath_v1;
+export const defaultValue = '';
 
 export const validator: AttributeValidator = async(createChecker): Promise<void> => {
   await validateByFileExists(createChecker);
@@ -25,7 +23,10 @@ export const validator: AttributeValidator = async(createChecker): Promise<void>
 
   const checker = createChecker(attributeName);
   if (!checker.isValid) {
-    checker.markValidatedPath(defaultValue);
+    const runtime = fileExists(defaultAutoHotkeyRuntimePath_v2)
+      ? defaultAutoHotkeyRuntimePath_v2
+      : defaultAutoHotkeyRuntimePath_v1;
+    checker.markValidatedPath(runtime);
   }
   return Promise.resolve();
 };
@@ -57,12 +58,12 @@ export const validateByRuntime_v1_v2: AttributeValidator = async(createChecker):
     switch (languageId) {
       case 'ahk':
       case 'ahkh': {
-        checker.markValidatedPath(rawRuntime_v1);
+        checker.markValidatedPath(path.isAbsolute(rawRuntime_v1) ? rawRuntime_v1 : path.resolve(defaultAutoHotkeyInstallDir, rawRuntime_v1));
         return Promise.resolve();
       }
       case 'ahk2':
       case 'ahkh2': {
-        checker.markValidatedPath(rawRuntime_v2);
+        checker.markValidatedPath(path.isAbsolute(rawRuntime_v2) ? rawRuntime_v2 : path.resolve(defaultAutoHotkeyInstallDir, rawRuntime_v2));
         return Promise.resolve();
       }
       default: break;
@@ -70,11 +71,11 @@ export const validateByRuntime_v1_v2: AttributeValidator = async(createChecker):
   }
 
   if (rawRuntime_v2) {
-    checker.markValidatedPath(rawRuntime_v2);
+    checker.markValidatedPath(path.isAbsolute(rawRuntime_v2) ? rawRuntime_v2 : path.resolve(defaultAutoHotkeyInstallDir, rawRuntime_v2));
     return Promise.resolve();
   }
   if (rawRuntime_v1) {
-    checker.markValidatedPath(rawRuntime_v1);
+    checker.markValidatedPath(path.isAbsolute(rawRuntime_v1) ? rawRuntime_v1 : path.resolve(defaultAutoHotkeyInstallDir, rawRuntime_v1));
     return Promise.resolve();
   }
   return Promise.resolve();

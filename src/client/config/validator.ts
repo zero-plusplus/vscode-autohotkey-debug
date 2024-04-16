@@ -2,7 +2,6 @@
 import * as path from 'path';
 import { deepDefaults } from '../../tools/utils';
 import { AttributeChecker, AttributeCheckerFactoryUtils, AttributeValidator, DebugConfig, DebugConfigValidator, NormalizedDebugConfig } from '../../types/dap/config.types';
-import * as attributes from './attributes';
 import { AttributeFileNotFoundError, AttributeFormatError, AttributeTypeError, AttributeValueError, AttributeWarningError, ValidationPriorityError } from './error';
 
 const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig, utils: AttributeCheckerFactoryUtils = {}): ((attributeName: K) => AttributeChecker<K>) => {
@@ -88,35 +87,3 @@ export const createAttributesValidator = (validators: AttributeValidator[], util
     return clonedConfig as NormalizedDebugConfig;
   };
 };
-
-export const validateDebugConfig = createAttributesValidator([
-  attributes.name.validator,
-  attributes.type.validator,
-  attributes.request.validator,
-  attributes.stopOnEntry.validator,
-  attributes.args.validator,
-  attributes.port.validator,
-  attributes.hostname.validator,
-  attributes.skipFunctions.validator,
-  attributes.skipFiles.validator,
-  attributes.skipFiles.validator,
-  attributes.trace.validator,
-  attributes.noDebug.validator,
-  attributes.cwd.validator,
-  attributes.env.validator,
-  attributes.openFileOnExit.validator,
-  attributes.variableCategories.validator,
-  attributes.setBreakpoints.validator,
-  attributes.usePerfTips.validator,
-  attributes.useIntelliSenseInDebugging.validator,
-  attributes.useDebugDirective.validator,
-  attributes.useOutputDebug.validator,
-  attributes.useAutoJumpToError.validator,
-  attributes.useAnnounce.validator,
-  attributes.useLoadedScripts.validator,
-  attributes.useUIAVersion.validator,
-
-  attributes.program.validator,
-  attributes.runtime.validator,
-  attributes.runtimeArgs.validator,
-]);
