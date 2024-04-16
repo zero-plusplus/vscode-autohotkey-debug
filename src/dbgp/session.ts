@@ -2,7 +2,7 @@ import { Server, Socket, createServer } from 'net';
 import { EventEmitter } from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { AutoHotkeyProcess, Breakpoint, CallStack, CommandSender, Context, ExceptionBreakpoint, ExecResult, LineBreakpoint, ObjectProperty, PrimitiveProperty, Property, ScriptStatus, Session, SessionConnector, contextNameById } from '../types/dbgp/session.types';
+import { AutoHotkeyProcess, Breakpoint, CallStack, CommandSender, Context, ExceptionBreakpoint, ExecResult, LineBreakpoint, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionConnector, contextNameById } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
@@ -12,6 +12,7 @@ import { parseAutoHotkeyVersion } from '../tools/autohotkey/version';
 
 const responseEventName = 'response';
 export const createSessionConnector = (eventEmitter: EventEmitter): SessionConnector => {
+  const pendingCommands = new Map<number, PendingCommand>();
   let packetBuffer: Buffer | undefined;
 
   return {
@@ -297,6 +298,18 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
             .toString();
           eventEmitter.emit(`debugger:${type}`, message);
         }
+
+        if ('response' in packet) {
+          const currentTransactionId = Number(packet.response.attributes.transaction_id);
+          if (pendingCommands.has(currentTransactionId)) {
+            const pendingCommand = pendingCommands.get(currentTransactionId)!;
+            pendingCommands.delete(currentTransactionId);
+
+            const response = packet.response;
+            response.command = pendingCommand.request;
+            pendingCommand.resolve(response);
+          }
+        }
       });
       server.on('close', () => {
         eventEmitter.emit('server:close');
@@ -407,19 +420,11 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
             return;
           }
 
+          pendingCommands.set(transactionId, { request: command_str, resolve });
           socket.write(Buffer.from(`${command_str}\0`), (err) => {
             if (err) {
               reject(new Error('Some error occurred when writing.'));
             }
-
-            const listener = (packet: dbgp.ResponsePacket): void => {
-              if ('response' in packet && Number(packet.response.attributes.transaction_id) === transactionId) {
-                const response = packet.response;
-                response.command = command_str;
-                resolve(response as T);
-              }
-            };
-            socket.once(responseEventName, listener);
           });
         });
       }

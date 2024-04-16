@@ -98,6 +98,10 @@ export type SessionEventName =
 | 'server:close'
 | 'server:error';
 
+export interface PendingCommand {
+  request: string;
+  resolve: (...args) => any;
+}
 export interface Session {
   initPacket: dbgp.InitPacket;
   version: ParsedAutoHotkeyVersion;
