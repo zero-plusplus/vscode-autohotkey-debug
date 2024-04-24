@@ -87,7 +87,7 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
       });
       socket.on(responseEventName, (packet: dbgp.Packet) => {
         if ('init' in packet) {
-          setLanguageVersion().then((version) => {
+          getLanguageVersion().then((version) => {
             const session: Session = {
               initPacket: packet,
               version,
@@ -103,7 +103,7 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
                 }
                 return true;
               },
-              setLanguageVersion,
+              getLanguageVersion,
               // #endregion setting
               // #region execuation
               async exec(command: dbgp.ContinuationCommandName): Promise<ExecResult> {
@@ -319,7 +319,7 @@ export const createSessionConnector = (eventEmitter: EventEmitter): SessionConne
       });
     });
 
-    async function setLanguageVersion(): Promise<ParsedAutoHotkeyVersion> {
+    async function getLanguageVersion(): Promise<ParsedAutoHotkeyVersion> {
       const response = await sendCommand<dbgp.FeatureGetResponse>('feature_get', [ '-n', 'language_version' ]);
       if (response.error) {
         throw new DbgpError(Number(response.error.attributes.code));

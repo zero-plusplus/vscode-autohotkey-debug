@@ -13,12 +13,20 @@ export const variablesRequest = async <R extends DebugProtocol.VariablesResponse
     response.body = {
       variables: scope.variables,
     };
-    return Promise.resolve(response);
+    return response;
+  }
+
+  const childrens = await adapter.runtime.fetchVariableChildren(args.variablesReference);
+  if (childrens) {
+    response.body = {
+      variables: childrens,
+    };
+    return response;
   }
 
   const variable = scopeOrVariable;
   response.body = {
     variables: [ variable ],
   };
-  return Promise.resolve(response);
+  return response;
 };

@@ -1,17 +1,115 @@
 import { URI } from 'vscode-uri';
 import { safeCall } from '../tools/utils';
+import { ObjectProperty, PrimitiveProperty, Property, UnsetProperty } from '../types/dbgp/session.types';
+import { DataType } from '../types/dbgp/AutoHotkeyDebugger.types';
 
-export const isUncPath = (fileName: string): boolean => {
+// #region predicates
+export function isUncPath(fileName: string): boolean {
   return fileName.startsWith('\\\\');
-};
-export const toDbgpFileName = (filePath: string): string | undefined => {
+}
+export function isDataType(value: any): value is DataType {
+  switch (value) {
+    case 'undefined':
+    case 'string':
+    case 'integer':
+    case 'float':
+    case 'object':
+      return true;
+    default: break;
+  }
+  return false;
+}
+export function isProperty(value: any): value is Property {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (!('contextId' in value) || typeof value.contextId !== 'number') {
+    return false;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (!('depth' in value) || typeof value.depth !== 'number') {
+    return false;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (!('name' in value) || typeof value.name !== 'string') {
+    return false;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (!('fullName' in value) || typeof value.fullName !== 'string') {
+    return false;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (!('size' in value) || typeof value.size !== 'number') {
+    return false;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (!('type' in value) || !isDataType(value.type)) {
+    return false;
+  }
+  return true;
+}
+export function isObjectProperty(value: any): value is ObjectProperty {
+  return isProperty(value) && 'address' in value;
+}
+export function isSpecialName(value: any): value is string {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  return value.startsWith('<') && value.endsWith('>');
+}
+export function isObjectAddressName(value: any): value is string {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  return value.startsWith('[Object(') && value.endsWith(')]');
+}
+export function isArrayIndexName(value: any): value is string {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  return (value.startsWith('[') && value.endsWith(']'));
+}
+export function isArrayProperty(value: any): value is ObjectProperty {
+  if (!isObjectProperty(value)) {
+    return false;
+  }
+
+  let index = 1;
+  const limit = 15;
+  for (const child of value.children.slice(0, limit)) {
+    if (isArrayIndexName(child.name)) {
+      const childIndex = Number(child.name.slice(1, -1));
+      if (index === childIndex) {
+        index++;
+        continue;
+      }
+      return false;
+    }
+    continue;
+  }
+  return 0 < index;
+}
+export function isUnsetProperty(value: any): value is UnsetProperty {
+  return isProperty(value) && !isObjectProperty(value) && value.type === 'undefined';
+}
+export function isPrimitiveProperty(value: any): value is PrimitiveProperty {
+  return isProperty(value) && !isUnsetProperty(value);
+}
+// #endregion predicates
+
+// #region convert
+export function escapeCommandArgValue(value: string): string {
+  return `"${value.replaceAll('"', '\\"').replaceAll('\0', '\\0')}"`;
+}
+export function encodeToBase64(value: string): string {
+  return Buffer.from(value).toString('base64');
+}
+export function toDbgpFileName(filePath: string): string | undefined {
   const uriFromFilePath = safeCall(() => URI.file(filePath).toString().toLowerCase());
   if (uriFromFilePath) {
     return uriFromFilePath;
   }
   return undefined;
-};
-export const toFsPath = (fileName: string): string => {
+}
+export function toFsPath(fileName: string): string {
   const fsPath = URI.parse(fileName).fsPath;
 
   // The UNC path is somehow converted as follows and needs to be corrected.
@@ -20,14 +118,42 @@ export const toFsPath = (fileName: string): string => {
     return fsPath.slice(1);
   }
   return fsPath;
+}
+export const toValueByProperty = (property: Property): string => {
+  if (isObjectProperty(property)) {
+    return toValueByObjectProperty(property);
+  }
+  return toValueByPrimitiveProperty(property);
 };
+export const toValueByPrimitiveProperty = (property: PrimitiveProperty | UnsetProperty): string => {
+  switch (property.type) {
+    case 'string': return `"${property.value}"`;
+    case 'integer':
+    case 'float':
+    case 'undefined': return property.value;
+    default: break;
+  }
+  return 'undefined';
+};
+export const toValueByObjectProperty = (property: ObjectProperty): string => {
+  const isArray = isArrayProperty(property);
 
-export const escapeCommandArgValue = (value: string): string => {
-  return `"${value.replaceAll('"', '\\"').replaceAll('\0', '\\0')}"`;
+  const limit = 15;
+  const childValues: string[] = [];
+  for (const child of property.children.slice(0, limit)) {
+    const childValue = toValueByProperty(child);
+    childValues.push(isArray ? childValue : `${child.name}: ${childValue}`);
+  }
+
+  const ellipsis = limit < property.children.length ? '...' : '';
+  if (isArray) {
+    return childValues.length === 0 ? `[]` : `[ ${childValues.join(', ')}${ellipsis} ]`;
+  }
+  return childValues.length === 0 ? `{}` : `{ ${childValues.join(', ')}${ellipsis} }`;
 };
-export const encodeToBase64 = (value: string): string => {
-  return Buffer.from(value).toString('base64');
-};
+// #endregion convert
+
+// #region builder
 export const createCommandArgs = (...args: Array<string | number | boolean | undefined>): string[] => {
   return args.flatMap((arg, i, args) => {
     const isFlag = typeof arg === 'string' && arg.startsWith('-');
@@ -61,3 +187,4 @@ export const createCommandArgs = (...args: Array<string | number | boolean | und
     return [ String(arg) ];
   });
 };
+// #endregion builder

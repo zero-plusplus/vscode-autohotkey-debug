@@ -16,7 +16,8 @@ export interface Scope extends DebugProtocol.Scope {
   variables: Variable[];
 }
 export interface Variable extends DebugProtocol.Variable {
-  scope: Scope;
+  scopeId: Scope['id'];
+  frameId: StackFrame['id'];
 }
 
 export interface ExecutionContextManager {

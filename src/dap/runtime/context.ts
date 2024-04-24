@@ -1,6 +1,7 @@
 import * as path from 'path';
 import { CallStack, ExecutionContextManager, Scope, StackFrame, Variable } from '../../types/dap/runtime/context.types';
-import { Session } from '../../types/dbgp/session.types';
+import { Property, Session } from '../../types/dbgp/session.types';
+import { isObjectProperty, toValueByProperty } from '../../dbgp/utils';
 
 const firstFrameId = 1;
 const firstVariableReference = 1;
@@ -57,21 +58,7 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
           stackFrame,
           name: context.name,
           expensive: false,
-          variables: context.properties.map((property) => {
-            const variable: Variable = {
-              name: property.name,
-              evaluateName: property.fullName,
-              value: '',
-              type: property.type,
-              scope,
-              variablesReference: variablesReference++,
-              indexedVariables: undefined,
-              namedVariables: undefined,
-            };
-
-            cacheByVariableReference.set(scope.variablesReference, scope);
-            return variable;
-          }),
+          variables: createVariablesByProperties(context.id, stackFrame.id, context.properties),
 
           // source
           source: undefined,
@@ -105,9 +92,41 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
         return undefined;
       }
 
-      const fetchVariableDepth = 1; // Depth at which child elements of a variable are retrieved. The depth is fixed at 1 in order to retrieve recursively
-      await session.getProperty(variable.scope.id, variable.evaluateName, fetchVariableDepth);
-      return Promise.resolve([]);
+      const stackFrame = this.getStackFrameById(variable.frameId);
+      if (!stackFrame) {
+        return [];
+      }
+
+      const property = await session.getProperty(variable.scopeId, variable.evaluateName, stackFrame.level);
+      if (isObjectProperty(property)) {
+        return createVariablesByProperties(variable.scopeId, frameId, property.children);
+      }
+      return [];
     },
   };
+
+  function createVariableByProperty(scopeId: number, frameId: number, property: Property): Variable {
+    const variable: Variable = {
+      name: property.name,
+      evaluateName: property.fullName,
+      value: toValueByProperty(property),
+      type: property.type,
+      scopeId,
+      frameId,
+      variablesReference: 0,
+      indexedVariables: undefined,
+      namedVariables: undefined,
+    };
+
+    if (isObjectProperty(property)) {
+      variable.variablesReference = variablesReference++;
+      cacheByVariableReference.set(variable.variablesReference, variable);
+    }
+    return variable;
+  }
+  function createVariablesByProperties(scopeId: number, frameId: number, properties: Property[]): Variable[] {
+    return properties.map((property) => {
+      return createVariableByProperty(scopeId, frameId, property);
+    });
+  }
 };

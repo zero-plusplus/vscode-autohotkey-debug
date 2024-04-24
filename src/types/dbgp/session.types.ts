@@ -109,7 +109,7 @@ export interface Session {
   sendCommand: CommandSender;
   // #region setting
   suppressException: () => Promise<boolean>;
-  setLanguageVersion: () => Promise<ParsedAutoHotkeyVersion>;
+  getLanguageVersion: () => Promise<ParsedAutoHotkeyVersion>;
   // #endregion setting
   // #region execuation
   exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
