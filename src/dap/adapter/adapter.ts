@@ -30,11 +30,14 @@ import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { RequestQueue } from '../utils/RequestQueue';
 import { ExecResult } from '../../types/dbgp/session.types';
 import { MessageCategory, MessageSource, RuntimeEventEmitter, StopReason } from '../../types/dap/adapter/adapter.types';
+import { AELLEvaluator } from '../../types/tools/AELL/evaluator.types';
+import { createEvaluator } from '../../tools/AELL/evaluator';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   public runtime!: Readonly<ScriptRuntime>;
   public config!: Readonly<NormalizedDebugConfig>;
   public eventEmitter!: Readonly<RuntimeEventEmitter>;
+  public evaluator!: AELLEvaluator;
   private readonly requestQueue = new RequestQueue();
   // #region public methods
   public sendStoppedEvent(reason: StopReason | ExecResult): void {
@@ -109,6 +112,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
       const [ runtime, newResponse ] = await launchRequest(this, response);
       runtime.config = this.config;
       this.runtime = runtime;
+      this.evaluator = createEvaluator(this.runtime.session);
 
       this.sendResponse(newResponse);
       this.sendEvent(new InitializedEvent());
