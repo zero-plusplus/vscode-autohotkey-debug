@@ -1,4 +1,3 @@
-import EventEmitter from 'events';
 import { safeCall } from '../../tools/utils';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
@@ -7,7 +6,7 @@ import { createBreakpointManager } from './breakpoint';
 import { createContinuationCommandExecutor } from './executor';
 import { createExecutionContextManager } from './context';
 
-export const createScriptRuntime = (session: Readonly<Session>, eventEmitter: Readonly<EventEmitter>, config: Readonly<NormalizedDebugConfig>): ScriptRuntime => {
+export const createScriptRuntime = (session: Readonly<Session>, config: Readonly<NormalizedDebugConfig>): ScriptRuntime => {
   const contextManager = createExecutionContextManager(session);
   const breakpointManager = createBreakpointManager(session);
   const exec = createContinuationCommandExecutor(session, config, breakpointManager);
@@ -19,12 +18,12 @@ export const createScriptRuntime = (session: Readonly<Session>, eventEmitter: Re
     session,
     config,
     get isClosed() {
-      return session.isTerminatedProcess;
+      return session.isTerminated;
     },
-    async close(): Promise<Error | undefined> {
+    async close(): Promise<void> {
       return session.close();
     },
-    async detach(): Promise<Error | undefined> {
+    async detach(): Promise<void> {
       return session.detach();
     },
     async echo(args) {

@@ -5,7 +5,6 @@ import { TemporaryResource, createTempDirectoryWithFile } from '../../../src/too
 import { ScriptRuntime } from '../../../src/types/dap/runtime/scriptRuntime.types';
 import { AELLEvaluator } from '../../../src/types/tools/AELL/evaluator.types';
 import { createScriptRuntimeLauncher } from '../../../src/dap/runtime/launcher';
-import EventEmitter from 'events';
 import { createDefaultDebugConfig } from '../../../src/client/config/default';
 import { utf8BomText } from '../../../src/tools/utils/checkUtf8WithBom';
 import { defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2 } from '../../../src/tools/autohotkey';
@@ -43,7 +42,7 @@ describe('evaluator', () => {
 
     beforeAll(async() => {
       testFile = await createTempDirectoryWithFile('evaluator-v1', '.ahk', `${utf8BomText}${text}`);
-      const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1 });
+      const launcher = createScriptRuntimeLauncher({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1 });
       runtime = await launcher.launch();
       await runtime.session.setLineBreakpoint(testFile.path, 13);
       await runtime.session.exec('run');
@@ -160,7 +159,7 @@ describe('evaluator', () => {
 
     beforeAll(async() => {
       testFile = await createTempDirectoryWithFile('evaluator-v2', '.ahk', `${utf8BomText}${text}`);
-      const launcher = createScriptRuntimeLauncher(new EventEmitter(), { ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2 });
+      const launcher = createScriptRuntimeLauncher({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2 });
       runtime = await launcher.launch();
       await runtime.session.setLineBreakpoint(testFile.path, 13);
       await runtime.session.exec('run');

@@ -149,10 +149,6 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       return utils.createStringProperty('');
     },
     equiv: (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: EquivCallback): PrimitiveProperty => {
-      if (leftValue === undefined || rightValue === undefined) {
-        return utils.createBooleanProperty(false);
-      }
-
       if (leftValue.type === 'object' || rightValue.type === 'object') {
         if (leftValue.type === 'object' && rightValue.type === 'object') {
           return utils.createBooleanProperty(callback(leftValue.address, rightValue.address));

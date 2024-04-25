@@ -22,8 +22,8 @@ export interface ScriptRuntime extends BreakpointManager, ExecutionContextManage
   isClosed: boolean;
   suppressException: () => Promise<boolean>;
   setExceptionBreakpoint: (state: boolean) => Promise<boolean>;
-  close: () => Promise<Error | undefined>;
-  detach: () => Promise<Error | undefined>;
+  close: () => Promise<void>;
+  detach: () => Promise<void>;
   exec: ContinuationCommandExecutor;
   run: () => Promise<ExecResult>;
   stepIn: () => Promise<ExecResult>;

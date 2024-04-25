@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/lines-between-class-members */
-import { EventEmitter } from 'events';
 import { InitializedEvent, LoggingDebugSession, OutputEvent, StoppedEvent, TerminatedEvent } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { NormalizedDebugConfig } from '../../types/dap/config.types';
@@ -28,15 +27,14 @@ import { completionsRequest } from './requests/completionsRequest';
 import { evaluateRequest } from './requests/evaluateRequest';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { RequestQueue } from '../utils/RequestQueue';
-import { ExecResult } from '../../types/dbgp/session.types';
-import { MessageCategory, MessageSource, RuntimeEventEmitter, StopReason } from '../../types/dap/adapter/adapter.types';
+import { EventSource, ExecResult } from '../../types/dbgp/session.types';
+import { MessageCategory, StopReason } from '../../types/dap/adapter/adapter.types';
 import { AELLEvaluator } from '../../types/tools/AELL/evaluator.types';
 import { createEvaluator } from '../../tools/AELL/evaluator';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   public runtime!: Readonly<ScriptRuntime>;
   public config!: Readonly<NormalizedDebugConfig>;
-  public eventEmitter!: Readonly<RuntimeEventEmitter>;
   public evaluator!: AELLEvaluator;
   private readonly requestQueue = new RequestQueue();
   // #region public methods
@@ -66,7 +64,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
       return 'breakpoint';
     }
   }
-  public sendTerminatedEvent(err?: Error): void {
+  public sendTerminatedEvent(errOrCode?: number | Error): void {
     this.sendEvent(new TerminatedEvent());
   }
   public sendOutputMessage(message?: string, category?: MessageCategory): void {
@@ -106,10 +104,10 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, config: NormalizedDebugConfig): Promise<void> {
     await this.request('launchRequest', async() => {
-      this.eventEmitter = this.createAdapterEventEmitter();
-
       this.config = config;
       const [ runtime, newResponse ] = await launchRequest(this, response);
+      this.registerEvents(runtime);
+
       runtime.config = this.config;
       this.runtime = runtime;
       this.evaluator = createEvaluator(this.runtime.session);
@@ -121,9 +119,9 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   protected async attachRequest(response: DebugProtocol.AttachResponse, config: NormalizedDebugConfig): Promise<void> {
     this.config = config;
     await this.request('attachRequest', async() => {
-      this.eventEmitter = this.createAdapterEventEmitter();
-
       const [ runtime, newResponse ] = await attachRequest(this, response);
+      this.registerEvents(runtime);
+
       runtime.config = this.config;
       this.runtime = runtime;
 
@@ -271,52 +269,29 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   // #endregion execution requests
 
   // #region private methods
-  private createAdapterEventEmitter(): RuntimeEventEmitter {
-    const emitter: RuntimeEventEmitter = new EventEmitter();
-    emitter.on('process:message', (source: MessageSource, message?: string): void => {
-      this.sendOutputMessage(message, this.toMessageCategory(source));
+  private registerEvents(runtime: ScriptRuntime): void {
+    runtime.session.onStdOut((source: EventSource, message) => {
+      this.sendOutputMessage(message, 'stdout');
     });
-    emitter.on('server:message', (source: MessageSource, message?: string): void => {
-      this.sendOutputMessage(message, this.toMessageCategory(source));
+    runtime.session.onStdErr((source: EventSource, message: string) => {
+      this.sendOutputMessage(message, 'stderr');
     });
-    emitter.on('debugger:message', (source: MessageSource, message?: string): void => {
-      this.sendOutputMessage(message, this.toMessageCategory(source));
+    runtime.session.onOutputDebug((source: EventSource, message: string) => {
+      this.sendOutputMessage(message, 'stdout');
     });
-    emitter.on('process:error', (err?: Error): void => {
-      this.sendTerminatedEvent(err);
-    });
-    emitter.on('server:error', (err?: Error): void => {
-      this.sendTerminatedEvent(err);
-    });
-    emitter.on('debugger:error', (err?: Error): void => {
-      this.sendTerminatedEvent(err);
-    });
-    emitter.on('process:close', (exitCode?: number): void => {
-      this.sendTerminatedEvent();
-    });
-    emitter.on('server:close', (exitCode?: number): void => {
-      this.sendTerminatedEvent();
-    });
-    emitter.on('debugger:close', (exitCode?: number): void => {
-      this.sendTerminatedEvent();
-    });
-    return emitter;
-  }
-  private toMessageCategory(source: MessageSource): MessageCategory | undefined {
-    switch (source) {
-      case 'stdout':
-      case 'warning': return 'stdout';
-      case 'stderr': return 'stderr';
-      case 'outputdebug': {
-        if (this.config.useOutputDebug === false) {
-          return undefined;
-        }
-
-        return this.config.useOutputDebug.category;
+    runtime.session.onOutputDebug((source: EventSource, message: string) => {
+      if (this.config.useOutputDebug === false) {
+        return;
       }
-      default: break;
-    }
-    return 'stdout';
+
+      this.sendOutputMessage(message, this.config.useOutputDebug.category);
+    });
+    runtime.session.onClose((source: EventSource, exitCode?: number) => {
+      this.sendTerminatedEvent();
+    });
+    runtime.session.onError((source: EventSource, err?: Error) => {
+      this.sendTerminatedEvent(err);
+    });
   }
   private async resetLifetimeOfObjectsReferences(): Promise<void> {
     // https://microsoft.github.io/debug-adapter-protocol/overview#lifetime-of-objects-references

@@ -4,7 +4,7 @@ import { ScriptRuntime } from '../../../types/dap/runtime/scriptRuntime.types';
 import { AutoHotkeyDebugAdapter } from '../adapter';
 
 export const attachRequest = async <R extends DebugProtocol.AttachResponse>(adapter: AutoHotkeyDebugAdapter, response: R): Promise<[ ScriptRuntime, R ]> => {
-  const launcher = createScriptRuntimeLauncher(adapter.eventEmitter, adapter.config);
+  const launcher = createScriptRuntimeLauncher(adapter.config);
   const runtime = await launcher.attach();
 
   return Promise.resolve([ runtime, response ]);

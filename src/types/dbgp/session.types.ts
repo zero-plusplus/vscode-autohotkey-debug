@@ -5,10 +5,29 @@ import { ChildProcessWithoutNullStreams } from 'child_process';
 
 export interface AutoHotkeyProcess extends ChildProcessWithoutNullStreams {
   program: string;
+  isTerminated: boolean;
   invocationCommand: string;
 }
 export interface SessionConnector {
   connect: (port: number, hostname: string, process?: AutoHotkeyProcess) => Promise<Session>;
+}
+export type EventSource = 'debugger' | 'process';
+export type MessageListener = (source: EventSource, message: string) => void;
+export type CloseListener = (source: EventSource, exitCode?: number) => void;
+export type ErrorListener = (source: EventSource, err?: Error) => void;
+export interface SessionCommunicator {
+  initPacket: dbgp.InitPacket;
+  isTerminated: boolean;
+  process?: AutoHotkeyProcess;
+  sendCommand: CommandSender;
+  close: (timeout_ms: number) => Promise<void>;
+  detach: (timeout_ms: number) => Promise<void>;
+  onStdOut: (listener: MessageListener) => void;
+  onStdErr: (listener: MessageListener) => void;
+  onWarning: (listener: MessageListener) => void;
+  onOutputDebug: (listener: MessageListener) => void;
+  onClose: (listener: CloseListener) => void;
+  onError: (listener: ErrorListener) => void;
 }
 export interface ScriptStatus {
   runState: dbgp.RunState;
@@ -102,20 +121,18 @@ export interface PendingCommand {
   request: string;
   resolve: (...args) => any;
 }
-export interface Session {
+export interface Session extends SessionCommunicator {
   initPacket: dbgp.InitPacket;
   version: ParsedAutoHotkeyVersion;
-  isTerminatedProcess: boolean;
   sendCommand: CommandSender;
   // #region setting
   suppressException: () => Promise<boolean>;
-  getLanguageVersion: () => Promise<ParsedAutoHotkeyVersion>;
   // #endregion setting
   // #region execuation
   exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
   break: () => Promise<ScriptStatus>;
-  close: () => Promise<Error | undefined>;
-  detach: () => Promise<Error | undefined>;
+  close: () => Promise<void>;
+  detach: () => Promise<void>;
   // #endregion execuation
   // #region execuation context
   getScriptStatus: () => Promise<ScriptStatus>;

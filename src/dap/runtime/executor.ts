@@ -23,7 +23,7 @@ export const createContinuationCommandExecutor = (session: Session, config: Norm
     }
 
     const execResult = await session.exec(command);
-    if (session.isTerminatedProcess) {
+    if (session.isTerminated) {
       return execResult;
     }
 
@@ -33,7 +33,7 @@ export const createContinuationCommandExecutor = (session: Session, config: Norm
     return extraContinuationProcess(mergedResult);
 
     async function extraContinuationProcess(execResult: Result): Promise<ExecResult> {
-      if (session.isTerminatedProcess) {
+      if (session.isTerminated) {
         return execResult;
       }
       if (execResult.runState !== 'break') {
