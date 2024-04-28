@@ -97,7 +97,16 @@ export function isPrimitiveProperty(value: any): value is PrimitiveProperty {
 
 // #region convert
 export function escapeCommandArgValue(value: string): string {
-  return `"${value.replaceAll('"', '\\"').replaceAll('\0', '\\0')}"`;
+  const replacementEntries: Array<[ RegExp, string ]> = [
+    [ /\\(?!0)/gu, '\\\\' ],
+    [ /"/gu, '\\"' ],
+    [ /\0/gu, '\\0' ],
+  ];
+
+  const escapedValue = replacementEntries.reduce((escapedValue, [ original, escaped ]) => {
+    return escapedValue.replace(original, escaped);
+  }, value);
+  return `"${escapedValue}"`;
 }
 export function encodeToBase64(value: string): string {
   return Buffer.from(value).toString('base64');

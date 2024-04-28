@@ -12,7 +12,10 @@ describe('utils', () => {
     expect(toFsPath('\\\\server\\share')).toBe('\\\\server\\share');
   });
   test('escapeCommandArgValue', () => {
-    expect(escapeCommandArgValue('a"bc"\0')).toBe('"a\\"bc\\"\\0"');
+    expect(escapeCommandArgValue('var[""]')).toBe('"var[\\"\\"]"');
+    expect(escapeCommandArgValue('var["key"]')).toBe('"var[\\"key\\"]"');
+    expect(escapeCommandArgValue('var["\\0"]')).toBe('"var[\\"\\0\\"]"');
+    expect(escapeCommandArgValue('var["\\a"]')).toBe('"var[\\"\\\\a\\"]"');
   });
   test('encodeToBase64', () => {
     expect(encodeToBase64('abc')).toBe('YWJj');
