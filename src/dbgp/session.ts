@@ -2,7 +2,7 @@ import { Socket, createServer } from 'net';
 import { EventEmitter } from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { AutoHotkeyProcess, Breakpoint, CallStack, CloseListener, CommandSender, Context, ErrorListener, ExceptionBreakpoint, ExecResult, LineBreakpoint, MessageListener, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionCommunicator, SessionConnector, contextNameById } from '../types/dbgp/session.types';
+import { AutoHotkeyProcess, Breakpoint, CallStack, CloseListener, CommandSender, Context, ErrorListener, ExceptionBreakpoint, ExecResult, LineBreakpoint, MessageListener, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionCommunicator, SessionConnector, contextIdByName, contextNameById } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
@@ -346,7 +346,9 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
         };
       });
     },
-    getContext: async(contextId: number, depth?: number): Promise<Context> => {
+    getContext: async(contextIdOrName: dbgp.ContextId | dbgp.ContextName, depth?: number): Promise<Context> => {
+      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
+
       const response = await communicator.sendCommand<dbgp.ContextGetResponse>('context_get', [ '-c', contextId, '-d', depth ]);
       if (response.error) {
         throw new DbgpError(Number(response.error.attributes.code));
@@ -362,11 +364,13 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       const contexts: Context[] = [];
       const response = await communicator.sendCommand<dbgp.ContextNamesResponse>('context_names');
       for await (const context of response.context) {
-        contexts.push(await session.getContext(Number(context.attributes.id), depth));
+        contexts.push(await session.getContext(Number(context.attributes.id) as dbgp.ContextId, depth));
       }
       return contexts;
     },
-    async getProperty(contextId: dbgp.ContextId, name: string, depth?: number): Promise<Property> {
+    async getProperty(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, depth?: number): Promise<Property> {
+      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
+
       const response = await communicator.sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', depth ]);
       if (response.error) {
         throw new DbgpError(Number(response.error.attributes.code));
@@ -376,7 +380,9 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       }
       return toPrimitiveProperty(response.property as dbgp.PrimitiveProperty, contextId, depth);
     },
-    async setProperty({ contextId, name, value, type, depth }): Promise<Property> {
+    async setProperty(name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, depth?: number): Promise<Property> {
+      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
+
       let propertyValue = String(value);
       if (typeof value === 'boolean') {
         propertyValue = value ? '1' : '0';
@@ -395,7 +401,7 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
         }
       }
       await communicator.sendCommand('property_set', [ '-c', contextId, '-n', name, '-t', dataType ], propertyValue);
-      return this.getProperty(contextId, name, depth);
+      return this.getProperty(name, contextId, depth);
     },
     // #endregion execuation context
     // #region breakpoint

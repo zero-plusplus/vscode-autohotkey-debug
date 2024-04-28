@@ -81,7 +81,7 @@ describe('session', () => {
       await expect(async() => runtime.session.getBreakpointById(breakpoint.id)).rejects.toThrow(DbgpError);
 
       const localContext = await runtime.session.getContext(0);
-      const a = await runtime.session.getProperty(localContext.id, 'a');
+      const a = await runtime.session.getProperty('a', localContext.id);
       expect(a).toEqual({
         contextId: 0,
         depth: undefined,

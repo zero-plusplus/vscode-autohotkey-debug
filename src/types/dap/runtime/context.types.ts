@@ -11,7 +11,7 @@ export interface StackFrame extends DebugProtocol.StackFrame {
   line: number;
 }
 export interface Scope extends DebugProtocol.Scope {
-  id: number;
+  id: dbgp.ContextId;
   stackFrame: StackFrame;
   variables: Variable[];
 }

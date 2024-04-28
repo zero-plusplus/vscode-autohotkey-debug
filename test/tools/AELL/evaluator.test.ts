@@ -9,26 +9,8 @@ import { createDefaultDebugConfig } from '../../../src/client/config/default';
 import { utf8BomText } from '../../../src/tools/utils/checkUtf8WithBom';
 import { defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2 } from '../../../src/tools/autohotkey';
 import { createAELLUtils } from '../../../src/tools/AELL/utils';
-import { ContextId } from '../../../src/types/dbgp/AutoHotkeyDebugger.types';
 
 describe('evaluator', () => {
-  const text = [
-    'a()',
-    'return',
-    '',
-    'a() {',
-    '  count := 0',
-    '  str := "foo"',
-    '  int := 123',
-    '  float := 123.456',
-    '  bool := true',
-    '  objKeys := [ "str", "int" ]',
-    '  arr := [ str, int, float, bool ]',
-    '  obj := { str: str, int: int, arr: arr }',
-    '  return',
-    '}',
-  ].join('\n');
-
   describe('v1', () => {
     let evaluator: AELLEvaluator;
     let runtime: ScriptRuntime;
@@ -41,10 +23,26 @@ describe('evaluator', () => {
     } = createAELLUtils('1.0.0');
 
     beforeAll(async() => {
+      const text = `
+        a()
+        return
+
+        a() {
+          count := 0
+          str := "foo"
+          int := 123
+          float := 123.456
+          bool := true
+          objKeys := [ "str", "int" ]
+          arr := [ str, int, float, bool ]
+          obj := { str: str, int: int, arr: arr }
+        }
+      `;
+
       testFile = await createTempDirectoryWithFile('evaluator-v1', '.ahk', `${utf8BomText}${text}`);
       const launcher = createScriptRuntimeLauncher({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1 });
       runtime = await launcher.launch();
-      await runtime.session.setLineBreakpoint(testFile.path, 13);
+      await runtime.session.setLineBreakpoint(testFile.path, 14);
       await runtime.session.exec('run');
       evaluator = createEvaluator(runtime.session);
     });
@@ -80,12 +78,12 @@ describe('evaluator', () => {
 
     test.each`
       text          | expected
-      ${'count'}    | ${createIdentifierProperty('count', createNumberProperty(0, ContextId.Local))}
-      ${'++count'}  | ${createIdentifierProperty('count', createNumberProperty(1, ContextId.Local))}
-      ${'count++'}  | ${createIdentifierProperty('count', createNumberProperty(1, ContextId.Local))}
-      ${'--count'}  | ${createIdentifierProperty('count', createNumberProperty(1, ContextId.Local))}
-      ${'count--'}  | ${createIdentifierProperty('count', createNumberProperty(1, ContextId.Local))}
-      ${'count'}    | ${createIdentifierProperty('count', createNumberProperty(0, ContextId.Local))}
+      ${'count'}    | ${createIdentifierProperty('count', createNumberProperty(0, 'Local'))}
+      ${'++count'}  | ${createIdentifierProperty('count', createNumberProperty(1, 'Local'))}
+      ${'count++'}  | ${createIdentifierProperty('count', createNumberProperty(1, 'Local'))}
+      ${'--count'}  | ${createIdentifierProperty('count', createNumberProperty(1, 'Local'))}
+      ${'count--'}  | ${createIdentifierProperty('count', createNumberProperty(1, 'Local'))}
+      ${'count'}    | ${createIdentifierProperty('count', createNumberProperty(0, 'Local'))}
       `('Increment / Decrement', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toEqual(expected);
     });
@@ -118,7 +116,7 @@ describe('evaluator', () => {
     });
 
     test('UnsetProperty', async() => {
-      expect(await evaluator.eval('unknown')).toEqual({ contextId: ContextId.Global, constant: false, fullName: 'unknown', name: 'unknown', size: 0, type: 'undefined', value: '' });
+      expect(await evaluator.eval('unknown')).toEqual({ contextId: 1, depth: undefined, constant: false, fullName: 'unknown', name: 'unknown', size: 0, type: 'undefined', value: '' });
     });
 
     test.each`
@@ -158,10 +156,26 @@ describe('evaluator', () => {
     } = createAELLUtils('2.0.0');
 
     beforeAll(async() => {
+      const text = `
+        a()
+        return
+
+        a() {
+          count := 0
+          str := "foo"
+          int := 123
+          float := 123.456
+          bool := true
+          objKeys := [ "str", "int" ]
+          arr := [ str, int, float, bool ]
+          obj := { str: str, int: int, arr: arr }
+        }
+      `;
+
       testFile = await createTempDirectoryWithFile('evaluator-v2', '.ahk', `${utf8BomText}${text}`);
       const launcher = createScriptRuntimeLauncher({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2 });
       runtime = await launcher.launch();
-      await runtime.session.setLineBreakpoint(testFile.path, 13);
+      await runtime.session.setLineBreakpoint(testFile.path, 14);
       await runtime.session.exec('run');
       evaluator = createEvaluator(runtime.session);
     });

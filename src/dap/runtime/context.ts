@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { CallStack, ExecutionContextManager, Scope, StackFrame, Variable } from '../../types/dap/runtime/context.types';
 import { Property, Session } from '../../types/dbgp/session.types';
 import { isObjectProperty, toValueByProperty } from '../../dbgp/utils';
@@ -97,7 +98,7 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
         return [];
       }
 
-      const property = await session.getProperty(variable.scopeId, variable.evaluateName, stackFrame.level);
+      const property = await session.getProperty(variable.evaluateName, variable.scopeId, stackFrame.level);
       if (isObjectProperty(property)) {
         return createVariablesByProperties(variable.scopeId, frameId, property.children);
       }
@@ -105,7 +106,7 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
     },
   };
 
-  function createVariableByProperty(scopeId: number, frameId: number, property: Property): Variable {
+  function createVariableByProperty(scopeId: dbgp.ContextId, frameId: number, property: Property): Variable {
     const variable: Variable = {
       name: property.name,
       evaluateName: property.fullName,
@@ -124,7 +125,7 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
     }
     return variable;
   }
-  function createVariablesByProperties(scopeId: number, frameId: number, properties: Property[]): Variable[] {
+  function createVariablesByProperties(scopeId: dbgp.ContextId, frameId: number, properties: Property[]): Variable[] {
     return properties.map((property) => {
       return createVariableByProperty(scopeId, frameId, property);
     });

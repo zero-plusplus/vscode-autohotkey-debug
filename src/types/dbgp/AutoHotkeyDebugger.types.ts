@@ -164,11 +164,7 @@ export interface Stack {
 // #endregion Stack
 
 // #region Context
-export const enum ContextId {
-  Local = 0,
-  Global = 1,
-  Static = 2,
-}
+export type ContextId = 0 | 1 | 2;
 export type ContextName = 'Local' | 'Global' | 'Static';
 export interface Context {
   attributes: {
@@ -180,9 +176,9 @@ export interface Context {
 
 // #region TypeMap
 export type UnsetDataType = 'undefined';
-export type PrimitiveDataType = 'string' | 'integer' | 'float';
+export type PrimitiveDataType = 'string' | 'integer' | 'float' | 'undefined';
 export type ObjectDataType = 'object';
-export type DataType = PrimitiveDataType | ObjectDataType | UnsetDataType;
+export type DataType = PrimitiveDataType | ObjectDataType;
 export interface TypeMap {
   name: PrimitiveDataType;
   type: DataType;
