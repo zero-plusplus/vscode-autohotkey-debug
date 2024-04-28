@@ -11,6 +11,51 @@ import { defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2 } from
 import { createAELLUtils } from '../../../src/tools/AELL/utils';
 
 describe('evaluator', () => {
+  describe('v2', () => {
+    let evaluator: AELLEvaluator;
+    let runtime: ScriptRuntime;
+    let testFile: TemporaryResource;
+    const {
+      createBooleanProperty,
+    } = createAELLUtils('2.0.0');
+
+    beforeAll(async() => {
+      const text = `
+        a()
+        return
+
+        a() {
+          count := 0
+          str := "foo"
+          int := 123
+          float := 123.456
+          bool := true
+          objKeys := [ "str", "int" ]
+          arr := [ str, int, float, bool ]
+          obj := { str: str, int: int, arr: arr }
+        }
+      `;
+
+      testFile = await createTempDirectoryWithFile('evaluator-v2', '.ahk', `${utf8BomText}${text}`);
+      const launcher = createScriptRuntimeLauncher({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2 });
+      runtime = await launcher.launch();
+      await runtime.session.setLineBreakpoint(testFile.path, 14);
+      await runtime.session.exec('run');
+      evaluator = createEvaluator(runtime.session);
+    });
+    afterAll(() => {
+      runtime.close();
+      testFile.cleanup();
+    });
+
+    test.each`
+      text              | expected
+      ${'"a" !== "A"'}  | ${createBooleanProperty(true)}
+    `('BinaryExpression', async({ text, expected }) => {
+      expect(await evaluator.eval(String(text))).toEqual(expected);
+    });
+  });
+
   describe('v1', () => {
     let evaluator: AELLEvaluator;
     let runtime: ScriptRuntime;
@@ -144,51 +189,6 @@ describe('evaluator', () => {
       ${'obj["arr", 2]'}  | ${{ constant: false, fullName: 'obj["arr", 2]', name: '["arr", 2]', size: 3, type: 'integer', value: '123' }}
     `('ElementAccessExpression', async({ text, expected }) => {
       expect(await evaluator.eval(String(text))).toMatchObject(expected as Record<string, any>);
-    });
-  });
-
-  describe('v2', () => {
-    let evaluator: AELLEvaluator;
-    let runtime: ScriptRuntime;
-    let testFile: TemporaryResource;
-    const {
-      createBooleanProperty,
-    } = createAELLUtils('2.0.0');
-
-    beforeAll(async() => {
-      const text = `
-        a()
-        return
-
-        a() {
-          count := 0
-          str := "foo"
-          int := 123
-          float := 123.456
-          bool := true
-          objKeys := [ "str", "int" ]
-          arr := [ str, int, float, bool ]
-          obj := { str: str, int: int, arr: arr }
-        }
-      `;
-
-      testFile = await createTempDirectoryWithFile('evaluator-v2', '.ahk', `${utf8BomText}${text}`);
-      const launcher = createScriptRuntimeLauncher({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2 });
-      runtime = await launcher.launch();
-      await runtime.session.setLineBreakpoint(testFile.path, 14);
-      await runtime.session.exec('run');
-      evaluator = createEvaluator(runtime.session);
-    });
-    afterAll(() => {
-      runtime.close();
-      testFile.cleanup();
-    });
-
-    test.each`
-      text              | expected
-      ${'"a" !== "A"'}  | ${createBooleanProperty(true)}
-    `('BinaryExpression', async({ text, expected }) => {
-      expect(await evaluator.eval(String(text))).toEqual(expected);
     });
   });
 });
