@@ -7,6 +7,7 @@ import { ScriptRuntime } from '../../src/types/dap/runtime/scriptRuntime.types';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../src/tools/autohotkey';
 import { DbgpError } from '../../src/dbgp/error';
 import { CallStack, PrimitiveProperty } from '../../src/types/dbgp/session.types';
+import { validateDebugConfig } from '../../src/client/config/validator';
 
 describe('session', () => {
   describe('v1', () => {
@@ -26,7 +27,8 @@ describe('session', () => {
       ].join('\n');
 
       testFile = await createTempDirectoryWithFile('utf8-with-bom', '.ahk', `${utf8BomText}${text}`);
-      const launcher = createScriptRuntimeLauncher({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1 });
+      const config = await validateDebugConfig({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1, port: '9005-9010' });
+      const launcher = createScriptRuntimeLauncher(config);
       runtime = await launcher.launch();
     });
     afterAll(() => {

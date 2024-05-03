@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import * as path from 'path';
 import { deepDefaults } from '../../tools/utils';
+import * as attributes from './attributes';
 import { AttributeChecker, AttributeCheckerFactoryUtils, AttributeValidator, DebugConfig, DebugConfigValidator, NormalizedDebugConfig } from '../../types/dap/config.types';
 import { AttributeFileNotFoundError, AttributeFormatError, AttributeTypeError, AttributeValueError, AttributeWarningError, ValidationPriorityError } from './error';
 
@@ -87,3 +88,35 @@ export const createAttributesValidator = (validators: AttributeValidator[], util
     return clonedConfig as NormalizedDebugConfig;
   };
 };
+
+export const validateDebugConfig = createAttributesValidator([
+  attributes.name.validator,
+  attributes.type.validator,
+  attributes.request.validator,
+  attributes.stopOnEntry.validator,
+  attributes.args.validator,
+  attributes.port.validator,
+  attributes.hostname.validator,
+  attributes.skipFunctions.validator,
+  attributes.skipFiles.validator,
+  attributes.skipFiles.validator,
+  attributes.trace.validator,
+  attributes.noDebug.validator,
+  attributes.cwd.validator,
+  attributes.env.validator,
+  attributes.openFileOnExit.validator,
+  attributes.variableCategories.validator,
+  attributes.setBreakpoints.validator,
+  attributes.usePerfTips.validator,
+  attributes.useIntelliSenseInDebugging.validator,
+  attributes.useDebugDirective.validator,
+  attributes.useOutputDebug.validator,
+  attributes.useAutoJumpToError.validator,
+  attributes.useAnnounce.validator,
+  attributes.useLoadedScripts.validator,
+  attributes.useUIAVersion.validator,
+
+  attributes.program.validator,
+  attributes.runtime.validator,
+  attributes.runtimeArgs.validator,
+]);

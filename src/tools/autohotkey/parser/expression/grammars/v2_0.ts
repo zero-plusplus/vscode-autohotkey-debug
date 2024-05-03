@@ -50,7 +50,7 @@ export const astMapping = (() => {
   const mapping = {
     ...v1_0.astMapping,
 
-    DereferenceExpression:    { kind: SyntaxKind.DereferenceExpression, expression: 1, startPosition, endPosition },
+    DereferenceExpression:    { kind: SyntaxKind.DereferenceExpression, expression: 1, text, startPosition, endPosition },
     stringLiteral:            { kind: SyntaxKind.StringLiteral, value: (nodes: ohm.Node[]): string => slicedText(1, -1)(nodes[0].children), text, startPosition, endPosition },
   };
   return mapping;

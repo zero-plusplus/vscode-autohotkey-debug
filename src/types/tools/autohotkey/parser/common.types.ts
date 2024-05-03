@@ -164,7 +164,9 @@ export enum SyntaxKind {
   CloseBracketToken = 'CloseBracketToken',
   CloseBraceToken = 'CloseBraceToken',
   ImplicitConcatenateToken = 'ImplicitConcatenateToken',
+  Custom = 'Custom',
 }
+
 export const enum TokenFlags {
   None = 0,
   Unsupported =               1 << 0,
@@ -194,34 +196,28 @@ export interface GreenNode extends GreenSyntax {
 export type GreenElement = GreenNode | GreenToken;
 // #endregion green node
 
-
-export interface Position {
-  line: number;
-  character: number;
-}
-export interface Range {
-  start: Position;
-  end: Position;
-}
-export interface Syntax {
-  kind: SyntaxKind;
+export interface TextRange {
   startPosition: number;
   endPosition: number;
 }
+export interface SyntaxNodeBase extends TextRange {
+  kind: SyntaxKind;
+  text: string;
+}
 export type SyntaxNode =
-  | Expression;
+  | Expression
+  | CustomNode;
 export type SyntaxElement = Token<SyntaxKind> | SyntaxNode;
 
 // #region root
-export interface SourceFile extends Syntax {
+export interface SourceFile extends SyntaxNodeBase {
   kind: SyntaxKind.SourceFile;
   statements: Array<Bom | Statement>;
 }
 // #endregion root
 // #region token
-export interface Token<Kind extends SyntaxKind> extends Syntax {
+export interface Token<Kind extends SyntaxKind> extends SyntaxNodeBase {
   kind: Kind;
-  text: string;
 }
 export type Bom = Token<SyntaxKind.Bom>;
 export type OperatorToken =
@@ -242,34 +238,36 @@ export type PostfixUnaryOperatorToken =
 // #region statement
 export type Statement =
   | Block
-  | Declaration;
+  | Declaration
+  | CustomNode;
 
-export interface Block extends Syntax {
+export interface Block extends SyntaxNodeBase {
   kind: SyntaxKind.Block;
 }
 // #endregion statement
 // #region declaration
 export type Declaration =
   | VariableDeclaration
-  | FunctionDeclaration;
+  | FunctionDeclaration
+  | CustomNode;
 
 export type Identifier = Token<SyntaxKind.Identifier>;
 export type Modifier = Token<SyntaxKind.GlobalKeyword> | Token<SyntaxKind.LocalKeyword> | Token<SyntaxKind.StaticKeyword>;
-export interface NameSubstitutionExpression extends Syntax {
+export interface NameSubstitutionExpression extends SyntaxNodeBase {
   kind: SyntaxKind.NameSubstitutionExpression;
   expressions: Expression[];
 }
-export interface DereferenceExpression extends Syntax {
+export interface DereferenceExpression extends SyntaxNodeBase {
   kind: SyntaxKind.DereferenceExpression;
   expression: Expression;
 }
-export interface VariableDeclaration extends Syntax {
+export interface VariableDeclaration extends SyntaxNodeBase {
   kind: SyntaxKind.VariableDeclaration;
   modifier?: Modifier;
   name: Identifier;
   initializer: SyntaxElement;
 }
-export interface FunctionDeclaration extends Syntax {
+export interface FunctionDeclaration extends SyntaxNodeBase {
   kind: SyntaxKind.FunctionDeclaration;
   name: Identifier;
   block: Block;
@@ -290,11 +288,11 @@ export type Expression =
   | BinaryExpression
   | SequenceExpression
   | PropertyAccessExpression
-  | ElementAccessExpression;
-export interface Primitive extends Syntax {
+  | ElementAccessExpression
+  | CustomNode;
+export interface Primitive extends SyntaxNodeBase {
   kind: SyntaxKind;
   value: string;
-  text: string;
 }
 export interface StringLiteral extends Primitive {
   kind: SyntaxKind.StringLiteral;
@@ -305,41 +303,43 @@ export interface NumberLiteral extends Primitive {
 export interface BooleanLiteral extends Primitive {
   kind: SyntaxKind.BooleanLiteral;
 }
-export interface UnaryExpression extends Syntax {
+export interface UnaryExpression extends SyntaxNodeBase {
   kind: SyntaxKind.UnaryExpression;
   operator: UnaryOperatorToken;
   operand: Expression;
 }
-export interface PrefixUnaryExpression extends Syntax {
+export interface PrefixUnaryExpression extends SyntaxNodeBase {
   kind: SyntaxKind.PrefixUnaryExpression;
   operator: PrefixUnaryOperatorToken;
   operand: Expression;
 }
-export interface PostfixUnaryExpression extends Syntax {
+export interface PostfixUnaryExpression extends SyntaxNodeBase {
   kind: SyntaxKind.PostfixUnaryExpression;
   operator: PostfixUnaryOperatorToken;
   operand: Expression;
 }
-export interface BinaryExpression extends Syntax {
+export interface BinaryExpression extends SyntaxNodeBase {
   kind: SyntaxKind.BinaryExpression;
   left: Expression;
   operator: OperatorToken;
   right: Expression;
 }
-export interface SequenceExpression extends Syntax {
+export interface SequenceExpression extends SyntaxNodeBase {
   kind: SyntaxKind.SequenceExpression;
   expressions: Expression[];
 }
-export interface PropertyAccessExpression extends Syntax {
+export interface PropertyAccessExpression extends SyntaxNodeBase {
   kind: SyntaxKind.PropertyAccessExpression;
   object: Expression;
   property: Identifier | DereferenceExpression | NameSubstitutionExpression;
-  text: string;
 }
-export interface ElementAccessExpression extends Syntax {
+export interface ElementAccessExpression extends SyntaxNodeBase {
   kind: SyntaxKind.ElementAccessExpression;
   object: Expression;
   elements: Expression[];
-  text: string;
 }
 // #endregion expression
+
+export interface CustomNode extends TextRange, Record<string, any> {
+  kind: SyntaxKind.Custom;
+}

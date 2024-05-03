@@ -2,14 +2,18 @@ import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { PrimitiveProperty, Property, PseudoPrimitiveProperty, Session } from '../../types/dbgp/session.types';
 import { AELLEvaluator, EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 import { CalcCallback } from '../../types/tools/AELL/utils.types';
-import { BinaryExpression, BooleanLiteral, ElementAccessExpression, Expression, Identifier, NumberLiteral, PostfixUnaryExpression, PrefixUnaryExpression, PropertyAccessExpression, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
+import { BinaryExpression, BooleanLiteral, CustomNode, ElementAccessExpression, Expression, Identifier, NumberLiteral, PostfixUnaryExpression, PrefixUnaryExpression, PropertyAccessExpression, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
 import { toSigned64BitBinary } from '../convert';
-import { isFloat } from '../predicate';
 import { createAELLParser } from './parser';
-import { createAELLUtils } from './utils';
+import { createQueryTransformer } from './transformer/query';
+import { createAELLUtils, isQueryNode } from './utils';
 
-export const createEvaluator = (session: Session): AELLEvaluator => {
+export const createEvaluator = (session: Session, warningReporter?: (message: string) => void): AELLEvaluator => {
   const version = session.version;
+  const isV1 = version.mejor < 2;
+  const isV2 = 2 <= version.mejor;
+  const queryOptimizer = createQueryTransformer(version);
+
   const parser = createAELLParser(version);
   const {
     calc,
@@ -30,17 +34,19 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
   };
 
   async function evalNode(node: Expression): Promise<EvaluatedValue> {
-    switch (node.kind) {
-      case SyntaxKind.Identifier: return evalIdentifier(node);
-      case SyntaxKind.StringLiteral: return evalStringLiteral(node);
-      case SyntaxKind.NumberLiteral: return evalNumberLiteral(node);
-      case SyntaxKind.BooleanLiteral: return evalBooleanLiteral(node);
-      case SyntaxKind.PropertyAccessExpression: return evalPropertyAccessExpression(node);
-      case SyntaxKind.ElementAccessExpression: return evalElementAccessExpression(node);
-      case SyntaxKind.UnaryExpression: return evalUnaryExpression(node);
-      case SyntaxKind.PrefixUnaryExpression: return evalPrefixUnaryExpression(node);
-      case SyntaxKind.PostfixUnaryExpression: return evalPostfixUnaryExpression(node);
-      case SyntaxKind.BinaryExpression: return evalBinaryExpression(node);
+    const optimizedNode = queryOptimizer.transform(node);
+    switch (optimizedNode.kind) {
+      case SyntaxKind.Identifier: return evalIdentifier(optimizedNode);
+      case SyntaxKind.StringLiteral: return evalStringLiteral(optimizedNode);
+      case SyntaxKind.NumberLiteral: return evalNumberLiteral(optimizedNode);
+      case SyntaxKind.BooleanLiteral: return evalBooleanLiteral(optimizedNode);
+      case SyntaxKind.PropertyAccessExpression: return evalPropertyAccessExpression(optimizedNode);
+      case SyntaxKind.ElementAccessExpression: return evalElementAccessExpression(optimizedNode);
+      case SyntaxKind.UnaryExpression: return evalUnaryExpression(optimizedNode);
+      case SyntaxKind.PrefixUnaryExpression: return evalPrefixUnaryExpression(optimizedNode);
+      case SyntaxKind.PostfixUnaryExpression: return evalPostfixUnaryExpression(optimizedNode);
+      case SyntaxKind.BinaryExpression: return evalBinaryExpression(optimizedNode);
+      case SyntaxKind.Custom: return evalCustomNode(optimizedNode);
       default: break;
     }
     return createUnsetProperty('');
@@ -50,7 +56,7 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
 
       let unsetProperty: PrimitiveProperty;
       for await (const context of contexts) {
-        const property = await session.getProperty(node.text, context.id);
+        const property = await requestQuery(node.text, context.id);
         if (property.type === 'undefined') {
           unsetProperty = property;
           continue;
@@ -63,7 +69,7 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
       return Promise.resolve(createStringProperty(node.value));
     }
     async function evalNumberLiteral(node: NumberLiteral): Promise<PrimitiveProperty | PseudoPrimitiveProperty> {
-      return Promise.resolve(createNumberProperty(node.value));
+      return Promise.resolve(createNumberProperty(node.text));
     }
     async function evalBooleanLiteral(node: BooleanLiteral): Promise<PrimitiveProperty | PseudoPrimitiveProperty> {
       return Promise.resolve(createBooleanProperty(node.text));
@@ -71,34 +77,30 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
     async function evalPropertyAccessExpression(node: PropertyAccessExpression): Promise<EvaluatedValue> {
       const object = await evalNode(node.object);
       const keyProperty = await evalNode(node.property);
-      const key = keyProperty.type === 'object' ? String(keyProperty.address) : keyProperty.name;
-      if (object.contextId === -1) {
-        return createUnsetProperty(`${object.fullName}.${key}`);
-      }
+      const key = keyProperty.type === 'object' ? `[Object(${String(keyProperty.address)}]` : node.property.text;
 
-      const child = await getPropertyByPrototypeChain(object.fullName, key, object.contextId);
-      child.fullName = node.text;
-      child.name = node.text.slice((node.object.endPosition - node.object.startPosition) + '.'.length);
+      const query = keyProperty.type === 'object' ? `${object.fullName}${key}` : `${object.fullName}.${key}`;
+      const child = await requestQuery(query);
+      // child.fullName = node.text;
+      // child.name = node.property.text;
       return child;
     }
     async function evalElementAccessExpression(node: ElementAccessExpression): Promise<EvaluatedValue> {
       const object = await evalNode(node.object);
 
-      let currentProperty: EvaluatedValue = object;
-      if (currentProperty.contextId === -1) {
-        return createUnsetProperty(currentProperty.fullName);
-      }
-
+      const args: string[] = [];
       for await (const element of node.elements) {
         const keyProperty = await evalNode(element);
-        const key = keyProperty.type === 'object' ? String(keyProperty.address) : keyProperty.value;
+        const key = keyProperty.type === 'object' ? `Object(${String(keyProperty.address)})` : keyProperty.value;
 
-        currentProperty = await getPropertyByPrototypeChain(currentProperty.fullName, key, currentProperty.contextId);
+        args.push(key);
       }
 
-      currentProperty.fullName = node.text;
-      currentProperty.name = node.text.slice(node.object.endPosition - node.object.startPosition);
-      return currentProperty;
+      const query = `${object.fullName}[${args.join(', ')}]`;
+      const child = await requestQuery(query);
+      child.fullName = node.text;
+      child.name = node.text.slice(node.object.endPosition - node.object.startPosition);
+      return child;
     }
     async function evalUnaryExpression(node: UnaryExpression): Promise<PrimitiveProperty | PseudoPrimitiveProperty> {
       switch (node.operator.kind) {
@@ -146,13 +148,15 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
         case '*': return calc(leftValue, rightValue, (a, b) => a * b);
         case '**': return calc(leftValue, rightValue, (a, b) => a ** b);
         case '/': return calc(leftValue, rightValue, (a, b) => a / b);
-        case '//': return calc(leftValue, rightValue, (a, b) => {
-          const containsFloat = isFloat(a) || isFloat(b);
-          const result = Math.trunc(a / b);
-          if (2 <= session.version.mejor && containsFloat) {
+        case '//': return calc(leftValue, rightValue, (a, b, [ a_type, b_type ]) => {
+          const containsFloat = a_type === 'float' || b_type === 'float';
+          if (isV2 && containsFloat) {
+            throwError(`The "${node.operator.text}" operator does not support float value.`);
             return undefined;
           }
-          return containsFloat ? Number(result.toFixed(1)) : result;
+
+          const result = Math.trunc(a / b);
+          return containsFloat ? result.toFixed(1) : result;
         });
         case '<<':
         case '>>':
@@ -190,40 +194,47 @@ export const createEvaluator = (session: Session): AELLEvaluator => {
         case '==': return equiv(leftValue, rightValue, (a, b) => String(a) === String(b));
         case '!=': return equiv(leftValue, rightValue, (a, b) => String(a).toLowerCase() !== String(b).toLowerCase());
         case '!==': {
-          if (2 <= version.mejor) {
-            return equiv(leftValue, rightValue, (a, b) => String(a) !== String(b));
+          if (isV1) {
+            return throwError(`The "${node.operator.text}" operator is not supported.`);
           }
-          return createStringProperty('');
+          return equiv(leftValue, rightValue, (a, b) => String(a) !== String(b));
         }
         default: break;
       }
-      return createStringProperty('');
+      return throwError(`An unknown operator "${node.operator.text}" was specified.`);
     }
+    // #region utils
     async function assignCalculatedNumber(property: EvaluatedValue, calcCallback: CalcCallback): Promise<Property> {
       const calculated = calc(property, createNumberProperty(1), calcCallback);
       return session.setProperty(property.name, calculated.value, 'integer', property.contextId === -1 ? 0 : property.contextId);
     }
-    async function getPropertyByPrototypeChain(objectName: string, key: string, contextId: dbgp.ContextId): Promise<Property> {
-      const property = await session.getProperty(`${objectName}.${key}`, contextId, 0);
-      if (property.type !== 'undefined') {
-        return property;
+    async function evalCustomNode(node: CustomNode): Promise<EvaluatedValue> {
+      if (isQueryNode(node)) {
+        return requestQuery(node);
       }
-      return getPropertyByPrototypeChain(`${objectName}.base`, key, contextId);
-      //       if (object.type !== 'object') {
-      //         return createUnsetProperty(fullName, object.contextId, object.depth);
-      //       }
-      //
-      //       const child = object.children.find((child) => child.fullName.toLowerCase() === fullName.toLowerCase()) ?? await session.getProperty(object.contextId, fullName);
-      //       if (child.type !== 'undefined') {
-      //         return child;
-      //       }
-      //
-      //       const baseProperty = await session.getProperty(object.contextId, `${object.fullName}.<base>`, object.depth);
-      //       if (baseProperty.type === 'undefined') {
-      //         return createUnsetProperty(key, baseProperty.contextId, baseProperty.depth);
-      //       }
-      //       return getPropertyByPrototypeChain(baseProperty, key);
+      return createUnsetProperty('');
     }
+    async function requestQuery(queryOrNode: string | (CustomNode & { query: string; name?: string }), contextId?: dbgp.ContextId): Promise<Property> {
+      const query = typeof queryOrNode === 'string' ? queryOrNode : queryOrNode.query;
+      // console.log(query);
+      const property = await session.getProperty(query, contextId);
+
+      // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/326#issuecomment-2088898249
+      if ((property.fullName && property.name) && (typeof queryOrNode === 'object' && 'name' in queryOrNode && typeof queryOrNode.name === 'string')) {
+        property.name = queryOrNode.name;
+      }
+      return property;
+    }
+    // #endregion utils
+  }
+  function throwError(message?: string): PseudoPrimitiveProperty {
+    if (version.mejor < 2) {
+      if (message) {
+        warningReporter?.(message);
+      }
+      return createStringProperty('') as PseudoPrimitiveProperty;
+    }
+    throw Error(message);
   }
 };
 

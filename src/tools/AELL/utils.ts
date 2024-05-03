@@ -1,7 +1,8 @@
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { PrimitiveProperty, Property, PseudoPrimitiveProperty, PseudoProperty, contextIdByName } from '../../types/dbgp/session.types';
 import { EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
-import { CalcCallback, EquivCallback } from '../../types/tools/AELL/utils.types';
+import { CalcCallback, EquivCallback, NumberType } from '../../types/tools/AELL/utils.types';
+import { CustomNode } from '../../types/tools/autohotkey/parser/common.types';
 import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../types/tools/autohotkey/version/common.types';
 import { parseAutoHotkeyVersion } from '../autohotkey/version';
 import { isNumberLike } from '../predicate';
@@ -9,6 +10,9 @@ import { isNumberLike } from '../predicate';
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVersion) => {
   const version = typeof rawVersion === 'string' ? parseAutoHotkeyVersion(rawVersion) : rawVersion;
+  // const isV1 = version.mejor < 2;
+  const isV2 = 2 <= version.mejor;
+
   const utils = {
     createPseudoPrimitiveProperty: (value: string, type: dbgp.PrimitiveDataType): PseudoPrimitiveProperty => {
       return {
@@ -56,7 +60,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       const propertyValue = String(value);
       let dataType: dbgp.DataType = 'integer';
       if (propertyValue.includes('.')) {
-        dataType = 2 <= version.mejor ? 'float' : 'string';
+        dataType = isV2 ? 'float' : 'string';
       }
 
       if (contextId === -1) {
@@ -141,6 +145,21 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
         fullName: objectName === '' ? name : `${objectName}.${name}`,
       };
     },
+    toNumberType: (property: Property | PseudoPrimitiveProperty | undefined): NumberType | undefined => {
+      switch (property?.type) {
+        case 'string': {
+          if (isNumberLike(property.value)) {
+            return property.value.includes('.') ? 'float' : 'integer';
+          }
+          break;
+        }
+        case 'integer': return 'integer';
+        case 'float': return 'float';
+        default: break;
+      }
+
+      return undefined;
+    },
     toNumberByProperty: (property: Property | PseudoPrimitiveProperty | undefined): number | undefined => {
       switch (property?.type) {
         case 'string':
@@ -181,13 +200,17 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       const left = utils.toNumberByProperty(leftValue);
       const right = utils.toNumberByProperty(rightValue);
 
-      if ((typeof left === 'number' || typeof left === 'bigint') && (typeof right === 'number' || typeof right === 'bigint')) {
-        const result = callback(left, right);
-        if (!isNumberLike(result)) {
-          return utils.createStringProperty('');
-        }
+      const left_type = utils.toNumberType(leftValue);
+      const right_type = utils.toNumberType(rightValue);
+      if (left_type && right_type) {
+        if ((typeof left === 'number' || typeof left === 'bigint') && (typeof right === 'number' || typeof right === 'bigint')) {
+          const result = callback(left, right, [ left_type, right_type ]);
+          if (!isNumberLike(result)) {
+            return utils.createStringProperty('');
+          }
 
-        return utils.createNumberProperty(String(result));
+          return utils.createNumberProperty(String(result));
+        }
       }
 
       return utils.createStringProperty('');
@@ -203,4 +226,21 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
     },
   };
   return utils;
+};
+
+export const isQueryNode = (value: any): value is (CustomNode & { query: string; name?: string }) => {
+  if (typeof value !== 'object') {
+    return false;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if (('query' in value && typeof value.query === 'string')) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if ('name' in value && typeof value.name !== 'string') {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
 };

@@ -284,12 +284,12 @@ export const astMapping = (() => {
   } = createAstMappingUtils();
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const token = (kind: SyntaxKind) => ({ kind, text, startPosition, endPosition, type: undefined });
-  const assignExpression = { kind: SyntaxKind.AssignExpression, left: 0, operator: 1, right: 2, startPosition, endPosition };
-  const binaryExpression = { kind: SyntaxKind.BinaryExpression, left: 0, operator: 1, right: 2, startPosition, endPosition };
+  const assignExpression = { kind: SyntaxKind.AssignExpression, left: 0, operator: 1, right: 2, text, startPosition, endPosition };
+  const binaryExpression = { kind: SyntaxKind.BinaryExpression, left: 0, operator: 1, right: 2, text, startPosition, endPosition };
 
   const mapping = {
-    VariableDeclaration:                                { kind: SyntaxKind.VariableDeclaration, modifier: 0, declarators: 1 },
-    VariableDeclarator:                                 { kind: SyntaxKind.VariableDeclarator, name: 0, operator: 1, initializer: 2 },
+    VariableDeclaration:                                { kind: SyntaxKind.VariableDeclaration, modifier: 0, declarators: 1, text, startPosition, endPosition },
+    VariableDeclarator:                                 { kind: SyntaxKind.VariableDeclarator, name: 0, operator: 1, initializer: 2, text, startPosition, endPosition },
     AssignmentExpression_assign:                        assignExpression,
     AssignmentExpression_concatenate:                   assignExpression,
     ReAssignmentExpression_addition:                    assignExpression,
@@ -305,7 +305,7 @@ export const astMapping = (() => {
     ReAssignmentExpression_bitshift_right:              assignExpression,
     ReAssignmentExpression_bitshift_logical_right:      assignExpression,
     // #region binary
-    Expressions_comma_sequence:                         { kind: SyntaxKind.SequenceExpression, expressions: 0 },
+    Expressions_comma_sequence:                         { kind: SyntaxKind.SequenceExpression, expressions: 0, text },
     LogicalOrExpression_or:                             binaryExpression,
     LogicalOrExpression_or_keyword:                     binaryExpression,
     LogicalAndExpression_and:                           binaryExpression,
@@ -321,7 +321,7 @@ export const astMapping = (() => {
     RelationalExpression_greaterthan_equal:             binaryExpression,
     RegExMatchExpression_regex_match:                   binaryExpression,
     ConcatenateExpression_space:                        binaryExpression,
-    ConcatenateExpression_dot:                          { kind: SyntaxKind.BinaryExpression, left: 0, operator: 2, right: 4, startPosition, endPosition },
+    ConcatenateExpression_dot:                          { kind: SyntaxKind.BinaryExpression, left: 0, operator: 2, right: 4, text, startPosition, endPosition },
     BitwiseExpression_or:                               binaryExpression,
     BitwiseExpression_xor:                              binaryExpression,
     BitwiseExpression_and:                              binaryExpression,
@@ -338,27 +338,27 @@ export const astMapping = (() => {
     ExponentiationExpression_power:                     binaryExpression,
     // #endregion binary
     // #region primary
-    NameSubstitutionExpression:                         { kind: SyntaxKind.NameSubstitutionExpression, expressions: extraceNameSubstitutionExpressions, startPosition, endPosition },
-    DereferenceExpression:                              { kind: SyntaxKind.DereferenceExpression, expression: 0, startPosition, endPosition },
-    CallExpression_call:                                { kind: SyntaxKind.CallExpression, caller: 0, arguments: 2, startPosition, endPosition },
+    NameSubstitutionExpression:                         { kind: SyntaxKind.NameSubstitutionExpression, expressions: extraceNameSubstitutionExpressions, text, startPosition, endPosition },
+    DereferenceExpression:                              { kind: SyntaxKind.DereferenceExpression, expression: 0, text, startPosition, endPosition },
+    CallExpression_call:                                { kind: SyntaxKind.CallExpression, caller: 0, arguments: 2, text, startPosition, endPosition },
     CallExpression_propertyaccess:                      { kind: SyntaxKind.PropertyAccessExpression, object: 0, property: 2, text, startPosition, endPosition },
     CallExpression_elementaccess:                       { kind: SyntaxKind.ElementAccessExpression, object: 0, elements: 2, text, startPosition, endPosition },
     MemberExpression_propertyaccess:                    { kind: SyntaxKind.PropertyAccessExpression, object: 0, property: 2, text, startPosition, endPosition },
     MemberExpression_dereference_propertyaccess:        { kind: SyntaxKind.DereferencePropertyAccessExpression, object: 0, property: 2, startPosition, endPosition },
     MemberExpression_elementaccess:                     { kind: SyntaxKind.ElementAccessExpression, object: 0, elements: 2, text, startPosition, endPosition },
-    UnaryExpression_positive:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    UnaryExpression_negative:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    UnaryExpression_not:                                { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    UnaryExpression_not_keyword:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    UnaryExpression_address:                            { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    UnaryExpression_bitwise_not:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    UnaryExpression_bitwise_exclusive_or:               { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    UnaryExpression_dereference:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    PrefixUnaryExpression_increment:                    { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    PrefixUnaryExpression_decrement:                    { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, operand: 1, startPosition, endPosition },
-    PostfixUnaryExpression_increment:                   { kind: SyntaxKind.PostfixUnaryExpression, operand: 0, operator: 1, startPosition, endPosition },
-    PostfixUnaryExpression_decrement:                   { kind: SyntaxKind.PostfixUnaryExpression, operand: 0, operator: 1, startPosition, endPosition },
-    TernaryExpression_ternary:                          { kind: SyntaxKind.TernaryExpression, condition: 0, whenTrue: 2, whenFalse: 4, startPosition, endPosition },
+    UnaryExpression_positive:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    UnaryExpression_negative:                           { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    UnaryExpression_not:                                { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    UnaryExpression_not_keyword:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    UnaryExpression_address:                            { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    UnaryExpression_bitwise_not:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    UnaryExpression_bitwise_exclusive_or:               { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    UnaryExpression_dereference:                        { kind: SyntaxKind.UnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    PrefixUnaryExpression_increment:                    { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    PrefixUnaryExpression_decrement:                    { kind: SyntaxKind.PrefixUnaryExpression, operator: 0, operand: 1, text, startPosition, endPosition },
+    PostfixUnaryExpression_increment:                   { kind: SyntaxKind.PostfixUnaryExpression, operand: 0, operator: 1, text, startPosition, endPosition },
+    PostfixUnaryExpression_decrement:                   { kind: SyntaxKind.PostfixUnaryExpression, operand: 0, operator: 1, text, startPosition, endPosition },
+    TernaryExpression_ternary:                          { kind: SyntaxKind.TernaryExpression, condition: 0, whenTrue: 2, whenFalse: 4, text, startPosition, endPosition },
     stringLiteral:                                      { kind: SyntaxKind.StringLiteral, value: slicedText(1, -1), text, startPosition, endPosition },
     numericLiteral:                                     { kind: SyntaxKind.NumberLiteral, value: (nodes: ohm.Node[]): number => Number(text(nodes)), text, startPosition, endPosition },
     identifier:                                         { kind: identifierKind, value: identifierValue, text, startPosition, endPosition },
@@ -464,6 +464,7 @@ export const astMapping = (() => {
         kind: SyntaxKind.DereferenceExpression,
         startPosition: startPosition([ node ]),
         endPosition: endPosition([ node ]),
+        text: text([ node ]),
         expression: extraceNameSubstitutionExpression(node.children[1]),
       };
     }
