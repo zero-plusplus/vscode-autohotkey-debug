@@ -108,8 +108,8 @@ export function escapeCommandArgValue(value: string): string {
   }, value);
   return `"${escapedValue}"`;
 }
-export function encodeToBase64(value: CommandArg): string {
-  return Buffer.from(toCommandArg(value)).toString('base64');
+export function encodeToBase64(value: string): string {
+  return Buffer.from(value).toString('base64');
 }
 export function toDbgpFileName(filePath: string): string | undefined {
   const uriFromFilePath = safeCall(() => URI.file(filePath).toString().toLowerCase());
