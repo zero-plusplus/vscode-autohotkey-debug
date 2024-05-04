@@ -142,7 +142,9 @@ export interface Session extends SessionCommunicator {
   // #region setting
   suppressException: () => Promise<boolean>;
   getMaxChildren: () => Promise<number>;
+  getMaxDepth: () => Promise<number>;
   setMaxChildren: (value: string | number | boolean) => Promise<boolean>;
+  setMaxDepth: (value: string | number | boolean) => Promise<boolean>;
   // #endregion setting
   // #region execuation
   exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
@@ -155,7 +157,7 @@ export interface Session extends SessionCommunicator {
   getCallStack: () => Promise<CallStack>;
   getContext: (contextIdOrName: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Context>;
   getContexts: (stackLevel?: number) => Promise<Context[]>;
-  getProperty: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
+  getProperty: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number, maxDepth?: number) => Promise<Property>;
   setProperty: (name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
   // #endregion execuation context
   // #region breakpoint

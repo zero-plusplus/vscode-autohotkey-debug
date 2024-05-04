@@ -2,7 +2,7 @@ import { Socket, createServer } from 'net';
 import { EventEmitter } from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { AutoHotkeyProcess, Breakpoint, CallStack, CloseListener, CommandArg, CommandSender, Context, ErrorListener, ExceptionBreakpoint, ExecResult, LineBreakpoint, MessageListener, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionCommunicator, SessionConnector, contextIdByName, contextNameById } from '../types/dbgp/session.types';
+import { AutoHotkeyProcess, Breakpoint, CallStack, CloseListener, CommandArg, Context, ErrorListener, ExceptionBreakpoint, ExecResult, LineBreakpoint, MessageListener, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionCommunicator, SessionConnector, contextIdByName, contextNameById } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
@@ -261,7 +261,7 @@ export const createSessionCommunicator = async(socket: Socket, process?: AutoHot
   }
 };
 export const createSession = async(communicator: SessionCommunicator): Promise<Session> => {
-  const version = await getLanguageVersion(communicator.sendCommand);
+  const version = await getLanguageVersion();
   const session: Session = {
     version,
     ...communicator,
@@ -274,19 +274,16 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       return true;
     },
     async getMaxChildren(): Promise<number> {
-      const response = await communicator.sendCommand<dbgp.FeatureGetResponse>('feature_get', [ '-n', 'max_children' ]);
-      if (response.error) {
-        throw new DbgpError(Number(response.error.attributes.code));
-      }
-      return Number(response.content);
+      return getFeature<number>('max_children');
+    },
+    async getMaxDepth(): Promise<number> {
+      return getFeature<number>('max_depth');
     },
     async setMaxChildren(value: string | number | boolean): Promise<boolean> {
-      const response = await communicator.sendCommand<dbgp.FeatureSetResponse>('feature_set', [ '-n', 'max_children', '-v', value ]);
-      if (response.error) {
-        throw new DbgpError(Number(response.error.attributes.code));
-      }
-      const success = response.attributes.success === '1';
-      return success;
+      return setFeature('max_children', value);
+    },
+    async setMaxDepth(value: string | number | boolean): Promise<boolean> {
+      return setFeature('max_depth', value);
     },
     // #endregion setting
     // #region execuation
@@ -383,9 +380,10 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       }
       return contexts;
     },
-    async getProperty(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number): Promise<Property> {
+    async getProperty(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number, maxDepth = 0): Promise<Property> {
       const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
 
+      await session.setMaxDepth(maxDepth);
       const response = await communicator.sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', stackLevel ]);
       if (response.error) {
         throw new DbgpError(Number(response.error.attributes.code));
@@ -474,12 +472,23 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
   return session;
 
   // #region utils
-  async function getLanguageVersion(sendCommand: CommandSender): Promise<ParsedAutoHotkeyVersion> {
-    const response = await sendCommand<dbgp.FeatureGetResponse>('feature_get', [ '-n', 'language_version' ]);
+  async function getFeature<T extends string | number>(featureName: dbgp.FeatureName): Promise<T> {
+    const response = await communicator.sendCommand<dbgp.FeatureGetResponse>('feature_get', [ '-n', featureName ]);
     if (response.error) {
       throw new DbgpError(Number(response.error.attributes.code));
     }
-    return parseAutoHotkeyVersion(response.content);
+    return response.content as T;
+  }
+  async function setFeature(featureName: dbgp.FeatureName, value: CommandArg): Promise<boolean> {
+    const response = await communicator.sendCommand<dbgp.FeatureSetResponse>('feature_set', [ '-n', featureName, '-v', value ]);
+    if (response.error) {
+      throw new DbgpError(Number(response.error.attributes.code));
+    }
+    return response.attributes.success === '1';
+  }
+  async function getLanguageVersion(): Promise<ParsedAutoHotkeyVersion> {
+    const rawVersion = await getFeature('language_version');
+    return parseAutoHotkeyVersion(String(rawVersion));
   }
   function toProperties(dbgpProperty: dbgp.Property | dbgp.Property[] | undefined, contextId: dbgp.ContextId, stackLevel?: number): Property[] {
     if (!dbgpProperty) {
