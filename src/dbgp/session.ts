@@ -2,7 +2,7 @@ import { Socket, createServer } from 'net';
 import { EventEmitter } from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { AutoHotkeyProcess, Breakpoint, CallStack, CloseListener, CommandSender, Context, ErrorListener, ExceptionBreakpoint, ExecResult, LineBreakpoint, MessageListener, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionCommunicator, SessionConnector, contextIdByName, contextNameById } from '../types/dbgp/session.types';
+import { AutoHotkeyProcess, Breakpoint, CallStack, CloseListener, CommandArg, CommandSender, Context, ErrorListener, ExceptionBreakpoint, ExecResult, LineBreakpoint, MessageListener, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionCommunicator, SessionConnector, contextIdByName, contextNameById } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
 import { timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
@@ -42,7 +42,7 @@ export const createSessionCommunicator = async(socket: Socket, process?: AutoHot
           return isTerminated;
         },
         process,
-        sendCommand: async<T extends dbgp.CommandResponse = dbgp.CommandResponse>(commandName: dbgp.CommandName, args?: Array<string | number | boolean | undefined>, data?: string): Promise<T> => {
+        sendCommand: async<T extends dbgp.CommandResponse = dbgp.CommandResponse>(commandName: dbgp.CommandName, args?: Array<CommandArg | undefined>, data?: CommandArg): Promise<T> => {
           const transactionId = currentTransactionId++;
           if (communicator.isTerminated) {
             throw Error(`Session closed. Transmission of command "${commandName}" has been cancelled.`);
@@ -273,6 +273,21 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       }
       return true;
     },
+    async getMaxChildren(): Promise<number> {
+      const response = await communicator.sendCommand<dbgp.FeatureGetResponse>('feature_get', [ '-n', 'max_children' ]);
+      if (response.error) {
+        throw new DbgpError(Number(response.error.attributes.code));
+      }
+      return Number(response.content);
+    },
+    async setMaxChildren(value: string | number | boolean): Promise<boolean> {
+      const response = await communicator.sendCommand<dbgp.FeatureSetResponse>('feature_set', [ '-n', 'max_children', '-v', value ]);
+      if (response.error) {
+        throw new DbgpError(Number(response.error.attributes.code));
+      }
+      const success = response.attributes.success === '1';
+      return success;
+    },
     // #endregion setting
     // #region execuation
     async exec(command: dbgp.ContinuationCommandName): Promise<ExecResult> {
@@ -454,6 +469,8 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
     },
     // #endregion breakpoint
   };
+
+  await session.setMaxChildren(10000);
   return session;
 
   // #region utils

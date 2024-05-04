@@ -1,6 +1,6 @@
 import { URI } from 'vscode-uri';
 import { safeCall } from '../tools/utils';
-import { ObjectProperty, PrimitiveProperty, Property, UnsetProperty } from '../types/dbgp/session.types';
+import { CommandArg, ObjectProperty, PrimitiveProperty, Property, UnsetProperty } from '../types/dbgp/session.types';
 import { DataType } from '../types/dbgp/AutoHotkeyDebugger.types';
 
 // #region predicates
@@ -108,8 +108,8 @@ export function escapeCommandArgValue(value: string): string {
   }, value);
   return `"${escapedValue}"`;
 }
-export function encodeToBase64(value: string): string {
-  return Buffer.from(value).toString('base64');
+export function encodeToBase64(value: CommandArg): string {
+  return Buffer.from(toCommandArg(value)).toString('base64');
 }
 export function toDbgpFileName(filePath: string): string | undefined {
   const uriFromFilePath = safeCall(() => URI.file(filePath).toString().toLowerCase());
@@ -163,7 +163,16 @@ export const toValueByObjectProperty = (property: ObjectProperty): string => {
 // #endregion convert
 
 // #region builder
-export const createCommandArgs = (...args: Array<string | number | boolean | undefined>): string[] => {
+export const toCommandArg = (value: CommandArg): string => {
+  if (typeof value === 'boolean') {
+    return value ? '1' : '0';
+  }
+  if (typeof value === 'number') {
+    return String(value);
+  }
+  return escapeCommandArgValue(String(value));
+};
+export const createCommandArgs = (...args: Array<CommandArg | undefined>): string[] => {
   return args.flatMap((arg, i, args) => {
     const isFlag = typeof arg === 'string' && arg.startsWith('-');
     if (isFlag) {
@@ -181,19 +190,7 @@ export const createCommandArgs = (...args: Array<string | number | boolean | und
       return [];
     }
 
-
-    if (typeof arg === 'boolean') {
-      return arg ? '1' : '0';
-    }
-    if (typeof arg === 'number') {
-      return [ String(arg) ];
-    }
-
-    const hasEscapeChar = (/\s|\0/u).test(String(arg));
-    if (hasEscapeChar) {
-      return [ escapeCommandArgValue(String(arg)) ];
-    }
-    return [ String(arg) ];
+    return [ toCommandArg(arg) ];
   });
 };
 // #endregion builder

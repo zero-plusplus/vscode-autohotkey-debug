@@ -376,7 +376,7 @@ export interface FeatureSetResponse extends CommandResponseBase {
   attributes: {
     command: 'feature_set';
     feature: FeatureName;
-    success: boolean;
+    success: '0' | '1';
   } & AttributeBase & StatusAttributes;
 }
 export interface ContinuationResponse extends CommandResponseBase {

@@ -116,7 +116,8 @@ export interface Context {
   properties: Property[];
 }
 
-export type CommandSender = <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: dbgp.CommandName, args?: Array<string | number | boolean | undefined>, data?: string) => Promise<T>;
+export type CommandArg = string | number | boolean;
+export type CommandSender = <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: dbgp.CommandName, args?: Array<CommandArg | undefined>, data?: CommandArg) => Promise<T>;
 export type SessionEventName =
 | 'process:close'
 | 'process:error'
@@ -140,6 +141,8 @@ export interface Session extends SessionCommunicator {
   sendCommand: CommandSender;
   // #region setting
   suppressException: () => Promise<boolean>;
+  getMaxChildren: () => Promise<number>;
+  setMaxChildren: (value: string | number | boolean) => Promise<boolean>;
   // #endregion setting
   // #region execuation
   exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
