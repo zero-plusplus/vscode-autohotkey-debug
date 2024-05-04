@@ -86,7 +86,7 @@ describe('session', () => {
       const a = await runtime.session.getProperty('a', localContext.id);
       expect(a).toEqual({
         contextId: 0,
-        depth: undefined,
+        stackLevel: undefined,
         name: 'a',
         fullName: 'a',
         type: 'string',

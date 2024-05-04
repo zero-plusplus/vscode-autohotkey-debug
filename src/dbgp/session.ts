@@ -361,10 +361,10 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
         };
       });
     },
-    getContext: async(contextIdOrName: dbgp.ContextId | dbgp.ContextName, depth?: number): Promise<Context> => {
+    getContext: async(contextIdOrName: dbgp.ContextId | dbgp.ContextName, stackLevel?: number): Promise<Context> => {
       const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
 
-      const response = await communicator.sendCommand<dbgp.ContextGetResponse>('context_get', [ '-c', contextId, '-d', depth ]);
+      const response = await communicator.sendCommand<dbgp.ContextGetResponse>('context_get', [ '-c', contextId, '-d', stackLevel ]);
       if (response.error) {
         throw new DbgpError(Number(response.error.attributes.code));
       }
@@ -372,30 +372,30 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       return {
         id: contextId,
         name: contextNameById[contextId],
-        properties: toProperties(response.property, contextId, depth),
+        properties: toProperties(response.property, contextId, stackLevel),
       };
     },
-    async getContexts(depth?: number): Promise<Context[]> {
+    async getContexts(stackLevel?: number): Promise<Context[]> {
       const contexts: Context[] = [];
       const response = await communicator.sendCommand<dbgp.ContextNamesResponse>('context_names');
       for await (const context of response.context) {
-        contexts.push(await session.getContext(Number(context.attributes.id) as dbgp.ContextId, depth));
+        contexts.push(await session.getContext(Number(context.attributes.id) as dbgp.ContextId, stackLevel));
       }
       return contexts;
     },
-    async getProperty(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, depth?: number): Promise<Property> {
+    async getProperty(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number): Promise<Property> {
       const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
 
-      const response = await communicator.sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', depth ]);
+      const response = await communicator.sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', stackLevel ]);
       if (response.error) {
         throw new DbgpError(Number(response.error.attributes.code));
       }
       if (response.property.attributes.type === 'object') {
-        return toObjectProperty(response.property as dbgp.ObjectProperty, contextId, depth);
+        return toObjectProperty(response.property as dbgp.ObjectProperty, contextId, stackLevel);
       }
-      return toPrimitiveProperty(response.property as dbgp.PrimitiveProperty, contextId, depth);
+      return toPrimitiveProperty(response.property as dbgp.PrimitiveProperty, contextId, stackLevel);
     },
-    async setProperty(name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, depth?: number): Promise<Property> {
+    async setProperty(name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number): Promise<Property> {
       const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
 
       let propertyValue = String(value);
@@ -416,7 +416,7 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
         }
       }
       await communicator.sendCommand('property_set', [ '-c', contextId, '-n', name, '-t', dataType ], propertyValue);
-      return this.getProperty(name, contextId, depth);
+      return this.getProperty(name, contextId, stackLevel);
     },
     // #endregion execuation context
     // #region breakpoint
@@ -481,7 +481,7 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
     }
     return parseAutoHotkeyVersion(response.content);
   }
-  function toProperties(dbgpProperty: dbgp.Property | dbgp.Property[] | undefined, contextId: dbgp.ContextId, depth?: number): Property[] {
+  function toProperties(dbgpProperty: dbgp.Property | dbgp.Property[] | undefined, contextId: dbgp.ContextId, stackLevel?: number): Property[] {
     if (!dbgpProperty) {
       return [];
     }
@@ -489,15 +489,15 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
     const rawProperties = Array.isArray(dbgpProperty) ? dbgpProperty : [ dbgpProperty ];
     return rawProperties.map((rawProperty) => {
       if (rawProperty.attributes.type === 'object') {
-        return toObjectProperty(rawProperty as dbgp.ObjectProperty, contextId, depth);
+        return toObjectProperty(rawProperty as dbgp.ObjectProperty, contextId, stackLevel);
       }
-      return toPrimitiveProperty(rawProperty as dbgp.PrimitiveProperty, contextId, depth);
+      return toPrimitiveProperty(rawProperty as dbgp.PrimitiveProperty, contextId, stackLevel);
     });
   }
-  function toPrimitiveProperty(rawProperty: dbgp.PrimitiveProperty, contextId: dbgp.ContextId, depth?: number): PrimitiveProperty {
+  function toPrimitiveProperty(rawProperty: dbgp.PrimitiveProperty, contextId: dbgp.ContextId, stackLevel?: number): PrimitiveProperty {
     return {
       contextId,
-      depth,
+      stackLevel,
       name: rawProperty.attributes.name,
       fullName: rawProperty.attributes.fullname,
       constant: rawProperty.attributes.constant === '1',
@@ -506,17 +506,17 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       value: Buffer.from(rawProperty.content ?? '', 'base64').toString(),
     };
   }
-  function toObjectProperty(rawProperty: dbgp.ObjectProperty, contextId: dbgp.ContextId, depth?: number): ObjectProperty {
+  function toObjectProperty(rawProperty: dbgp.ObjectProperty, contextId: dbgp.ContextId, stackLevel?: number): ObjectProperty {
     return {
       contextId,
-      depth,
+      stackLevel,
       name: rawProperty.attributes.name,
       fullName: rawProperty.attributes.fullname,
       className: rawProperty.attributes.classname,
       facet: rawProperty.attributes.facet,
       address: Number(rawProperty.attributes.address),
       hasChildren: rawProperty.attributes.children === '1',
-      children: toProperties(rawProperty.property, contextId, depth),
+      children: toProperties(rawProperty.property, contextId, stackLevel),
       size: Number(rawProperty.attributes.size),
       type: 'object',
     };

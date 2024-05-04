@@ -73,7 +73,7 @@ export const contextNameById: Record<number, dbgp.ContextName> = {
 export type Property = PrimitiveProperty | ObjectProperty;
 export interface PropertyBase {
   contextId: dbgp.ContextId;
-  depth?: number;
+  stackLevel?: number;
   name: string;
   fullName: string;
   size: number;
@@ -81,7 +81,7 @@ export interface PropertyBase {
 }
 export interface PseudoPropertyBase {
   contextId: -1;
-  depth: undefined;
+  stackLevel: undefined;
   name: string;
   fullName: string;
   size: number;
@@ -153,10 +153,10 @@ export interface Session extends SessionCommunicator {
   // #region execuation context
   getScriptStatus: () => Promise<ScriptStatus>;
   getCallStack: () => Promise<CallStack>;
-  getContext: (contextIdOrName: dbgp.ContextId | dbgp.ContextName, depth?: number) => Promise<Context>;
-  getContexts: (depth?: number) => Promise<Context[]>;
-  getProperty: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, depth?: number) => Promise<Property>;
-  setProperty: (name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, depth?: number) => Promise<Property>;
+  getContext: (contextIdOrName: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Context>;
+  getContexts: (stackLevel?: number) => Promise<Context[]>;
+  getProperty: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
+  setProperty: (name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
   // #endregion execuation context
   // #region breakpoint
   setExceptionBreakpoint: (enabled: boolean) => Promise<ExceptionBreakpoint>;

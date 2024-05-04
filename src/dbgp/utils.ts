@@ -25,7 +25,7 @@ export function isProperty(value: any): value is Property {
     return false;
   }
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  if (!('depth' in value) || typeof value.depth !== 'number') {
+  if (!('stackLevel' in value) || typeof value.stackLevel !== 'number') {
     return false;
   }
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
