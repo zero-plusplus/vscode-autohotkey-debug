@@ -26,5 +26,5 @@ export interface ExecutionContextManager {
   getByVariablesReference: (variablesReference: number) => Scope | Variable | undefined;
   fetchCallStack: () => Promise<CallStack>;
   fetchScopes: (frameId: number) => Promise<Scope[]>;
-  fetchVariableChildren: (variablesReference: number) => Promise<Variable[] | undefined> ;
+  fetchVariableChildren: (variablesReference: number, start?: number, end?: number) => Promise<Variable[] | undefined> ;
 }

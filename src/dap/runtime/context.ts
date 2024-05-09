@@ -52,14 +52,17 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
       if (!stackFrame) {
         return [];
       }
-      return (await session.getContexts(stackFrame.level)).map((context) => {
+      const contexts = await session.getContexts(stackFrame.level);
+
+      const scopes: Scope[] = [];
+      for await (const context of contexts) {
         const scope: Scope = {
           id: context.id,
           variablesReference: variablesReference++,
           stackFrame,
           name: context.name,
           expensive: false,
-          variables: createVariablesByProperties(context.id, stackFrame.id, context.properties),
+          variables: await createVariablesByProperties(context.id, stackFrame.id, context.properties),
 
           // source
           source: undefined,
@@ -70,10 +73,11 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
         };
 
         cacheByVariableReference.set(scope.variablesReference, scope);
-        return scope;
-      });
+        scopes.push(scope);
+      }
+      return scopes;
     },
-    async fetchVariableChildren(variablesReference: number): Promise<Variable[] | undefined> {
+    async fetchVariableChildren(variablesReference: number, start = 0, end?: number): Promise<Variable[] | undefined> {
       const variableOrScope = this.getByVariablesReference(variablesReference);
       if (!variableOrScope) {
         return undefined;
@@ -100,13 +104,15 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
 
       const property = await session.getProperty(variable.evaluateName, variable.scopeId, stackFrame.level);
       if (isObjectProperty(property)) {
-        return createVariablesByProperties(variable.scopeId, frameId, property.children);
+        const children = await session.getPropertyChildren(property, start, end);
+        return createVariablesByProperties(variable.scopeId, frameId, children);
       }
       return [];
     },
   };
 
-  function createVariableByProperty(scopeId: dbgp.ContextId, frameId: number, property: Property): Variable {
+
+  async function createVariableByProperty(scopeId: dbgp.ContextId, frameId: number, property: Property): Promise<Variable> {
     const variable: Variable = {
       name: property.name,
       evaluateName: property.fullName,
@@ -119,15 +125,26 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
       namedVariables: undefined,
     };
 
-    if (isObjectProperty(property)) {
-      variable.variablesReference = variablesReference++;
-      cacheByVariableReference.set(variable.variablesReference, variable);
+    if (!isObjectProperty(property)) {
+      return variable;
+    }
+
+    variable.variablesReference = variablesReference++;
+    cacheByVariableReference.set(variable.variablesReference, variable);
+
+    const length = await session.getPropertyLengthByProperty(property);
+    if (length && 100 < length) {
+      variable.indexedVariables = length;
+      return variable;
     }
     return variable;
   }
-  function createVariablesByProperties(scopeId: dbgp.ContextId, frameId: number, properties: Property[]): Variable[] {
-    return properties.map((property) => {
-      return createVariableByProperty(scopeId, frameId, property);
-    });
+  async function createVariablesByProperties(scopeId: dbgp.ContextId, frameId: number, properties: Property[]): Promise<Variable[]> {
+    const variables: Variable[] = [];
+    for await (const property of properties) {
+      const variable = await createVariableByProperty(scopeId, frameId, property);
+      variables.push(variable);
+    }
+    return variables;
   }
 };

@@ -101,6 +101,7 @@ export interface ObjectProperty extends PropertyBase {
   className: string;
   facet: dbgp.PropertyFacet;
   hasChildren: boolean;
+  numberOfChildren: number;
   address: number;
   children: Property[];
 }
@@ -117,7 +118,7 @@ export interface Context {
 }
 
 export type CommandArg = string | number | boolean;
-export type CommandSender = <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: dbgp.CommandName, args?: Array<CommandArg | undefined>, data?: CommandArg) => Promise<T>;
+export type CommandSender = <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: dbgp.CommandName, args?: Array<CommandArg | undefined>, data?: string) => Promise<T>;
 export type SessionEventName =
 | 'process:close'
 | 'process:error'
@@ -142,9 +143,11 @@ export interface Session extends SessionCommunicator {
   // #region setting
   suppressException: () => Promise<boolean>;
   getMaxChildren: () => Promise<number>;
+  getMaxData: () => Promise<number>;
   getMaxDepth: () => Promise<number>;
-  setMaxChildren: (value: string | number | boolean) => Promise<boolean>;
-  setMaxDepth: (value: string | number | boolean) => Promise<boolean>;
+  setMaxChildren: (value: number) => Promise<boolean>;
+  setMaxData: (value: number) => Promise<boolean>;
+  setMaxDepth: (value: number) => Promise<boolean>;
   // #endregion setting
   // #region execuation
   exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
@@ -157,7 +160,13 @@ export interface Session extends SessionCommunicator {
   getCallStack: () => Promise<CallStack>;
   getContext: (contextIdOrName: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Context>;
   getContexts: (stackLevel?: number) => Promise<Context[]>;
-  getProperty: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number, maxDepth?: number) => Promise<Property>;
+  getProperty: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
+  getPrimitivePropertyValue: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<string | undefined>;
+  getPropertyLength: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<number | undefined>;
+  getPropertyLengthByProperty: (property: ObjectProperty) => Promise<number | undefined>;
+  getPropertyCount: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<number | undefined>;
+  getPropertyCountByProperty: (property: ObjectProperty) => Promise<number | undefined>;
+  getPropertyChildren: (property: ObjectProperty, start?: number, end?: number) => Promise<Property[]>;
   setProperty: (name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
   // #endregion execuation context
   // #region breakpoint

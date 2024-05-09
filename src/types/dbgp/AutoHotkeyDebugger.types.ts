@@ -346,7 +346,7 @@ export type CommandResponse =
   | ContextGetResponse
   | PropertyGetResponse
   | PropertySetResponse
-  // | PropertyValueResponse
+  | PropertyValueResponse
   // | SourceResponse
   // | StdOutResponse
   // | StdErrResponse
@@ -472,10 +472,12 @@ export interface PropertyGetResponse extends CommandResponseBase {
   property: Property;
 }
 export interface PropertyValueResponse extends CommandResponseBase {
-  command: 'property_value';
-  data: string;
-  size: number;
-  encoding: Encoding | 'none';
+  attributes: {
+    command: 'property_value';
+    size: number;
+    encoding: Encoding | 'none';
+  } & AttributeBase;
+  content: string;
 }
 export interface SourceResponse extends CommandResponseBase {
   command: 'source';

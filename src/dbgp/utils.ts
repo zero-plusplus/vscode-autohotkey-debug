@@ -150,8 +150,17 @@ export const toValueByObjectProperty = (property: ObjectProperty): string => {
   const limit = 15;
   const childValues: string[] = [];
   for (const child of property.children.slice(0, limit)) {
+    const key = child.name;
+    if (isArrayProperty(child)) {
+      childValues.push(isArray ? `[ ... ]` : `${key}: [ ... ]`);
+      continue;
+    }
+    if (isObjectProperty(child)) {
+      childValues.push(isArray ? `{ ... }` : `${key}: { ... }`);
+      continue;
+    }
     const childValue = toValueByProperty(child);
-    childValues.push(isArray ? childValue : `${child.name}: ${childValue}`);
+    childValues.push(isArray ? childValue : `${key}: ${childValue}`);
   }
 
   const ellipsis = limit < property.children.length ? '...' : '';
