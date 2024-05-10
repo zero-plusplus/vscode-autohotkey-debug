@@ -10,5 +10,4 @@ src/
 test/
 .eslint*
 .gitignore
-.mocharc.js
 tsconfig.json

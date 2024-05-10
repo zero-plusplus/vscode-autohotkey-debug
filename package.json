@@ -986,7 +986,6 @@
     "@types/gulp": "^4.0.7",
     "@types/lodash": "^4.14.165",
     "@types/matcher": "^2.0.0",
-    "@types/mocha": "^7.0.2",
     "@types/node": "^13.13.2",
     "@types/normalize-path": "^3.0.0",
     "@types/parsimmon": "^1.10.1",
@@ -998,7 +997,6 @@
     "del": "^6.1.1",
     "esbuild": "^0.14.54",
     "fs-extra": "^10.1.0",
-    "mocha": "^7.1.1",
     "ts-node": "^8.10.2",
     "typescript": "^4.4.4",
     "vscode-debugadapter-testsupport": "^1.40.3"
