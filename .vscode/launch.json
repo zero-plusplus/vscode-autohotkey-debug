@@ -1,7 +1,4 @@
 {
-  // IntelliSense を使用して利用可能な属性を学べます。
-  // 既存の属性の説明をホバーして表示します。
-  // 詳細情報は次を確認してください: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
     {
@@ -16,15 +13,13 @@
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
-      "preLaunchTask": "subtask:watch",
+      "preLaunchTask": "npm:watch",
       "skipFiles": [
           "<node_internals>/**",
-          "**",
-          "!${workspaceFolder}/**"
       ],
     },
     {
-      "name": "Extension Test without lint",
+      "name": "Extension Test (Production Environment)",
       "type": "extensionHost",
       "request": "launch",
       "runtimeExecutable": "${execPath}",
@@ -35,68 +30,20 @@
       "outFiles": [
         "${workspaceFolder}/build/**/*.js"
       ],
-      "preLaunchTask": "subtask:build:without-lint",
+      "preLaunchTask": "npm:watch:public",
+      "skipFiles": [
+          "<node_internals>/**",
+      ],
     },
     {
-        "name": "Gulp Test:build",
-        "type": "node",
-        "request": "launch",
-        "program": "${workspaceFolder}/node_modules/gulp/bin/gulp.js",
-        "args": [
-            "build"
-        ],
-        "skipFiles": [
-            "<node_internals>/**"
-        ]
-    },
-    {
-      "name": "Gulp Test:bundle",
+      "name": "Debug Jest Tests",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/node_modules/gulp/bin/gulp.js",
-      "args": [
-          "bundle"
+      "runtimeArgs": [
+        "--inspect-brk",
+        "${workspaceRoot}/node_modules/jest/bin/jest.js",
+        "--runInBand"
       ],
-      "skipFiles": [
-          "<node_internals>/**"
-      ]
-    },
-    {
-      "name": "Mocha Tests",
-      "type": "node",
-      "request": "launch",
-      "preLaunchTask": "subtask:build",
-      "cwd": "${workspaceFolder}",
-      "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-      "args": [
-        "${workspaceFolder}/build/test"
-      ],
-      "outFiles": [
-        "${workspaceFolder}/build/test/**/*.js"
-      ],
-      "internalConsoleOptions": "openOnSessionStart",
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
-    },
-    {
-        "name": "Mocha Selected Tests",
-        "type": "pwa-node",
-        "request": "launch",
-        "cwd": "${workspaceFolder}",
-        "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
-        "args": [
-          "${file}"
-        ],
-        "sourceMaps": true,
-        "internalConsoleOptions": "openOnSessionStart",
-        "resolveSourceMapLocations": [
-            "${workspaceFolder}/**",
-            "!**/node_modules/**"
-        ],
-        "skipFiles": [
-          "<node_internals>/**"
-        ]
     },
   ]
 }
