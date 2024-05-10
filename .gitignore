@@ -3,4 +3,3 @@ node_modules/
 
 .eslintcache
 *.vsix
-yarn-error.log

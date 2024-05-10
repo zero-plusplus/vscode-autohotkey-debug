@@ -2,8 +2,6 @@
 .vscode/
 build/**/*.ts
 demo/
-image/
-!image/icon.png
 node_modules/
 !node_modules/ts-predicates
 !node_modules/typeof-util
@@ -13,6 +11,4 @@ test/
 .eslint*
 .gitignore
 .mocharc.js
-gulpfile.ts
 tsconfig.json
-yarn-error.log
