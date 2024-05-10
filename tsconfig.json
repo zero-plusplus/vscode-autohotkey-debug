@@ -29,6 +29,7 @@
 	"include": [
 		"scripts/**/*",
 		"src/**/*",
-		"test/**/*"
+		"test/**/*",
+		"jest.config.ts"
 	]
 }
