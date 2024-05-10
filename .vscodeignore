@@ -12,7 +12,6 @@ src/
 test/
 .eslint*
 .gitignore
-.huskyrc.js
 .mocharc.js
 gulpfile.ts
 tsconfig.json
