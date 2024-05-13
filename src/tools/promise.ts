@@ -1,3 +1,5 @@
+import { Mutex, Task } from '../types/tools/promise.types';
+
 export const sleep = async(delay_ms: number): Promise<void> => {
   return new Promise((resolve) => {
     setTimeout(resolve, delay_ms);
@@ -20,4 +22,24 @@ export const timeoutPromise = async<T>(promise: Promise<T>, timeout_ms: number):
     }),
   ]);
   return result as T;
+};
+
+const cache = new Map<string, Mutex>();
+export const createMutex = (key = ''): Mutex => {
+  if (cache.has(key)) {
+    return cache.get(key)!;
+  }
+
+  let currentTaskResult: Promise<any> = Promise.resolve();
+  const mutex: Mutex = {
+    use: async<T>(task: Task<T>): Promise<T> => {
+      currentTaskResult = currentTaskResult.then(async() => {
+        return task();
+      });
+      return currentTaskResult as Promise<T>;
+    },
+  };
+
+  cache.set(key, mutex);
+  return mutex;
 };

@@ -26,17 +26,16 @@ import { setExpressionRequest } from './requests/setExpressionRequest';
 import { completionsRequest } from './requests/completionsRequest';
 import { evaluateRequest } from './requests/evaluateRequest';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
-import { RequestQueue } from '../utils/RequestQueue';
 import { EventSource, ExecResult } from '../../types/dbgp/session.types';
 import { MessageCategory, StopReason } from '../../types/dap/adapter/adapter.types';
 import { AELLEvaluator } from '../../types/tools/AELL/evaluator.types';
 import { createEvaluator } from '../../tools/AELL/evaluator';
+import { createMutex } from '../../tools/promise';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   public runtime!: Readonly<ScriptRuntime>;
   public config!: Readonly<NormalizedDebugConfig>;
   public evaluator!: AELLEvaluator;
-  private readonly requestQueue = new RequestQueue();
   // #region public methods
   public sendStoppedEvent(reason: StopReason | ExecResult): void {
     const stopReason = toStopReason(reason);
@@ -256,8 +255,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
         return;
       }
 
-      this.requestQueue.enqueue(handler);
-      await this.requestQueue.flush();
+      await createMutex(requestName).use(handler);
     }
     catch (e: unknown) {
       if (e instanceof Error) {
