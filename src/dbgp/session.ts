@@ -1,4 +1,4 @@
-import { Socket, createServer } from 'net';
+import { Server, Socket, createServer } from 'net';
 import { EventEmitter } from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
@@ -14,8 +14,8 @@ export const createSessionConnector = (): SessionConnector => {
   return {
     async connect(port: number, hostname: string, process?: AutoHotkeyProcess): Promise<Session> {
       return new Promise((resolve) => {
-        createServer((socket) => {
-          createSessionCommunicator(socket, process).then((communicator) => {
+        const server = createServer((socket) => {
+          createSessionCommunicator(server, socket, process).then((communicator) => {
             createSession(communicator).then((session) => {
               resolve(session);
             });
@@ -25,7 +25,7 @@ export const createSessionConnector = (): SessionConnector => {
     },
   };
 };
-export const createSessionCommunicator = async(socket: Socket, process?: AutoHotkeyProcess): Promise<SessionCommunicator> => {
+export const createSessionCommunicator = async(server: Server, socket: Socket, process?: AutoHotkeyProcess): Promise<SessionCommunicator> => {
   const responseEventName = 'response';
   const pendingCommands = new Map<number, PendingCommand>();
 
@@ -72,11 +72,11 @@ export const createSessionCommunicator = async(socket: Socket, process?: AutoHot
         },
         close: async(timeout_ms = 500) => {
           await closeProcess(timeout_ms);
-          await closeSocket();
+          await closeServer();
         },
         detach: async(timeout_ms = 500) => {
           await detachProcess(timeout_ms);
-          await closeSocket();
+          await closeServer();
         },
         onStdOut: (listener: MessageListener) => {
           eventEmitter.on('debugger:stdout', listener);
@@ -103,7 +103,7 @@ export const createSessionCommunicator = async(socket: Socket, process?: AutoHot
       };
       resolve(communicator);
 
-      async function closeSocket(): Promise<void> {
+      async function closeServer(): Promise<void> {
         if (isTerminated) {
           return Promise.resolve();
         }
@@ -111,14 +111,18 @@ export const createSessionCommunicator = async(socket: Socket, process?: AutoHot
         return new Promise((resolve) => {
           socket.end(() => {
             socket.destroy();
-            resolve();
+
+            server.close(() => {
+              resolve();
+            });
           });
         });
       }
       async function closeProcess(timeout_ms = 500): Promise<void> {
         if (!communicator.isTerminated) {
-          if (communicator.process?.isTerminated) {
+          if (communicator.process && !communicator.process.isTerminated) {
             communicator.process.kill();
+            communicator.process.isTerminated = true;
           }
           return;
         }
