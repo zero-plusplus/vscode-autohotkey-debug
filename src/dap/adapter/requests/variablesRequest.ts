@@ -16,19 +16,23 @@ export const variablesRequest = async <R extends DebugProtocol.VariablesResponse
     return response;
   }
 
-
-  const end = (typeof args.start === 'number' && typeof args.count === 'number') ? args.start + args.count : undefined;
-  const childrens = await adapter.runtime.fetchVariableChildren(args.variablesReference, args.start ?? 0, end);
-  if (childrens) {
-    response.body = {
-      variables: childrens,
-    };
+  const parentVariable = scopeOrVariable;
+  if (parentVariable.indexedVariables && typeof args.start === 'number' && typeof args.count === 'number') {
+    const children = await adapter.runtime.fetchArrayIndexes(args.variablesReference, args.start, args.start + 100);
+    if (children) {
+      response.body = {
+        variables: children,
+      };
+    }
     return response;
   }
 
-  const variable = scopeOrVariable;
-  response.body = {
-    variables: [ variable ],
-  };
+  const children = await adapter.runtime.fetchVariableChildren(args.variablesReference);
+  if (children) {
+    response.body = {
+      variables: children,
+    };
+  }
+
   return response;
 };

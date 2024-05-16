@@ -162,11 +162,11 @@ export interface Session extends SessionCommunicator {
   getContexts: (stackLevel?: number) => Promise<Context[]>;
   getProperty: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
   getPrimitivePropertyValue: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<string | undefined>;
-  getPropertyLength: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<number | undefined>;
-  getPropertyLengthByProperty: (property: ObjectProperty) => Promise<number | undefined>;
+  getArrayLength: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<number | undefined>;
+  getArrayLengthByProperty: (property: ObjectProperty) => Promise<number | undefined>;
   getPropertyCount: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<number | undefined>;
   getPropertyCountByProperty: (property: ObjectProperty) => Promise<number | undefined>;
-  getPropertyChildren: (property: ObjectProperty, start?: number, end?: number) => Promise<Property[]>;
+  getPropertyChildren: (property: ObjectProperty, chunkSize?: number, page?: number) => Promise<Property[]>;
   setProperty: (name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
   // #endregion execuation context
   // #region breakpoint

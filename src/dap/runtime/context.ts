@@ -3,6 +3,7 @@ import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { CallStack, ExecutionContextManager, Scope, StackFrame, Variable } from '../../types/dap/runtime/context.types';
 import { Property, Session } from '../../types/dbgp/session.types';
 import { isObjectProperty, toValueByProperty } from '../../dbgp/utils';
+import { range } from '../../tools/utils';
 
 const firstFrameId = 1;
 const firstVariableReference = 1;
@@ -77,7 +78,7 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
       }
       return scopes;
     },
-    async fetchVariableChildren(variablesReference: number, start = 0, end?: number): Promise<Variable[] | undefined> {
+    async fetchVariableChildren(variablesReference: number, maxChildren?: number): Promise<Variable[] | undefined> {
       const variableOrScope = this.getByVariablesReference(variablesReference);
       if (!variableOrScope) {
         return undefined;
@@ -104,10 +105,50 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
 
       const property = await session.getProperty(variable.evaluateName, variable.scopeId, stackFrame.level);
       if (isObjectProperty(property)) {
-        const children = await session.getPropertyChildren(property, start, end);
+        const children = await session.getPropertyChildren(property, maxChildren, 0);
         return createVariablesByProperties(variable.scopeId, frameId, children);
       }
       return [];
+    },
+    async fetchArrayIndexes(variablesReference: number, start?: number, end?: number): Promise<Variable[] | undefined> {
+      const variable = this.getByVariablesReference(variablesReference);
+      if (!variable) {
+        return undefined;
+      }
+
+      const isScope = 'variables' in variable;
+      if (isScope) {
+        return undefined;
+      }
+      if (!variable.evaluateName) {
+        return undefined;
+      }
+      if (!variable.indexedVariables) {
+        return undefined;
+      }
+
+      const stackFrame = this.getStackFrameById(variable.frameId);
+      if (!stackFrame) {
+        return [];
+      }
+      const property = await session.getProperty(variable.evaluateName, variable.scopeId, stackFrame.level);
+      if (property.type !== 'object') {
+        return undefined;
+      }
+
+      const children: Property[] = [];
+      for await (const i_0base of range(start ?? 0, end ?? variable.indexedVariables, true)) {
+        const index_1base = i_0base + 1;
+        const query = `${property.fullName}[${index_1base}]`;
+
+        const child = await session.getProperty(query, variable.scopeId, stackFrame.level);
+        if (child.type === 'undefined') {
+          break;
+        }
+        child.name = `[${index_1base}]`;
+        children.push(child);
+      }
+      return createVariablesByProperties(variable.scopeId, variable.frameId, children);
     },
   };
 
@@ -132,7 +173,7 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
     variable.variablesReference = variablesReference++;
     cacheByVariableReference.set(variable.variablesReference, variable);
 
-    const length = await session.getPropertyLengthByProperty(property);
+    const length = await session.getArrayLengthByProperty(property);
     if (length && 100 < length) {
       variable.indexedVariables = length;
       return variable;

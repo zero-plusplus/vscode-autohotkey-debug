@@ -43,12 +43,12 @@ export const createSessionCommunicator = async(server: Server, socket: Socket, p
         },
         process,
         sendCommand: async<T extends dbgp.CommandResponse = dbgp.CommandResponse>(commandName: dbgp.CommandName, args?: Array<CommandArg | undefined>, data?: CommandArg): Promise<T> => {
-          const transactionId = currentTransactionId++;
           if (communicator.isTerminated) {
             throw Error(`Session closed. Transmission of command "${commandName}" has been cancelled.`);
           }
 
           return new Promise((resolve, reject) => {
+            const transactionId = currentTransactionId++;
             let command_str = `${commandName} -i ${transactionId}`;
             if (Array.isArray(args)) {
               command_str += ` ${createCommandArgs(...args).join(' ')}`;
@@ -437,7 +437,7 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       }
       return undefined;
     },
-    async getPropertyLength(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): Promise<number | undefined> {
+    async getArrayLength(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): Promise<number | undefined> {
       const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
 
       if (isV2) {
@@ -454,11 +454,19 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       }
       return undefined;
     },
-    async getPropertyLengthByProperty(property: ObjectProperty): Promise<number | undefined> {
+    async getArrayLengthByProperty(property: ObjectProperty): Promise<number | undefined> {
       if (isV2) {
-        return session.getPropertyCount(property.fullName, property.contextId, property.stackLevel);
+        return session.getArrayLength(property.fullName, property.contextId, property.stackLevel);
       }
-      return property.numberOfChildren;
+
+      if (0 < property.numberOfChildren) {
+        const child = await session.getProperty(`${property.fullName}[1]`);
+        const isArrayProperty = child.type !== 'undefined';
+        if (isArrayProperty) {
+          return property.numberOfChildren;
+        }
+      }
+      return 0;
     },
     async getPropertyCount(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): Promise<number | undefined> {
       const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
@@ -483,27 +491,9 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
       }
       return property.numberOfChildren;
     },
-    async getPropertyChildren(property: ObjectProperty, start?: number, end?: number): Promise<Property[]> {
-      const query = ((): string => {
-        if (2 <= version.mejor) {
-          return `${property.fullName}.<enum>`;
-        }
-        return `${property.fullName}`;
-      })();
-
+    async getPropertyChildren(property: ObjectProperty, chunkSize?: number, page?: number): Promise<Property[]> {
       const maxDepth = 1;
-      const shouldPartial = (typeof start === 'number' && 0 < start) && (typeof end === 'number' && start < end);
-      if (!shouldPartial) {
-        const enumProperty = await getProperty(query, property.contextId, property.stackLevel, maxDepth);
-        if (enumProperty.type === 'object') {
-          return enumProperty.children;
-        }
-        return [];
-      }
-
-      const chunkSize = 100;
-      const page = start / chunkSize;
-      const enumProperty = await getProperty(query, property.contextId, property.stackLevel, maxDepth, chunkSize, page);
+      const enumProperty = await getProperty(property.fullName, property.contextId, property.stackLevel, maxDepth, chunkSize, page);
       if (enumProperty.type === 'object') {
         return enumProperty.children;
       }
@@ -597,11 +587,13 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
     }
     return response.content as T;
   }
-  async function getProperty(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number, maxDepth = 0, maxChildren = 0, page = 0): Promise<Property> {
+  async function getProperty(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number, maxDepth = 0, maxChildren?: number, page?: number): Promise<Property> {
     const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
 
     await session.setMaxDepth(maxDepth);
-    await session.setMaxChildren(maxChildren);
+    if (maxChildren) {
+      await session.setMaxChildren(maxChildren);
+    }
     const response = await communicator.sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', stackLevel, '-p', page ]);
     if (response.error) {
       throw new DbgpError(Number(response.error.attributes.code));
