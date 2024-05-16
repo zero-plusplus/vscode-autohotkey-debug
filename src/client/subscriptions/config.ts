@@ -77,7 +77,8 @@ const debugConfigurationProvider: vscode.DebugConfigurationProvider = {
     return defaultedConfig;
   },
   async resolveDebugConfigurationWithSubstitutedVariables(folder, config, token): Promise<vscode.DebugConfiguration | null | undefined> {
-    return await validateDebugConfig(config as DebugConfig) as vscode.DebugConfiguration;
+    const vardatedConfig = await validateDebugConfig(config as DebugConfig) as vscode.DebugConfiguration;
+    return vardatedConfig;
   },
 };
 

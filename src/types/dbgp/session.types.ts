@@ -19,6 +19,7 @@ export interface SessionCommunicator {
   initPacket: dbgp.InitPacket;
   isTerminated: boolean;
   process?: AutoHotkeyProcess;
+  rawSendCommand: <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: string) => Promise<T>;
   sendCommand: CommandSender;
   close: (timeout_ms: number) => Promise<void>;
   detach: (timeout_ms: number) => Promise<void>;

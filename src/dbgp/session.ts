@@ -4,7 +4,7 @@ import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
 import { AutoHotkeyProcess, Breakpoint, CallStack, CloseListener, CommandArg, Context, ErrorListener, ExceptionBreakpoint, ExecResult, LineBreakpoint, MessageListener, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionCommunicator, SessionConnector, contextIdByName, contextNameById } from '../types/dbgp/session.types';
 import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
-import { timeoutPromise } from '../tools/promise';
+import { createMutex, timeoutPromise } from '../tools/promise';
 import { DbgpError } from './error';
 import { measureAsyncExecutionTime } from '../tools/time';
 import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
@@ -42,6 +42,30 @@ export const createSessionCommunicator = async(server: Server, socket: Socket, p
           return isTerminated;
         },
         process,
+        // #region For testing methods
+        rawSendCommand: async<T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: string): Promise<T> => {
+          return createMutex('rawSendCommand').use(async() => {
+            return new Promise((resolve, reject) => {
+              if (!socket.writable) {
+                Promise.reject(new Error('Socket not writable.'));
+                return;
+              }
+
+              socket.once(responseEventName, (packet) => {
+                if ('response' in packet) {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                  resolve(packet.response as T);
+                }
+              });
+              socket.write(Buffer.from(`${command}\0`), (err) => {
+                if (err) {
+                  reject(new Error('Some error occurred when writing.'));
+                }
+              });
+            });
+          });
+        },
+        // #endregion For testing methods
         sendCommand: async<T extends dbgp.CommandResponse = dbgp.CommandResponse>(commandName: dbgp.CommandName, args?: Array<CommandArg | undefined>, data?: CommandArg): Promise<T> => {
           if (communicator.isTerminated) {
             throw Error(`Session closed. Transmission of command "${commandName}" has been cancelled.`);
