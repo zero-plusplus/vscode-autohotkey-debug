@@ -106,7 +106,7 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
       const property = await session.getProperty(variable.evaluateName, variable.scopeId, stackFrame.level);
       if (isObjectProperty(property)) {
         const children = await session.getPropertyChildren(property, maxChildren, 0);
-        return createVariablesByProperties(variable.scopeId, frameId, children);
+        return createVariablesByProperties(variable.scopeId, stackFrame.id, children);
       }
       return [];
     },
