@@ -1,7 +1,8 @@
 import { URI } from 'vscode-uri';
 import { safeCall } from '../tools/utils';
-import { CommandArg, ObjectProperty, PrimitiveProperty, Property, UnsetProperty } from '../types/dbgp/session.types';
+import { CommandArg, ObjectProperty, PrimitiveProperty, Property, Session, UnsetProperty } from '../types/dbgp/session.types';
 import { DataType } from '../types/dbgp/AutoHotkeyDebugger.types';
+import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
 
 // #region predicates
 export function isUncPath(fileName: string): boolean {
@@ -96,6 +97,32 @@ export function isPrimitiveProperty(value: any): value is PrimitiveProperty {
 // #endregion predicates
 
 // #region convert
+export const toAhkStringByJsString = (version: ParsedAutoHotkeyVersion, str_js: string): string => {
+  const escaped_ahk = str_js
+    .replace(/"/gu, 2 <= version.mejor ? '`"' : '""')
+    .replace(/\r\n/gu, '`r`n')
+    .replace(/\n/gu, '`n')
+    .replace(/\r/gu, '`r')
+    .replace(/[\b]/gu, '`b')
+    .replace(/\t/gu, '`t')
+    .replace(/\v/gu, '`v')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x07]/gu, '`a')
+    .replace(/\f/gu, '`f');
+  return escaped_ahk;
+};
+export const toJsStringByAhkString = (version: ParsedAutoHotkeyVersion, str_ahk: string): string => {
+  const escaped_js = str_ahk
+    .replace(2 <= version.mejor ? /`"/gu : /""/gu, '"')
+    .replace(/`r`n/gu, '\r\n')
+    .replace(/`n/gu, '\n')
+    .replace(/`r/gu, '\r')
+    .replace(/`b/gu, '\b')
+    .replace(/`t/gu, '\t')
+    .replace(/`v/gu, '\v')
+    .replace(/`f/gu, '\f');
+  return escaped_js;
+};
 export function escapeCommandArgValue(value: string): string {
   const replacementEntries: Array<[ RegExp, string ]> = [
     [ /\\(?!0)/gu, '\\\\' ],
@@ -128,51 +155,80 @@ export function toFsPath(fileName: string): string {
   }
   return fsPath;
 }
-export const toValueByProperty = (property: Property): string => {
+export async function toValueByProperty(session: Session, property: Property, maxChildren: number): Promise<string> {
   if (isObjectProperty(property)) {
-    return toValueByObjectProperty(property);
+    return toValueByObjetProperty(session, property, maxChildren);
   }
-  return toValueByPrimitiveProperty(property);
-};
-export const toValueByPrimitiveProperty = (property: PrimitiveProperty | UnsetProperty): string => {
+  return toValueByPrimitiveProperty(session, property);
+}
+export async function toValueByObjetProperty(session: Session, property: ObjectProperty, maxChildren: number): Promise<string> {
+  const length = await session.getArrayLengthByProperty(property);
+  if (length) {
+    return toValueByArrayLikeProperty(session, property, length, maxChildren);
+  }
+  if (2 <= session.version.mejor && property.className === 'Func') {
+    return `ƒ`;
+  }
+  if (property.className === '' || property.className === 'Object') {
+    return toValueByRecordProperty(session, property, maxChildren);
+  }
+  return toValueByClassProperty(session, property, maxChildren);
+}
+export async function toValueByClassProperty(session: Session, property: ObjectProperty, maxChildren: number): Promise<string> {
+  const summary = await toValueByRecordProperty(session, property, maxChildren);
+  return `${property.className} ${summary}`;
+}
+export async function toValueByRecordProperty(session: Session, property: ObjectProperty, maxChildren: number): Promise<string> {
+  if (maxChildren < 1) {
+    return `{...}`;
+  }
+
+  const children = await session.getPropertyChildren(property, maxChildren);
+  if (children.length === 0) {
+    return '{}';
+  }
+
+  // const ellipsis = limit < property.children.length ? '...' : '';
+  const childValues: string[] = [];
+  for (const child of children) {
+    const key = child.name;
+    const type = isObjectProperty(child) ? child.type : toValueByPrimitiveProperty(session, child);
+    childValues.push(`${key}: ${type}`);
+  }
+  return `{${childValues.join(', ')}}`;
+}
+export async function toValueByArrayLikeProperty(session: Session, property: ObjectProperty, maxLength: number, maxChildren: number): Promise<string> {
+  if (maxChildren < 1) {
+    return `[...]`;
+  }
+
+  const children = await session.getArrayElements(property, 1, maxChildren);
+  const ellipsis = maxChildren < maxLength ? '...' : '';
+
+  const childValues: string[] = [];
+  for await (const child of children) {
+    const type = await toValueByProperty(session, child, 0);
+    childValues.push(type);
+  }
+
+  if (ellipsis !== '') {
+    childValues.push(ellipsis);
+  }
+  return `[${childValues.join(', ')}]`;
+}
+export function toValueByPrimitiveProperty(session: Session, property: PrimitiveProperty): string {
   switch (property.type) {
-    case 'string': return `"${property.value}"`;
+    case 'string': return `"${toJsStringByAhkString(session.version, property.value)}"`;
     case 'integer':
-    case 'float':
-    case 'undefined': return property.value;
+    case 'float': return property.value;
     default: break;
   }
-  return 'undefined';
-};
-export const toValueByObjectProperty = (property: ObjectProperty): string => {
-  const isArray = isArrayProperty(property);
-
-  const limit = 15;
-  const childValues: string[] = [];
-  for (const child of property.children.slice(0, limit)) {
-    const key = child.name;
-    if (isArrayProperty(child)) {
-      childValues.push(isArray ? `[ ... ]` : `${key}: [ ... ]`);
-      continue;
-    }
-    if (isObjectProperty(child)) {
-      childValues.push(isArray ? `{ ... }` : `${key}: { ... }`);
-      continue;
-    }
-    const childValue = toValueByProperty(child);
-    childValues.push(isArray ? childValue : `${key}: ${childValue}`);
-  }
-
-  const ellipsis = limit < property.children.length ? '...' : '';
-  if (isArray) {
-    return childValues.length === 0 ? `[]` : `[ ${childValues.join(', ')}${ellipsis} ]`;
-  }
-  return childValues.length === 0 ? `{}` : `{ ${childValues.join(', ')}${ellipsis} }`;
-};
+  return 'Not initialized';
+}
 // #endregion convert
 
 // #region builder
-export const toCommandArg = (value: CommandArg): string => {
+export function toCommandArg(value: CommandArg): string {
   if (typeof value === 'boolean') {
     return value ? '1' : '0';
   }
@@ -180,8 +236,8 @@ export const toCommandArg = (value: CommandArg): string => {
     return String(value);
   }
   return escapeCommandArgValue(String(value));
-};
-export const createCommandArgs = (...args: Array<CommandArg | undefined>): string[] => {
+}
+export function createCommandArgs(...args: Array<CommandArg | undefined>): string[] {
   return args.flatMap((arg, i, args) => {
     const isFlag = typeof arg === 'string' && arg.startsWith('-');
     if (isFlag) {
@@ -201,5 +257,5 @@ export const createCommandArgs = (...args: Array<CommandArg | undefined>): strin
 
     return [ toCommandArg(arg) ];
   });
-};
+}
 // #endregion builder

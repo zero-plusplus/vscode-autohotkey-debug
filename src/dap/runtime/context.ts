@@ -147,7 +147,7 @@ export const createExecutionContextManager = (session: Session, config: Readonly
     const variable: Variable = {
       name: property.name,
       evaluateName: property.fullName,
-      value: toValueByProperty(property),
+      value: await toValueByProperty(session, property, 5),
       type: property.type,
       scopeId,
       frameId,
