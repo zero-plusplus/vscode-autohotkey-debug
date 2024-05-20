@@ -111,7 +111,7 @@ describe('evaluator', () => {
     });
 
     test('UnsetProperty', async() => {
-      expect(await evaluator.eval('unknown')).toEqual({ contextId: 0, stackLevel: undefined, constant: false, fullName: 'unknown', name: 'unknown', size: 0, type: 'undefined', value: '' });
+      expect(await evaluator.eval('unknown')).toEqual({ contextId: 0, stackLevel: 0, constant: false, fullName: 'unknown', name: 'unknown', size: 0, type: 'undefined', value: '' });
     });
 
     test('Identifier (Primitive)', async() => {

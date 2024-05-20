@@ -82,7 +82,7 @@ export interface PropertyBase {
 }
 export interface PseudoPropertyBase {
   contextId: -1;
-  stackLevel: undefined;
+  stackLevel: 0;
   name: string;
   fullName: string;
   size: number;
