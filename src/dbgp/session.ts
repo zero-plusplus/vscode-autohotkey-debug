@@ -9,6 +9,7 @@ import { DbgpError } from './error';
 import { measureAsyncExecutionTime } from '../tools/time';
 import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
 import { parseAutoHotkeyVersion } from '../tools/autohotkey/version';
+import { range } from '../tools/utils';
 
 export const createSessionConnector = (): SessionConnector => {
   return {
@@ -522,6 +523,23 @@ export const createSession = async(communicator: SessionCommunicator): Promise<S
         return enumProperty.children;
       }
       return [];
+    },
+    async getArrayElements(property: ObjectProperty, start_1base?: number, end_1base?: number) {
+      const rangeStart = start_1base ?? 1;
+      const rangeEnd = end_1base ?? await session.getArrayLengthByProperty(property);
+
+      const elements: Property[] = [];
+      for await (const index_1base of range(rangeStart, rangeEnd, true)) {
+        const query = `${property.fullName}[${index_1base}]`;
+
+        const child = await session.getProperty(query, property.contextId, property.stackLevel);
+        if (child.type === 'undefined') {
+          break;
+        }
+        child.name = `[${index_1base}]`;
+        elements.push(child);
+      }
+      return elements;
     },
     async setProperty(name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number): Promise<Property> {
       const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;

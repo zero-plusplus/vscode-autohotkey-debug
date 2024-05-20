@@ -7,7 +7,7 @@ import { createContinuationCommandExecutor } from './executor';
 import { createExecutionContextManager } from './context';
 
 export const createScriptRuntime = (session: Readonly<Session>, config: Readonly<NormalizedDebugConfig>): ScriptRuntime => {
-  const contextManager = createExecutionContextManager(session);
+  const contextManager = createExecutionContextManager(session, config);
   const breakpointManager = createBreakpointManager(session);
   const exec = createContinuationCommandExecutor(session, config, breakpointManager);
 

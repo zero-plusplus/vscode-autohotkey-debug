@@ -168,6 +168,7 @@ export interface Session extends SessionCommunicator {
   getPropertyCount: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<number | undefined>;
   getPropertyCountByProperty: (property: ObjectProperty) => Promise<number | undefined>;
   getPropertyChildren: (property: ObjectProperty, chunkSize?: number, page?: number) => Promise<Property[]>;
+  getArrayElements: (property: ObjectProperty, start_1base?: number, end_1base?: number) => Promise<Property[]>;
   setProperty: (name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
   // #endregion execuation context
   // #region breakpoint

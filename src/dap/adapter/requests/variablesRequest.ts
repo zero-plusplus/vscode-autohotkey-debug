@@ -18,7 +18,9 @@ export const variablesRequest = async <R extends DebugProtocol.VariablesResponse
 
   const parentVariable = scopeOrVariable;
   if (parentVariable.indexedVariables && typeof args.start === 'number' && typeof args.count === 'number') {
-    const children = await adapter.runtime.fetchArrayIndexes(args.variablesReference, args.start, args.start + 100);
+    const start_1base = args.start + 1;
+    const end_1base = start_1base + 100;
+    const children = await adapter.runtime.fetchArrayElements(args.variablesReference, start_1base, end_1base);
     if (children) {
       response.body = {
         variables: children,

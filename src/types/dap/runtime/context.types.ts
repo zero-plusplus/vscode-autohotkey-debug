@@ -27,5 +27,5 @@ export interface ExecutionContextManager {
   fetchCallStack: () => Promise<CallStack>;
   fetchScopes: (frameId: number) => Promise<Scope[]>;
   fetchVariableChildren: (variablesReference: number, maxChildren?: number) => Promise<Variable[] | undefined>;
-  fetchArrayIndexes: (variablesReference: number, start: number, end: number) => Promise<Variable[] | undefined>;
+  fetchArrayElements: (variablesReference: number, start: number, end: number) => Promise<Variable[] | undefined>;
 }
