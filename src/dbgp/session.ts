@@ -1,5 +1,4 @@
 import { Server, Socket, createServer } from 'net';
-import { EventEmitter } from 'events';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
 import { AutoHotkeyProcess, Breakpoint, CallStack, CloseListener, CommandArg, Context, ErrorListener, ExceptionBreakpoint, ExecResult, LineBreakpoint, MessageListener, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionCommunicator, SessionConnector, contextIdByName, contextNameById } from '../types/dbgp/session.types';
@@ -163,17 +162,20 @@ export async function createSessionCommunicator(eventManager: EventManager, serv
         });
       }
       async function closeProcess(timeout_ms = 500): Promise<void> {
-        if (!communicator.isTerminated) {
-          if (communicator.process && !communicator.process.isTerminated) {
-            communicator.process.kill();
-            communicator.process.isTerminated = true;
-          }
+        if (!communicator.process) {
+          return;
+        }
+        if (communicator.process.isTerminated) {
           return;
         }
 
-        if (communicator.process) {
+        if (socket.closed) {
+          communicator.process.kill();
           communicator.process.isTerminated = true;
+          return;
         }
+
+        communicator.process.isTerminated = true;
         await timeoutPromise(communicator.sendCommand('stop'), timeout_ms).catch(() => {
           process?.kill();
         });
