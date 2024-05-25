@@ -23,12 +23,6 @@ export interface SessionCommunicator {
   sendCommand: CommandSender;
   close: (timeout_ms: number) => Promise<void>;
   detach: (timeout_ms: number) => Promise<void>;
-  onStdOut: (listener: MessageListener) => void;
-  onStdErr: (listener: MessageListener) => void;
-  onWarning: (listener: MessageListener) => void;
-  onOutputDebug: (listener: MessageListener) => void;
-  onClose: (listener: CloseListener) => void;
-  onError: (listener: ErrorListener) => void;
 }
 export interface ScriptStatus {
   runState: dbgp.RunState;

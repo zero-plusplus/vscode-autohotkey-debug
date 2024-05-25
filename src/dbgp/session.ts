@@ -10,13 +10,14 @@ import { measureAsyncExecutionTime } from '../tools/time';
 import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
 import { parseAutoHotkeyVersion } from '../tools/autohotkey/version';
 import { range } from '../tools/utils';
+import { EventManager } from '../types/dbgp/event.types';
 
-export const createSessionConnector = (): SessionConnector => {
+export const createSessionConnector = (eventManager: EventManager): SessionConnector => {
   return {
     async connect(port: number, hostname: string, process?: AutoHotkeyProcess): Promise<Session> {
       return new Promise((resolve) => {
         const server = createServer((socket) => {
-          createSessionCommunicator(server, socket, process).then((communicator) => {
+          createSessionCommunicator(eventManager, server, socket, process).then((communicator) => {
             createSession(communicator).then((session) => {
               resolve(session);
             });
@@ -26,17 +27,57 @@ export const createSessionConnector = (): SessionConnector => {
     },
   };
 };
-export const createSessionCommunicator = async(server: Server, socket: Socket, process?: AutoHotkeyProcess): Promise<SessionCommunicator> => {
-  const responseEventName = 'response';
+
+export async function createSessionCommunicator(eventManager: EventManager, server: Server, socket: Socket, process?: AutoHotkeyProcess): Promise<SessionCommunicator> {
+  const initEventName = 'debugger:init';
+  const responseEventName = 'debugger:response';
   const pendingCommands = new Map<number, PendingCommand>();
 
   let currentTransactionId = 1;
-  let isTerminated = false;
+  const isTerminated = false;
   let packetBuffer: Buffer | undefined;
 
-  const eventEmitter = registerEvents();
+  eventManager.registerSocketEvent(socket);
+  eventManager.registerServerEvent(server);
+
   return new Promise((resolve) => {
-    eventEmitter.once('debugger:init', (initPacket: dbgp.InitPacket) => {
+    socket.on('data', handlePacket);
+    socket.on(responseEventName, (packet: dbgp.Packet) => {
+      if ('init' in packet) {
+        socket.emit(initEventName, packet);
+        return;
+      }
+
+      if ('stream' in packet) {
+        const { type, content } = packet.stream.attributes;
+        const message = Buffer
+          .from(content, 'base64')
+          .toString('utf8')
+          .replace('\0', '')
+          .toString();
+        switch (type) {
+          case 'stdout': eventManager.emit('debugger:stdout', message); break;
+          case 'stderr': eventManager.emit('debugger:stderr', message); break;
+          default: break;
+        }
+        return;
+      }
+
+      if ('response' in packet) {
+        const currentTransactionId = Number(packet.response.attributes.transaction_id);
+        if (pendingCommands.has(currentTransactionId)) {
+          const pendingCommand = pendingCommands.get(currentTransactionId)!;
+          pendingCommands.delete(currentTransactionId);
+
+          const response = packet.response;
+          response.command = pendingCommand.request;
+          pendingCommand.resolve(response);
+        }
+      }
+    });
+
+    const rawSendCommandMutex = createMutex();
+    socket.once(initEventName, (initPacket: dbgp.InitPacket) => {
       const communicator: SessionCommunicator = {
         initPacket,
         get isTerminated() {
@@ -44,8 +85,8 @@ export const createSessionCommunicator = async(server: Server, socket: Socket, p
         },
         process,
         // #region For testing methods
-        rawSendCommand: async<T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: string): Promise<T> => {
-          return createMutex('rawSendCommand').use(async() => {
+        rawSendCommand: async <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: string): Promise<T> => {
+          return rawSendCommandMutex.use('rawSendCommandMutex', async() => {
             return new Promise((resolve, reject) => {
               if (!socket.writable) {
                 Promise.reject(new Error('Socket not writable.'));
@@ -103,33 +144,11 @@ export const createSessionCommunicator = async(server: Server, socket: Socket, p
           await detachProcess(timeout_ms);
           await closeServer();
         },
-        onStdOut: (listener: MessageListener) => {
-          eventEmitter.on('debugger:stdout', listener);
-          eventEmitter.on('process:stdout', listener);
-        },
-        onStdErr: (listener: MessageListener) => {
-          eventEmitter.on('debugger:stderr', listener);
-          eventEmitter.on('process:stderr', listener);
-        },
-        onWarning: (listener: MessageListener) => {
-          eventEmitter.on('debugger:warning', listener);
-        },
-        onOutputDebug: (listener: MessageListener) => {
-          eventEmitter.on('debugger:outputdebug', listener);
-        },
-        onClose: (listener: CloseListener) => {
-          eventEmitter.on('debugger:close', listener);
-          eventEmitter.on('process:close', listener);
-        },
-        onError: (listener: ErrorListener) => {
-          eventEmitter.on('debugger:error', listener);
-          eventEmitter.on('process:error', listener);
-        },
       };
       resolve(communicator);
 
       async function closeServer(): Promise<void> {
-        if (isTerminated) {
+        if (eventManager.isServerTerminated) {
           return Promise.resolve();
         }
 
@@ -172,80 +191,6 @@ export const createSessionCommunicator = async(server: Server, socket: Socket, p
     });
   });
 
-  function registerEvents(): EventEmitter {
-    const eventEmitter = new EventEmitter();
-
-    // #region process events
-    process?.on('close', (exitCode?: number) => {
-      process.isTerminated = true;
-      eventEmitter.emit('process:close', exitCode, 'process');
-    });
-    process?.on('error', (exitCode?: number) => {
-      process.isTerminated = true;
-      eventEmitter.emit('process:error', exitCode, 'process');
-    });
-    process?.stdout.on('data', (data) => {
-      eventEmitter.emit('process:stdout', data === undefined ? undefined : String(data), 'process');
-    });
-    process?.stderr.on('data', (data?) => {
-      eventEmitter.emit('process:stderr', data === undefined ? undefined : String(data), 'process');
-    });
-    // #endregion process events
-
-    // #region socket events
-    socket.on('data', handlePacket);
-    socket.on('close', () => {
-      isTerminated = true;
-      eventEmitter.emit('debugger:close', 'debugger');
-    });
-    socket.on('error', () => {
-      isTerminated = true;
-      eventEmitter.emit('debugger:error', 'debugger');
-    });
-    socket.on('disconnect', () => {
-      isTerminated = true;
-      eventEmitter.emit('debugger:close', 'debugger');
-    });
-    socket.on('exit', () => {
-      eventEmitter.emit('debugger:close', 'debugger');
-    });
-    socket.on(responseEventName, (packet: dbgp.Packet) => {
-      if ('init' in packet) {
-        eventEmitter.emit('debugger:init', packet);
-        return;
-      }
-
-      if ('stream' in packet) {
-        const { type, content } = packet.stream.attributes;
-        const message = Buffer
-          .from(content, 'base64')
-          .toString('utf8')
-          .replace('\0', '')
-          .toString();
-        switch (type) {
-          case 'stdout': eventEmitter.emit('debugger:warning', message, 'debugger'); break;
-          case 'stderr': eventEmitter.emit('debugger:outputdebug', message, 'debugger'); break;
-          default: break;
-        }
-        return;
-      }
-
-      if ('response' in packet) {
-        const currentTransactionId = Number(packet.response.attributes.transaction_id);
-        if (pendingCommands.has(currentTransactionId)) {
-          const pendingCommand = pendingCommands.get(currentTransactionId)!;
-          pendingCommands.delete(currentTransactionId);
-
-          const response = packet.response;
-          response.command = pendingCommand.request;
-          pendingCommand.resolve(response);
-        }
-      }
-    });
-    // #endregion socket events
-
-    return eventEmitter;
-  }
   function handlePacket(packet: Buffer): void {
     // As shown in the example below, the data passed from dbgp is divided into data length and response.
     // https://xdebug.org/docs/dbgp#response
@@ -288,7 +233,7 @@ export const createSessionCommunicator = async(server: Server, socket: Socket, p
     // Wait for next packet
     packetBuffer = currentPacket;
   }
-};
+}
 export const createSession = async(communicator: SessionCommunicator): Promise<Session> => {
   const version = await (async(): Promise<ParsedAutoHotkeyVersion> => parseAutoHotkeyVersion(await getFeature('language_version')))();
   // const isV1 = version.mejor < 2;

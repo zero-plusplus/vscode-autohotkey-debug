@@ -24,22 +24,18 @@ export const timeoutPromise = async<T>(promise: Promise<T>, timeout_ms: number):
   return result as T;
 };
 
-const cache = new Map<string, Mutex>();
-export const createMutex = (key = ''): Mutex => {
-  if (cache.has(key)) {
-    return cache.get(key)!;
-  }
+export const createMutex = (): Mutex => {
+  const cache = new Map<string, Promise<any>>();
 
-  let currentTaskResult: Promise<any> = Promise.resolve();
   const mutex: Mutex = {
-    use: async<T>(task: Task<T>): Promise<T> => {
+    use: async<T>(key: string, task: Task<T>): Promise<T> => {
+      let currentTaskResult = cache.has(key) ? cache.get(key)! : Promise.resolve();
       currentTaskResult = currentTaskResult.then(async() => {
         return task();
       });
+      cache.set(key, currentTaskResult);
       return currentTaskResult as Promise<T>;
     },
   };
-
-  cache.set(key, mutex);
   return mutex;
 };

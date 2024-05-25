@@ -26,16 +26,20 @@ import { setExpressionRequest } from './requests/setExpressionRequest';
 import { completionsRequest } from './requests/completionsRequest';
 import { evaluateRequest } from './requests/evaluateRequest';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
-import { EventSource, ExecResult } from '../../types/dbgp/session.types';
+import { ExecResult } from '../../types/dbgp/session.types';
 import { MessageCategory, StopReason } from '../../types/dap/adapter/adapter.types';
 import { AELLEvaluator } from '../../types/tools/AELL/evaluator.types';
 import { createEvaluator } from '../../tools/AELL/evaluator';
 import { createMutex } from '../../tools/promise';
+import { createEventManager } from '../../dbgp/event';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   public runtime!: Readonly<ScriptRuntime>;
   public config!: Readonly<NormalizedDebugConfig>;
   public evaluator!: AELLEvaluator;
+  public isTerminateRequested = false;
+  public eventManager = createEventManager();
+  public mutex = createMutex();
   // #region public methods
   public sendStoppedEvent(reason: StopReason | ExecResult): void {
     const stopReason = toStopReason(reason);
@@ -97,17 +101,14 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
 
   // #region initialize requests
   protected async initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): Promise<void> {
-    await this.request('initializeRequest', async() => {
-      this.sendResponse(await initializeRequest(response, args));
-    });
+    this.sendResponse(await initializeRequest(response, args));
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, config: NormalizedDebugConfig): Promise<void> {
     await this.request('launchRequest', async() => {
       this.config = config;
-      const [ runtime, newResponse ] = await launchRequest(this, response);
-      this.registerEvents(runtime);
+      this.registerEvents();
 
-      runtime.config = this.config;
+      const [ runtime, newResponse ] = await launchRequest(this, response);
       this.runtime = runtime;
       this.evaluator = createEvaluator(this.runtime.session);
 
@@ -116,12 +117,11 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
     });
   }
   protected async attachRequest(response: DebugProtocol.AttachResponse, config: NormalizedDebugConfig): Promise<void> {
-    this.config = config;
     await this.request('attachRequest', async() => {
-      const [ runtime, newResponse ] = await attachRequest(this, response);
-      this.registerEvents(runtime);
+      this.config = config;
+      this.registerEvents();
 
-      runtime.config = this.config;
+      const [ runtime, newResponse ] = await attachRequest(this, response);
       this.runtime = runtime;
 
       this.sendResponse(newResponse);
@@ -247,6 +247,10 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
     });
   }
   private async request<T>(requestName: string, handler: () => Promise<T>): Promise<void> {
+    if (this.isTerminateRequested) {
+      return;
+    }
+
     try {
       console.log(requestName);
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -254,8 +258,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
         this.sendTerminatedEvent();
         return;
       }
-
-      await createMutex(requestName).use(handler);
+      await this.mutex.use(requestName, handler);
     }
     catch (e: unknown) {
       if (e instanceof Error) {
@@ -267,29 +270,31 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   // #endregion execution requests
 
   // #region private methods
-  private registerEvents(runtime: ScriptRuntime): void {
-    runtime.session.onStdOut((source: EventSource, message) => {
+  private registerEvents(): void {
+    this.eventManager.on('process:stdout', (message) => {
       this.sendOutputMessage(message, 'stdout');
     });
-    runtime.session.onStdErr((source: EventSource, message: string) => {
+    this.eventManager.on('process:stderr', (message) => {
       this.sendOutputMessage(message, 'stderr');
     });
-    runtime.session.onOutputDebug((source: EventSource, message: string) => {
+    this.eventManager.on('debugger:stdout', (message) => {
       this.sendOutputMessage(message, 'stdout');
     });
-    runtime.session.onOutputDebug((source: EventSource, message: string) => {
+    this.eventManager.on('debugger:stderr', (message) => {
       if (this.config.useOutputDebug === false) {
         return;
       }
 
       this.sendOutputMessage(message, this.config.useOutputDebug.category);
     });
-    runtime.session.onClose((source: EventSource, exitCode?: number) => {
-      this.sendTerminatedEvent();
-    });
-    runtime.session.onError((source: EventSource, err?: Error) => {
-      this.sendTerminatedEvent(err);
-    });
+
+    const terminatedListener = (errOrCode?: number | Error): void => {
+      this.sendTerminatedEvent(errOrCode);
+    };
+    this.eventManager.on('process:close', terminatedListener);
+    this.eventManager.on('process:error', terminatedListener);
+    this.eventManager.on('debugger:error', terminatedListener);
+    this.eventManager.on('debugger:close', terminatedListener);
   }
   private async resetLifetimeOfObjectsReferences(): Promise<void> {
     // https://microsoft.github.io/debug-adapter-protocol/overview#lifetime-of-objects-references

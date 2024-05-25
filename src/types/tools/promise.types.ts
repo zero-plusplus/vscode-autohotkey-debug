@@ -1,4 +1,4 @@
 export type Task<T> = () => Promise<T>;
 export interface Mutex {
-  use: <T>(task: Task<T>) => Promise<T>;
+  use: <T>(key: string, task: Task<T>) => Promise<T>;
 }

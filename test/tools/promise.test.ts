@@ -12,22 +12,18 @@ describe('promise', () => {
       const mutex = createMutex();
 
       const promises: Array<Promise<any>> = [];
-      promises.push(mutex.use(async() => {
+      const lockKey = 'key';
+      promises.push(mutex.use(lockKey, async() => {
         await sleep(1000);
         results.push('a');
       }));
-      promises.push(mutex.use(async() => {
+      promises.push(mutex.use(lockKey, async() => {
         await sleep(500);
         results.push('b');
       }));
 
       await Promise.all(promises);
       expect(results).toEqual([ 'a', 'b' ]);
-    });
-    test('singleton', () => {
-      expect(createMutex()).toBe(createMutex());
-      expect(createMutex()).not.toBe(createMutex('key'));
-      expect(createMutex('key')).toBe(createMutex('key'));
     });
   });
 });
