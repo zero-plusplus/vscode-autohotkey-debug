@@ -136,21 +136,25 @@ export async function createSessionCommunicator(eventManager: EventManager, serv
           });
         },
         close: async(timeout_ms = 500) => {
-          await closeProcess(timeout_ms);
-          await closeServer();
+          try {
+            await closeProcess(timeout_ms);
+          }
+          finally {
+            await closeServer();
+          }
         },
         detach: async(timeout_ms = 500) => {
-          await detachProcess(timeout_ms);
-          await closeServer();
+          try {
+            await detachProcess(timeout_ms);
+          }
+          finally {
+            await closeServer();
+          }
         },
       };
       resolve(communicator);
 
       async function closeServer(): Promise<void> {
-        if (eventManager.isServerTerminated) {
-          return Promise.resolve();
-        }
-
         return new Promise((resolve) => {
           socket.end(() => {
             socket.destroy();
