@@ -1,5 +1,5 @@
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { PrimitiveProperty, Property, PseudoPrimitiveProperty, PseudoProperty, contextIdByName } from '../../types/dbgp/session.types';
+import { PrimitiveProperty, Property, PseudoPrimitiveProperty, PseudoProperty } from '../../types/dbgp/session.types';
 import { EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 import { CalcCallback, EquivCallback, NumberType } from '../../types/tools/AELL/utils.types';
 import { CustomNode } from '../../types/tools/autohotkey/parser/common.types';
@@ -27,7 +27,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       };
     },
     createPrimitiveProperty: (value: string, type: dbgp.PrimitiveDataType, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
+      const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
 
       return {
         contextId,
@@ -41,14 +41,14 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       } as PrimitiveProperty;
     },
     createStringProperty: (value: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
+      const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
       if (contextId === -1) {
         return utils.createPseudoPrimitiveProperty(value, 'string');
       }
       return utils.createPrimitiveProperty(value, 'string', contextId, stackLevel);
     },
     createNumberProperty: (value: string | number | bigint, contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
+      const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
 
       if (!isNumberLike(value)) {
         if (contextId === -1) {
@@ -69,7 +69,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       return utils.createPrimitiveProperty(propertyValue, dataType, contextId, stackLevel);
     },
     createBooleanProperty: (value: string | boolean, contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
+      const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
 
       if (typeof value === 'boolean') {
         return value ? utils.createBooleanProperty('true', contextId, stackLevel) : utils.createBooleanProperty('false', contextId, stackLevel);
@@ -95,7 +95,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       return utils.createBooleanProperty(false, contextId, stackLevel);
     },
     createUnsetProperty: (name: string, objectName = '', contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
+      const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
       if (contextId === -1) {
         return {
           contextId,

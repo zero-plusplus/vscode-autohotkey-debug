@@ -1,18 +1,24 @@
-import { NormalizedDebugConfig } from '../../types/dap/config.types';
+import { measureAsyncExecutionTime } from '../../tools/time';
 import { BreakpointManager } from '../../types/dap/runtime/breakpoint.types';
-import { ContinuationCommandExecutor } from '../../types/dap/runtime/executor.types';
+import { ContinuationCommandExecutor, ExecResult } from '../../types/dap/runtime/executor.types';
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { ExecResult, Session, StackFrame } from '../../types/dbgp/session.types';
+import { Session } from '../../types/dbgp/session.types';
 
-type Result = ExecResult & { stackFrame: StackFrame };
-export const createContinuationCommandExecutor = (session: Session, config: NormalizedDebugConfig, breakpointManager: BreakpointManager): ContinuationCommandExecutor => {
-  const exec = async(command: dbgp.ContinuationCommandName, oldResult?: Result): Promise<ExecResult> => {
+export const createContinuationCommandExecutor = (session: Session, breakpointManager: BreakpointManager): ContinuationCommandExecutor => {
+  const exec = async(command: dbgp.ContinuationCommandName, oldResult?: ExecResult): Promise<ExecResult> => {
     if (oldResult) {
-      const status = await session.getScriptStatus();
-      if (status.runState === 'break') {
-        const [ stackFrame ] = await session.getCallStack();
-        const newResult: Result = {
-          ...status,
+      const { attributes: { status, reason } } = await session.sendStatusCommand();
+      if (status === 'break') {
+        const { stack } = await session.sendStackGetCommand();
+        const callStack = Array.isArray(stack) ? stack : [ stack ];
+
+        const stackFrame = callStack[0];
+        if (!stackFrame) {
+          throw Error('StackFrame not found.');
+        }
+        const newResult: ExecResult = {
+          reason,
+          runState: status,
           command: 'break',
           stackFrame,
           elapsedTime: { ms: -1, ns: -1, s: -1 },
@@ -22,25 +28,44 @@ export const createContinuationCommandExecutor = (session: Session, config: Norm
       }
     }
 
-    const execResult = await session.exec(command);
-    if (session.isTerminated) {
+    const [ response, elapsedTime ] = await measureAsyncExecutionTime(async() => session.sendContinuationCommand(command));
+    const { stack } = await session.sendStackGetCommand();
+    const callStack = Array.isArray(stack) ? stack : [ stack ];
+    const stackFrame = callStack[0];
+    if (!stackFrame) {
+      throw Error('StackFrame not found.');
+    }
+
+    const execResult: ExecResult = {
+      command,
+      elapsedTime,
+      reason: response.attributes.reason,
+      runState: response.attributes.status,
+      stackFrame,
+    };
+
+    if (session.server.isTerminated) {
       return execResult;
     }
 
-    const [ stackFrame ] = await session.getCallStack();
-    const result: Result = { ...execResult, stackFrame };
-    const mergedResult = oldResult ? mergeResult(result, oldResult) : result;
+    const mergedResult = oldResult ? mergeResult(execResult, oldResult) : execResult;
     return extraContinuationProcess(mergedResult);
 
-    async function extraContinuationProcess(execResult: Result): Promise<ExecResult> {
-      if (session.isTerminated) {
+    async function extraContinuationProcess(execResult: ExecResult): Promise<ExecResult> {
+      if (session.server.isTerminated) {
         return execResult;
       }
       if (execResult.runState !== 'break') {
         return execResult;
       }
 
-      const [ stackFrame ] = await session.getCallStack();
+      const { stack } = await session.sendStackGetCommand();
+      const callStack = Array.isArray(stack) ? stack : [ stack ];
+      const stackFrame = callStack[0];
+      if (!stackFrame) {
+        throw Error('StackFrame not found.');
+      }
+
       const newResult = { ...execResult, stackFrame };
       if (await matchBreakpoints(newResult)) {
         return execResult;
@@ -50,25 +75,25 @@ export const createContinuationCommandExecutor = (session: Session, config: Norm
       }
       return exec('run', newResult);
     }
-    async function extraStepProcess(execResult: Result): Promise<ExecResult> {
+    async function extraStepProcess(execResult: ExecResult): Promise<ExecResult> {
       if (command === 'step_into') {
         return extraStepIntoProcess(execResult);
       }
       return execResult;
     }
-    async function extraStepIntoProcess(execResult: Result): Promise<ExecResult> {
+    async function extraStepIntoProcess(execResult: ExecResult): Promise<ExecResult> {
       return Promise.resolve(execResult);
     }
 
-    async function matchBreakpoints(result: Result): Promise<boolean> {
-      const breakpoints = breakpointManager.getBreakpointsByLine(result.stackFrame.fileName, result.stackFrame.line);
+    async function matchBreakpoints(result: ExecResult): Promise<boolean> {
+      const breakpoints = breakpointManager.getBreakpointsByLine(result.stackFrame.attributes.filename, Number(result.stackFrame.attributes.lineno));
       for await (const breakpoint of breakpoints) {
         breakpoint.condition;
       }
       return Promise.resolve(true);
     }
-    async function execActionpoints(result: Result): Promise<void> {
-      const breakpoints = breakpointManager.getBreakpointsByLine(result.stackFrame.fileName, result.stackFrame.line);
+    async function execActionpoints(result: ExecResult): Promise<void> {
+      const breakpoints = breakpointManager.getBreakpointsByLine(result.stackFrame.attributes.filename, Number(result.stackFrame.attributes.lineno));
       for await (const breakpoint of breakpoints) {
         if (!breakpoint.action) {
           continue;
@@ -76,7 +101,7 @@ export const createContinuationCommandExecutor = (session: Session, config: Norm
         await breakpoint.action(session);
       }
     }
-    function mergeResult(newResult: Result, oldResult: Result): Result {
+    function mergeResult(newResult: ExecResult, oldResult: ExecResult): ExecResult {
       return {
         ...newResult,
         elapsedTime: {

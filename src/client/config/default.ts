@@ -20,6 +20,7 @@ export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig
     noDebug: attributes.noDebug.defaultValue,
     cwd: attributes.cwd.defaultValue,
     env: attributes.env.defaultValue,
+    maxChildren: 1000,
 
     openFileOnExit: attributes.openFileOnExit.defaultValue,
     variableCategories: attributes.variableCategories.defaultValue,

@@ -58,6 +58,7 @@ export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, Debug
   noDebug?: boolean;
   cwd?: string;
   env?: NodeJS.ProcessEnv;
+  maxChildren?: number;
   // #endregion lancher configurations
   // #region basic configurations
 
@@ -89,6 +90,7 @@ export interface NormalizedDebugConfig extends Omit<DebugConfig, 'runtime_v1' | 
   runtimeArgs: string[];
   program: string;
   args: string[];
+  maxChildren: number;
 
   variableCategories?: VariableCategory[];
 

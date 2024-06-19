@@ -27,6 +27,9 @@ export const isNumberLike = (value: any): boolean => {
   }
   return true;
 };
+export const isNumber = (value: any): value is number => {
+  return typeof value === 'number' && !isNaN(value);
+};
 export const isFloat = (value: any): boolean => {
   const num = Number(value);
   return !Number.isInteger(num) && Number.isFinite(num);

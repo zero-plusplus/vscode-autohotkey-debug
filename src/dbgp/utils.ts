@@ -1,14 +1,13 @@
 import { URI } from 'vscode-uri';
-import { safeCall } from '../tools/utils';
-import { CommandArg, ObjectProperty, PrimitiveProperty, Property, Session, UnsetProperty } from '../types/dbgp/session.types';
-import { DataType } from '../types/dbgp/AutoHotkeyDebugger.types';
+import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
+import { CommandArg } from '../types/dbgp/session.types';
 import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
 
 // #region predicates
 export function isUncPath(fileName: string): boolean {
   return fileName.startsWith('\\\\');
 }
-export function isDataType(value: any): value is DataType {
+export function isDataType(value: any): value is dbgp.DataType {
   switch (value) {
     case 'undefined':
     case 'string':
@@ -20,35 +19,39 @@ export function isDataType(value: any): value is DataType {
   }
   return false;
 }
-export function isProperty(value: any): value is Property {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  if (!('contextId' in value) || typeof value.contextId !== 'number') {
-    return false;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  if (!('stackLevel' in value) || typeof value.stackLevel !== 'number') {
-    return false;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  if (!('name' in value) || typeof value.name !== 'string') {
-    return false;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  if (!('fullName' in value) || typeof value.fullName !== 'string') {
-    return false;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  if (!('size' in value) || typeof value.size !== 'number') {
-    return false;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  if (!('type' in value) || !isDataType(value.type)) {
-    return false;
-  }
-  return true;
+export function isProperty(value: any): value is dbgp.Property {
+  return isPrimitiveProperty(value) || isObjectProperty(value);
 }
-export function isObjectProperty(value: any): value is ObjectProperty {
-  return isProperty(value) && 'address' in value;
+export function isPrimitiveProperty(value: any): value is dbgp.PrimitiveProperty {
+  if (typeof value !== 'object') {
+    return false;
+  }
+  if (!('attributes' in value)) {
+    return false;
+  }
+
+  return [ 'children', 'encoding', 'facet', 'fullname', 'name', 'size', 'type' ].every((name) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    return (name in value.attributes);
+  });
+}
+export function isObjectProperty(value: any): value is dbgp.ObjectProperty {
+  if (typeof value !== 'object') {
+    return false;
+  }
+  if (!('attributes' in value)) {
+    return false;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if ('type' in value.attributes && value.attributes.type !== 'object') {
+    return false;
+  }
+
+  return [ 'address', 'children', 'classname', 'facet', 'fullname', 'name', 'numchildren', 'page', 'size', 'type' ].every((name) => {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    return (name in value.attributes);
+  });
 }
 export function isSpecialName(value: any): value is string {
   if (typeof value !== 'string') {
@@ -66,33 +69,62 @@ export function isArrayIndexName(value: any): value is string {
   if (typeof value !== 'string') {
     return false;
   }
-  return (value.startsWith('[') && value.endsWith(']'));
+  return (/\[\d+\]/u).test(value);
 }
-export function isArrayProperty(value: any): value is ObjectProperty {
-  if (!isObjectProperty(value)) {
+export function isArrayElement(value: any): value is dbgp.Property {
+  if (isProperty(value)) {
+    return isArrayIndexName(value.attributes.name);
+  }
+  return false;
+}
+export function isMapKeyName(value: any): value is string {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  if (value.startsWith('["') && value.endsWith('"]')) {
+    return true;
+  }
+  if (value.startsWith('[Object') && value.endsWith(')]')) {
+    return true;
+  }
+  if (isArrayIndexName(value)) {
+    return true;
+  }
+  return false;
+}
+export function isMapElement(value: any): value is dbgp.Property {
+  if (isProperty(value)) {
+    return isMapKeyName(value.attributes.name);
+  }
+  return false;
+}
+export function isNamedPropertyName(value: any): value is string {
+  if (typeof value !== 'string') {
     return false;
   }
 
-  let index = 1;
-  const limit = 15;
-  for (const child of value.children.slice(0, limit)) {
-    if (isArrayIndexName(child.name)) {
-      const childIndex = Number(child.name.slice(1, -1));
-      if (index === childIndex) {
-        index++;
-        continue;
-      }
-      return false;
-    }
-    continue;
+  if (isSpecialName(value)) {
+    return true;
   }
-  return 0 < index;
+  if ((/^[\w_$#@]+$/u).test(value)) {
+    return true;
+  }
+  return false;
 }
-export function isUnsetProperty(value: any): value is UnsetProperty {
-  return isProperty(value) && !isObjectProperty(value) && value.type === 'undefined';
+export function isNamedProperty(value: any): value is dbgp.Property {
+  if (isProperty(value)) {
+    return isNamedPropertyName(value.attributes.name);
+  }
+  return false;
 }
-export function isPrimitiveProperty(value: any): value is PrimitiveProperty {
-  return isProperty(value) && !isUnsetProperty(value);
+export function isRecordKeyName(value: any): value is string {
+  return isNamedPropertyName(value) || isMapKeyName(value);
+}
+export function isRecordElement(value: any): value is dbgp.Property {
+  if (isProperty(value)) {
+    return isRecordKeyName(value.attributes.name);
+  }
+  return false;
 }
 // #endregion predicates
 
@@ -123,6 +155,30 @@ export const toJsStringByAhkString = (version: ParsedAutoHotkeyVersion, str_ahk:
     .replace(/`f/gu, '\f');
   return escaped_js;
 };
+export const toJsStringByAhk2String = (str_ahk: string): string => {
+  const escaped_js = str_ahk
+    .replace(/""/gu, '"')
+    .replace(/`r`n/gu, '\r\n')
+    .replace(/`n/gu, '\n')
+    .replace(/`r/gu, '\r')
+    .replace(/`b/gu, '\b')
+    .replace(/`t/gu, '\t')
+    .replace(/`v/gu, '\v')
+    .replace(/`f/gu, '\f');
+  return escaped_js;
+};
+export const toJsStringByAhk1String = (str_ahk: string): string => {
+  const escaped_js = str_ahk
+    .replace(/`"/gu, '"')
+    .replace(/`r`n/gu, '\r\n')
+    .replace(/`n/gu, '\n')
+    .replace(/`r/gu, '\r')
+    .replace(/`b/gu, '\b')
+    .replace(/`t/gu, '\t')
+    .replace(/`v/gu, '\v')
+    .replace(/`f/gu, '\f');
+  return escaped_js;
+};
 export function escapeCommandArgValue(value: string): string {
   const replacementEntries: Array<[ RegExp, string ]> = [
     [ /\\(?!0)/gu, '\\\\' ],
@@ -138,12 +194,8 @@ export function escapeCommandArgValue(value: string): string {
 export function encodeToBase64(value: string): string {
   return Buffer.from(value).toString('base64');
 }
-export function toDbgpFileName(filePath: string): string | undefined {
-  const uriFromFilePath = safeCall(() => URI.file(filePath).toString().toLowerCase());
-  if (uriFromFilePath) {
-    return uriFromFilePath;
-  }
-  return undefined;
+export function toDbgpFileName(filePath: string): string {
+  return URI.file(filePath).toString().toLowerCase();
 }
 export function toFsPath(fileName: string): string {
   const fsPath = URI.parse(fileName).fsPath;

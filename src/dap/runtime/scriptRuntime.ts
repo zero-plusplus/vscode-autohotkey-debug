@@ -1,40 +1,42 @@
 import { safeCall } from '../../tools/utils';
-import { NormalizedDebugConfig } from '../../types/dap/config.types';
 import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
 import { Session } from '../../types/dbgp/session.types';
 import { createBreakpointManager } from './breakpoint';
 import { createContinuationCommandExecutor } from './executor';
 import { createExecutionContextManager } from './context';
 
-export const createScriptRuntime = (session: Readonly<Session>, config: Readonly<NormalizedDebugConfig>): ScriptRuntime => {
-  const contextManager = createExecutionContextManager(session, config);
+export const createScriptRuntime = (session: Readonly<Session>): ScriptRuntime => {
+  const contextManager = createExecutionContextManager(session);
   const breakpointManager = createBreakpointManager(session);
-  const exec = createContinuationCommandExecutor(session, config, breakpointManager);
+  const exec = createContinuationCommandExecutor(session, breakpointManager);
 
   const runtime: ScriptRuntime = {
     ...breakpointManager,
     ...contextManager,
     threadId: 1,
     session,
-    config,
+    get version() {
+      return session.ahkVersion;
+    },
     get isClosed() {
-      return session.isTerminated;
+      if (!session.server.isTerminated) {
+        return false;
+      }
+      if (session.process === undefined) {
+        return true;
+      }
+      return session.process.isTerminated;
     },
-    async close(): Promise<void> {
-      return session.close();
+    close: async(): Promise<void> => {
+      return session.server.close();
     },
-    async detach(): Promise<void> {
-      return session.detach();
+    detach: async(): Promise<void> => {
+      return session.server.detach();
     },
-    async echo(args) {
-    },
-    async setDebugDirectives() {
-    },
-    async suppressException() {
-      return Boolean(await safeCall(async() => session.suppressException()));
-    },
-    async setExceptionBreakpoint(state: boolean) {
-      return Boolean(await safeCall(async() => session.setExceptionBreakpoint(state)));
+    suppressException: async() => {
+      return Boolean(await safeCall(async() => {
+        return session.sendPropertySetCommand('<exception>', '');
+      }));
     },
     exec,
     run: async() => exec('run'),
@@ -42,7 +44,17 @@ export const createScriptRuntime = (session: Readonly<Session>, config: Readonly
     stepOut: async() => exec('step_out'),
     stepOver: async() => exec('step_over'),
     stop: async() => exec('stop'),
-    pause: async() => session.break(),
+    pause: async() => {
+      const { attributes: { success } } = await session.sendBreakCommand();
+      const { attributes: { reason, status } } = await session.sendStatusCommand();
+      if (success === '1') {
+        return {
+          reason,
+          runState: status,
+        };
+      }
+      return undefined;
+    },
   };
   return runtime;
 };

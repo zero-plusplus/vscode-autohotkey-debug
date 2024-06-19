@@ -23,6 +23,18 @@ export const timeoutPromise = async<T>(promise: Promise<T>, timeout_ms: number):
   ]);
   return result as T;
 };
+export const timeoutTask = async<T>(task: () => Promise<T>, timeout_ms: number): Promise<T> => {
+  const result = await Promise.race([
+    task,
+    new Promise<void>((resolve, reject) => {
+      const id = setTimeout(() => {
+        clearTimeout(id);
+        reject(new TimeoutError(timeout_ms));
+      }, timeout_ms);
+    }),
+  ]);
+  return result as T;
+};
 
 export const createMutex = (): Mutex => {
   const cache = new Map<string, Promise<any>>();

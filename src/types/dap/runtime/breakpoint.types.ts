@@ -53,11 +53,26 @@ export interface BreakpointDataGroup {
 export interface BreakpointBase {
   id: number;
   kind: BreakpointKind;
+  state: dbgp.BreakpointState;
   condition?: string;
   hitCondition?: string;
   logMessage?: string;
-  state: dbgp.BreakpointState;
   action?: BreakpointAction;
+  temporary: boolean;
+}
+export type BreakpointAction = (session: Session) => Promise<void>;
+export type Breakpoint
+  = LineBreakpoint
+  | FunctionBreakpoint
+  | ReturnBreakpoint
+  | ExceptionBreakpoint
+  | Logpoint;
+export type BreakpointWithLine = LineBreakpoint | Logpoint;
+
+export interface LineBreakpointBase extends BreakpointBase {
+  fileName: string;
+  line: number;
+  character?: number;
   /**
    * Whether the breakpoint has been verified by the debugger.
    *
@@ -73,20 +88,6 @@ export interface BreakpointBase {
   customVertify?: () => [ /* line */ number, /* character */ number? ];
   unverifiedLine: number;
   unverifiedColumn?: number;
-  temporary: boolean;
-}
-export type BreakpointAction = (session: Session) => Promise<void>;
-export type Breakpoint
-  = LineBreakpoint
-  | FunctionBreakpoint
-  | ReturnBreakpoint
-  | ExceptionBreakpoint
-  | Logpoint;
-
-export interface LineBreakpointBase extends BreakpointBase {
-  fileName: string;
-  line: number;
-  character?: number;
 }
 export interface LineBreakpoint extends LineBreakpointBase {
   kind: 'line';
@@ -100,7 +101,7 @@ export interface FunctionBreakpoint extends NamedBreakpointBase {
 export interface ReturnBreakpoint extends NamedBreakpointBase {
   kind: 'return';
 }
-export interface ExceptionBreakpoint extends NamedBreakpointBase {
+export interface ExceptionBreakpoint extends BreakpointBase {
   kind: 'exception';
 }
 export interface Logpoint extends LineBreakpointBase {
@@ -113,9 +114,10 @@ export interface BreakpointManager {
   getBreakpointsByLine: (fileName: string, line_0base: number) => Breakpoint[];
   getAllBreakpoints: () => Breakpoint[];
   setBreakpoint: (breakpointData: BreakpointData) => Promise<Breakpoint>;
+  setExceptionBreakpoint: (enable: boolean) => Promise<ExceptionBreakpoint>;
   setLineBreakpoint: (breakpointData: LineBreakpointData) => Promise<LineBreakpoint>;
   setLineBreakpoints: (breakpointDataList: LineBreakpointData[]) => Promise<LineBreakpoint[]>;
-  removeBreakpointById: (breakpointId: number) => Promise<void>;
-  removeBreakpointsByLine: (fileName: string, line_0base: number) => Promise<void>;
-  removeBreakpointsByFile: (fileName: string) => Promise<void>;
+  removeBreakpointById: (breakpointId: number) => Promise<number>;
+  removeBreakpointsByLine: (fileName: string, line_0base: number) => Promise<number[]>;
+  removeBreakpointsByFile: (fileName: string) => Promise<number[]>;
 }

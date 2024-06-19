@@ -1,11 +1,11 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { createScriptRuntimeLauncher } from '../../runtime/launcher';
 import { ScriptRuntime } from '../../../types/dap/runtime/scriptRuntime.types';
 import { AutoHotkeyDebugAdapter } from '../adapter';
+import { attachDebug } from '../../runtime/launcher';
+import { createScriptRuntime } from '../../runtime/scriptRuntime';
 
 export const attachRequest = async <R extends DebugProtocol.AttachResponse>(adapter: AutoHotkeyDebugAdapter, response: R): Promise<[ ScriptRuntime, R ]> => {
-  const launcher = createScriptRuntimeLauncher(adapter.config, adapter.eventManager);
-  const runtime = await launcher.attach();
-
+  const session = await attachDebug(adapter.config);
+  const runtime = createScriptRuntime(session);
   return Promise.resolve([ runtime, response ]);
 };

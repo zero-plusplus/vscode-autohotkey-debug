@@ -164,6 +164,19 @@ export interface Stack {
 // #endregion Stack
 
 // #region Context
+export const contextIdByName: Record<ContextName | ContextId, ContextId> = {
+  'Local': 0,
+  'Global': 1,
+  'Static': 2,
+  '0': 0,
+  '1': 1,
+  '2': 2,
+};
+export const contextNameById: Record<number, ContextName> = {
+  '0': 'Local',
+  '1': 'Global',
+  '2': 'Static',
+};
 export type ContextId = 0 | 1 | 2;
 export type ContextName = 'Local' | 'Global' | 'Static';
 export interface Context {
@@ -211,7 +224,7 @@ export interface ObjectProperty {
     facet: PropertyFacet;
     fullname: string;
     name: string;
-    numchildren: string;
+    numchildren?: string;
     page: string;
     pagesize: string;
     size: string;
@@ -377,7 +390,7 @@ export interface FeatureSetResponse extends CommandResponseBase {
     command: 'feature_set';
     feature: FeatureName;
     success: '0' | '1';
-  } & AttributeBase & StatusAttributes;
+  } & AttributeBase;
 }
 export interface ContinuationResponse extends CommandResponseBase {
   attributes: {
@@ -469,7 +482,7 @@ export interface PropertyGetResponse extends CommandResponseBase {
   attributes: {
     command: 'property_get';
   } & AttributeBase;
-  property: Property;
+  property?: Property;
 }
 export interface PropertyValueResponse extends CommandResponseBase {
   attributes: {
@@ -495,6 +508,7 @@ export interface StdErrResponse extends CommandResponseBase {
 export interface BreakResponse extends CommandResponseBase {
   attributes: {
     command: 'break';
+    success: '0' | '1';
   } & AttributeBase;
 }
 // #endregion Response

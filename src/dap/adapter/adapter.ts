@@ -32,8 +32,12 @@ import { AELLEvaluator } from '../../types/tools/AELL/evaluator.types';
 import { createEvaluator } from '../../tools/AELL/evaluator';
 import { createMutex } from '../../tools/promise';
 import { createEventManager } from '../../dbgp/event';
+import { CriticalError } from './error';
+import { createFrameIdManager, createVariablesReferenceManager } from './utils';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
+  public variablesReferenceManager = createVariablesReferenceManager();
+  public framdIdManager = createFrameIdManager();
   public runtime!: Readonly<ScriptRuntime>;
   public config!: Readonly<NormalizedDebugConfig>;
   public evaluator!: AELLEvaluator;
@@ -261,14 +265,16 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
       await this.mutex.use(requestName, handler);
     }
     catch (e: unknown) {
+      if (e instanceof CriticalError) {
+        console.log(e);
+        this.sendTerminatedEvent();
+      }
       if (e instanceof Error) {
         console.log(e);
       }
-      this.sendTerminatedEvent();
     }
   }
   // #endregion execution requests
-
   // #region private methods
   private registerEvents(): void {
     this.eventManager.on('process:stdout', (message) => {
@@ -298,7 +304,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
   }
   private async resetLifetimeOfObjectsReferences(): Promise<void> {
     // https://microsoft.github.io/debug-adapter-protocol/overview#lifetime-of-objects-references
-    this.runtime.resetVariableReference();
+    this.variablesReferenceManager.reset();
     return Promise.resolve();
   }
   // #endregion private methods

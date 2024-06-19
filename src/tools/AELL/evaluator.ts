@@ -1,3 +1,4 @@
+import { getContexts, getProperty, setProperty } from '../../dap/runtime/context';
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { PrimitiveProperty, Property, PseudoPrimitiveProperty, Session } from '../../types/dbgp/session.types';
 import { AELLEvaluator, EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
@@ -9,12 +10,12 @@ import { createQueryTransformer } from './transformer/query';
 import { createAELLUtils, isQueryNode } from './utils';
 
 export const createEvaluator = (session: Session, warningReporter?: (message: string) => void): AELLEvaluator => {
-  const version = session.version;
-  const isV1 = version.mejor < 2;
-  const isV2 = 2 <= version.mejor;
-  const queryOptimizer = createQueryTransformer(version);
+  const ahkVersion = session.ahkVersion;
+  const isV1 = ahkVersion.mejor < 2;
+  const isV2 = 2 <= ahkVersion.mejor;
+  const queryOptimizer = createQueryTransformer(ahkVersion);
 
-  const parser = createAELLParser(version);
+  const parser = createAELLParser(ahkVersion);
   const {
     calc,
     createBooleanProperty,
@@ -24,7 +25,7 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
     equiv,
     invertBoolean,
     toBooleanPropertyByProperty,
-  } = createAELLUtils(version);
+  } = createAELLUtils(ahkVersion);
 
   return {
     eval: async(text: string): Promise<EvaluatedValue> => {
@@ -52,7 +53,7 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
     return createUnsetProperty('');
 
     async function evalIdentifier(node: Identifier): Promise<EvaluatedValue> {
-      const contexts = await session.getContexts();
+      const contexts = await getContexts(session);
 
       let unsetProperty: PrimitiveProperty;
       for await (const context of contexts) {
@@ -206,7 +207,7 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
     // #region utils
     async function assignCalculatedNumber(property: EvaluatedValue, calcCallback: CalcCallback): Promise<Property> {
       const calculated = calc(property, createNumberProperty(1), calcCallback);
-      return session.setProperty(property.name, calculated.value, 'integer', property.contextId === -1 ? 0 : property.contextId);
+      return setProperty(session, property.name, calculated.value, 'integer', property.contextId === -1 ? 0 : property.contextId);
     }
     async function evalCustomNode(node: CustomNode): Promise<EvaluatedValue> {
       if (isQueryNode(node)) {
@@ -217,7 +218,19 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
     async function requestQuery(queryOrNode: string | (CustomNode & { query: string; name?: string }), contextId?: dbgp.ContextId): Promise<Property> {
       const query = typeof queryOrNode === 'string' ? queryOrNode : queryOrNode.query;
       // console.log(query);
-      const property = await session.getProperty(query, contextId);
+      const property = await getProperty(session, query, contextId);
+      if (property === undefined) {
+        return {
+          constant: true,
+          contextId,
+          stackLevel: 0,
+          name: typeof queryOrNode === 'object' ? (queryOrNode.name ?? query) : query,
+          fullName: query,
+          type: 'undefined',
+          value: '',
+          size: 0,
+        } as PrimitiveProperty;
+      }
 
       // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/326#issuecomment-2088898249
       if ((property.fullName && property.name) && (typeof queryOrNode === 'object' && 'name' in queryOrNode && typeof queryOrNode.name === 'string')) {
@@ -228,7 +241,7 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
     // #endregion utils
   }
   function throwError(message?: string): PseudoPrimitiveProperty {
-    if (version.mejor < 2) {
+    if (ahkVersion.mejor < 2) {
       if (message) {
         warningReporter?.(message);
       }

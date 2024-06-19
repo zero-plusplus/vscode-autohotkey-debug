@@ -22,7 +22,6 @@ export class DbgpError extends Error {
     super(message);
 
     this.name = 'DbgpError';
-    this.message = message;
     this.code = code;
   }
 }

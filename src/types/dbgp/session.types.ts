@@ -1,7 +1,8 @@
-import { ParsedAutoHotkeyVersion } from '../tools/autohotkey/version/common.types';
+import { Server, Socket } from 'net';
 import { Time } from '../tools/time.types';
 import * as dbgp from './AutoHotkeyDebugger.types';
 import { ChildProcessWithoutNullStreams } from 'child_process';
+import { ParsedAutoHotkeyVersion } from '../tools/autohotkey/version/common.types';
 
 export interface AutoHotkeyProcess extends ChildProcessWithoutNullStreams {
   program: string;
@@ -11,18 +12,27 @@ export interface AutoHotkeyProcess extends ChildProcessWithoutNullStreams {
 export interface SessionConnector {
   connect: (port: number, hostname: string, process?: AutoHotkeyProcess) => Promise<Session>;
 }
+export interface DebugServer {
+  baseServer: Server;
+  socket: Socket;
+  communicator: SessionCommunicator;
+  process?: AutoHotkeyProcess;
+  isTerminated: boolean;
+  listen: (port: number, hostname: string) => Promise<Session>;
+  close: (timeout_ms?: number) => Promise<void>;
+  detach: (timeout_ms?: number) => Promise<void>;
+}
+export type PacketHandler = (packet: Buffer) => void;
 export type EventSource = 'debugger' | 'process';
 export type MessageListener = (source: EventSource, message: string) => void;
 export type CloseListener = (source: EventSource, exitCode?: number) => void;
 export type ErrorListener = (source: EventSource, err?: Error) => void;
 export interface SessionCommunicator {
   initPacket: dbgp.InitPacket;
-  isTerminated: boolean;
+  server: DebugServer;
   process?: AutoHotkeyProcess;
   rawSendCommand: <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: string) => Promise<T>;
   sendCommand: CommandSender;
-  close: (timeout_ms: number) => Promise<void>;
-  detach: (timeout_ms: number) => Promise<void>;
 }
 export interface ScriptStatus {
   runState: dbgp.RunState;
@@ -40,6 +50,23 @@ export interface StackFrame {
   level: number;
   where: string;
 }
+export type BreakpointSetRequest =
+  | LineBreakpointSetRequest
+  | ExceptionBreakpointSetRequest;
+
+export interface BreakpointSetRequestBase {
+  type?: dbgp.BreakpointType;
+  state?: dbgp.BreakpointState;
+}
+export interface LineBreakpointSetRequest extends BreakpointSetRequestBase {
+  type?: 'line';
+  fileName: string;
+  line: number;
+}
+export interface ExceptionBreakpointSetRequest extends BreakpointSetRequestBase {
+  type: 'exception';
+  exceptionName?: string;
+}
 export type Breakpoint =
   | LineBreakpoint
   | ExceptionBreakpoint;
@@ -55,11 +82,6 @@ export interface ExceptionBreakpoint {
   state: dbgp.BreakpointState;
 }
 
-export const contextIdByName: Record<dbgp.ContextName, dbgp.ContextId> = {
-  'Local': 0,
-  'Global': 1,
-  'Static': 2,
-};
 export const contextNameById: Record<number, dbgp.ContextName> = {
   '0': 'Local',
   '1': 'Global',
@@ -96,20 +118,15 @@ export interface ObjectProperty extends PropertyBase {
   className: string;
   facet: dbgp.PropertyFacet;
   hasChildren: boolean;
-  numberOfChildren: number;
+  numberOfChildren: number | undefined;
   address: number;
-  children: Property[];
+  children?: Property[];
 }
 export type PseudoProperty = PseudoPrimitiveProperty;
 export interface PseudoPrimitiveProperty extends PseudoPropertyBase {
   type: dbgp.PrimitiveDataType;
   constant: undefined;
   value: string;
-}
-export interface Context {
-  id: dbgp.ContextId;
-  name: dbgp.ContextName;
-  properties: Property[];
 }
 
 export type CommandArg = string | number | boolean;
@@ -132,45 +149,40 @@ export interface PendingCommand {
   resolve: (...args) => any;
 }
 export interface Session extends SessionCommunicator {
-  initPacket: dbgp.InitPacket;
-  version: ParsedAutoHotkeyVersion;
-  sendCommand: CommandSender;
-  // #region setting
-  suppressException: () => Promise<boolean>;
-  getMaxChildren: () => Promise<number>;
-  getMaxData: () => Promise<number>;
-  getMaxDepth: () => Promise<number>;
-  setMaxChildren: (value: number) => Promise<boolean>;
-  setMaxData: (value: number) => Promise<boolean>;
-  setMaxDepth: (value: number) => Promise<boolean>;
-  // #endregion setting
-  // #region execuation
-  exec: (commandName: dbgp.ContinuationCommandName) => Promise<ExecResult>;
-  break: () => Promise<ScriptStatus>;
-  close: () => Promise<void>;
-  detach: () => Promise<void>;
-  // #endregion execuation
-  // #region execuation context
-  getScriptStatus: () => Promise<ScriptStatus>;
-  getCallStack: () => Promise<CallStack>;
-  getContext: (contextIdOrName: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Context>;
-  getContexts: (stackLevel?: number) => Promise<Context[]>;
-  getProperty: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
-  getPrimitivePropertyValue: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<string | undefined>;
-  getArrayLength: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<number | undefined>;
-  getArrayLengthByProperty: (property: ObjectProperty) => Promise<number | undefined>;
-  getPropertyCount: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<number | undefined>;
-  getPropertyCountByProperty: (property: ObjectProperty) => Promise<number | undefined>;
-  getPropertyChildren: (property: ObjectProperty, chunkSize?: number, page?: number) => Promise<Property[]>;
-  getArrayElements: (property: ObjectProperty, start_1base?: number, end_1base?: number) => Promise<Property[]>;
-  setProperty: (name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<Property>;
-  // #endregion execuation context
-  // #region breakpoint
-  setExceptionBreakpoint: (enabled: boolean) => Promise<ExceptionBreakpoint>;
-  getBreakpointById: <T extends Breakpoint = Breakpoint>(id: number) => Promise<T>;
-  setLineBreakpoint: (fileName: string, line: number) => Promise<LineBreakpoint>;
-  removeBreakpointById: (id: number) => Promise<void>;
-  // #endregion breakpoint
+  ahkVersion: ParsedAutoHotkeyVersion;
+  // #region dbgp commands
+  // [7.1 status](https://xdebug.org/docs/dbgp#status)
+  sendStatusCommand: () => Promise<dbgp.StatusResponse>;
 
+  // [7.2.2 feature_get](https://xdebug.org/docs/dbgp#feature-get)
+  sendFeatureGetCommand: (featureName: dbgp.FeatureName) => Promise<dbgp.FeatureGetResponse>;
+  // [7.2.3 feature_set](https://xdebug.org/docs/dbgp#feature-set)
+  sendFeatureSetCommand: (featureName: dbgp.FeatureName, value: CommandArg) => Promise<dbgp.FeatureSetResponse>;
+
+  // [7.5 continuation commands](https://xdebug.org/docs/dbgp#continuation-commands)
+  sendContinuationCommand: (command: dbgp.ContinuationCommandName) => Promise<dbgp.ContinuationResponse>;
+
+  // [7.6.1 breakpoint_set](https://xdebug.org/docs/dbgp#id3)
+  sendBreakpointSetCommand: (request: BreakpointSetRequest) => Promise<dbgp.BreakpointSetResponse>;
+  // [7.6.2 breakpoint_get](https://xdebug.org/docs/dbgp#id4)
+  sendBreakpointGetCommand: (breakpointId: number) => Promise<dbgp.BreakpointGetResponse>;
+  // [7.6.4 breakpoint_remove](https://xdebug.org/docs/dbgp#id6)
+  sendBreakpointRemoveCommand: (breakpointId: number) => Promise<dbgp.BreakpointRemoveResponse>;
+
+  // [7.8 stack_get](https://xdebug.org/docs/dbgp#stack-get)
+  sendStackGetCommand: () => Promise<dbgp.StackGetResponse>;
+
+  // [7.9 context_names](https://xdebug.org/docs/dbgp#context-names)
+  sendContextNamesCommand: () => Promise<dbgp.ContextNamesResponse>;
+  // [7.10 context_get](https://xdebug.org/docs/dbgp#context-get)
+  sendContextGetCommand: (contextIdOrName: dbgp.ContextId | dbgp.ContextName, stackLevel?: number, maxDepth?: number, maxChildren?: number) => Promise<dbgp.ContextGetResponse>;
+
+  // [7.13 property_get](https://xdebug.org/docs/dbgp#property-get-property-set-property-value)
+  sendPropertyGetCommand: (name: string, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number, maxDepth?: number, maxChildren?: number, page?: number) => Promise<dbgp.PropertyGetResponse>;
+  // [7.13 property_set](https://xdebug.org/docs/dbgp#property-get-property-set-property-value)
+  sendPropertySetCommand: (name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName?: dbgp.ContextId | dbgp.ContextName, stackLevel?: number) => Promise<dbgp.PropertySetResponse>;
+
+  // [8.2 break](https://xdebug.org/docs/dbgp#break)
+  sendBreakCommand: () => Promise<dbgp.BreakResponse>;
 }
 

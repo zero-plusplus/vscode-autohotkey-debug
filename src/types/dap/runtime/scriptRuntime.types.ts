@@ -2,8 +2,8 @@ import { NormalizedDebugConfig } from '../config.types';
 import { ExecResult, ScriptStatus, Session } from '../../dbgp/session.types';
 import { BreakpointManager } from './breakpoint.types';
 import { ContinuationCommandExecutor } from './executor.types';
-import { MessageCategory } from '../adapter/adapter.types';
 import { ExecutionContextManager } from './context.types';
+import { ParsedAutoHotkeyVersion } from '../../tools/autohotkey/version/common.types';
 
 export type RunCommand = string; // e.g. AutoHotkey.exe /Debug script.ahk
 export type LaunchMethod =
@@ -18,29 +18,16 @@ export type ScriptRuntimeCreateor = (config: NormalizedDebugConfig) => ScriptRun
 export interface ScriptRuntime extends BreakpointManager, ExecutionContextManager {
   readonly threadId: number;
   session: Session;
-  config: NormalizedDebugConfig;
+  version: ParsedAutoHotkeyVersion;
   isClosed: boolean;
-  suppressException: () => Promise<boolean>;
-  setExceptionBreakpoint: (state: boolean) => Promise<boolean>;
   close: () => Promise<void>;
   detach: () => Promise<void>;
+  suppressException: () => Promise<boolean>;
   exec: ContinuationCommandExecutor;
   run: () => Promise<ExecResult>;
   stepIn: () => Promise<ExecResult>;
   stepOut: () => Promise<ExecResult>;
   stepOver: () => Promise<ExecResult>;
   stop: () => Promise<ExecResult>;
-  pause: () => Promise<ScriptStatus>;
-  /**
-   * The handler is called only once for each script retrieved by loadedSourcesRequest.
-   * @param args
-   * @returns
-   */
-  setDebugDirectives: () => Promise<void>;
-  /**
-   * Provides a way to execute OutputEvents from the client.
-   * @param args
-   * @returns
-   */
-  echo: (args: { message: string; category: MessageCategory }) => Promise<void>;
+  pause: () => Promise<ScriptStatus | undefined>;
 }

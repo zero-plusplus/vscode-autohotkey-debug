@@ -1,49 +1,175 @@
 import { Server, Socket, createServer } from 'net';
 import * as dbgp from '../types/dbgp/AutoHotkeyDebugger.types';
 import { parseXml } from '../tools/xml';
-import { AutoHotkeyProcess, Breakpoint, CallStack, CloseListener, CommandArg, Context, ErrorListener, ExceptionBreakpoint, ExecResult, LineBreakpoint, MessageListener, ObjectProperty, PendingCommand, PrimitiveProperty, Property, ScriptStatus, Session, SessionCommunicator, SessionConnector, contextIdByName, contextNameById } from '../types/dbgp/session.types';
-import { createCommandArgs, encodeToBase64, toDbgpFileName, toFsPath } from './utils';
-import { createMutex, timeoutPromise } from '../tools/promise';
+import { AutoHotkeyProcess, BreakpointSetRequest, CommandArg, DebugServer, PendingCommand, Session, SessionCommunicator } from '../types/dbgp/session.types';
+import { createCommandArgs, encodeToBase64 } from './utils';
+import { createMutex, timeoutPromise, timeoutTask } from '../tools/promise';
 import { DbgpError } from './error';
-import { measureAsyncExecutionTime } from '../tools/time';
 import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
-import { parseAutoHotkeyVersion } from '../tools/autohotkey/version';
-import { range } from '../tools/utils';
-import { EventManager } from '../types/dbgp/event.types';
+import { parseAutoHotkeyVersion } from '../tools/autohotkey';
+import { safeCallAsync } from '../tools/utils';
 
-export const createSessionConnector = (eventManager: EventManager): SessionConnector => {
-  return {
-    async connect(port: number, hostname: string, process?: AutoHotkeyProcess): Promise<Session> {
+export const createDebugServer = (process?: AutoHotkeyProcess): DebugServer => {
+  let isSocketTerminated = false;
+  let isServerTerminated = false;
+  let socket: Socket | undefined;
+  let communicator: SessionCommunicator | undefined;
+  let baseServer: Server;
+  const debugServer: DebugServer = {
+    get baseServer(): Server {
+      return baseServer;
+    },
+    get socket(): Socket {
+      if (socket === undefined) {
+        throw Error('Socket not ready.');
+      }
+      return socket;
+    },
+    get communicator(): SessionCommunicator {
+      if (communicator === undefined) {
+        throw Error('Communicator not ready.');
+      }
+      return communicator;
+    },
+    process,
+    get isTerminated(): boolean {
+      return isServerTerminated && isSocketTerminated;
+    },
+    listen: async(port: number, hostname: string): Promise<Session> => {
       return new Promise((resolve) => {
-        const server = createServer((socket) => {
-          createSessionCommunicator(eventManager, server, socket, process).then((communicator) => {
-            createSession(communicator).then((session) => {
-              resolve(session);
-            });
+        baseServer = createServer((_socket) => {
+          socket = _socket;
+          registerServerEvent(baseServer);
+          registerProcessEvent(baseServer, process);
+          registerSocketEvent(baseServer, socket);
+
+          createSessionCommunicator(debugServer, process).then((_communicator) => {
+            communicator = _communicator;
+            resolve(createSession(communicator));
           });
         }).listen(port, hostname);
       });
     },
+    close: async(timeout_ms = 500) => {
+      await safeCallAsync(async() => closeProcess(debugServer, timeout_ms));
+      await closeServer(debugServer);
+    },
+    detach: async(timeout_ms = 500) => {
+      await safeCallAsync(async() => detachProcess(debugServer, timeout_ms));
+      await closeServer(debugServer);
+    },
   };
+  return debugServer;
+
+  function registerProcessEvent(server: Server, process?: AutoHotkeyProcess): void {
+    process?.on('close', (exitCode?: number) => {
+      if (process.isTerminated) {
+        return;
+      }
+
+      process.isTerminated = true;
+      server.emit('process:close', exitCode);
+    });
+    process?.on('error', (exitCode?: number) => {
+      if (process.isTerminated) {
+        return;
+      }
+
+      process.isTerminated = true;
+      server.emit('process:error', exitCode);
+    });
+    process?.stdout.on('data', (data) => {
+      if (data !== undefined) {
+        server.emit('process:stdout', String(data));
+      }
+      server.emit('process:stdout', data === undefined ? undefined : String(data));
+    });
+    process?.stderr.on('data', (data?) => {
+      server.emit('process:stderr', data === undefined ? undefined : String(data));
+    });
+  }
+  function registerSocketEvent(server: Server, socket: Socket): void {
+    socket.on('close', () => {
+      if (isSocketTerminated) {
+        return;
+      }
+
+      isSocketTerminated = true;
+      server.emit('debugger:close', 'debugger');
+    });
+    socket.on('error', (err?: Error) => {
+      if (isSocketTerminated) {
+        return;
+      }
+
+      isSocketTerminated = true;
+      server.emit('debugger:error', 'debugger', err);
+    });
+    socket.on('disconnect', () => {
+      if (isSocketTerminated) {
+        return;
+      }
+
+      isSocketTerminated = true;
+      server.emit('debugger:close', 'debugger');
+    });
+    socket.on('exit', () => {
+      if (isSocketTerminated) {
+        return;
+      }
+
+      isSocketTerminated = true;
+      server.emit('debugger:close', 'debugger');
+    });
+  }
+  function registerServerEvent(server: Server): void {
+    server.on('close', () => {
+      if (isServerTerminated) {
+        return;
+      }
+
+      isServerTerminated = true;
+      server.emit('server:close', 'debugger');
+    });
+    server.on('error', () => {
+      if (isServerTerminated) {
+        return;
+      }
+
+      isServerTerminated = true;
+      server.emit('server:error', 'debugger');
+    });
+    server.on('disconnect', () => {
+      if (isServerTerminated) {
+        return;
+      }
+
+      isServerTerminated = true;
+      server.emit('server:close', 'debugger');
+    });
+    server.on('exit', () => {
+      if (isServerTerminated) {
+        return;
+      }
+      isServerTerminated = true;
+      server.emit('server:close', 'debugger');
+    });
+  }
 };
 
-export async function createSessionCommunicator(eventManager: EventManager, server: Server, socket: Socket, process?: AutoHotkeyProcess): Promise<SessionCommunicator> {
+export async function createSessionCommunicator(server: DebugServer, process?: AutoHotkeyProcess): Promise<SessionCommunicator> {
   const initEventName = 'debugger:init';
   const responseEventName = 'debugger:response';
   const pendingCommands = new Map<number, PendingCommand>();
+  const handlePacket = createPacketHandler(server.socket, responseEventName);
 
   let currentTransactionId = 1;
-  const isTerminated = false;
-  let packetBuffer: Buffer | undefined;
-
-  eventManager.registerSocketEvent(socket);
-  eventManager.registerServerEvent(server);
-
   return new Promise((resolve) => {
-    socket.on('data', handlePacket);
-    socket.on(responseEventName, (packet: dbgp.Packet) => {
+    server.socket.on('data', handlePacket);
+
+    server.socket.on(responseEventName, (packet: dbgp.Packet) => {
       if ('init' in packet) {
-        socket.emit(initEventName, packet);
+        server.socket.emit(initEventName, packet);
         return;
       }
 
@@ -55,8 +181,8 @@ export async function createSessionCommunicator(eventManager: EventManager, serv
           .replace('\0', '')
           .toString();
         switch (type) {
-          case 'stdout': eventManager.emit('debugger:stdout', message); break;
-          case 'stderr': eventManager.emit('debugger:stderr', message); break;
+          case 'stdout': server.socket.emit('debugger:stdout', message); break;
+          case 'stderr': server.socket.emit('debugger:stderr', message); break;
           default: break;
         }
         return;
@@ -76,29 +202,27 @@ export async function createSessionCommunicator(eventManager: EventManager, serv
     });
 
     const rawSendCommandMutex = createMutex();
-    socket.once(initEventName, (initPacket: dbgp.InitPacket) => {
+    server.socket.once(initEventName, (initPacket: dbgp.InitPacket) => {
       const communicator: SessionCommunicator = {
         initPacket,
-        get isTerminated() {
-          return isTerminated;
-        },
+        server,
         process,
         // #region For testing methods
         rawSendCommand: async <T extends dbgp.CommandResponse = dbgp.CommandResponse>(command: string): Promise<T> => {
           return rawSendCommandMutex.use('rawSendCommandMutex', async() => {
             return new Promise((resolve, reject) => {
-              if (!socket.writable) {
+              if (!server.socket.writable) {
                 Promise.reject(new Error('Socket not writable.'));
                 return;
               }
 
-              socket.once(responseEventName, (packet) => {
+              server.socket.once(responseEventName, (packet) => {
                 if ('response' in packet) {
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                   resolve(packet.response as T);
                 }
               });
-              socket.write(Buffer.from(`${command}\0`), (err) => {
+              server.socket.write(Buffer.from(`${command}\0`), (err) => {
                 if (err) {
                   reject(new Error('Some error occurred when writing.'));
                 }
@@ -108,7 +232,7 @@ export async function createSessionCommunicator(eventManager: EventManager, serv
         },
         // #endregion For testing methods
         sendCommand: async<T extends dbgp.CommandResponse = dbgp.CommandResponse>(commandName: dbgp.CommandName, args?: Array<CommandArg | undefined>, data?: CommandArg): Promise<T> => {
-          if (communicator.isTerminated) {
+          if (server.isTerminated) {
             throw Error(`Session closed. Transmission of command "${commandName}" has been cancelled.`);
           }
 
@@ -122,82 +246,30 @@ export async function createSessionCommunicator(eventManager: EventManager, serv
               command_str += ` -- ${encodeToBase64(data)}`;
             }
 
-            if (!socket.writable) {
+            if (!server.socket.writable) {
               Promise.reject(new Error('Socket not writable.'));
               return;
             }
 
+            // console.log(command_str);
             pendingCommands.set(transactionId, { request: command_str, resolve });
-            socket.write(Buffer.from(`${command_str}\0`), (err) => {
+            server.socket.write(Buffer.from(`${command_str}\0`), (err) => {
               if (err) {
                 reject(new Error('Some error occurred when writing.'));
               }
             });
           });
         },
-        close: async(timeout_ms = 500) => {
-          try {
-            await closeProcess(timeout_ms);
-          }
-          finally {
-            await closeServer();
-          }
-        },
-        detach: async(timeout_ms = 500) => {
-          try {
-            await detachProcess(timeout_ms);
-          }
-          finally {
-            await closeServer();
-          }
-        },
       };
       resolve(communicator);
-
-      async function closeServer(): Promise<void> {
-        return new Promise((resolve) => {
-          socket.end(() => {
-            socket.destroy();
-
-            server.close(() => {
-              resolve();
-            });
-          });
-        });
-      }
-      async function closeProcess(timeout_ms = 500): Promise<void> {
-        if (!communicator.process) {
-          return;
-        }
-        if (communicator.process.isTerminated) {
-          return;
-        }
-
-        if (socket.closed) {
-          communicator.process.kill();
-          communicator.process.isTerminated = true;
-          return;
-        }
-
-        communicator.process.isTerminated = true;
-        await timeoutPromise(communicator.sendCommand('stop'), timeout_ms).catch(() => {
-          process?.kill();
-        });
-      }
-      async function detachProcess(timeout_ms = 500): Promise<void> {
-        if (!communicator.isTerminated) {
-          return;
-        }
-
-        if (communicator.process) {
-          communicator.process.isTerminated = true;
-        }
-        await timeoutPromise(communicator.sendCommand('detach'), timeout_ms);
-      }
     });
   });
+}
 
-  function handlePacket(packet: Buffer): void {
+export function createPacketHandler(socket: Socket, responseEventName: string): (packet: Buffer) => void {
+  let packetBuffer = Buffer.from('');
+
+  return function handlePacket(packet: Buffer): void {
     // As shown in the example below, the data passed from dbgp is divided into data length and response.
     // https://xdebug.org/docs/dbgp#response
     //     data_length
@@ -207,8 +279,8 @@ export async function createSessionCommunicator(eventManager: EventManager, serv
     //               command="command_name"
     //               transaction_id="transaction_id"/>
     //     [NULL]
-    const currentPacket = packetBuffer ? Buffer.concat([ packetBuffer, packet ]) : packet;
-    packetBuffer = undefined;
+    const currentPacket = Buffer.concat([ packetBuffer, packet ]);
+    packetBuffer = Buffer.from('');
 
     const terminatorIndex = currentPacket.indexOf(0);
     const isCompleteReceived = -1 < terminatorIndex;
@@ -225,7 +297,6 @@ export async function createSessionCommunicator(eventManager: EventManager, serv
       // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171
       // If it contains a newline, it should be escaped in an AutoHotkey-like manner.
       const xml_str = data.toString().replace(/\r\n/gu, '`r`n').replace(/\n/gu, '`n');
-
       const xmlDocument = parseXml(xml_str);
       socket.emit(responseEventName, xmlDocument);
 
@@ -238,412 +309,212 @@ export async function createSessionCommunicator(eventManager: EventManager, serv
 
     // Wait for next packet
     packetBuffer = currentPacket;
-  }
-}
-export const createSession = async(communicator: SessionCommunicator): Promise<Session> => {
-  const version = await (async(): Promise<ParsedAutoHotkeyVersion> => parseAutoHotkeyVersion(await getFeature('language_version')))();
-  // const isV1 = version.mejor < 2;
-  const isV2 = 2 <= version.mejor;
-
-  const defaultMaxChildren = 100;
-  const defaultMaxData = 0;
-  const defaultMaxDepth = 0;
-  let currentMaxChildren = -1;
-  let currentMaxData = -1;
-  let currentMaxDepth = -1;
-
-  const session: Session = {
-    version,
-    ...communicator,
-    // #region setting
-    async suppressException(): Promise<boolean> {
-      const response = await communicator.sendCommand('property_set', [ '-n', '<exception>' ], '');
-      if (response.error) {
-        throw new DbgpError(Number(response.error.attributes.code));
-      }
-      return true;
-    },
-    get currentMaxChildren(): number {
-      return currentMaxChildren;
-    },
-    get currentMaxDepth(): number {
-      return currentMaxDepth;
-    },
-    async getMaxChildren(): Promise<number> {
-      currentMaxChildren = await getFeature<number>('max_children');
-      return currentMaxChildren;
-    },
-    async getMaxData(): Promise<number> {
-      currentMaxData = await getFeature<number>('max_data');
-      return currentMaxData;
-    },
-    async getMaxDepth(): Promise<number> {
-      currentMaxDepth = await getFeature<number>('max_depth');
-      return currentMaxDepth;
-    },
-    async setMaxChildren(value: number): Promise<boolean> {
-      if (currentMaxChildren === value) {
-        return true;
-      }
-      return setFeature('max_children', value);
-    },
-    async setMaxData(value: number): Promise<boolean> {
-      if (currentMaxDepth === value) {
-        return true;
-      }
-      return setFeature('max_data', value);
-    },
-    async setMaxDepth(value: number): Promise<boolean> {
-      if (currentMaxDepth === value) {
-        return true;
-      }
-      return setFeature('max_depth', value);
-    },
-    // #endregion setting
-    // #region execuation
-    async exec(command: dbgp.ContinuationCommandName): Promise<ExecResult> {
-      const [ response, elapsedTime ] = await measureAsyncExecutionTime(async() => communicator.sendCommand<dbgp.ContinuationResponse>(command));
-      if (response.error) {
-        throw new DbgpError(Number(response.error.attributes.code));
-      }
-
-      return {
-        elapsedTime,
-        command,
-        runState: response.attributes.status,
-        reason: response.attributes.reason,
-      };
-    },
-    async break(): Promise<ScriptStatus> {
-      const response = await communicator.sendCommand<dbgp.BreakResponse>('break');
-      if (response.error) {
-        throw new DbgpError(Number(response.error.attributes.code));
-      }
-      return {
-        reason: 'ok',
-        runState: 'break',
-      };
-    },
-    async close(timeout_ms = 500): Promise<void> {
-      return communicator.close(timeout_ms);
-    },
-    async detach(timeout_ms = 500): Promise<void> {
-      return communicator.detach(timeout_ms);
-    },
-    // #endregion execuation
-    // #region execuation context
-    async getScriptStatus(): Promise<ScriptStatus> {
-      const response = await communicator.sendCommand<dbgp.StatusResponse>('status');
-      if (response.error) {
-        throw new DbgpError(Number(response.error.attributes.code));
-      }
-
-      return {
-        reason: response.attributes.reason,
-        runState: response.attributes.status,
-      };
-    },
-    async getCallStack(): Promise<CallStack> {
-      const response = await communicator.sendCommand<dbgp.StackGetResponse>('stack_get');
-      if (response.error) {
-        throw new DbgpError(Number(response.error.attributes.code));
-      }
-
-      if (!response.stack) {
-        return [
-          {
-            where: 'Standby',
-            fileName: communicator.process?.program ?? '',
-            level: 0,
-            line: 0,
-            type: 'file',
-          },
-        ];
-      }
-
-      const stackFrames = (Array.isArray(response.stack) ? response.stack : [ response.stack ]).map((frame) => frame.attributes);
-      return stackFrames.map((stackFrame) => {
-        return {
-          fileName: toFsPath(stackFrame.filename),
-          line: Number(stackFrame.lineno),
-          level: Number(stackFrame.level),
-          type: stackFrame.type,
-          where: stackFrame.where,
-        };
-      });
-    },
-    getContext: async(contextIdOrName: dbgp.ContextId | dbgp.ContextName, stackLevel?: number): Promise<Context> => {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
-
-      await session.setMaxDepth(0);
-      const response = await communicator.sendCommand<dbgp.ContextGetResponse>('context_get', [ '-c', contextId, '-d', stackLevel ]);
-      if (response.error) {
-        throw new DbgpError(Number(response.error.attributes.code));
-      }
-
-      return {
-        id: contextId,
-        name: contextNameById[contextId],
-        properties: toProperties(response.property, contextId, stackLevel),
-      };
-    },
-    async getContexts(stackLevel?: number): Promise<Context[]> {
-      const contexts: Context[] = [];
-
-      const response = await communicator.sendCommand<dbgp.ContextNamesResponse>('context_names');
-      for await (const context of response.context) {
-        contexts.push(await session.getContext(Number(context.attributes.id) as dbgp.ContextId, stackLevel));
-      }
-      return contexts;
-    },
-    async getProperty(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): Promise<Property> {
-      return getProperty(name, contextIdOrName, stackLevel, 0);
-    },
-    async getPrimitivePropertyValue(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): Promise<string | undefined> {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
-
-      await session.setMaxDepth(0);
-      await session.setMaxChildren(0);
-      const response = await communicator.sendCommand<dbgp.PropertyValueResponse>('property_value', [ '-c', contextId, '-n', name, '-d', stackLevel ]);
-      if (response.error) {
-        return undefined;
-      }
-      if (typeof response.content === 'string') {
-        return Buffer.from(response.content, 'base64').toString();
-      }
-      return undefined;
-    },
-    async getArrayLength(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): Promise<number | undefined> {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
-
-      if (isV2) {
-        const length = await session.getPrimitivePropertyValue(`${name}.length`, contextId, stackLevel);
-        if (length) {
-          return Number(length);
-        }
-        return undefined;
-      }
-
-      const property = await session.getProperty(name, contextId, stackLevel);
-      if (property.type === 'object') {
-        return property.numberOfChildren;
-      }
-      return undefined;
-    },
-    async getArrayLengthByProperty(property: ObjectProperty): Promise<number | undefined> {
-      if (isV2) {
-        return session.getArrayLength(property.fullName, property.contextId, property.stackLevel);
-      }
-
-      if (0 < property.numberOfChildren) {
-        const child = await session.getProperty(`${property.fullName}[1]`);
-        const isArrayProperty = child.type !== 'undefined';
-        if (isArrayProperty) {
-          return property.numberOfChildren;
-        }
-      }
-      return 0;
-    },
-    async getPropertyCount(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): Promise<number | undefined> {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
-
-      if (isV2) {
-        const count = await session.getPrimitivePropertyValue(`${name}.count`, contextId, stackLevel);
-        if (count) {
-          return Number(count);
-        }
-        return undefined;
-      }
-
-      const property = await session.getProperty(name, contextId, stackLevel);
-      if (property.type === 'object') {
-        return property.numberOfChildren;
-      }
-      return undefined;
-    },
-    async getPropertyCountByProperty(property: ObjectProperty): Promise<number | undefined> {
-      if (isV2) {
-        return session.getPropertyCount(property.fullName, property.contextId, property.stackLevel);
-      }
-      return property.numberOfChildren;
-    },
-    async getPropertyChildren(property: ObjectProperty, chunkSize?: number, page?: number): Promise<Property[]> {
-      const maxDepth = 1;
-      const enumProperty = await getProperty(property.fullName, property.contextId, property.stackLevel, maxDepth, chunkSize, page);
-      if (enumProperty.type === 'object') {
-        return enumProperty.children;
-      }
-      return [];
-    },
-    async getArrayElements(property: ObjectProperty, start_1base?: number, end_1base?: number) {
-      const rangeStart = start_1base ?? 1;
-      const rangeEnd = end_1base ?? await session.getArrayLengthByProperty(property);
-
-      const elements: Property[] = [];
-      for await (const index_1base of range(rangeStart, rangeEnd, true)) {
-        const query = `${property.fullName}[${index_1base}]`;
-
-        const child = await session.getProperty(query, property.contextId, property.stackLevel);
-        if (child.type === 'undefined') {
-          break;
-        }
-        child.name = `[${index_1base}]`;
-        elements.push(child);
-      }
-      return elements;
-    },
-    async setProperty(name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number): Promise<Property> {
-      const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
-
-      let propertyValue = String(value);
-      if (typeof value === 'boolean') {
-        propertyValue = value ? '1' : '0';
-      }
-
-      let dataType = type;
-      if (dataType === 'integer' && String(value).includes('.')) {
-        dataType = 2 <= version.mejor ? 'float' : 'string';
-      }
-      else if (dataType === undefined) {
-        switch (typeof value) {
-          case 'string':
-          case 'boolean': dataType = 'string'; break;
-          case 'number': dataType = String(value).includes('.') ? 'float' : 'integer'; break;
-          default: break;
-        }
-      }
-      await communicator.sendCommand('property_set', [ '-c', contextId, '-n', name, '-t', dataType ], propertyValue);
-      return this.getProperty(name, contextId, stackLevel);
-    },
-    // #endregion execuation context
-    // #region breakpoint
-    async setExceptionBreakpoint(state: boolean): Promise<ExceptionBreakpoint> {
-      const setResponse = await communicator.sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'exception', '-s', state ? 'enabled' : 'disabled' ]);
-      if (setResponse.error) {
-        throw new DbgpError(Number(setResponse.error.attributes.code));
-      }
-      return {
-        type: 'exception',
-        state: setResponse.attributes.state,
-      };
-    },
-    async getBreakpointById<T extends Breakpoint = Breakpoint>(id: number): Promise<T> {
-      const getResponse = await communicator.sendCommand<dbgp.BreakpointGetResponse>('breakpoint_get', [ '-d', id ]);
-      if (getResponse.error) {
-        throw new DbgpError(Number(getResponse.error.attributes.code));
-      }
-
-      const attributes = getResponse.breakpoint.attributes;
-      if (attributes.type === 'exception') {
-        return {
-          id,
-          type: attributes.type,
-          state: attributes.state,
-        } as T;
-      }
-      return {
-        id,
-        type: attributes.type,
-        fileName: toFsPath(attributes.filename),
-        line: Number(attributes.lineno),
-        state: attributes.state,
-      } as T;
-    },
-    async setLineBreakpoint(fileName: string, line_1base: number): Promise<LineBreakpoint> {
-      const fileUri = toDbgpFileName(fileName);
-      const setResponse = await communicator.sendCommand<dbgp.BreakpointSetResponse>('breakpoint_set', [ '-t', 'line', '-f', fileUri, '-n', line_1base ]);
-      if (setResponse.error) {
-        throw new DbgpError(Number(setResponse.error.attributes.code));
-      }
-
-      return this.getBreakpointById<LineBreakpoint>(Number(setResponse.attributes.id));
-    },
-    async removeBreakpointById(id: number): Promise<void> {
-      const response = await communicator.sendCommand<dbgp.BreakpointRemoveResponse>('breakpoint_remove', [ '-d', id ]);
-      if (response.error) {
-        throw new DbgpError(Number(response.error.attributes.code));
-      }
-    },
-    // #endregion breakpoint
   };
+}
+export async function closeServer(server: DebugServer): Promise<void> {
+  return new Promise((resolve) => {
+    server.socket.end(() => {
+      server.socket.destroy();
 
-  await session.setMaxChildren(defaultMaxChildren);
-  await session.setMaxData(defaultMaxData);
-  await session.setMaxDepth(defaultMaxDepth);
-  return session;
-
-  // #region utils
-  async function getFeature<T extends string | number>(featureName: dbgp.FeatureName): Promise<T> {
-    const response = await communicator.sendCommand<dbgp.FeatureGetResponse>('feature_get', [ '-n', featureName ]);
-    if (response.error) {
-      throw new DbgpError(Number(response.error.attributes.code));
-    }
-    return response.content as T;
-  }
-  async function getProperty(name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number, maxDepth = 0, maxChildren?: number, page?: number): Promise<Property> {
-    const contextId = typeof contextIdOrName === 'string' ? contextIdByName[contextIdOrName] : contextIdOrName;
-
-    await session.setMaxDepth(maxDepth);
-    if (maxChildren) {
-      await session.setMaxChildren(maxChildren);
-    }
-    const response = await communicator.sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', stackLevel, '-p', page ]);
-    if (response.error) {
-      throw new DbgpError(Number(response.error.attributes.code));
-    }
-
-    if (response.property.attributes.type === 'object') {
-      return toObjectProperty(response.property as dbgp.ObjectProperty, contextId, stackLevel);
-    }
-    return toPrimitiveProperty(response.property as dbgp.PrimitiveProperty, contextId, stackLevel);
-  }
-  async function setFeature(featureName: dbgp.FeatureName, value: CommandArg): Promise<boolean> {
-    const response = await communicator.sendCommand<dbgp.FeatureSetResponse>('feature_set', [ '-n', featureName, '-v', value ]);
-    if (response.error) {
-      throw new DbgpError(Number(response.error.attributes.code));
-    }
-    return response.attributes.success === '1';
-  }
-  function toProperties(dbgpProperty: dbgp.Property | dbgp.Property[] | undefined, contextId: dbgp.ContextId, stackLevel?: number): Property[] {
-    if (!dbgpProperty) {
-      return [];
-    }
-
-    const rawProperties = Array.isArray(dbgpProperty) ? dbgpProperty : [ dbgpProperty ];
-    return rawProperties.map((rawProperty) => {
-      if (rawProperty.attributes.type === 'object') {
-        return toObjectProperty(rawProperty as dbgp.ObjectProperty, contextId, stackLevel);
-      }
-      return toPrimitiveProperty(rawProperty as dbgp.PrimitiveProperty, contextId, stackLevel);
+      server.baseServer.close(() => {
+        resolve();
+      });
     });
+  });
+}
+export async function closeProcess(server: DebugServer, timeout_ms = 500): Promise<void> {
+  if (!server.process) {
+    return;
   }
-  function toPrimitiveProperty(rawProperty: dbgp.PrimitiveProperty, contextId: dbgp.ContextId, stackLevel?: number): PrimitiveProperty {
-    return {
-      contextId,
-      stackLevel,
-      name: rawProperty.attributes.name,
-      fullName: rawProperty.attributes.fullname,
-      constant: rawProperty.attributes.constant === '1',
-      size: Number(rawProperty.attributes.size),
-      type: rawProperty.attributes.type,
-      value: Buffer.from(rawProperty.content ?? '', 'base64').toString(),
-    };
+  if (server.process.isTerminated) {
+    return;
   }
-  function toObjectProperty(rawProperty: dbgp.ObjectProperty, contextId: dbgp.ContextId, stackLevel?: number): ObjectProperty {
-    return {
-      contextId,
-      stackLevel,
-      name: rawProperty.attributes.name,
-      fullName: rawProperty.attributes.fullname,
-      className: rawProperty.attributes.classname,
-      facet: rawProperty.attributes.facet,
-      address: Number(rawProperty.attributes.address),
-      hasChildren: rawProperty.attributes.children === '1',
-      numberOfChildren: Number(rawProperty.attributes.numchildren),
-      children: toProperties(rawProperty.property, contextId, stackLevel),
-      size: Number(rawProperty.attributes.size),
-      type: 'object',
-    };
+
+  if (server.socket.closed) {
+    server.process.kill();
+    server.process.isTerminated = true;
+    return;
   }
-  // #endregion utils
-};
+
+  server.process.isTerminated = true;
+  await timeoutTask(async() => sendContinuationCommand(server.communicator, 'stop'), timeout_ms).then(() => {
+    server.process?.kill();
+  });
+}
+export async function detachProcess(server: DebugServer, timeout_ms = 500): Promise<void> {
+  if (!server.isTerminated) {
+    return;
+  }
+
+  if (server.process) {
+    server.process.isTerminated = true;
+  }
+  await timeoutPromise(sendContinuationCommand(server.communicator, 'detach'), timeout_ms);
+}
+export async function createSession(communicator: SessionCommunicator): Promise<Session> {
+  const version = await (async(): Promise<ParsedAutoHotkeyVersion> => {
+    const response = await sendFeatureGetCommand(communicator, 'language_version');
+    return parseAutoHotkeyVersion(response.content);
+  })();
+
+  return {
+    ahkVersion: version,
+    ...communicator,
+    sendStatusCommand: async(...args) => sendStatusCommand(communicator, ...args),
+    sendFeatureGetCommand: async(...args) => sendFeatureGetCommand(communicator, ...args),
+    sendFeatureSetCommand: async(...args) => sendFeatureSetCommand(communicator, ...args),
+    sendContinuationCommand: async(...args) => sendContinuationCommand(communicator, ...args),
+    sendBreakpointSetCommand: async(...args) => sendBreakpointSetCommand(communicator, ...args),
+    sendBreakpointGetCommand: async(...args) => sendBreakpointGetCommand(communicator, ...args),
+    sendBreakpointRemoveCommand: async(...args) => sendBreakpointRemoveCommand(communicator, ...args),
+    sendStackGetCommand: async(...args) => sendStackGetCommand(communicator, ...args),
+    sendContextNamesCommand: async(...args) => sendContextNamesCommand(communicator, ...args),
+    sendContextGetCommand: async(...args) => sendContextGetCommand(communicator, ...args),
+    sendPropertyGetCommand: async(...args) => sendPropertyGetCommand(communicator, ...args),
+    sendPropertySetCommand: async(...args) => sendPropertySetCommand(communicator, ...args),
+    sendBreakCommand: async(...args) => sendBreakCommand(communicator, ...args),
+  };
+}
+
+// #region dbgp commands
+// [7.1 status](https://xdebug.org/docs/dbgp#status)
+export async function sendStatusCommand(communicator: SessionCommunicator): Promise<dbgp.StatusResponse> {
+  const response = await communicator.sendCommand<dbgp.StatusResponse>('status');
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+
+// [7.2.2 feature_get](https://xdebug.org/docs/dbgp#feature-get)
+export async function sendFeatureGetCommand(communicator: SessionCommunicator, featureName: dbgp.FeatureName): Promise<dbgp.FeatureGetResponse> {
+  const response = await communicator.sendCommand<dbgp.FeatureGetResponse>('feature_get', [ '-n', featureName ]);
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+// [7.2.3 feature_set](https://xdebug.org/docs/dbgp#feature-set)
+export async function sendFeatureSetCommand(communicator: SessionCommunicator, featureName: dbgp.FeatureName, value: CommandArg): Promise<dbgp.FeatureSetResponse> {
+  const response = await communicator.sendCommand<dbgp.FeatureSetResponse>('feature_set', [ '-n', featureName, '-v', value ]);
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+
+// [7.5 continuation commands](https://xdebug.org/docs/dbgp#continuation-commands)
+export async function sendContinuationCommand(communicator: SessionCommunicator, command: dbgp.ContinuationCommandName): Promise<dbgp.ContinuationResponse> {
+  const response = await communicator.sendCommand<dbgp.ContinuationResponse>(command);
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+
+// [7.6.1 breakpoint_set](https://xdebug.org/docs/dbgp#id3)
+export async function sendBreakpointSetCommand(communicator: SessionCommunicator, request: BreakpointSetRequest): Promise<dbgp.BreakpointSetResponse> {
+  let response: dbgp.BreakpointSetResponse;
+  switch (request.type) {
+    case undefined:
+    case 'line': response = await communicator.sendCommand('breakpoint_set', [ '-t', 'line', '-s', request.state ?? 'enabled', '-f', request.fileName, '-n', request.line ]); break;
+    case 'exception': response = await communicator.sendCommand('breakpoint_set', [ '-t', 'exception', '-s', request.state ?? 'enabled', '-x', request.exceptionName ]); break;
+    default: response = await communicator.sendCommand('breakpoint_set', []); break; // Receive error responses on purpose
+  }
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+// [7.6.2 breakpoint_get](https://xdebug.org/docs/dbgp#id4)
+export async function sendBreakpointGetCommand(communicator: SessionCommunicator, breakpointId: number): Promise<dbgp.BreakpointGetResponse> {
+  const response = await communicator.sendCommand<dbgp.BreakpointGetResponse>('breakpoint_get', [ '-d', breakpointId ]);
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+// [7.6.4 breakpoint_remove](https://xdebug.org/docs/dbgp#id6)
+export async function sendBreakpointRemoveCommand(communicator: SessionCommunicator, breakpointId: number): Promise<dbgp.BreakpointRemoveResponse> {
+  const response = await communicator.sendCommand<dbgp.BreakpointRemoveResponse>('breakpoint_remove', [ '-d', breakpointId ]);
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+
+// [7.8 stack_get](https://xdebug.org/docs/dbgp#stack-get)
+export async function sendStackGetCommand(communicator: SessionCommunicator): Promise<dbgp.StackGetResponse> {
+  const response = await communicator.sendCommand<dbgp.StackGetResponse>('stack_get');
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+
+// [7.9 context_names](https://xdebug.org/docs/dbgp#context-names)
+export async function sendContextNamesCommand(communicator: SessionCommunicator): Promise<dbgp.ContextNamesResponse> {
+  const response = await communicator.sendCommand<dbgp.ContextNamesResponse>('context_names');
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+// [7.10 context_get](https://xdebug.org/docs/dbgp#context-get)
+export async function sendContextGetCommand(communicator: SessionCommunicator, contextIdOrName: dbgp.ContextId | dbgp.ContextName, stackLevel?: number, maxDepth?: number, maxChildren?: number): Promise<dbgp.ContextGetResponse> {
+  if (typeof maxDepth === 'number') {
+    await sendFeatureSetCommand(communicator, 'max_depth', maxDepth);
+  }
+  if (typeof maxChildren === 'number') {
+    await sendFeatureSetCommand(communicator, 'max_children', maxChildren);
+  }
+
+  const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
+  const response = await communicator.sendCommand<dbgp.ContextGetResponse>('context_get', [ '-c', contextId, '-d', stackLevel ]);
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+
+// [7.13 property_get](https://xdebug.org/docs/dbgp#property-get-property-set-property-value)
+export async function sendPropertyGetCommand(communicator: SessionCommunicator, name: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0, maxDepth?: number, maxChildren?: number, page?: number): Promise<dbgp.PropertyGetResponse> {
+  const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
+
+  if (typeof maxDepth === 'number') {
+    await sendFeatureSetCommand(communicator, 'max_depth', maxDepth);
+  }
+  if (typeof maxChildren === 'number') {
+    await sendFeatureSetCommand(communicator, 'max_children', maxChildren);
+  }
+  const response = await communicator.sendCommand<dbgp.PropertyGetResponse>('property_get', [ '-c', contextId, '-n', name, '-d', stackLevel, '-p', page ]);
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+// [7.13 property_set](https://xdebug.org/docs/dbgp#property-get-property-set-property-value)
+export async function sendPropertySetCommand(communicator: SessionCommunicator, name: string, value: string | number | boolean, type?: dbgp.DataType, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel?: number): Promise<dbgp.PropertySetResponse> {
+  const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
+
+  let propertyValue = String(value);
+  if (typeof value === 'boolean') {
+    propertyValue = value ? '1' : '0';
+  }
+
+  const response = await communicator.sendCommand<dbgp.PropertySetResponse>('property_set', [ '-c', contextId, '-n', name, '-t', type ], propertyValue);
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+
+// [8.2 break](https://xdebug.org/docs/dbgp#break)
+export async function sendBreakCommand(communicator: SessionCommunicator): Promise<dbgp.BreakResponse> {
+  const response = await communicator.sendCommand<dbgp.BreakResponse>('break');
+  if (response.error) {
+    throw new DbgpError(Number(response.error.attributes.code));
+  }
+  return response;
+}
+// #endregion dbgp commands
