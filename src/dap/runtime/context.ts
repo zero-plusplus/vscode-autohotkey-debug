@@ -132,16 +132,6 @@ export async function getProperty(session: Session, name: string, contextIdOrNam
   const response = await session.sendPropertyGetCommand(name, contextId, stackLevel, maxDepth, maxChildren, page);
   if (response.property === undefined) {
     return undefined;
-    // return {
-    //   constant: true,
-    //   contextId,
-    //   stackLevel,
-    //   name,
-    //   fullName: name,
-    //   type: 'undefined',
-    //   value: '',
-    //   size: 0,
-    // } as PrimitiveProperty;
   }
   if (response.property.attributes.type === 'object') {
     return toObjectProperty(response.property as dbgp.ObjectProperty, contextId, stackLevel);
