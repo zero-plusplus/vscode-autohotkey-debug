@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-enum-comparison */
 /* eslint-disable no-bitwise */
 import { GreenToken, RuntimeTarget, SyntaxKind, TokenFlags } from '../../../../types/tools/autohotkey/parser/common.types';
 import { CharacterCodes, ErrorCallback, ScannerHelpers, TokenResolverMap } from '../../../../types/tools/autohotkey/parser/prototype/scanner.types';
@@ -139,7 +140,7 @@ export const createTokenMap = (): TokenResolverMap => {
 
 const defaultErrorCallback: ErrorCallback = (message: string) => {
 };
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types
 export function createScanner(initialRuntimeTarget: RuntimeTarget, sourceText = '', onError = defaultErrorCallback, start?: number, length?: number) {
   const factory = createGreenNodeFactory();
   const tokenMap = createTokenMap();
@@ -657,25 +658,25 @@ export function scanNumberLiteral(helpers: ScannerHelpers): GreenToken {
   }
 }
 
-export const isNewLineTrivia = (charCode: number): boolean => {
+export function isNewLineTrivia(charCode: number): boolean {
   switch (charCode) {
     case CharacterCodes.LineFeed:
     case CharacterCodes.CarriageReturn: return true;
     default: break;
   }
   return false;
-};
-export const isHorizSpaceTrivia = (charCode: number): boolean => {
+}
+export function isHorizSpaceTrivia(charCode: number): boolean {
   switch (charCode) {
     case CharacterCodes.Space:
     case CharacterCodes.Tab: return true;
     default: break;
   }
   return false;
-};
-export const isNumber = (charCode: number): boolean => {
+}
+export function isNumber(charCode: number): boolean {
   return CharacterCodes._0 <= charCode && charCode <= CharacterCodes._9;
-};
-export const isFullWidthChar = (charCode: number): boolean => {
+}
+export function isFullWidthChar(charCode: number): boolean {
   return CharacterCodes.FullWidthStart <= charCode;
-};
+}

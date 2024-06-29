@@ -4,7 +4,7 @@ import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../../types/tools
 import { parseAutoHotkeyVersion } from '../version';
 import { directoryExists, fileExists } from '../../predicate';
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types
 export const createPathResolver = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVersion, rawEnv: PartialedAutoHotkeyEnvironments = {}) => {
   const version = typeof rawVersion === 'string' ? parseAutoHotkeyVersion(rawVersion) : rawVersion;
 

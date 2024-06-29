@@ -37,7 +37,6 @@ export type MatchPattern
   | VariablePrefixPattern
   | VariableSuffixPattern
   | VariableExactPattern
-  | VariableRegExPattern
   | VariableWildcardPattern;
 export type PatternType = 'partial' | 'prefix' | 'suffix' | 'exact' | 'regex' | 'regexp' | 'wildcard';
 export interface VariablePatternBase {

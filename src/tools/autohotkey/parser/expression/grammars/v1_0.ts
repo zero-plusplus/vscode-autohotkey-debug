@@ -1,4 +1,4 @@
-/* eslint-disable key-spacing */
+/* eslint-disable @stylistic/ts/key-spacing */
 import * as ohm from 'ohm-js';
 import { DereferenceExpression, Identifier, SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.types';
 import { createAstMappingUtils, createParser } from './utils';

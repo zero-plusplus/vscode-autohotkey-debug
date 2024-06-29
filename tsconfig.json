@@ -30,6 +30,7 @@
 		"scripts/**/*",
 		"src/**/*",
 		"test/**/*",
+		"eslint.config.js",
 		"jest.config.ts"
 	]
 }

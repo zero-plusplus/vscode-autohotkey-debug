@@ -87,7 +87,7 @@ export async function converterForLatest(session: Session, variablesReferenceMan
   const nonEnumerableCount = await getPropertyNumberOfChildren(session, property);
   const namedVariables = nonEnumerableCount;
 
-  let pagingKind: DapVariable['pagingKind'] = 'none';
+  let pagingKind: DapVariable['pagingKind'] | undefined;
   let enumerableCount: number;
   let numberOfChildren: number;
   let indexedVariables: number | undefined;
@@ -143,7 +143,7 @@ export async function converterForV1_X(session: Session, variablesReferenceManag
   }
   const numberOfChildren = await getPropertyNumberOfChildren(session, property);
 
-  let pagingKind: DapVariable['pagingKind'] = 'none';
+  let pagingKind: DapVariable['pagingKind'] | undefined;
   let enumerableCount: number;
   let nonEnumerableCount: number;
   let indexedVariables: number | undefined;

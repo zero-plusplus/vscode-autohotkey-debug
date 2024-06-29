@@ -13,7 +13,7 @@ export function launchAutoHotkeyProcess(config: Readonly<NormalizedDebugConfig>)
   const launchArgs = [
     ...(noDebug ? [] : [ `/Debug=${hostname}:${port}` ]),
     ...runtimeArgs,
-    `${program}`,
+    program,
     ...args,
   ];
 

@@ -1,4 +1,4 @@
-/* eslint-disable no-bitwise, no-multi-spaces, @typescript-eslint/prefer-literal-enum-member */
+/* eslint-disable no-bitwise, @stylistic/js/no-multi-spaces, @typescript-eslint/prefer-literal-enum-member */
 // #region enum
 export const enum RuntimeTarget {
   Legacy = 0,

@@ -1,4 +1,3 @@
-/* eslint-disable require-atomic-updates */
 import * as path from 'path';
 import { defaultAutoHotkeyInstallDir, defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2, defaultAutoHotkeyUxRuntimePath, getLaunchInfoByLauncher } from '../../../tools/autohotkey';
 import { fileExists } from '../../../tools/predicate';

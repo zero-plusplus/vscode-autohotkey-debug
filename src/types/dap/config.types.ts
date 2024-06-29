@@ -8,7 +8,7 @@ import { DebugDirectiveConfig } from '../client/config/attributes/useDebugDirect
 import { OutputDebugConfig } from '../client/config/attributes/useOutputDebug.types';
 import { AnnounceLevel } from '../client/config/attributes/useAnnounce.types';
 
-export type AttributeType = LiteralUnion<'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]' | 'object', string>;
+export type AttributeType = LiteralUnion<'string' | 'number' | 'boolean' | 'object' | 'string[]' | 'number[]' | 'boolean[]', string>;
 export interface AttributeCheckerFactoryUtils {
   getLanguageId?: (programPath: string) => Promise<string>;
   getCurrentFile?: () => Promise<string | undefined>;

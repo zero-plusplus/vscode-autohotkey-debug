@@ -5,7 +5,6 @@ import { Parser, SyntaxKind, SyntaxNode } from '../../../../../types/tools/autoh
 export const createParser = (grammar: ohm.Grammar, astMapping: Record<string, any>): Parser => {
   return {
     parse(input: string, startRule?: string): SyntaxNode {
-    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
       const matchResult = grammar.match(input, startRule);
       if (!matchResult.succeeded()) {
         throw new ParseError(matchResult);
@@ -16,7 +15,7 @@ export const createParser = (grammar: ohm.Grammar, astMapping: Record<string, an
     },
   };
 };
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types
 export const createAstMappingUtils = () => {
   const utils = {
     identifierKind: (nodes: ohm.Node[]): SyntaxKind => {

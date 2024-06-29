@@ -4,7 +4,7 @@ import { parseAutoHotkeyVersion } from '../autohotkey/version';
 import * as v1_0 from './grammars/v1_0';
 import * as v2_0 from './grammars/v2_0';
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types
 export const createAELLParser = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVersion) => {
   const version = typeof rawVersion === 'string' ? parseAutoHotkeyVersion(rawVersion) : rawVersion;
   const parser = ((): Parser => {

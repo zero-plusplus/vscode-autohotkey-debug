@@ -1,7 +1,6 @@
 import { GreenElement, GreenNode, GreenToken, SyntaxKind, TokenFlags } from '../../../../types/tools/autohotkey/parser/common.types';
 import { memoize } from '../../../utils/memoize';
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export const createGreenNodeFactory = memoize(() => {
   const tokenCache = new Map<string, GreenToken>();
 

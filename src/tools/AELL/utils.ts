@@ -7,7 +7,7 @@ import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../types/tools/au
 import { parseAutoHotkeyVersion } from '../autohotkey/version';
 import { isNumberLike } from '../predicate';
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types
 export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkeyVersion) => {
   const version = typeof rawVersion === 'string' ? parseAutoHotkeyVersion(rawVersion) : rawVersion;
   // const isV1 = version.mejor < 2;

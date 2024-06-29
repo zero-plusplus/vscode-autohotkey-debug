@@ -1,4 +1,4 @@
-/* eslint-disable no-bitwise, no-mixed-operators */
+/* eslint-disable no-bitwise */
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import { createEvaluator } from '../../../src/tools/AELL/evaluator';
 import { TemporaryResource, createTempDirectoryWithFile } from '../../../src/tools/temp';
@@ -47,8 +47,8 @@ describe('evaluator', () => {
       const config = await validateDebugConfig({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2, port: '9005-9010' });
       const launcher = createScriptRuntimeLauncher(config);
       runtime = await launcher.launch();
-      await runtime.session.setLineBreakpoint(testFile.path, 17);
-      await runtime.session.exec('run');
+      await runtime.setLineBreakpoint({ kind: 'line', fileName: testFile.path, line: 17, hidden: false });
+      await runtime.exec('run');
       evaluator = createEvaluator(runtime.session);
     });
     afterAll(() => {
@@ -88,8 +88,8 @@ describe('evaluator', () => {
       expect(await evaluator.eval('1 + 1')).toEqual(createNumberProperty(1 + 1));
       expect(await evaluator.eval('-1 + -1')).toEqual(createNumberProperty(-1 + -1));
       expect(await evaluator.eval('1 - 1')).toEqual(createNumberProperty(1 - 1));
-      expect(await evaluator.eval('1 * 2 + 3')).toEqual(createNumberProperty(1 * 2 + 3));
-      expect(await evaluator.eval('1 ** 2 * 3')).toEqual(createNumberProperty(1 ** 2 * 3));
+      expect(await evaluator.eval('1 * 2 + 3')).toEqual(createNumberProperty((1 * 2) + 3));
+      expect(await evaluator.eval('1 ** 2 * 3')).toEqual(createNumberProperty((1 ** 2) * 3));
       expect(await evaluator.eval('1 / 2')).toEqual(createNumberProperty(1 / 2));
       expect(await evaluator.eval('2 << 2')).toEqual(createNumberProperty(2 << 2));
       expect(await evaluator.eval('2 << 2')).toEqual(createNumberProperty(2 << 2));
@@ -166,8 +166,8 @@ describe('evaluator', () => {
       const config = await validateDebugConfig({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1, port: '9005-9010' });
       const launcher = createScriptRuntimeLauncher(config);
       runtime = await launcher.launch();
-      await runtime.session.setLineBreakpoint(testFile.path, 13);
-      await runtime.session.exec('run');
+      await runtime.setLineBreakpoint({ kind: 'line', fileName: testFile.path, line: 13, hidden: false });
+      await runtime.exec('run');
       evaluator = createEvaluator(runtime.session);
     });
     afterAll(() => {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { describe, expect, test } from '@jest/globals';
 import { createAELLParser } from '../../../src/tools/AELL/parser';
 import { ParseError } from '../../../src/tools/autohotkey/parser/expression/grammars/utils';

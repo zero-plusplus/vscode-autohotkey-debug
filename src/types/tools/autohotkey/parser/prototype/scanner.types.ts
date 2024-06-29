@@ -1,4 +1,3 @@
-/* eslint-disable no-bitwise, no-multi-spaces, @typescript-eslint/prefer-literal-enum-member */
 import { GreenToken, RuntimeTarget, SyntaxKind, TokenFlags } from '../common.types';
 
 export const enum CharacterCodes {
@@ -110,7 +109,6 @@ export const enum CharacterCodes {
   Tilde = 0x007E,               // ~
   Bom = 0xFEFF,                 // UTF-8 BOM
 
-  // eslint-disable-next-line @typescript-eslint/prefer-literal-enum-member
   LastAsciiChar = 0x007f,
   NonAsciiCharStart = 0x0080,
   NonAsciiCharEnd = 0x10FFFF,

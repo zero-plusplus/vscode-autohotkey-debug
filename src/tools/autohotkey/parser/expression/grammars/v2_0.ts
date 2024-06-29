@@ -1,4 +1,4 @@
-/* eslint-disable key-spacing */
+/* eslint-disable @stylistic/ts/key-spacing */
 import * as ohm from 'ohm-js';
 import { createAstMappingUtils, createParser } from './utils';
 import * as v1_0 from './v1_0';
@@ -46,7 +46,6 @@ export const astMapping = (() => {
     text,
   } = createAstMappingUtils();
 
-  // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const mapping = {
     ...v1_0.astMapping,
 

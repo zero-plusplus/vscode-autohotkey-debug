@@ -5,6 +5,6 @@ export const defaultAutoHotkeyInstallDir = path.resolve(String(process.env.PROGR
 export const defaultAutoHotkeyRuntimePath_v1 = path.resolve(defaultAutoHotkeyInstallDir, 'AutoHotkey.exe');
 export const defaultAutoHotkeyRuntimePath_v2 = path.resolve(defaultAutoHotkeyInstallDir, 'v2', 'AutoHotkey.exe');
 export const defaultAutoHotkeyUxDirPath = path.resolve(`${defaultAutoHotkeyInstallDir}/UX`);
-export const defaultAutoHotkeyUxRuntimePath = path.resolve(`${defaultAutoHotkeyUxDirPath}`, 'AutoHotkeyUX.exe');
-export const defaultAutoHotkeyLauncherPath = path.resolve(`${defaultAutoHotkeyUxDirPath}`, '/launcher.ahk');
+export const defaultAutoHotkeyUxRuntimePath = path.resolve(defaultAutoHotkeyUxDirPath, 'AutoHotkeyUX.exe');
+export const defaultAutoHotkeyLauncherPath = path.resolve(defaultAutoHotkeyUxDirPath, '/launcher.ahk');
 

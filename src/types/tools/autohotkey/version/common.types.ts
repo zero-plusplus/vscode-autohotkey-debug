@@ -3,6 +3,7 @@ import { LiteralUnion } from 'type-fest';
 type DecimalNumber = number;
 type FloatNumber = number;
 
+// eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
 export type MejorVersion = FloatNumber | DecimalNumber;
 export type MinorVersion = DecimalNumber;
 export type PatchVersion = DecimalNumber;

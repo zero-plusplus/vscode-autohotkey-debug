@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { describe, expect, test } from '@jest/globals';
 import { parseXml } from '../../src/tools/xml';
 import { FeatureSetResponse, InitPacket, ResponsePacket } from '../../src/types/dbgp/AutoHotkeyDebugger.types';
