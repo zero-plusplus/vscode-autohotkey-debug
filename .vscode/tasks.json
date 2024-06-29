@@ -20,7 +20,7 @@
           },
           "background": {
             "activeOnStart": true,
-            "beginsPattern": "> ts-node task\\/watch\\.ts",
+            "beginsPattern": "> npx task\\/watch\\.ts",
             "endsPattern": "^\\[esbuild\\] completed at"
           }
         }
@@ -43,7 +43,7 @@
           },
           "background": {
             "activeOnStart": true,
-            "beginsPattern": "> ts-node task\\/watch\\.ts",
+            "beginsPattern": "> npx task\\/watch\\.ts",
             "endsPattern": "^\\[esbuild\\] completed at"
           }
         }
