@@ -1,5 +1,5 @@
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { Context, ContextIdentifier, ExecutionContextManager, ObjectProperty, PrimitiveProperty, Property, StackFrame } from '../../types/dap/runtime/context.types';
+import { Context, ContextIdentifier, ContextStatus, ExecutionContextManager, ObjectProperty, PrimitiveProperty, PrimitivePropertyLike, Property, PropertyLike, StackFrame } from '../../types/dap/runtime/context.types';
 import { CommandArg, Session } from '../../types/dbgp/session.types';
 import { isArrayIndexName, isNamedPropertyName, toFsPath } from '../../dbgp/utils';
 import { isNumberLike } from '../../tools/predicate';
@@ -14,6 +14,7 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
     setFeature: async(...args) => setFeature(session, ...args),
     setMaxChildren: async(...args) => setMaxChildren(session, ...args),
     setMaxDepth: async(...args) => setMaxDepth(session, ...args),
+    getContextStatus: async(...args) => getContextStatus(session, ...args),
     getCallStack: async() => getCallStack(session),
     getStackFrame: async(...args) => getStackFrame(session, ...args),
     getContextIdentifiers: async(...args) => getContextIdentifiers(session, ...args),
@@ -26,6 +27,16 @@ export const createExecutionContextManager = (session: Session): ExecutionContex
 
 // #region wrapper
 const encoding = 'base64';
+
+// #region wrapped [7.1 status](https://xdebug.org/docs/dbgp#status)
+export async function getContextStatus(session: Session): Promise<ContextStatus> {
+  const { attributes: { reason, status } } = await session.sendStatusCommand();
+  return {
+    reason,
+    runState: status,
+  };
+}
+// #endregion wrapped [7.1 status](https://xdebug.org/docs/dbgp#status)
 
 // #region wrapped [7.2.2 feature_get](https://xdebug.org/docs/dbgp#feature-get)
 export async function getFeature(session: Session, featureName: dbgp.FeatureName): Promise<string> {

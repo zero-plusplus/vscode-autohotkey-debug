@@ -70,6 +70,10 @@ export interface PseudoPrimitiveProperty extends PseudoPropertyBase {
   constant: undefined;
   value: string;
 }
+export interface ContextStatus {
+  runState: dbgp.RunState;
+  reason: dbgp.StatusReason;
+}
 // #endregion property
 
 export interface ExecutionContextManager {
@@ -79,6 +83,7 @@ export interface ExecutionContextManager {
   setFeature: (featureName: dbgp.FeatureName, value: CommandArg) => Promise<boolean>;
   setMaxChildren: (maxChildren: number) => Promise<boolean>;
   setMaxDepth: (depth: number) => Promise<boolean>;
+  getContextStatus: () => Promise<ContextStatus>;
   getCallStack: () => Promise<StackFrame[]>;
   getStackFrame: (level: number) => Promise<StackFrame | undefined>;
   getContextIdentifiers: () => Promise<ContextIdentifier[]>;
