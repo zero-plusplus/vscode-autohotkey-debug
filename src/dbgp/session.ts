@@ -8,6 +8,7 @@ import { DbgpError } from './error';
 import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
 import { parseAutoHotkeyVersion } from '../tools/autohotkey';
 import { safeCallAsync } from '../tools/utils';
+import { isNumber } from '../tools/predicate';
 
 export const createDebugServer = (process?: AutoHotkeyProcess): DebugServer => {
   let isSocketTerminated = false;
@@ -267,9 +268,10 @@ export async function createSessionCommunicator(server: DebugServer, process?: A
 }
 
 export function createPacketHandler(socket: Socket, responseEventName: string): (packet: Buffer) => void {
-  let packetBuffer = Buffer.from('');
+  let currentPacketLength: number | undefined;
+  let currentPacketBuffer: Buffer | Uint8Array = Buffer.from('');
 
-  return function handlePacket(packet: Buffer): void {
+  return function handlePacket(packet: Buffer | Uint8Array): void {
     // As shown in the example below, the data passed from dbgp is divided into data length and response.
     // https://xdebug.org/docs/dbgp#response
     //     data_length
@@ -279,36 +281,54 @@ export function createPacketHandler(socket: Socket, responseEventName: string): 
     //               command="command_name"
     //               transaction_id="transaction_id"/>
     //     [NULL]
-    const currentPacket = Buffer.concat([ packetBuffer, packet ]);
-    packetBuffer = Buffer.from('');
+    const currentPacket = Buffer.concat([ currentPacketBuffer, packet ]);
+    currentPacketBuffer = Buffer.from('');
 
     const terminatorIndex = currentPacket.indexOf(0);
-    const isCompleteReceived = -1 < terminatorIndex;
-    if (isCompleteReceived) {
-      const data = Uint8Array.prototype.slice.call(currentPacket, 0, terminatorIndex);
-      const isReceivedDataLength = !isNaN(parseInt(data.toString(), 10));
-      if (isReceivedDataLength) {
-        const responsePacket = Uint8Array.prototype.slice.call(currentPacket, terminatorIndex + 1);
-        handlePacket(Buffer.from(responsePacket));
+    const hasPacketTerminator = -1 < terminatorIndex;
+
+    // Case 1: Receive data_length
+    if (currentPacketLength === undefined) {
+      const targetPacket = Uint8Array.prototype.slice.call(currentPacket, 0, terminatorIndex);
+      // If the termination is not included, wait for the next packet
+      if (!hasPacketTerminator) {
+        currentPacketBuffer = targetPacket;
         return;
       }
+
+      const nextPacketLength = parseInt(targetPacket.toString(), 10);
+      if (!isNumber(nextPacketLength)) {
+        throw Error('A lengthy response time was expected, but this was not the case.');
+      }
+
+      // Wait for packets of specified length
+      currentPacketLength = nextPacketLength;
+      const restPacket = Uint8Array.prototype.slice.call(currentPacket, terminatorIndex + 1);
+
+      // Since this time it contains termination, the packet is analyzed again
+      handlePacket(restPacket);
+      return;
+    }
+
+    // Case 2: Finish receiving the packet
+    if (currentPacketLength <= currentPacket.byteLength) {
+      const targetPacket = Uint8Array.prototype.slice.call(currentPacket, 0, currentPacketLength);
+      const restPacket = Uint8Array.prototype.slice.call(currentPacket, currentPacketLength + 1);
+
+      currentPacketBuffer = restPacket;
+      currentPacketLength = undefined;
 
       // Received response
       // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171
       // If it contains a newline, it should be escaped in an AutoHotkey-like manner.
-      const xml_str = data.toString().replace(/\r\n/gu, '`r`n').replace(/\n/gu, '`n');
+      const xml_str = targetPacket.toString().replace(/\r\n/gu, '`r`n').replace(/\n/gu, '`n');
       const xmlDocument = parseXml(xml_str);
       socket.emit(responseEventName, xmlDocument);
-
-      const restPacket = Uint8Array.prototype.slice.call(currentPacket, terminatorIndex + 1);
-      if (0 < restPacket.length) {
-        handlePacket(Buffer.from(restPacket));
-      }
       return;
     }
 
-    // Wait for next packet
-    packetBuffer = currentPacket;
+    // Case 3: Wait for the next packet as it has not yet received a packet of the specified length
+    currentPacketBuffer = currentPacket;
   };
 }
 export async function closeServer(server: DebugServer): Promise<void> {
