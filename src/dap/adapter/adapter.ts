@@ -104,47 +104,48 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
 
   // #region initialize requests
   protected async initializeRequest(response: DebugProtocol.InitializeResponse, args: DebugProtocol.InitializeRequestArguments): Promise<void> {
-    this.sendResponse(await initializeRequest(response, args));
+    await this.request(response, async() => {
+      await initializeRequest(response, args);
+    });
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, config: NormalizedDebugConfig): Promise<void> {
-    await this.request('launchRequest', async() => {
+    await this.request(response, async() => {
       this.config = config;
       this.registerEvents();
 
-      const [ runtime, newResponse ] = await launchRequest(this, response);
-      this.runtime = runtime;
+      this.runtime = await launchRequest(this, response);
       this.evaluator = createEvaluator(this.runtime.session);
-
-      this.sendResponse(newResponse);
+    }, async() => {
       this.sendEvent(new InitializedEvent());
+      return Promise.resolve();
     });
   }
   protected async attachRequest(response: DebugProtocol.AttachResponse, config: NormalizedDebugConfig): Promise<void> {
-    await this.request('attachRequest', async() => {
+    await this.request(response, async() => {
       this.config = config;
       this.registerEvents();
 
-      const [ runtime, newResponse ] = await attachRequest(this, response);
-      this.runtime = runtime;
-
-      this.sendResponse(newResponse);
+      this.runtime = await attachRequest(this, response);
+    }, async() => {
       this.sendEvent(new InitializedEvent());
+      return Promise.resolve();
     });
   }
   protected async configurationDoneRequest(response: DebugProtocol.ConfigurationDoneResponse, args: DebugProtocol.ConfigurationDoneArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('configurationDoneRequest', async() => {
-      this.sendResponse(await configurationDoneRequest(this, response, args));
+    await this.request(response, async() => {
+      await configurationDoneRequest(this, response, args);
     });
   }
   // #endregion initialize requests
 
   // #region termination requests
   protected async disconnectRequest(response: DebugProtocol.DisconnectResponse, args: DebugProtocol.DisconnectArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    this.sendResponse(await disconnectRequest(this, response, args));
+    await this.request(response, async() => {
+      await disconnectRequest(this, response, args);
+    });
   }
   protected async restartRequest(response: DebugProtocol.RestartResponse, args: DebugProtocol.RestartArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('restartRequest', async() => {
-      this.sendResponse(response);
+    await this.request(response, async() => {
       return Promise.resolve();
     });
   }
@@ -152,116 +153,116 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
 
   // #region user-interaction requests
   protected async setBreakPointsRequest(response: DebugProtocol.SetBreakpointsResponse, args: DebugProtocol.SetBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('setBreakPointsRequest', async() => {
-      this.sendResponse(await setBreakPointsRequest(this, response, args));
+    await this.request(response, async() => {
+      await setBreakPointsRequest(this, response, args);
     });
   }
   protected async setFunctionBreakPointsRequest(response: DebugProtocol.SetFunctionBreakpointsResponse, args: DebugProtocol.SetFunctionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('setFunctionBreakPointsRequest', async() => {
-      this.sendResponse(await setFunctionBreakPointsRequest(this.runtime, response, args));
+    await this.request(response, async() => {
+      await setFunctionBreakPointsRequest(this.runtime, response, args);
     });
   }
   protected async setExceptionBreakPointsRequest(response: DebugProtocol.SetExceptionBreakpointsResponse, args: DebugProtocol.SetExceptionBreakpointsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('setExceptionBreakPointsRequest', async() => {
-      this.sendResponse(await setExceptionBreakPointsRequest(this, response, args));
+    await this.request(response, async() => {
+      await setExceptionBreakPointsRequest(this, response, args);
     });
   }
   protected async exceptionInfoRequest(response: DebugProtocol.ExceptionInfoResponse, args: DebugProtocol.ExceptionInfoArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('exceptionInfoRequest', async() => {
-      this.sendResponse(await exceptionInfoRequest(this, response, args));
+    await this.request(response, async() => {
+      await exceptionInfoRequest(this, response, args);
     });
   }
   protected async setVariableRequest(response: DebugProtocol.SetVariableResponse, args: DebugProtocol.SetVariableArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('setVariableRequest', async() => {
-      this.sendResponse(await setVariableRequest(this.runtime, response, args));
+    await this.request(response, async() => {
+      await setVariableRequest(this.runtime, response, args);
     });
   }
   protected async setExpressionRequest(response: DebugProtocol.SetExpressionResponse, args: DebugProtocol.SetExpressionArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('setExpressionRequest', async() => {
-      this.sendResponse(await setExpressionRequest(this.runtime, response, args));
+    await this.request(response, async() => {
+      await setExpressionRequest(this.runtime, response, args);
     });
   }
   protected async completionsRequest(response: DebugProtocol.CompletionsResponse, args: DebugProtocol.CompletionsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('completionsRequest', async() => {
-      this.sendResponse(await completionsRequest(this.runtime, response, args));
+    await this.request(response, async() => {
+      await completionsRequest(this.runtime, response, args);
     });
   }
   protected async evaluateRequest(response: DebugProtocol.EvaluateResponse, args: DebugProtocol.EvaluateArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('evaluateRequest', async() => {
-      this.sendResponse(await evaluateRequest(this.runtime, response, args));
+    await this.request(response, async() => {
+      await evaluateRequest(this, response, args);
     });
   }
   // #endregion user-interaction requests
 
   // #region stop-event lifecycle requests
   protected async threadsRequest(response: DebugProtocol.ThreadsResponse, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('threadsRequest', async() => {
+    await this.request(response, async() => {
       this.resetLifetimeOfObjectsReferences();
 
-      this.sendResponse(await threadsRequest(this, response));
+      await threadsRequest(this, response);
     });
   }
   protected async stackTraceRequest(response: DebugProtocol.StackTraceResponse, args: DebugProtocol.StackTraceArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('stackTraceRequest', async() => {
-      this.sendResponse(await stackTraceRequest(this, response, args));
+    await this.request(response, async() => {
+      await stackTraceRequest(this, response, args);
     });
   }
   protected async scopesRequest(response: DebugProtocol.ScopesResponse, args: DebugProtocol.ScopesArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('scopesRequest', async() => {
-      this.sendResponse(await scopesRequest(this, response, args));
+    await this.request(response, async() => {
+      await scopesRequest(this, response, args);
     });
   }
   protected async variablesRequest(response: DebugProtocol.VariablesResponse, args: DebugProtocol.VariablesArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('variablesRequest', async() => {
-      this.sendResponse(await variablesRequest(this, response, args));
+    await this.request(response, async() => {
+      await variablesRequest(this, response, args);
     });
   }
   // #endregion stop-event lifecycle requests
 
   // #region execution requests
   protected async continueRequest(response: DebugProtocol.ContinueResponse, args: DebugProtocol.ContinueArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('continueRequest', async() => {
-      this.sendResponse(await continueRequest(this, response, args));
+    await this.request(response, async() => {
+      await continueRequest(this, response, args);
     });
   }
   protected async nextRequest(response: DebugProtocol.NextResponse, args: DebugProtocol.NextArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('nextRequest', async() => {
-      this.sendResponse(await nextRequest(this, response, args));
+    await this.request(response, async() => {
+      await nextRequest(this, response, args);
     });
   }
   protected async stepInRequest(response: DebugProtocol.StepInResponse, args: DebugProtocol.StepInArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('stepInRequest', async() => {
-      this.sendResponse(await stepInRequest(this, response, args));
+    await this.request(response, async() => {
+      await stepInRequest(this, response, args);
     });
   }
   protected async stepInTargetsRequest(response: DebugProtocol.StepInTargetsResponse, args: DebugProtocol.StepInTargetsArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('stepInTargetsRequest', async() => {
-      this.sendResponse(await stepInTargetsRequest(this.runtime, response, args));
+    await this.request(response, async() => {
+      await stepInTargetsRequest(this.runtime, response, args);
     });
   }
   protected async stepOutRequest(response: DebugProtocol.StepOutResponse, args: DebugProtocol.StepOutArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('stepOutRequest', async() => {
-      this.sendResponse(await stepOutRequest(this, response, args));
+    await this.request(response, async() => {
+      await stepOutRequest(this, response, args);
     });
   }
   protected async pauseRequest(response: DebugProtocol.PauseResponse, args: DebugProtocol.PauseArguments, request?: DebugProtocol.Request | undefined): Promise<void> {
-    await this.request('pauseRequest', async() => {
-      this.sendResponse(await pauseRequest(this, response, args));
+    await this.request(response, async() => {
+      await pauseRequest(this, response, args);
     });
   }
-  private async request<T>(requestName: string, handler: () => Promise<T>): Promise<void> {
+  private async request<T>(response: DebugProtocol.Response, responseHandler: () => Promise<T>, responsedHandler?: () => Promise<T>): Promise<void> {
     if (this.isTerminateRequested) {
       return;
     }
 
     try {
-      console.log(requestName);
+      console.log(response.command);
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (this.runtime?.isClosed) {
         this.sendTerminatedEvent();
         return;
       }
-      await this.mutex.use(requestName, handler);
+      await this.mutex.use('', responseHandler);
     }
     catch (e: unknown) {
       if (e instanceof CriticalError) {
@@ -271,6 +272,10 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
       if (e instanceof Error) {
         console.log(e);
       }
+    }
+    finally {
+      this.sendResponse(response);
+      await responsedHandler?.();
     }
   }
   // #endregion execution requests

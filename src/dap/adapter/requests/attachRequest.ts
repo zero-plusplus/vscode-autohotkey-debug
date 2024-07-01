@@ -4,8 +4,7 @@ import { AutoHotkeyDebugAdapter } from '../adapter';
 import { attachDebug } from '../../runtime/launcher';
 import { createScriptRuntime } from '../../runtime/scriptRuntime';
 
-export const attachRequest = async <R extends DebugProtocol.AttachResponse>(adapter: AutoHotkeyDebugAdapter, response: R): Promise<[ ScriptRuntime, R ]> => {
+export const attachRequest = async <R extends DebugProtocol.AttachResponse>(adapter: AutoHotkeyDebugAdapter, response: R): Promise<ScriptRuntime> => {
   const session = await attachDebug(adapter.config);
-  const runtime = createScriptRuntime(session);
-  return Promise.resolve([ runtime, response ]);
+  return createScriptRuntime(session);
 };
