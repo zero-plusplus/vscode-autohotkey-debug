@@ -1,7 +1,8 @@
 import { getContexts, getProperty, setProperty } from '../../dap/runtime/context';
+import { PrimitivePropertyLike, PropertyLike } from '../../types/dap/runtime/context.types';
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { PrimitiveProperty, Property, PseudoPrimitiveProperty, Session } from '../../types/dbgp/session.types';
-import { AELLEvaluator, EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
+import { PseudoPrimitiveProperty, Session } from '../../types/dbgp/session.types';
+import { AELLEvaluator } from '../../types/tools/AELL/evaluator.types';
 import { CalcCallback } from '../../types/tools/AELL/utils.types';
 import { BinaryExpression, BooleanLiteral, CustomNode, ElementAccessExpression, Expression, Identifier, NumberLiteral, PostfixUnaryExpression, PrefixUnaryExpression, PropertyAccessExpression, StringLiteral, SyntaxKind, UnaryExpression } from '../../types/tools/autohotkey/parser/common.types';
 import { toSigned64BitBinary } from '../convert';
@@ -28,13 +29,13 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
   } = createAELLUtils(ahkVersion);
 
   return {
-    eval: async(text: string): Promise<EvaluatedValue> => {
+    eval: async(text: string): Promise<PropertyLike> => {
       const node = parser.parse(text);
       return evalNode(node);
     },
   };
 
-  async function evalNode(node: Expression): Promise<EvaluatedValue> {
+  async function evalNode(node: Expression): Promise<PropertyLike> {
     const optimizedNode = queryOptimizer.transform(node);
     switch (optimizedNode.kind) {
       case SyntaxKind.Identifier: return evalIdentifier(optimizedNode);
@@ -52,10 +53,10 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
     }
     return createUnsetProperty('');
 
-    async function evalIdentifier(node: Identifier): Promise<EvaluatedValue> {
+    async function evalIdentifier(node: Identifier): Promise<PropertyLike> {
       const contexts = await getContexts(session);
 
-      let unsetProperty: PrimitiveProperty;
+      let unsetProperty: PrimitivePropertyLike;
       for await (const context of contexts) {
         const property = await requestQuery(node.text, context.id);
         if (property.type === 'undefined') {
@@ -66,16 +67,16 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
       }
       return unsetProperty!;
     }
-    async function evalStringLiteral(node: StringLiteral): Promise<PrimitiveProperty | PseudoPrimitiveProperty> {
+    async function evalStringLiteral(node: StringLiteral): Promise<PrimitivePropertyLike> {
       return Promise.resolve(createStringProperty(node.value));
     }
-    async function evalNumberLiteral(node: NumberLiteral): Promise<PrimitiveProperty | PseudoPrimitiveProperty> {
+    async function evalNumberLiteral(node: NumberLiteral): Promise<PrimitivePropertyLike> {
       return Promise.resolve(createNumberProperty(node.text));
     }
-    async function evalBooleanLiteral(node: BooleanLiteral): Promise<PrimitiveProperty | PseudoPrimitiveProperty> {
+    async function evalBooleanLiteral(node: BooleanLiteral): Promise<PrimitivePropertyLike> {
       return Promise.resolve(createBooleanProperty(node.text));
     }
-    async function evalPropertyAccessExpression(node: PropertyAccessExpression): Promise<EvaluatedValue> {
+    async function evalPropertyAccessExpression(node: PropertyAccessExpression): Promise<PropertyLike> {
       const object = await evalNode(node.object);
       const keyProperty = await evalNode(node.property);
       const key = keyProperty.type === 'object' ? `[Object(${String(keyProperty.address)}]` : node.property.text;
@@ -86,7 +87,7 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
       // child.name = node.property.text;
       return child;
     }
-    async function evalElementAccessExpression(node: ElementAccessExpression): Promise<EvaluatedValue> {
+    async function evalElementAccessExpression(node: ElementAccessExpression): Promise<PropertyLike> {
       const object = await evalNode(node.object);
 
       const args: string[] = [];
@@ -103,7 +104,7 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
       child.name = node.text.slice(node.object.endPosition - node.object.startPosition);
       return child;
     }
-    async function evalUnaryExpression(node: UnaryExpression): Promise<PrimitiveProperty | PseudoPrimitiveProperty> {
+    async function evalUnaryExpression(node: UnaryExpression): Promise<PrimitivePropertyLike> {
       switch (node.operator.kind) {
         case SyntaxKind.PlusToken: return calc(createNumberProperty(1), await evalNode(node.operand), (a, b) => a * b);
         case SyntaxKind.MinusToken: return calc(createNumberProperty(-1), await evalNode(node.operand), (a, b) => a * b);
@@ -114,7 +115,7 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
       }
       return createStringProperty('');
     }
-    async function evalPrefixUnaryExpression(node: PrefixUnaryExpression): Promise<EvaluatedValue> {
+    async function evalPrefixUnaryExpression(node: PrefixUnaryExpression): Promise<PropertyLike> {
       const value = await evalNode(node.operand);
 
       return assignCalculatedNumber(value, (a, b) => {
@@ -126,7 +127,7 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
         return undefined;
       });
     }
-    async function evalPostfixUnaryExpression(node: PostfixUnaryExpression): Promise<EvaluatedValue> {
+    async function evalPostfixUnaryExpression(node: PostfixUnaryExpression): Promise<PropertyLike> {
       const value = await evalNode(node.operand);
 
       await assignCalculatedNumber(value, (a, b) => {
@@ -139,7 +140,7 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
       });
       return value;
     }
-    async function evalBinaryExpression(node: BinaryExpression): Promise<PrimitiveProperty | PseudoPrimitiveProperty> {
+    async function evalBinaryExpression(node: BinaryExpression): Promise<PrimitivePropertyLike> {
       const leftValue = await evalNode(node.left);
       const operator = node.operator;
       const rightValue = await evalNode(node.right);
@@ -205,31 +206,30 @@ export const createEvaluator = (session: Session, warningReporter?: (message: st
       return throwError(`An unknown operator "${node.operator.text}" was specified.`);
     }
     // #region utils
-    async function assignCalculatedNumber(property: EvaluatedValue, calcCallback: CalcCallback): Promise<Property> {
+    async function assignCalculatedNumber(property: PropertyLike, calcCallback: CalcCallback): Promise<PropertyLike> {
       const calculated = calc(property, createNumberProperty(1), calcCallback);
       return setProperty(session, property.name, calculated.value, 'integer', property.contextId === -1 ? 0 : property.contextId);
     }
-    async function evalCustomNode(node: CustomNode): Promise<EvaluatedValue> {
+    async function evalCustomNode(node: CustomNode): Promise<PropertyLike> {
       if (isQueryNode(node)) {
         return requestQuery(node);
       }
       return createUnsetProperty('');
     }
-    async function requestQuery(queryOrNode: string | (CustomNode & { query: string; name?: string }), contextId?: dbgp.ContextId): Promise<Property> {
+    async function requestQuery(queryOrNode: string | (CustomNode & { query: string; name?: string }), contextId?: dbgp.ContextId): Promise<PropertyLike> {
       const query = typeof queryOrNode === 'string' ? queryOrNode : queryOrNode.query;
       // console.log(query);
       const property = await getProperty(session, query, contextId);
       if (property === undefined) {
         return {
-          constant: true,
-          contextId,
+          contextId: -1,
           stackLevel: 0,
           name: typeof queryOrNode === 'object' ? (queryOrNode.name ?? query) : query,
           fullName: query,
           type: 'undefined',
           value: '',
           size: 0,
-        } as PrimitiveProperty;
+        } as PseudoPrimitiveProperty;
       }
 
       // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/326#issuecomment-2088898249

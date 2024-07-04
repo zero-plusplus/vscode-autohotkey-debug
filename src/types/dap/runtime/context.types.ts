@@ -21,6 +21,10 @@ export interface Context extends ContextIdentifier {
 
 // #region property
 export type Property = PrimitiveProperty | ObjectProperty;
+export type PropertyLike = Property | PseudoProperty;
+export type PrimitivePropertyLike = PrimitiveProperty | PseudoPrimitiveProperty;
+export type PseudoProperty = PseudoPrimitiveProperty | PseudoObjectProperty;
+export type ObjectPropertyLike = ObjectProperty | PseudoObjectProperty;
 export interface PropertyBase {
   contextId: dbgp.ContextId;
   stackLevel: number;
@@ -57,18 +61,21 @@ export interface ObjectProperty extends PropertyBase {
   page: number;
   pageSize: number;
 }
-export interface MapLikeProperty extends ObjectProperty {
-  count: number;
-}
-export interface ArrayLikeProperty extends ObjectProperty {
-  keys: number;
-  length: number;
-}
-export type PseudoProperty = PseudoPrimitiveProperty;
 export interface PseudoPrimitiveProperty extends PseudoPropertyBase {
   type: dbgp.PrimitiveDataType;
   constant: undefined;
   value: string;
+}
+export interface PseudoObjectProperty extends PseudoPropertyBase {
+  type: dbgp.ObjectDataType;
+  className: string;
+  facet: dbgp.PropertyFacet;
+  hasChildren: boolean;
+  numberOfChildren: number | undefined;
+  address: number;
+  children?: Property[];
+  page: number;
+  pageSize: number;
 }
 export interface ContextStatus {
   runState: dbgp.RunState;

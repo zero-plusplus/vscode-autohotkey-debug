@@ -1,5 +1,5 @@
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { Context, ContextIdentifier, ContextStatus, ExecutionContextManager, ObjectProperty, PrimitiveProperty, PrimitivePropertyLike, Property, PropertyLike, StackFrame } from '../../types/dap/runtime/context.types';
+import { Context, ContextIdentifier, ContextStatus, ExecutionContextManager, ObjectProperty, ObjectPropertyLike, PrimitiveProperty, PrimitivePropertyLike, Property, PropertyLike, PseudoObjectProperty, PseudoPrimitiveProperty, StackFrame } from '../../types/dap/runtime/context.types';
 import { CommandArg, Session } from '../../types/dbgp/session.types';
 import { isArrayIndexName, isNamedPropertyName, toFsPath } from '../../dbgp/utils';
 import { isNumberLike } from '../../tools/predicate';
@@ -275,7 +275,11 @@ export async function getNonEnumerableProperties(session: Session, name: string,
     return children;
   }
 }
-export async function getPropertyNumberOfChildren(session: Session, property: ObjectProperty): Promise<number> {
+export async function getPropertyNumberOfChildren(session: Session, property: ObjectPropertyLike): Promise<number> {
+  if (isPseudoObjectProperty(property)) {
+    return property.children?.filter((child) => isArrayIndexName(child.name)).length ?? 0;
+  }
+
   if (property.numberOfChildren !== undefined) {
     return property.numberOfChildren;
   }
@@ -293,7 +297,11 @@ export async function getPropertyNonEnumerableCount(session: Session, name: stri
   }
   return countBy(children, (child) => !isArrayIndexName(child.name));
 }
-export async function getPropertyCount(session: Session, property: ObjectProperty): Promise<number> {
+export async function getPropertyCount(session: Session, property: ObjectPropertyLike): Promise<number> {
+  if (isPseudoObjectProperty(property)) {
+    return getPropertyNumberOfChildren(session, property);
+  }
+
   if (2.0 <= session.ahkVersion.mejor) {
     const length = await getPrimitivePropertyValue(session, `${property.fullName}.Count`, property.contextId, property.stackLevel);
     if (isNumberLike(length)) {
@@ -313,7 +321,11 @@ export async function getPropertyCount(session: Session, property: ObjectPropert
   }
   return maxIndex;
 }
-export async function getPropertyLength(session: Session, property: ObjectProperty): Promise<number> {
+export async function getPropertyLength(session: Session, property: ObjectPropertyLike): Promise<number> {
+  if (isPseudoObjectProperty(property)) {
+    return getPropertyNumberOfChildren(session, property);
+  }
+
   if (2.0 <= session.ahkVersion.mejor) {
     const length = await getPrimitivePropertyValue(session, `${property.fullName}.Length`, property.contextId, property.stackLevel);
     if (isNumberLike(length)) {
@@ -348,6 +360,9 @@ export async function getPropertyLength(session: Session, property: ObjectProper
 export function isProperty(value: any): value is Property {
   return isPrimitiveProperty(value) || isObjectProperty(value);
 }
+export function isPropertyLike(value: any): value is PropertyLike {
+  return isPrimitivePropertyLike(value) || isObjectPropertyLike(value);
+}
 export function isPrimitiveProperty(value: any): value is PrimitiveProperty {
   if (typeof value !== 'object') {
     return false;
@@ -362,6 +377,16 @@ export function isPrimitiveProperty(value: any): value is PrimitiveProperty {
     return hasField;
   });
 }
+export function isPrimitivePropertyLike(value: any): value is PrimitivePropertyLike {
+  return isPrimitiveProperty(value) || isPseudoPrimitiveProperty(value);
+}
+export function isPseudoPrimitiveProperty(value: any): value is PseudoPrimitiveProperty {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if ('contextId' in value && value.contextId === -1) {
+    return isPrimitiveProperty(value);
+  }
+  return false;
+}
 export function isObjectProperty(value: any): value is ObjectProperty {
   if (typeof value !== 'object') {
     return false;
@@ -374,6 +399,16 @@ export function isObjectProperty(value: any): value is ObjectProperty {
     }
     return hasField;
   });
+}
+export function isObjectPropertyLike(value: any): value is ObjectPropertyLike {
+  return isObjectProperty(value) || isPseudoObjectProperty(value);
+}
+export function isPseudoObjectProperty(value: any): value is PseudoObjectProperty {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  if ('contextId' in value && value.contextId === -1) {
+    return isPrimitiveProperty(value);
+  }
+  return false;
 }
 export function toProperties(dbgpProperty: dbgp.Property | dbgp.Property[] | undefined, contextId: dbgp.ContextId = 0, stackLevel = 0, __root = true): Property[] | undefined {
   if (!dbgpProperty) {

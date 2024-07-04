@@ -1,6 +1,5 @@
+import { PrimitivePropertyLike, PropertyLike } from '../../types/dap/runtime/context.types';
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { PrimitiveProperty, Property, PseudoPrimitiveProperty, PseudoProperty } from '../../types/dbgp/session.types';
-import { EvaluatedValue } from '../../types/tools/AELL/evaluator.types';
 import { CalcCallback, EquivCallback, NumberType } from '../../types/tools/AELL/utils.types';
 import { CustomNode } from '../../types/tools/autohotkey/parser/common.types';
 import { AutoHotkeyVersion, ParsedAutoHotkeyVersion } from '../../types/tools/autohotkey/version/common.types';
@@ -14,7 +13,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
   const isV2 = 2 <= version.mejor;
 
   const utils = {
-    createPseudoPrimitiveProperty: (value: string, type: dbgp.PrimitiveDataType): PseudoPrimitiveProperty => {
+    createPseudoPrimitiveProperty: (value: string, type: dbgp.PrimitiveDataType): PrimitivePropertyLike => {
       return {
         contextId: -1,
         stackLevel: 0,
@@ -26,7 +25,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
         value,
       };
     },
-    createPrimitiveProperty: (value: string, type: dbgp.PrimitiveDataType, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
+    createPrimitiveProperty: (value: string, type: dbgp.PrimitiveDataType, contextIdOrName: dbgp.ContextId | dbgp.ContextName = 0, stackLevel = 0): PrimitivePropertyLike => {
       const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
 
       return {
@@ -38,16 +37,16 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
         size: value.length,
         type,
         value,
-      } as PrimitiveProperty;
+      };
     },
-    createStringProperty: (value: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
+    createStringProperty: (value: string, contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitivePropertyLike => {
       const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
       if (contextId === -1) {
         return utils.createPseudoPrimitiveProperty(value, 'string');
       }
       return utils.createPrimitiveProperty(value, 'string', contextId, stackLevel);
     },
-    createNumberProperty: (value: string | number | bigint, contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
+    createNumberProperty: (value: string | number | bigint, contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitivePropertyLike => {
       const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
 
       if (!isNumberLike(value)) {
@@ -68,7 +67,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       }
       return utils.createPrimitiveProperty(propertyValue, dataType, contextId, stackLevel);
     },
-    createBooleanProperty: (value: string | boolean, contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
+    createBooleanProperty: (value: string | boolean, contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitivePropertyLike => {
       const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
 
       if (typeof value === 'boolean') {
@@ -94,7 +93,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       }
       return utils.createBooleanProperty(false, contextId, stackLevel);
     },
-    createUnsetProperty: (name: string, objectName = '', contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitiveProperty | PseudoPrimitiveProperty => {
+    createUnsetProperty: (name: string, objectName = '', contextIdOrName: dbgp.ContextId | dbgp.ContextName | -1 = -1, stackLevel = 0): PrimitivePropertyLike => {
       const contextId = typeof contextIdOrName === 'string' ? dbgp.contextIdByName[contextIdOrName] : contextIdOrName;
       if (contextId === -1) {
         return {
@@ -102,11 +101,11 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
           name,
           fullName: `${objectName}.${name}`,
           constant: undefined,
-          stackLevel,
+          stackLevel: 0,
           size: 0,
           type: 'undefined',
           value: '',
-        } as PseudoPrimitiveProperty;
+        };
       }
       return {
         contextId,
@@ -116,8 +115,8 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
         size: 0,
         type: 'undefined',
         value: '',
-        stackLevel: undefined,
-      } as PrimitiveProperty;
+        stackLevel,
+      };
     },
     /**
      * @template T
@@ -132,7 +131,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
      * @param {T | undefined} property
      * @returns
      */
-    createIdentifierProperty: <T extends Property | PseudoProperty>(...params: any[]): T => {
+    createIdentifierProperty: <T extends PropertyLike>(...params: any[]): T => {
       const name = String(params[0]);
       const objectName = String(params.length === 2 ? '' : params[1]);
       const property = (params.length === 3 ? params[2] : params[1]) as T | undefined;
@@ -145,7 +144,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
         fullName: objectName === '' ? name : `${objectName}.${name}`,
       };
     },
-    toNumberType: (property: Property | PseudoPrimitiveProperty | undefined): NumberType | undefined => {
+    toNumberType: (property: PropertyLike | undefined): NumberType | undefined => {
       switch (property?.type) {
         case 'string': {
           if (isNumberLike(property.value)) {
@@ -160,7 +159,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
 
       return undefined;
     },
-    toNumberByProperty: (property: Property | PseudoPrimitiveProperty | undefined): number | undefined => {
+    toNumberByProperty: (property: PropertyLike | undefined): number | undefined => {
       switch (property?.type) {
         case 'string':
         case 'integer':
@@ -176,7 +175,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
 
       return undefined;
     },
-    toBooleanPropertyByProperty: (property: EvaluatedValue | undefined): PrimitiveProperty | PseudoPrimitiveProperty => {
+    toBooleanPropertyByProperty: (property: PropertyLike | undefined): PrimitivePropertyLike => {
       if (!property) {
         return utils.createBooleanProperty(false);
       }
@@ -191,12 +190,12 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
       }
       return utils.createBooleanProperty(true, property.contextId, property.stackLevel);
     },
-    invertBoolean: (property: EvaluatedValue | undefined): PrimitiveProperty | PseudoPrimitiveProperty => {
+    invertBoolean: (property: PropertyLike | undefined): PrimitivePropertyLike => {
       const bool = utils.toBooleanPropertyByProperty(property);
       bool.value = bool.value === '1' ? '0' : '1';
       return bool;
     },
-    calc: (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: CalcCallback): PrimitiveProperty | PseudoPrimitiveProperty => {
+    calc: (leftValue: PropertyLike, rightValue: PropertyLike, callback: CalcCallback): PrimitivePropertyLike => {
       const left = utils.toNumberByProperty(leftValue);
       const right = utils.toNumberByProperty(rightValue);
 
@@ -215,7 +214,7 @@ export const createAELLUtils = (rawVersion: AutoHotkeyVersion | ParsedAutoHotkey
 
       return utils.createStringProperty('');
     },
-    equiv: (leftValue: EvaluatedValue, rightValue: EvaluatedValue, callback: EquivCallback): PrimitiveProperty | PseudoPrimitiveProperty => {
+    equiv: (leftValue: PropertyLike, rightValue: PropertyLike, callback: EquivCallback): PrimitivePropertyLike => {
       if (leftValue.type === 'object' || rightValue.type === 'object') {
         if (leftValue.type === 'object' && rightValue.type === 'object') {
           return utils.createBooleanProperty(callback(leftValue.address, rightValue.address));

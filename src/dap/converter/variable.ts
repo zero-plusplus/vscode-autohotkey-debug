@@ -1,13 +1,13 @@
-import { getContext, getEnumerableProperties, getNonEnumerableProperties, getProperty, getPropertyCount, getPropertyLength, getPropertyNumberOfChildren, isObjectProperty, isPrimitiveProperty } from '../runtime/context';
-import { ObjectProperty, PrimitiveProperty, Property } from '../../types/dap/runtime/context.types';
+import { getContext, getEnumerableProperties, getNonEnumerableProperties, getProperty, getPropertyCount, getPropertyLength, getPropertyNumberOfChildren, isObjectProperty, isObjectPropertyLike, isPrimitivePropertyLike } from '../runtime/context';
+import { ObjectPropertyLike, PrimitivePropertyLike, PropertyLike } from '../../types/dap/runtime/context.types';
 import { Session } from '../../types/dbgp/session.types';
 import { isArrayIndexName, isSpecialName, toJsStringByAhkString } from '../../dbgp/utils';
 import { VariablesReferenceManager } from '../../types/dap/adapter/utils.types';
 import { DapScope, DapVariable } from '../../types/dap/types';
 import { ParsedAutoHotkeyVersion } from '../../types/tools/autohotkey/version/common.types';
 
-export type VariablesReferenceBuilder = (property: Property) => number;
-export type DapVariableConverter = (property: Property) => Promise<DapVariable>;
+export type VariablesReferenceBuilder = (property: PropertyLike) => number;
+export type DapVariableConverter = (property: PropertyLike) => Promise<DapVariable>;
 
 // #region variable builders
 const maxDepth = 2;
@@ -17,6 +17,9 @@ export async function createVariablesByScope(session: Session, variablesReferenc
 }
 export async function createIndexedVariablesByVariable(session: Session, variablesReferenceManager: VariablesReferenceManager, variable: DapVariable, maxChildren: number, page?: number): Promise<DapVariable[]> {
   if (!variable.evaluateName) {
+    return [];
+  }
+  if (variable.contextId === -1) {
     return [];
   }
 
@@ -32,6 +35,9 @@ export async function createIndexedVariablesByVariable(session: Session, variabl
   return propertiesToVariables(properties, createConverter(session, variablesReferenceManager));
 }
 export async function createNamedVariablesByVariable(session: Session, variablesReferenceManager: VariablesReferenceManager, variable: DapVariable, maxChildren: number): Promise<DapVariable[]> {
+  if (variable.contextId === -1) {
+    return [];
+  }
   if (!variable.evaluateName) {
     return [];
   }
@@ -45,6 +51,9 @@ export async function createNamedVariablesByVariable(session: Session, variables
   return propertiesToVariables(properties, createConverter(session, variablesReferenceManager));
 }
 export async function createVariablesByVariable(session: Session, variablesReferenceManager: VariablesReferenceManager, variable: DapVariable, maxChildren: number, page?: number): Promise<DapVariable[]> {
+  if (variable.contextId === -1) {
+    return [];
+  }
   if (variable.evaluateName === undefined || variable.evaluateName === '') {
     return [];
   }
@@ -58,7 +67,7 @@ export async function createVariablesByVariable(session: Session, variablesRefer
 // #region variable builders
 
 // #region converter
-export async function propertiesToVariables(sourceProperty: Property | Property[] | undefined, converter: DapVariableConverter): Promise<DapVariable[]> {
+export async function propertiesToVariables(sourceProperty: PropertyLike | PropertyLike[] | undefined, converter: DapVariableConverter): Promise<DapVariable[]> {
   if (sourceProperty === undefined) {
     return [];
   }
@@ -71,16 +80,20 @@ export async function propertiesToVariables(sourceProperty: Property | Property[
   }
   return variables;
 }
+export async function propertyToVariable(sourceProperty: PropertyLike, converter: DapVariableConverter): Promise<DapVariable> {
+  const variable = await converter(sourceProperty);
+  return variable;
+}
 export function createConverter(session: Session, variablesReferenceManager: VariablesReferenceManager): DapVariableConverter {
-  return async(property: Property): Promise<DapVariable> => {
+  return async(property: PropertyLike): Promise<DapVariable> => {
     if (2.0 <= session.ahkVersion.mejor) {
       return converterForLatest(session, variablesReferenceManager, property);
     }
     return converterForV1_X(session, variablesReferenceManager, property);
   };
 }
-export async function converterForLatest(session: Session, variablesReferenceManager: VariablesReferenceManager, property: Property): Promise<DapVariable> {
-  if (isPrimitiveProperty(property)) {
+export async function converterForLatest(session: Session, variablesReferenceManager: VariablesReferenceManager, property: PropertyLike): Promise<DapVariable> {
+  if (isPrimitivePropertyLike(property)) {
     return toVariableByPrimitiveProperty(session.ahkVersion, property);
   }
 
@@ -137,8 +150,8 @@ export async function converterForLatest(session: Session, variablesReferenceMan
     pagingKind,
   };
 }
-export async function converterForV1_X(session: Session, variablesReferenceManager: VariablesReferenceManager, property: Property): Promise<DapVariable> {
-  if (isPrimitiveProperty(property)) {
+export async function converterForV1_X(session: Session, variablesReferenceManager: VariablesReferenceManager, property: PropertyLike): Promise<DapVariable> {
+  if (isPrimitivePropertyLike(property)) {
     return toVariableByPrimitiveProperty(session.ahkVersion, property);
   }
   const numberOfChildren = await getPropertyNumberOfChildren(session, property);
@@ -185,7 +198,7 @@ export async function converterForV1_X(session: Session, variablesReferenceManag
     pagingKind,
   };
 }
-export function toVariableByPrimitiveProperty(ahkVersion: ParsedAutoHotkeyVersion, property: PrimitiveProperty): DapVariable {
+export function toVariableByPrimitiveProperty(ahkVersion: ParsedAutoHotkeyVersion, property: PrimitivePropertyLike): DapVariable {
   return {
     contextId: property.contextId,
     type: property.type,
@@ -201,13 +214,13 @@ export function toVariableByPrimitiveProperty(ahkVersion: ParsedAutoHotkeyVersio
 
 // #region value and object preview builders
 const ellipsisChars = '…';
-const getPreviewChildren = (property: ObjectProperty, filter: (property: Property) => boolean, displayCount = 5): Property[] => {
+const getPreviewChildren = (property: ObjectPropertyLike, filter: (property: PropertyLike) => boolean, displayCount = 5): PropertyLike[] => {
   if (property.children === undefined) {
     return [];
   }
 
   const tryLimit = 50;
-  const previewProperties: Property[] = [];
+  const previewProperties: PropertyLike[] = [];
 
   const startIndexWithoutPseudoVariable = property.children.findIndex(((child) => !isSpecialName(child.name)));
   if (startIndexWithoutPseudoVariable === -1) {
@@ -229,12 +242,12 @@ const getPreviewChildren = (property: ObjectProperty, filter: (property: Propert
   }
   return previewProperties;
 };
-export function toValueByProperty(ahkVersion: ParsedAutoHotkeyVersion, property: Property, enumerableCount?: number, nonEnumerableCount?: number, pagingKind?: DapVariable['pagingKind'], __root = true): string {
-  return isObjectProperty(property)
+export function toValueByProperty(ahkVersion: ParsedAutoHotkeyVersion, property: PropertyLike, enumerableCount?: number, nonEnumerableCount?: number, pagingKind?: DapVariable['pagingKind'], __root = true): string {
+  return isObjectPropertyLike(property)
     ? toValueByObjectProperty(ahkVersion, property, enumerableCount, nonEnumerableCount, pagingKind, __root)
     : toValueByPrimitiveProperty(ahkVersion, property);
 }
-export function toValueByPrimitiveProperty(ahkVersion: ParsedAutoHotkeyVersion, property: PrimitiveProperty): string {
+export function toValueByPrimitiveProperty(ahkVersion: ParsedAutoHotkeyVersion, property: PrimitivePropertyLike): string {
   switch (property.type) {
     case 'string': return `"${toJsStringByAhkString(ahkVersion, property.value)}"`;
     case 'integer':
@@ -243,7 +256,7 @@ export function toValueByPrimitiveProperty(ahkVersion: ParsedAutoHotkeyVersion, 
   }
   return 'Not initialized';
 }
-export function toValueByObjectProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectProperty, enumerableCount?: number, nonEnumerableCount?: number, pagingKind?: DapVariable['pagingKind'], __root = true): string {
+export function toValueByObjectProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectPropertyLike, enumerableCount?: number, nonEnumerableCount?: number, pagingKind?: DapVariable['pagingKind'], __root = true): string {
   if (property.children === undefined) {
     return property.className;
   }
@@ -267,7 +280,7 @@ export function toValueByObjectProperty(ahkVersion: ParsedAutoHotkeyVersion, pro
   }
   return toValueByRecordLikeProperty(ahkVersion, property, nonEnumerableCount, __root);
 }
-export function toValueByRecordLikeProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectProperty, count?: number, __root = true): string {
+export function toValueByRecordLikeProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectPropertyLike, count?: number, __root = true): string {
   if (!__root) {
     return property.className;
   }
@@ -279,7 +292,7 @@ export function toValueByRecordLikeProperty(ahkVersion: ParsedAutoHotkeyVersion,
   }
   return `${property.className} {${samples.join(', ')}}`;
 }
-export function toValueByMapLikeProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectProperty, enumerableCount: number, __root = true): string {
+export function toValueByMapLikeProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectPropertyLike, enumerableCount: number, __root = true): string {
   if (!__root) {
     return property.className;
   }
@@ -291,7 +304,7 @@ export function toValueByMapLikeProperty(ahkVersion: ParsedAutoHotkeyVersion, pr
   }
   return `${property.className} {${samples.join(', ')}}`;
 }
-export function toValueByArrayLikeProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectProperty, enumerableCount: number, __root = true): string {
+export function toValueByArrayLikeProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectPropertyLike, enumerableCount: number, __root = true): string {
   if (!__root) {
     return property.className;
   }
@@ -303,16 +316,16 @@ export function toValueByArrayLikeProperty(ahkVersion: ParsedAutoHotkeyVersion, 
   }
   return `${property.className}(${enumerableCount}) [${samples.join(', ')}]`;
 }
-export function toValueByCallableProperty(property: ObjectProperty, __root = true): string {
+export function toValueByCallableProperty(property: ObjectPropertyLike, __root = true): string {
   if (!__root) {
     return 'ƒ';
   }
   return `${property.className} ƒ`;
 }
-export function toValueByClassProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectProperty, __root = true): string {
+export function toValueByClassProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectPropertyLike, __root = true): string {
   return property.className;
 }
-export function toValueByPrototypeProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectProperty, __root = true): string {
+export function toValueByPrototypeProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectPropertyLike, __root = true): string {
   return property.className;
 }
 
