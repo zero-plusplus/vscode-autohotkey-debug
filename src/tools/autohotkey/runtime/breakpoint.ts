@@ -1,7 +1,7 @@
-import { Session } from '../../types/dbgp/session.types';
-import { Breakpoint, BreakpointData, BreakpointManager, BreakpointWithLine, ExceptionBreakpoint, LineBreakpoint, LineBreakpointData } from '../../types/dap/runtime/breakpoint.types';
-import { toDbgpFileName } from '../../dbgp/utils';
-import { DbgpError } from '../../dbgp/error';
+import { Session } from '../../../types/dbgp/session.types';
+import { Breakpoint, BreakpointData, BreakpointManager, BreakpointWithLine, ExceptionBreakpoint, LineBreakpoint, LineBreakpointData } from '../../../types/tools/autohotkey/runtime/breakpoint.types';
+import { toDbgpFileName } from '../../../dbgp/utils';
+import { DbgpError } from '../../../dbgp/error';
 
 export const createBreakpointManager = (session: Session): BreakpointManager => {
   const $breakpointsById = new Map<number, Breakpoint>();

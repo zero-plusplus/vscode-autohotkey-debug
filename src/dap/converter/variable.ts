@@ -1,5 +1,5 @@
-import { getContext, getEnumerableProperties, getNonEnumerableProperties, getProperty, getPropertyCount, getPropertyLength, getPropertyNumberOfChildren, isObjectProperty, isObjectPropertyLike, isPrimitivePropertyLike } from '../runtime/context';
-import { ObjectPropertyLike, PrimitivePropertyLike, PropertyLike } from '../../types/dap/runtime/context.types';
+import { getContext, getEnumerableProperties, getNonEnumerableProperties, getProperty, getPropertyCount, getPropertyLength, getPropertyNumberOfChildren, isObjectProperty, isObjectPropertyLike, isPrimitivePropertyLike, reloadObjectProperty } from '../../tools/autohotkey/runtime/context';
+import { ObjectPropertyLike, PrimitivePropertyLike, PropertyLike } from '../../types/tools/autohotkey/runtime/context.types';
 import { Session } from '../../types/dbgp/session.types';
 import { isArrayIndexName, isSpecialName, toJsStringByAhkString } from '../../dbgp/utils';
 import { VariablesReferenceManager } from '../../types/dap/adapter/utils.types';

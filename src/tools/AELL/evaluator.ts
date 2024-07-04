@@ -1,5 +1,5 @@
-import { getContexts, getProperty, setProperty } from '../../dap/runtime/context';
-import { PrimitivePropertyLike, PropertyLike } from '../../types/dap/runtime/context.types';
+import { getContexts, getProperty, setProperty } from '../autohotkey/runtime/context';
+import { PrimitivePropertyLike, PropertyLike } from '../../types/tools/autohotkey/runtime/context.types';
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { PseudoPrimitiveProperty, Session } from '../../types/dbgp/session.types';
 import { AELLEvaluator } from '../../types/tools/AELL/evaluator.types';

@@ -1,10 +1,10 @@
-import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { Context, ContextIdentifier, ContextStatus, ExecutionContextManager, ObjectProperty, ObjectPropertyLike, PrimitiveProperty, PrimitivePropertyLike, Property, PropertyLike, PseudoObjectProperty, PseudoPrimitiveProperty, StackFrame } from '../../types/dap/runtime/context.types';
-import { CommandArg, Session } from '../../types/dbgp/session.types';
-import { isArrayIndexName, isNamedPropertyName, toFsPath } from '../../dbgp/utils';
-import { isNumberLike } from '../../tools/predicate';
-import { countBy } from '../../tools/utils/countBy';
-import { repeatUntilAsync } from '../../tools/utils';
+import * as dbgp from '../../../types/dbgp/AutoHotkeyDebugger.types';
+import { Context, ContextIdentifier, ContextStatus, ExecutionContextManager, ObjectProperty, ObjectPropertyLike, PrimitiveProperty, PrimitivePropertyLike, Property, PropertyLike, PseudoObjectProperty, PseudoPrimitiveProperty, StackFrame } from '../../../types/tools/autohotkey/runtime/context.types';
+import { CommandArg, Session } from '../../../types/dbgp/session.types';
+import { isArrayIndexName, isNamedPropertyName, toFsPath } from '../../../dbgp/utils';
+import { isNumberLike } from '../../predicate';
+import { countBy } from '../../utils/countBy';
+import { repeatUntilAsync } from '../../utils';
 
 export const createExecutionContextManager = (session: Session): ExecutionContextManager => {
   const context: ExecutionContextManager = {

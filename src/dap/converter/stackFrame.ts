@@ -1,5 +1,5 @@
 import * as path from 'path';
-import { StackFrame } from '../../types/dap/runtime/context.types';
+import { StackFrame } from '../../types/tools/autohotkey/runtime/context.types';
 import { DapStackFrame } from '../../types/dap/types';
 import { FrameIdManager } from '../../types/dap/adapter/utils.types';
 

@@ -1,5 +1,5 @@
 import { VariablesReferenceManager } from '../../types/dap/adapter/utils.types';
-import { Context } from '../../types/dap/runtime/context.types';
+import { Context } from '../../types/tools/autohotkey/runtime/context.types';
 import { DapScope } from '../../types/dap/types';
 
 export function contextsToScopes(variablesReferenceManager: VariablesReferenceManager, contexts: Context[]): DapScope[] {

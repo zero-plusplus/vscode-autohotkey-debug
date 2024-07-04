@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import { TemporaryResource, createTempDirectoryWithFile } from '../../src/tools/temp';
 import { utf8BomText } from '../../src/tools/utils/checkUtf8WithBom';
-import { createScriptRuntimeLauncher } from '../../src/dap/runtime/launcher';
+import { createScriptRuntimeLauncher } from '../../src/tools/autohotkey/runtime/launcher';
 import { createDefaultDebugConfig } from '../../src/client/config/default';
-import { ScriptRuntime } from '../../src/types/dap/runtime/scriptRuntime.types';
+import { ScriptRuntime } from '../../src/types/tools/autohotkey/runtime/scriptRuntime.types';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../src/tools/autohotkey';
 import { CallStack } from '../../src/types/dbgp/session.types';
 import { validateDebugConfig } from '../../src/client/config/validator';

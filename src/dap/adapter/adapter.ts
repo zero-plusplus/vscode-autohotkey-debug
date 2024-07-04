@@ -24,7 +24,7 @@ import { setVariableRequest } from './requests/setVariableRequest';
 import { setExpressionRequest } from './requests/setExpressionRequest';
 import { completionsRequest } from './requests/completionsRequest';
 import { evaluateRequest } from './requests/evaluateRequest';
-import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
+import { ScriptRuntime } from '../../types/tools/autohotkey/runtime/scriptRuntime.types';
 import { ExecResult } from '../../types/dbgp/session.types';
 import { MessageCategory, StopReason } from '../../types/dap/adapter/adapter.types';
 import { AELLEvaluator } from '../../types/tools/AELL/evaluator.types';

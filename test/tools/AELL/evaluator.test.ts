@@ -2,9 +2,9 @@
 import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
 import { createEvaluator } from '../../../src/tools/AELL/evaluator';
 import { TemporaryResource, createTempDirectoryWithFile } from '../../../src/tools/temp';
-import { ScriptRuntime } from '../../../src/types/dap/runtime/scriptRuntime.types';
+import { ScriptRuntime } from '../../../src/types/tools/autohotkey/runtime/scriptRuntime.types';
 import { AELLEvaluator } from '../../../src/types/tools/AELL/evaluator.types';
-import { createScriptRuntimeLauncher } from '../../../src/dap/runtime/launcher';
+import { createScriptRuntimeLauncher } from '../../../src/tools/autohotkey/runtime/launcher';
 import { createDefaultDebugConfig } from '../../../src/client/config/default';
 import { utf8BomText } from '../../../src/tools/utils/checkUtf8WithBom';
 import { defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2 } from '../../../src/tools/autohotkey';

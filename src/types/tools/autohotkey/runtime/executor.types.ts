@@ -1,5 +1,5 @@
-import * as dbgp from '../../dbgp/AutoHotkeyDebugger.types';
-import { Time } from '../../tools/time.types';
+import * as dbgp from '../../../dbgp/AutoHotkeyDebugger.types';
+import { Time } from '../../time.types';
 import { StackFrame } from './context.types';
 
 export interface ExecResult {

@@ -1,9 +1,9 @@
-import { measureAsyncExecutionTime } from '../../tools/time';
-import { BreakpointManager } from '../../types/dap/runtime/breakpoint.types';
-import { ExecutionContextManager } from '../../types/dap/runtime/context.types';
-import { ContinuationCommandExecutor, ExecResult } from '../../types/dap/runtime/executor.types';
-import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
-import { Session } from '../../types/dbgp/session.types';
+import { measureAsyncExecutionTime } from '../../time';
+import { BreakpointManager } from '../../../types/tools/autohotkey/runtime/breakpoint.types';
+import { ExecutionContextManager } from '../../../types/tools/autohotkey/runtime/context.types';
+import { ContinuationCommandExecutor, ExecResult } from '../../../types/tools/autohotkey/runtime/executor.types';
+import * as dbgp from '../../../types/dbgp/AutoHotkeyDebugger.types';
+import { Session } from '../../../types/dbgp/session.types';
 
 export const createContinuationCommandExecutor = (session: Session, contextManager: ExecutionContextManager, breakpointManager: BreakpointManager): ContinuationCommandExecutor => {
   const exec = async(command: dbgp.ContinuationCommandName, oldResult?: ExecResult): Promise<ExecResult> => {

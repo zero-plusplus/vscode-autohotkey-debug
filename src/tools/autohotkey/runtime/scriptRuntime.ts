@@ -1,6 +1,6 @@
-import { safeCall } from '../../tools/utils';
-import { ScriptRuntime } from '../../types/dap/runtime/scriptRuntime.types';
-import { Session } from '../../types/dbgp/session.types';
+import { safeCall } from '../../utils';
+import { ScriptRuntime } from '../../../types/tools/autohotkey/runtime/scriptRuntime.types';
+import { Session } from '../../../types/dbgp/session.types';
 import { createBreakpointManager } from './breakpoint';
 import { createContinuationCommandExecutor } from './executor';
 import { createExecutionContextManager } from './context';

@@ -1,5 +1,5 @@
-import * as dbgp from '../../dbgp/AutoHotkeyDebugger.types';
-import { CommandArg } from '../../dbgp/session.types';
+import * as dbgp from '../../../dbgp/AutoHotkeyDebugger.types';
+import { CommandArg } from '../../../dbgp/session.types';
 
 // #region context
 export interface StackFrame {

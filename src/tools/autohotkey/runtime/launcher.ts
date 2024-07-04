@@ -1,10 +1,10 @@
 import * as path from 'path';
-import { createDebugServer } from '../../dbgp/session';
-import { ScriptRuntime, ScriptRuntimeLauncher } from '../../types/dap/runtime/scriptRuntime.types';
+import { createDebugServer } from '../../../dbgp/session';
+import { ScriptRuntime, ScriptRuntimeLauncher } from '../../../types/tools/autohotkey/runtime/scriptRuntime.types';
 import { spawn } from 'child_process';
-import { attachAutoHotkeyScript } from '../../tools/autohotkey';
-import { NormalizedDebugConfig } from '../../types/dap/config.types';
-import { AutoHotkeyProcess, Session } from '../../types/dbgp/session.types';
+import { attachAutoHotkeyScript } from '..';
+import { NormalizedDebugConfig } from '../../../types/dap/config.types';
+import { AutoHotkeyProcess, Session } from '../../../types/dbgp/session.types';
 import { createScriptRuntime } from './scriptRuntime';
 
 export function launchAutoHotkeyProcess(config: Readonly<NormalizedDebugConfig>): AutoHotkeyProcess {

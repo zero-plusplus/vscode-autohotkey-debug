@@ -1,9 +1,9 @@
-import { NormalizedDebugConfig } from '../config.types';
-import { ExecResult, ScriptStatus, Session } from '../../dbgp/session.types';
+import { NormalizedDebugConfig } from '../../../dap/config.types';
+import { ExecResult, ScriptStatus, Session } from '../../../dbgp/session.types';
 import { BreakpointManager } from './breakpoint.types';
 import { ContinuationCommandExecutor } from './executor.types';
 import { ExecutionContextManager } from './context.types';
-import { ParsedAutoHotkeyVersion } from '../../tools/autohotkey/version/common.types';
+import { ParsedAutoHotkeyVersion } from '../version/common.types';
 
 export type RunCommand = string; // e.g. AutoHotkey.exe /Debug script.ahk
 export type LaunchMethod =

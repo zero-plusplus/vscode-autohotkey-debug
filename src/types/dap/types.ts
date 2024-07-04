@@ -1,6 +1,6 @@
 import * as dbgp from '../dbgp/AutoHotkeyDebugger.types';
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { Property, PseudoProperty } from './runtime/context.types';
+import { Property, PseudoProperty } from '../tools/autohotkey/runtime/context.types';
 
 export type DapCallStack = DapStackFrame[];
 export interface DapStackFrame extends DebugProtocol.StackFrame {

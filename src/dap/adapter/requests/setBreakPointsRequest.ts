@@ -1,6 +1,6 @@
 import { DebugProtocol } from '@vscode/debugprotocol';
 import { AutoHotkeyDebugAdapter } from '../adapter';
-import { LineBreakpoint, LineBreakpointData } from '../../../types/dap/runtime/breakpoint.types';
+import { LineBreakpoint, LineBreakpointData } from '../../../types/tools/autohotkey/runtime/breakpoint.types';
 
 export const setBreakPointsRequest = async <R extends DebugProtocol.SetBreakpointsResponse>(adapter: AutoHotkeyDebugAdapter, response: R, args: DebugProtocol.SetBreakpointsArguments): Promise<R> => {
   if (!args.source.path) {

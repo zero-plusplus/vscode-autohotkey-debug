@@ -1,4 +1,4 @@
-import { PrimitivePropertyLike, PropertyLike } from '../../types/dap/runtime/context.types';
+import { PrimitivePropertyLike, PropertyLike } from '../../types/tools/autohotkey/runtime/context.types';
 import * as dbgp from '../../types/dbgp/AutoHotkeyDebugger.types';
 import { CalcCallback, EquivCallback, NumberType } from '../../types/tools/AELL/utils.types';
 import { CustomNode } from '../../types/tools/autohotkey/parser/common.types';
