@@ -135,13 +135,18 @@ export async function converterForLatest(session: Session, variablesReferenceMan
     }
   }
 
+  const property_preview = isObjectProperty(property) && property.children === undefined
+    ? await reloadObjectProperty(session, property, 1, 5, 0)
+    : property;
+  const valueOrObjectPreview = toValueByObjectProperty(session.ahkVersion, property_preview ?? property, enumerableCount, nonEnumerableCount, pagingKind);
+
   return {
     variablesReference,
     name: property.name,
     evaluateName: property.fullName,
     contextId: property.contextId,
     stackLevel: property.stackLevel,
-    value: toValueByObjectProperty(session.ahkVersion, property, enumerableCount, nonEnumerableCount, pagingKind),
+    value: valueOrObjectPreview,
     enumerableCount,
     nonEnumerableCount,
     numberOfChildren,
@@ -257,9 +262,6 @@ export function toValueByPrimitiveProperty(ahkVersion: ParsedAutoHotkeyVersion, 
   return 'Not initialized';
 }
 export function toValueByObjectProperty(ahkVersion: ParsedAutoHotkeyVersion, property: ObjectPropertyLike, enumerableCount?: number, nonEnumerableCount?: number, pagingKind?: DapVariable['pagingKind'], __root = true): string {
-  if (property.children === undefined) {
-    return property.className;
-  }
   if (property.className === 'Prototype') {
     return toValueByPrototypeProperty(ahkVersion, property, __root);
   }
@@ -277,6 +279,9 @@ export function toValueByObjectProperty(ahkVersion: ParsedAutoHotkeyVersion, pro
     if (pagingKind === 'map' && enumerableCount) {
       return toValueByMapLikeProperty(ahkVersion, property, enumerableCount, __root);
     }
+  }
+  if (property.children === undefined) {
+    return property.className;
   }
   return toValueByRecordLikeProperty(ahkVersion, property, nonEnumerableCount, __root);
 }
