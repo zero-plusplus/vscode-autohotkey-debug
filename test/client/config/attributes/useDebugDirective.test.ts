@@ -14,7 +14,7 @@ describe('useDebugDirective attribute', () => {
         ...createDefaultDebugConfig(''),
         useDebugDirective: true,
       });
-      expect(config.useDebugDirective).toBe(attributes.useDebugDirective.normalizeDefaultValue);
+      expect(config.useDebugDirective).toBe(attributes.useDebugDirective.normalizedDefaultValue);
     });
     test('normalize', async() => {
       const validateDebugConfig = createAttributesValidator([ attributes.useDebugDirective.validator ]);

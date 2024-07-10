@@ -2,15 +2,17 @@ import * as validators from '../../../tools/validator';
 import * as predicate from '../../../tools/predicate';
 import { AttributeCheckerFactory, AttributeValidator, DebugConfig } from '../../../types/dap/config.types';
 
-export const attributeName = 'useAutoJumpToError';
-export const defaultValue: DebugConfig['useAutoJumpToError'] = false;
+export const attributeName = 'maxChildren';
+export const defaultValue: DebugConfig['maxChildren'] = 1000;
 export const validator: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
   const checker = createChecker(attributeName);
   const validate = validators.createValidator(
-    predicate.isBoolean,
+    predicate.isNumber,
     [
-      validators.expectUndefined(() => false),
-      validators.expectBoolean((value) => value),
+      validators.expectUndefined(() => defaultValue),
+      validators.expectNumber((value: number) => {
+        return Math.abs(value);
+      }),
     ],
   );
 
@@ -18,4 +20,3 @@ export const validator: AttributeValidator = async(createChecker: AttributeCheck
   const validated = await validate(rawAttribute);
   checker.markValidated(validated);
 };
-

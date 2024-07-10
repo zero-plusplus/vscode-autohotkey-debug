@@ -2,14 +2,14 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 import JSONC from 'jsonc-parser';
-import { DebugConfig } from '../../types/dap/config.types';
+import { DebugConfig, DebugConfigValidator } from '../../types/dap/config.types';
 import { createDefaultDebugConfig } from '../config/default';
 import { readFileSync } from 'fs';
 import { deepDefaults } from '../../tools/utils';
 import * as attributes from '../config/attributes';
 import { createAttributesValidator } from '../config/validator';
 
-export const validateDebugConfig = createAttributesValidator([
+export const validateDebugConfig: DebugConfigValidator = createAttributesValidator([
   attributes.name.validator,
   attributes.type.validator,
   attributes.request.validator,
@@ -50,6 +50,9 @@ export const validateDebugConfig = createAttributesValidator([
   async warning(message) {
     await vscode.window.showWarningMessage(message);
   },
+  async error(err) {
+    await vscode.window.showErrorMessage(err.message);
+  },
 });
 
 
@@ -82,7 +85,7 @@ const debugConfigurationProvider: vscode.DebugConfigurationProvider = {
   },
 };
 
-export const debugConfigSubscribers = [
+export const debugConfigSubscribers: vscode.Disposable[] = [
   vscode.debug.registerDebugConfigurationProvider('autohotkey', debugConfigurationProvider),
 
   // Allow users to start debugging with a warning in case they misinterpret type as an AutoHotkey extension

@@ -9,7 +9,7 @@
  * In the unit test example above, you can specify a condition that hides the category if the `UnitTest` class does not exist, thereby preventing categories you are not interested in from being displayed.
  */
 import { LiteralUnion } from 'type-fest';
-import { ContextName } from '../dbgp/AutoHotkeyDebugger.types';
+import { ContextName, contextNames } from '../dbgp/AutoHotkeyDebugger.types';
 
 export type SourceName = ContextName;
 export type SourceSelector = '*' | SourceName;
@@ -69,7 +69,12 @@ export interface VariableAttributes {
   isStatic?: boolean;
 }
 
-export type DefinedCategoryName = SourceName | 'Builtin-Global' | 'UserDefined-Global';
+export const definedCategoryNames: readonly ['Local', 'Global', 'Static', 'Builtin-Global', 'UserDefined-Global'] = [
+  ...contextNames,
+  'Builtin-Global',
+  'UserDefined-Global',
+] as const;
+export type DefinedCategoryName = typeof definedCategoryNames[number];
 export interface VariableCategory {
   label: string;
   items: CategoryItem[];

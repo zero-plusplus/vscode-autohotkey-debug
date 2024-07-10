@@ -2,10 +2,11 @@
 import * as path from 'path';
 import { deepDefaults } from '../../tools/utils';
 import * as attributes from './attributes';
-import { AttributeChecker, AttributeCheckerFactoryUtils, AttributeValidator, DebugConfig, DebugConfigValidator, NormalizedDebugConfig } from '../../types/dap/config.types';
+import { AttributeChecker, AttributeCheckerFactory, AttributeCheckerFactoryUtils, AttributeValidator, DebugConfig, DebugConfigValidator, NormalizedDebugConfig } from '../../types/dap/config.types';
 import { AttributeFileNotFoundError, AttributeFormatError, AttributeTypeError, AttributeValueError, AttributeWarningError, ValidationPriorityError } from './error';
+import { NormalizationError, ValidationError } from '../../tools/validator/error';
 
-const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig, utils: AttributeCheckerFactoryUtils = {}): ((attributeName: K) => AttributeChecker<K>) => {
+const createAttributeCheckerFactory = <K extends keyof DebugConfig>(config: DebugConfig, utils: AttributeCheckerFactoryUtils = {}): ((attributeName: K) => AttributeChecker<K>) => {
   const validated: Record<string, boolean> = {};
   return (attributeName: K): AttributeChecker<K> => {
     return {
@@ -18,7 +19,7 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return config[attributeName];
       },
-      ref(attributeName) {
+      getByName(attributeName) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return config[attributeName];
       },
@@ -31,7 +32,7 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
       },
       markValidated(value?): void {
         validated[String(attributeName)] = true;
-        if (attributeName in config && value !== undefined) {
+        if (value !== undefined) {
           config[attributeName] = value;
         }
       },
@@ -67,21 +68,29 @@ const createAttributeFactory = <K extends keyof DebugConfig>(config: DebugConfig
 };
 
 export const createAttributesValidator = (validators: AttributeValidator[], utils: AttributeCheckerFactoryUtils = {}): DebugConfigValidator => {
-  const defaultErrorHandler = (err: Error): void => {
-    throw err;
-  };
   return async(config: DebugConfig, errorHandler?: (err: Error) => void): Promise<NormalizedDebugConfig> => {
-    const clonedConfig = deepDefaults({}, config);
+    const clonedConfig = deepDefaults({}, config) as DebugConfig;
 
-    const createChecker = createAttributeFactory(clonedConfig, utils);
+    const createChecker: AttributeCheckerFactory = createAttributeCheckerFactory(clonedConfig, utils);
     for await (const validate of validators) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        await validate(createChecker as any);
+        await validate(createChecker);
       }
       catch (err: unknown) {
+        if (err instanceof ValidationError) {
+          continue;
+        }
+        if (err instanceof NormalizationError) {
+          await utils.warning?.(err.message);
+          continue;
+        }
+
         if (err instanceof Error) {
-          (errorHandler ?? defaultErrorHandler)(err);
+          if (utils.error) {
+            await utils.error(err);
+            continue;
+          }
+          throw err;
         }
       }
     }
@@ -89,7 +98,7 @@ export const createAttributesValidator = (validators: AttributeValidator[], util
   };
 };
 
-export const validateDebugConfig = createAttributesValidator([
+export const validateDebugConfig: DebugConfigValidator = createAttributesValidator([
   attributes.name.validator,
   attributes.type.validator,
   attributes.request.validator,

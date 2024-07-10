@@ -32,7 +32,7 @@ describe('usePerfTips attribute', () => {
         ...createDefaultDebugConfig(''),
         usePerfTips: true,
       });
-      expect(config.usePerfTips).toBe(attributes.usePerfTips.recommendValue);
+      expect(config.usePerfTips).toBe(attributes.usePerfTips.normalizedDefaultValue);
     });
   });
 

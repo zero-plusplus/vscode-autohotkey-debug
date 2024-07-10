@@ -178,7 +178,8 @@ export const contextNameById: Record<number, ContextName> = {
   '2': 'Static',
 };
 export type ContextId = 0 | 1 | 2;
-export type ContextName = 'Local' | 'Global' | 'Static';
+export const contextNames = [ 'Local', 'Global', 'Static' ] as const;
+export type ContextName = typeof contextNames[number];
 export interface Context {
   attributes: {
     id: ContextId;
@@ -284,7 +285,7 @@ export const protocolErrorNumbers = [
   998,      // > An internal exception in the debugger occurred
   999,      // > Unknown error
 ] as const;
-export const errorNumbers = [
+export const errorNumbers: readonly [0, 1, 2, 3, 4, 5, 100, 101, 200, 201, 202, 203, 204, 205, 206, 207, 300, 301, 302, 900, 998, 999] = [
   ...commandParsingErrorNumbers,
   ...fileRelatedErrorNumbers,
   ...breakpointOrCodeflowErrorNumbers,

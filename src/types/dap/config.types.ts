@@ -13,13 +13,14 @@ export interface AttributeCheckerFactoryUtils {
   getLanguageId?: (programPath: string) => Promise<string>;
   getCurrentFile?: () => Promise<string | undefined>;
   warning?: (message: string) => Promise<void>;
+  error?: (err: Error) => Promise<void>;
 }
 export type AttributeCheckerFactory = <K extends keyof DebugConfig>(attributeName: K, utils?: AttributeCheckerFactoryUtils) => AttributeChecker<K>;
 export interface AttributeChecker<K extends keyof DebugConfig> {
   utils: AttributeCheckerFactoryUtils;
   rawConfig: DebugConfig;
   get: () => DebugConfig[K];
-  ref: <K extends keyof DebugConfig>(attributeName: K) => DebugConfig[K];
+  getByName: <K extends keyof DebugConfig>(attributeName: K) => DebugConfig[K];
   isValid: boolean;
   getDependency: <NK extends keyof NormalizedDebugConfig>(dependedAttributeName: NK) => NormalizedDebugConfig[NK];
   markValidated: (value?: DebugConfig[K]) => void;
@@ -94,10 +95,10 @@ export interface NormalizedDebugConfig extends Omit<DebugConfig, 'runtime_v1' | 
 
   variableCategories?: VariableCategory[];
 
-  usePerfTips: false | PerfTipsConfig;
+  usePerfTips?: PerfTipsConfig;
   useIntelliSenseInDebugging: boolean;
-  useDebugDirective: false | DebugDirectiveConfig;
-  useOutputDebug: false | OutputDebugConfig;
-  useAnnounce: AnnounceLevel;
-  useLoadedScripts: LoadedScriptsConfig;
+  useDebugDirective?: DebugDirectiveConfig;
+  useOutputDebug?: OutputDebugConfig;
+  useAnnounce?: AnnounceLevel;
+  useLoadedScripts?: LoadedScriptsConfig;
 }

@@ -1,32 +1,38 @@
+import * as validators from '../../../tools/validator';
+// import * as predicate from '../../../tools/predicate';
+import { AttributeCheckerFactory, AttributeValidator, DebugConfig, NormalizedDebugConfig } from '../../../types/dap/config.types';
 import { AnnounceLevel } from '../../../types/client/config/attributes/useAnnounce.types';
-import { AttributeValidator } from '../../../types/dap/config.types';
 
 export const attributeName = 'useAnnounce';
-export const defaultValue: AnnounceLevel = 'detail';
-export const announceLevels: AnnounceLevel[] = [ 'error', 'detail', 'develop' ];
-export const validator: AttributeValidator = async(createChecker): Promise<void> => {
+export const defaultValue: DebugConfig['useAnnounce'] = 'detail';
+export const validator: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
   const checker = createChecker(attributeName);
+  const validate = validators.createValidator(
+    isAnnouceLevel,
+    [
+      validators.expectUndefined((): NormalizedDebugConfig['useAnnounce'] => defaultValue),
+      validators.expectBoolean((value: boolean): NormalizedDebugConfig['useAnnounce'] => {
+        return value ? defaultValue : undefined;
+      }),
+      validators.expectString((value: string) => {
+        if (isAnnouceLevel(value)) {
+          return value;
+        }
+
+        checker.warning('');
+        return defaultValue;
+      }),
+    ],
+  );
 
   const rawAttribute = checker.get();
-  if (rawAttribute === undefined || rawAttribute === false) {
-    checker.markValidated(defaultValue);
-    return Promise.resolve();
-  }
-  if (rawAttribute === true) {
-    checker.markValidated(defaultValue);
-    return Promise.resolve();
-  }
-
-  if (typeof rawAttribute !== 'string') {
-    checker.throwTypeError('string');
-    return Promise.resolve();
-  }
-
-  if (announceLevels.includes(rawAttribute)) {
-    checker.markValidated(rawAttribute);
-    return Promise.resolve();
-  }
-
-  checker.throwValueError(announceLevels);
+  const validated = await validate(rawAttribute);
+  checker.markValidated(validated);
   return Promise.resolve();
+
+  // #region helpers
+  function isAnnouceLevel(value: any): value is AnnounceLevel {
+    return value === 'error' || value === 'detail';
+  }
+  // #endregion helpers
 };

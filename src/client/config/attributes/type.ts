@@ -1,22 +1,26 @@
-import { AttributeValidator } from '../../../types/dap/config.types';
+import * as validators from '../../../tools/validator';
+import * as predicate from '../../../tools/predicate';
+import { AttributeCheckerFactory, AttributeValidator, DebugConfig, NormalizedDebugConfig } from '../../../types/dap/config.types';
 
 export const attributeName = 'type';
-export const defaultValue = 'autohotkey';
-export const validator: AttributeValidator = async(createChecker): Promise<void> => {
+export const defaultValue: DebugConfig['type'] = 'autohotkey';
+export const validator: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
   const checker = createChecker(attributeName);
+  const validate = validators.createValidator(
+    (value: any): value is NormalizedDebugConfig['type'] => predicate.isString(value) && value === defaultValue,
+    [
+      validators.expectUndefined(() => defaultValue),
+      validators.expectString((value: string) => {
+        if (value === defaultValue) {
+          return value;
+        }
+        checker.warning(`The ${attributeName} attribute must be "${defaultValue}".\nSpecified: "${value}"`);
+        return defaultValue;
+      }),
+    ],
+  );
 
-  const rawType = checker.get();
-  if (typeof rawType !== 'string') {
-    checker.throwTypeError(defaultValue);
-    return Promise.resolve();
-  }
-
-  if (rawType === defaultValue) {
-    checker.markValidated(rawType);
-    return Promise.resolve();
-  }
-
-  checker.markValidated(defaultValue);
-  checker.warning(`The ${attributeName} attribute must be "${defaultValue}".`);
-  return Promise.resolve();
+  const rawAttribute = checker.get();
+  const validated = await validate(rawAttribute);
+  checker.markValidated(validated);
 };

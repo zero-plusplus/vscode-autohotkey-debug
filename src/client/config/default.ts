@@ -1,7 +1,7 @@
-import { NormalizedDebugConfig } from '../../types/dap/config.types';
+import { DebugConfig } from '../../types/dap/config.types';
 import * as attributes from './attributes';
 
-export const createDefaultDebugConfig = (program: string): NormalizedDebugConfig => {
+export const createDefaultDebugConfig = (program: string): DebugConfig => {
   return {
     name: attributes.name.defaultValue,
     type: attributes.type.defaultValue,

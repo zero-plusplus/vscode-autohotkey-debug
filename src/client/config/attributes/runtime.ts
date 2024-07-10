@@ -1,191 +1,114 @@
 import * as path from 'path';
-import { defaultAutoHotkeyInstallDir, defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2, defaultAutoHotkeyUxRuntimePath, getLaunchInfoByLauncher } from '../../../tools/autohotkey';
-import { fileExists } from '../../../tools/predicate';
-import { AttributeValidator } from '../../../types/dap/config.types';
+import * as validators from '../../../tools/validator';
+import * as predicate from '../../../tools/predicate';
+import { AttributeCheckerFactory, AttributeValidator, DebugConfig } from '../../../types/dap/config.types';
+import { defaultAutoHotkeyInstallDir, defaultAutoHotkeyRuntimeDir_v2, defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2, defaultAutoHotkeyUxRuntimePath, getLaunchInfoByLauncher } from '../../../tools/autohotkey';
+import { whereCommand } from '../../../tools/utils/whereCommand';
 
 export const attributeName = 'runtime';
-export const dependedAttributeName = 'program';
-export const defaultValue = '';
-
-export const validator: AttributeValidator = async(createChecker): Promise<void> => {
-  await validateByFileExists(createChecker);
-  await validateByRuntime_v1_v2(createChecker);
-  await validateByRuntimeOfMainScript(createChecker);
-
-  // Using an executable file to initialize the configuration is costly. Therefore, the AutoHotkey launcher's runtime select feature needs to be implemented here.
-  // await validateByAutoHotkeyLauncher(createChecker);
-  await validateByAutoHotkeyLauncherLike(createChecker);
-
-  await validateByCommandName(createChecker);
-  await validateByRelativePath(createChecker);
-  await validateByLanguageId(createChecker);
-
+export const defaultValue: DebugConfig['runtime'] = undefined;
+export const validator: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
   const checker = createChecker(attributeName);
-  if (!checker.isValid) {
-    const runtime = fileExists(defaultAutoHotkeyRuntimePath_v2)
-      ? defaultAutoHotkeyRuntimePath_v2
-      : defaultAutoHotkeyRuntimePath_v1;
-    checker.markValidatedPath(runtime);
-  }
-  return Promise.resolve();
-};
+  const validate = validators.createValidator(
+    predicate.fileExists,
+    checker.throwFileNotFoundError,
+    [
+      validators.expectUndefined(normalizeByUndefined),
+      validators.expectString(async(value: string) => {
+        // Case 1: If the value is an existing directory, it is treated as the AutoHotkey installation directory
+        if (predicate.directoryExists(value)) {
+          const installDir = value;
+          return normalizeByUndefined(undefined, installDir);
+        }
 
-export const validateByFileExists: AttributeValidator = async(createChecker): Promise<void> => {
-  const checker = createChecker(attributeName);
-  if (checker.isValid) {
-    return Promise.resolve();
-  }
+        // Case 2: An absolute path does not require normalisation
+        if (path.isAbsolute(value)) {
+          return value;
+        }
 
-  const rawRuntime = checker.get();
-  if (rawRuntime && fileExists(rawRuntime)) {
-    checker.markValidatedPath(rawRuntime);
-  }
-  return Promise.resolve();
-};
-export const validateByRuntime_v1_v2: AttributeValidator = async(createChecker): Promise<void> => {
-  const checker = createChecker(attributeName);
-  if (checker.isValid) {
-    return Promise.resolve();
-  }
+        // Case 3: Explicit relative path
+        if (value.startsWith('./')) {
+          return resolveAutoHotkeyRuntimePath(value);
+        }
 
-  const rawRuntime_v1 = checker.ref('runtime_v1');
-  const rawRuntime_v2 = checker.ref('runtime_v2');
-  if (rawRuntime_v1 && rawRuntime_v2) {
+        // Case 4: [Windows command](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/windows-commands)
+        // Convert Windows command name to full path
+        if (predicate.isValidWindowsFileName(value) && [ undefined, 'exe' ].includes(path.extname(value))) {
+          const commandFullPath = whereCommand(value);
+          if (commandFullPath) {
+            return commandFullPath;
+          }
+          // If not treated as a command name, the following cases are handled
+        }
+
+        // Case 5: Implicit relative path
+        return resolveAutoHotkeyRuntimePath(value);
+      }),
+    ],
+  );
+
+  const rawAttribute = checker.get();
+  const validated = await validate(rawAttribute);
+  checker.markValidated(validated);
+
+  // #region helpers
+  function resolveAutoHotkeyRuntimePath(filePath: string, installDir = defaultAutoHotkeyInstallDir): string {
+    return path.isAbsolute(filePath) ? filePath : path.resolve(installDir, filePath);
+  }
+  async function normalizeByUndefined(value: undefined, installDir = defaultAutoHotkeyInstallDir): Promise<string> {
     const program = checker.getDependency('program');
+    const runtime_v2 = checker.getByName('runtime_v2');
+    const runtime_v1 = checker.getByName('runtime_v1');
 
-    const languageId = await checker.utils.getLanguageId?.(program);
-    switch (languageId) {
-      case 'ahk':
-      case 'ahkh': {
-        checker.markValidatedPath(path.isAbsolute(rawRuntime_v1) ? rawRuntime_v1 : path.resolve(defaultAutoHotkeyInstallDir, rawRuntime_v1));
-        return Promise.resolve();
+    // Case 1: If a runtime is set for each version, assign by language ID. If the language ID cannot be retrieved, the v2 runtime is always allocated in priority
+    if (runtime_v2 && runtime_v1) {
+      if (checker.utils.getLanguageId) {
+        const languageId = await checker.utils.getLanguageId(program);
+        if (languageId === 'ahk' || languageId === 'ahkh') {
+          return resolveAutoHotkeyRuntimePath(runtime_v1, installDir);
+        }
       }
-      case 'ahk2':
-      case 'ahkh2': {
-        checker.markValidatedPath(path.isAbsolute(rawRuntime_v2) ? rawRuntime_v2 : path.resolve(defaultAutoHotkeyInstallDir, rawRuntime_v2));
-        return Promise.resolve();
+      return resolveAutoHotkeyRuntimePath(runtime_v2, installDir);
+    }
+    else if (runtime_v2) {
+      return resolveAutoHotkeyRuntimePath(runtime_v2, installDir);
+    }
+    else if (runtime_v1) {
+      return resolveAutoHotkeyRuntimePath(runtime_v1, installDir);
+    }
+
+    const extname = path.extname(program);
+    const dirname = path.dirname(program);
+    const filenameNoext = path.basename(program, extname);
+    const defaultRuntime = path.resolve(dirname, filenameNoext, 'exe');
+
+    // Case 2: [Default file name](https://www.autohotkey.com/docs/v2/Scripts.htm#defaultfile)
+    // If `program` can be treated as a default file name, assign its runtime path
+    if (predicate.fileExists(defaultRuntime)) {
+      return defaultRuntime;
+    }
+
+    // Case 3: If AutoHotkey Launcher exists, select the runtime from its information
+    if (predicate.fileExists(defaultAutoHotkeyUxRuntimePath)) {
+      const info = getLaunchInfoByLauncher(program);
+      if (info) {
+        if (predicate.fileExists(info.runtime)) {
+          return info.runtime;
+        }
+
+        // The info.requires version can be obtained, but for some reason the runtime may be an empty character. In that case, set the default value
+        if (info.runtime === '' && info.requires) {
+          const runtime = info.requires === '2' ? defaultAutoHotkeyRuntimePath_v2 : defaultAutoHotkeyRuntimePath_v1;
+          return runtime;
+        }
       }
-      default: break;
     }
-  }
 
-  if (rawRuntime_v2) {
-    checker.markValidatedPath(path.isAbsolute(rawRuntime_v2) ? rawRuntime_v2 : path.resolve(defaultAutoHotkeyInstallDir, rawRuntime_v2));
-    return Promise.resolve();
-  }
-  if (rawRuntime_v1) {
-    checker.markValidatedPath(path.isAbsolute(rawRuntime_v1) ? rawRuntime_v1 : path.resolve(defaultAutoHotkeyInstallDir, rawRuntime_v1));
-    return Promise.resolve();
-  }
-  return Promise.resolve();
-};
-export const validateByRuntimeOfMainScript: AttributeValidator = async(createChecker): Promise<void> => {
-  const checker = createChecker(attributeName);
-  if (checker.isValid) {
-    return Promise.resolve();
-  }
-
-  const program = checker.getDependency('program');
-  const dirPath = path.dirname(program);
-  const mainFileName = path.basename(program);
-  const runtime = path.resolve(dirPath, `${mainFileName}.exe`);
-  if (fileExists(runtime)) {
-    checker.markValidatedPath(runtime);
-    return Promise.resolve();
-  }
-  return Promise.resolve();
-};
-export const validateByAutoHotkeyLauncherLike: AttributeValidator = async(): Promise<void> => {
-  return Promise.resolve();
-};
-export const validateByAutoHotkeyLauncher: AttributeValidator = async(createChecker): Promise<void> => {
-  const checker = createChecker(attributeName);
-  if (checker.isValid) {
-    return Promise.resolve();
-  }
-
-  const rarRuntime = checker.get();
-  if (!rarRuntime) {
-    return Promise.resolve();
-  }
-
-  if (!fileExists(defaultAutoHotkeyUxRuntimePath)) {
-    return Promise.resolve();
-  }
-  const program = checker.getDependency('program');
-  const info = getLaunchInfoByLauncher(program);
-  if (!info) {
-    return Promise.resolve();
-  }
-
-  if (info.runtime === '') {
-    // The requires version can be obtained, but for some reason the runtime may be an empty character. In that case, set the default value
-    if (info.requires) {
-      const runtime = info.requires === '2' ? 'v2/AutoHotkey.exe' : 'Autohotkey.exe';
-      checker.markValidatedPath(runtime);
-      return Promise.resolve();
+    // Case 4: Default value
+    if (predicate.directoryExists(defaultAutoHotkeyRuntimeDir_v2)) {
+      return defaultAutoHotkeyRuntimeDir_v2;
     }
+    return defaultAutoHotkeyInstallDir;
   }
-
-  if (fileExists(info.runtime)) {
-    checker.markValidatedPath(info.runtime);
-  }
-  return Promise.resolve();
-};
-export const validateByCommandName: AttributeValidator = async(createChecker): Promise<void> => {
-  const checker = createChecker(attributeName);
-  if (checker.isValid) {
-    return Promise.resolve();
-  }
-
-  return Promise.resolve();
-};
-export const validateByRelativePath: AttributeValidator = async(createChecker): Promise<void> => {
-  const checker = createChecker(attributeName);
-  if (checker.isValid) {
-    return Promise.resolve();
-  }
-
-  const rawRuntime = checker.get();
-  if (!rawRuntime) {
-    return Promise.resolve();
-  }
-  if (path.isAbsolute(rawRuntime)) {
-    return Promise.resolve();
-  }
-
-  const runtime = path.resolve(defaultAutoHotkeyInstallDir, rawRuntime);
-  if (fileExists(runtime)) {
-    checker.markValidatedPath(runtime);
-    return Promise.resolve();
-  }
-  return Promise.resolve();
-};
-export const validateByLanguageId: AttributeValidator = async(createChecker): Promise<void> => {
-  const checker = createChecker(attributeName);
-  if (checker.isValid) {
-    return Promise.resolve();
-  }
-
-  const rawRuntime = checker.get();
-  if (!rawRuntime) {
-    return Promise.resolve();
-  }
-
-  const program = checker.getDependency('program');
-  const languageId = await checker.utils.getLanguageId?.(program);
-  switch (languageId) {
-    case 'ahk':
-    case 'ahkh': {
-      checker.markValidatedPath(defaultAutoHotkeyRuntimePath_v1);
-      return Promise.resolve();
-    }
-    case 'ahk2':
-    case 'ahkh2': {
-      checker.markValidatedPath(defaultAutoHotkeyRuntimePath_v2);
-      return Promise.resolve();
-    }
-    default: break;
-  }
-  return Promise.resolve();
+  // #endregion helpers
 };

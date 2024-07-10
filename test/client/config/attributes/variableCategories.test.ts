@@ -14,7 +14,7 @@ describe('variableCategories attribute', () => {
         ...createDefaultDebugConfig(''),
         variableCategories: 'recommend',
       });
-      expect(config.variableCategories).toBe(attributes.variableCategories.recommendValue);
+      expect(config.variableCategories).toBe(attributes.variableCategories.normalizedDefaultValue);
     });
     test('non-normalize', async() => {
       const validateDebugConfig = createAttributesValidator([ attributes.variableCategories.validator ]);
