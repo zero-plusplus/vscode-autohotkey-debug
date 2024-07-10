@@ -10,6 +10,7 @@
 			"node"
 		],
 
+		"isolatedDeclarations": true,
 		"outDir": "build",
 		"sourceMap": true,
 		"strict": true,

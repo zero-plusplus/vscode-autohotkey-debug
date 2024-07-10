@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import { fileExists } from '../predicate';
 
 export const utf8BomText = '\uFEFF';
-export const utf8BomCodes = [ 0xEF, 0xBB, 0xBF ];
+export const utf8BomCodes: number[] = [ 0xEF, 0xBB, 0xBF ];
 export const checkUtf8WithBomByFile = async(filePath: string): Promise<boolean> => {
   if (!fileExists(filePath)) {
     return false;

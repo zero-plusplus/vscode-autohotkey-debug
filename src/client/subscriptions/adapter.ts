@@ -7,4 +7,4 @@ const createInlineAutoHotkeyDebugAdapterFactory: DebugAdapterDescriptorFactory =
     return new DebugAdapterInlineImplementation(new AutoHotkeyDebugAdapter());
   },
 };
-export const debugAdapterSubscriber = vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', createInlineAutoHotkeyDebugAdapterFactory);
+export const debugAdapterSubscriber: vscode.Disposable = vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', createInlineAutoHotkeyDebugAdapterFactory);
