@@ -21,5 +21,9 @@ module.exports = [
   {
     ...typescript.config,
     ignores,
+    rules: {
+      ...typescript.config.rules,
+      '@typescript-eslint/no-inferrable-types': 'off', // There is a bug that causes the type to be any if the default value is set without specifying the type
+    },
   },
 ];
