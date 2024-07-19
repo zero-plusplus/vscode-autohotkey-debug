@@ -78,9 +78,9 @@ export function string(): StringValidatorRule {
       }
       return true;
     }) as StringValidatorRule,
-    enum: (...strings: string[]): typeof rule => {
+    enum: <Args extends string[]>(...strings: Args): typeof rule & ValidatorRuleBase<Args[number]> => {
       enumStrings = strings;
-      return rule;
+      return rule as typeof rule & ValidatorRuleBase<Args>;
     },
   };
   return rule;
