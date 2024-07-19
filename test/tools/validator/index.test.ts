@@ -3,6 +3,10 @@ import * as validators from '../../../src/tools/validator';
 
 describe('validator/normalizer', () => {
   test('object', async() => {
+    interface UseFoo {
+      useBar: boolean;
+      useBaz: boolean;
+    }
     const configRule = validators.object({
       name: validators.string(),
       type: validators.string().enum('launch', 'attach'),
@@ -11,7 +15,7 @@ describe('validator/normalizer', () => {
       }),
       port: validators.number().min(1024).max(65535),
       skipFiles: validators.array(validators.string()),
-      useFoo: validators.object({
+      useFoo: validators.template<UseFoo>({
         useBar: validators.boolean(),
         useBaz: validators.boolean(),
       }).normalize({

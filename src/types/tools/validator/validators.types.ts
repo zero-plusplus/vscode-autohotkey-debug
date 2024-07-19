@@ -70,6 +70,9 @@ export type PropertyValidationMap<R> = { [key in keyof R]: ValidatorRuleBase<any
 export interface ObjectValidatorRule<RuleMap extends Record<string, ValidatorRuleBase<any>>> extends ValidatorRuleBase<PickResultByMap<RuleMap>> {
   properties: RuleMap;
 }
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface TemplateValidatorRuleBase<RuleMap extends Record<string, ValidatorRuleBase<any>>> extends ObjectValidatorRule<RuleMap> {
+}
 export interface ArrayValidatorRule<Rule extends ValidatorRuleBase<any>> extends ValidatorRuleBase<PickResultsByRule<Rule>> {
   element: Rule;
 }
