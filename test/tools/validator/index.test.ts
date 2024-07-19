@@ -19,11 +19,13 @@ describe('validator/normalizer', () => {
           return { useBar: value, useBaz: value };
         },
       }),
+      alternativeAttribute: validators.alternative(validators.string(), validators.boolean()),
+      optionalAttribute: validators.optional(validators.boolean()),
     });
     const configSchema = validators.createSchema(configRule);
 
-    const rawConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: undefined, port: 9002, skipFiles: [ __filename ], useFoo: true };
-    const normalizedConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: __filename, port: 9002, skipFiles: [ __filename ], useFoo: { useBar: true, useBaz: true } };
+    const rawConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: undefined, port: 9002, skipFiles: [ __filename ], useFoo: true, alternativeAttribute: 'string' };
+    const normalizedConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: __filename, port: 9002, skipFiles: [ __filename ], useFoo: { useBar: true, useBaz: true }, alternativeAttribute: 'string' };
     expect(await configSchema(rawConfig)).toEqual(normalizedConfig);
 
     await expect(configSchema({})).rejects.toThrow();
