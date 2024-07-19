@@ -1,10 +1,10 @@
-import { Validator } from '../../types/tools/validator/common.types';
-import { ValidatorRuleBase } from '../../types/tools/validator/validators.types';
+import { Schema } from '../../types/tools/validator/schema.types';
+import { ValidatorRule } from '../../types/tools/validator/validators.types';
 import { ValidationError } from './error';
 
-export function createSchema<R>(rule: ValidatorRuleBase<R>): Validator<R> {
-  return async<V>(value: V): Promise<R> => {
-    const normalized = await rule.__normalizer(value) as V | R;
+export function createSchema<Rule extends ValidatorRule<any>>(rule: Rule): Schema<Rule> {
+  return async(value): ReturnType<Schema<Rule>> => {
+    const normalized = await rule.__normalizer(value) as ReturnType<Schema<Rule>>;
     if (rule.validator(normalized)) {
       return Promise.resolve(normalized);
     }

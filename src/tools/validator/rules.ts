@@ -1,16 +1,9 @@
 import * as predicate from '../predicate';
-import { ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, PropertyValidationMap, StringValidatorRule, ValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
+import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResult, PickResultByMap, PickResultByRule, StringValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
 import { equals } from '../equiv';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, InvalidEnumValueError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
-export function optional<T, U extends ValidatorRuleBase<T>>(validatorRule: U, defaultValue?: T): U {
-  return {
-    ...validatorRule,
-    optional: true,
-    default: defaultValue,
-  } as U;
-}
 function createBaseRule<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
   let normalizeMap: NormalizeMap<R> | undefined;
   const rule: ValidatorRuleBase<R> = {
@@ -49,12 +42,34 @@ function createBaseRule<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
   };
   return rule;
 }
+
+export function optional<Rule extends ValidatorRuleBase<any>>(validatorRule: Rule): OptionalValidatorRule<Rule> {
+  return {
+    ...validatorRule,
+    optional: true,
+  } as OptionalValidatorRule<Rule>;
+}
+export function alternative<Rules extends Array<ValidatorRuleBase<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
+  const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
+  const rule = createBaseRule((value: any): value is PickResult<Rules> => {
+    if (rule.optional) {
+      return true;
+    }
+
+    return alternativeRules.some((rule) => rule.validator(value));
+  }) as AlternativeValidatorRule<Rules>;
+  return rule;
+}
 export function string(): StringValidatorRule {
   const ignoreCase = false;
   let enumStrings: string[] | undefined;
 
   const rule: StringValidatorRule = {
     ...createBaseRule((value: any): value is string => {
+      if (rule.optional && value === undefined) {
+        return true;
+      }
+
       if (!predicate.isString(value)) {
         return false;
       }
@@ -72,9 +87,13 @@ export function string(): StringValidatorRule {
 }
 export function file(): StringValidatorRule {
   const baseRule = string();
-  return {
+  const rule: StringValidatorRule = {
     ...baseRule,
     validator: (value: any): value is string => {
+      if (rule.optional && value === undefined) {
+        return true;
+      }
+
       if (!predicate.isString(value)) {
         throw new ValidationError(value);
       }
@@ -84,12 +103,17 @@ export function file(): StringValidatorRule {
       return baseRule.validator(value);
     },
   };
+  return rule;
 }
 export function directory(): StringValidatorRule {
   const baseRule = string();
-  return {
+  const rule: StringValidatorRule = {
     ...baseRule,
     validator: (value: any): value is string => {
+      if (rule.optional && value === undefined) {
+        return true;
+      }
+
       if (!predicate.isString(value)) {
         throw new ValidationError(value);
       }
@@ -99,6 +123,7 @@ export function directory(): StringValidatorRule {
       return baseRule.validator(value);
     },
   };
+  return rule;
 }
 export function dir(): StringValidatorRule {
   return directory();
@@ -106,13 +131,15 @@ export function dir(): StringValidatorRule {
 export function path(): StringValidatorRule {
   const fileRule = file();
   const dirRule = directory();
-  return {
+
+  const rule: StringValidatorRule = {
     ...fileRule,
     ...dirRule,
     validator: (value: any): value is string => {
       return fileRule.validator(value) || dirRule.validator(value);
     },
   };
+  return rule;
 }
 export const number = (): NumberValidatorRule => {
   let limitMin: number | undefined;
@@ -120,6 +147,10 @@ export const number = (): NumberValidatorRule => {
 
   const rule: NumberValidatorRule = {
     ...createBaseRule((value: any): value is number => {
+      if (rule.optional && value === undefined) {
+        return true;
+      }
+
       if (!predicate.isNumber(value)) {
         return false;
       }
@@ -168,76 +199,93 @@ export const number = (): NumberValidatorRule => {
   return rule;
 };
 export function boolean(): BooleanValidatorRule {
-  return {
+  const rule: BooleanValidatorRule = {
     ...createBaseRule((value: any): value is boolean => {
+      if (rule.optional && value === undefined) {
+        return true;
+      }
+
       if (predicate.isBoolean(value)) {
         return true;
       }
       return false;
     }) as BooleanValidatorRule,
   };
+  return rule;
 }
 export function bool(): BooleanValidatorRule {
   return boolean();
 }
-export const object = <R extends Record<string, any>>(properties: PropertyValidationMap<R>): ObjectValidatorRule<R> => {
-  const baseRule = createBaseRule((value: any): value is R => {
-    if (!predicate.isObjectLiteral(value)) {
-      throw new ValidationError(value);
-    }
-
-    const valueKeys = Object.entries(value).map(([ key ]) => key).sort();
-    const propertyKeys = Object.entries(properties).map(([ key ]) => key).sort();
-
-    // If the value is an empty object, an error is raised unless the defined property is also an empty object
-    if (valueKeys.length === 0) {
-      if (propertyKeys.length === 0) {
+export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(properties: RuleMap): ObjectValidatorRule<RuleMap> {
+  const rule: ObjectValidatorRule<RuleMap> = {
+    ...createBaseRule((value: any): value is PickResult<RuleMap> => {
+      if (rule.optional && value === undefined) {
         return true;
       }
-      throw new ValidationError(value);
-    }
 
-    // Check if the value has a defined property
-    propertyKeys.forEach((key) => {
-      if (valueKeys.includes(key)) {
-        return;
-      }
-      throw new PropertyFoundNotError(value, key);
-    });
-
-    // Check each property
-    for (const [ key, childValue ] of Object.entries(value)) {
-      if (!(key in properties)) {
-        throw new PropertyAccessError(value, key);
+      if (!predicate.isObjectLiteral(value)) {
+        throw new ValidationError(value);
       }
 
-      const property = properties[key as keyof R];
-      if (!property.validator(childValue)) {
-        throw new PropertyValidationError(childValue, key);
+      const valueKeys = Object.entries(value).map(([ key ]) => key).sort();
+      const propertyKeys = Object.entries(properties).map(([ key ]) => key).sort();
+
+      // If the value is an empty object, an error is raised unless the defined property is also an empty object
+      if (valueKeys.length === 0) {
+        if (propertyKeys.length === 0) {
+          return true;
+        }
+        throw new ValidationError(value);
       }
-    }
-    return true;
-  });
-  return {
-    ...(baseRule as ObjectValidatorRule<R>),
-    __normalizer: async<V>(value: V): Promise<V | R> => {
+
+      // Check if the value has a defined property
+      propertyKeys.forEach((key) => {
+        const property = properties[key];
+        if (property.optional) {
+          return;
+        }
+        if (valueKeys.includes(key)) {
+          return;
+        }
+        throw new PropertyFoundNotError(value, key);
+      });
+
+      // Check each property
+      for (const [ key, childValue ] of Object.entries(value)) {
+        if (!(key in properties)) {
+          throw new PropertyAccessError(value, key);
+        }
+
+        const property = properties[key];
+        if (!property.validator(childValue)) {
+          throw new PropertyValidationError(childValue, key);
+        }
+      }
+      return true;
+    }) as ObjectValidatorRule<RuleMap>,
+    __normalizer: async<V>(value: V): Promise<PickResultByMap<RuleMap> | V> => {
       if (!predicate.isObjectLiteral(value)) {
         return value;
       }
 
-      const normalized = {} as R;
+      const normalized = {} as PickResultByMap<RuleMap>;
       for await (const [ key, childValue ] of Object.entries(value)) {
-        const property = properties[key as keyof R];
-        normalized[key as keyof R] = await property.__normalizer(childValue) as R[keyof R];
+        const property = properties[key];
+        normalized[key as keyof PickResultByMap<RuleMap>] = await property.__normalizer(childValue) as PickResultByMap<RuleMap>[typeof key];
       }
       return normalized;
     },
     properties,
   };
-};
-export const array = <R extends any[]>(element: ValidatorRule<R[number]>): ArrayValidatorRule<R> => {
-  return {
-    ...createBaseRule((value: any): value is R => {
+  return rule;
+}
+export const array = <Rule extends ValidatorRuleBase<any>>(element: Rule): ArrayValidatorRule<Rule> => {
+  const rule: ArrayValidatorRule<Rule> = {
+    ...createBaseRule((value: any): value is Array<PickResultByRule<Rule>> => {
+      if (rule.optional && value === undefined) {
+        return true;
+      }
+
       if (!Array.isArray(value)) {
         throw new ValidationError(value);
       }
@@ -251,18 +299,19 @@ export const array = <R extends any[]>(element: ValidatorRule<R[number]>): Array
         }
       });
       return true;
-    }) as ArrayValidatorRule<R>,
-    __normalizer: async<V>(value: V): Promise<R | V> => {
+    }) as ArrayValidatorRule<Rule>,
+    __normalizer: async<V>(value: V): Promise<Array<PickResultByRule<Rule>> | V> => {
       if (!Array.isArray(value)) {
         return value;
       }
 
-      const normalized = [] as unknown as R;
+      const normalized: Array<PickResultByRule<Rule>> = [];
       for await (const childValue of value) {
-        normalized.push(await element.__normalizer(childValue) as R[number]);
+        normalized.push(await element.__normalizer(childValue) as PickResultByRule<Rule>);
       }
       return normalized;
     },
     element,
   };
+  return rule;
 };

@@ -1,31 +1,65 @@
 import { TypePredicate } from '../predicate.types';
 
+export type PickResult<T extends ValidatorRule<any>> =
+  T extends ObjectValidatorRule<infer U>
+    ? PickResult<U>
+    : T extends ArrayValidatorRule<infer U>
+      ? PickResult<U>
+      : T extends AlternativeValidatorRule<infer U>
+        ? PickResult<U>[number]
+        : T extends OptionalValidatorRule<infer U>
+          ? PickResult<U> | undefined
+          : T extends StringValidatorRule
+            ? string
+            : T extends NumberValidatorRule
+              ? number
+              : T extends BooleanValidatorRule
+                ? boolean
+                : T extends Record<string, ValidatorRule<any>>
+                  ? { [key in keyof T]: PickResult<T[key]> }
+                  : T extends Array<ValidatorRule<infer U>>
+                    ? Array<PickResult<U>>
+                    : T extends ValidatorRuleBase<any>
+                      ? PickResultByRule<T>
+                      : never;
+
+export type PickResultByRule<T extends ValidatorRuleBase<any>> = T extends ValidatorRuleBase<infer U> ? U : never;
+export type PickResultByMap<T extends Record<string, ValidatorRule<any>>> = { [key in keyof T]: PickResult<T[key]> };
+export type PickResultByRules<T extends Array<ValidatorRule<any>>> =
+  T extends Array<infer U>
+    ? Array<PickResult<U>>
+    : never;
+
 export type Normalizer<V, R> = SyncNormalizer<V, R> | AsyncNormalizer<V, R>;
 export type SyncNormalizer<V, R> = (value: V) => V | R;
 export type AsyncNormalizer<V, R> = (value: V) => Promise<V | R>;
 
-export interface NormalizeMap<T> {
-  null?: Normalizer<null, T>;
-  undefined?: Normalizer<undefined, T>;
-  string?: Normalizer<string, T>;
-  number?: Normalizer<number, T>;
-  boolean?: Normalizer<boolean, T>;
-  object?: Normalizer<Record<string, any>, T>;
-  array?: Normalizer<any[], T>;
-  any?: Normalizer<any, T>;
+export interface NormalizeMap<R> {
+  null?: Normalizer<null, R>;
+  undefined?: Normalizer<undefined, R>;
+  string?: Normalizer<string, R>;
+  number?: Normalizer<number, R>;
+  boolean?: Normalizer<boolean, R>;
+  object?: Normalizer<Record<string, any>, R>;
+  array?: Normalizer<any[], R>;
+  any?: Normalizer<any, R>;
 }
-export interface ValidatorRuleBase<T> {
-  default: T | undefined;
+export interface ValidatorRuleBase<R> {
+  default: R | undefined;
   optional: boolean;
-  __normalizer: Normalizer<any, T>;
-  validator: TypePredicate<T>;
-  normalize: (normalizerOrNormalizeMap: Normalizer<any, T> | NormalizeMap<T>) => this;
+  __normalizer: Normalizer<any, any>;
+  validator: TypePredicate<R>;
+  normalize: (normalizerOrNormalizeMap: Normalizer<any, R> | NormalizeMap<R>) => this;
 }
-export type ValidatorRule<T extends Record<any, any> | any[]> =
-  | StringValidatorRule
-  | NumberValidatorRule
-  | BooleanValidatorRule
-  | (T extends any[] ? ArrayValidatorRule<T> : ObjectValidatorRule<T>);
+export type ValidatorRule<T> =
+  T extends string ? StringValidatorRule
+    : T extends number ? NumberValidatorRule
+      : T extends boolean ? BooleanValidatorRule
+        : T extends ValidatorRule<any>
+          ? ArrayValidatorRule<T>
+          : T extends Record<any, any>
+            ? ObjectValidatorRule<T>
+            : ValidatorRuleBase<T>;
 
 export interface StringValidatorRule extends ValidatorRuleBase<string> {
   enum: (...string: string[]) => this;
@@ -49,9 +83,15 @@ export interface NumberValidatorRule extends ValidatorRuleBase<number> {
 export interface BooleanValidatorRule extends ValidatorRuleBase<boolean> {
 }
 export type PropertyValidationMap<R> = { [key in keyof R]: ValidatorRule<any> };
-export interface ObjectValidatorRule<R extends Record<string, any>> extends ValidatorRuleBase<R> {
-  properties: { [key in keyof R]: ValidatorRule<R[keyof R]> };
+export interface ObjectValidatorRule<RuleMap extends Record<string, ValidatorRule<any>>> extends ValidatorRuleBase<PickResult<RuleMap>> {
+  properties: RuleMap;
 }
-export interface ArrayValidatorRule<R extends any[]> extends ValidatorRuleBase<R> {
-  element: ValidatorRule<R[number]>;
+export interface ArrayValidatorRule<Rule extends ValidatorRule<any>> extends ValidatorRuleBase<Array<PickResult<Rule>>> {
+  element: Rule;
+}
+export interface OptionalValidatorRule<Rule extends ValidatorRuleBase<any>> extends ValidatorRuleBase<PickResult<Rule> | undefined> {
+  optional: true;
+}
+export interface AlternativeValidatorRule<Rules extends Array<ValidatorRuleBase<any>>> extends ValidatorRuleBase<PickResult<Rules>> {
+  rules: Rules;
 }
