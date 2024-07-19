@@ -141,7 +141,7 @@ export function path(): StringValidatorRule {
   };
   return rule;
 }
-export const number = (): NumberValidatorRule => {
+export function number(): NumberValidatorRule {
   let limitMin: number | undefined;
   let limitMax: number | undefined;
 
@@ -279,7 +279,7 @@ export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(p
   };
   return rule;
 }
-export const array = <Rule extends ValidatorRuleBase<any>>(element: Rule): ArrayValidatorRule<Rule> => {
+export function array<Rule extends ValidatorRuleBase<any>>(element: Rule): ArrayValidatorRule<Rule> {
   const rule: ArrayValidatorRule<Rule> = {
     ...createBaseRule((value: any): value is PickResultsByRule<Rule> => {
       if (rule.optional && value === undefined) {
