@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, TemplateValidatorRuleBase, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
+import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, TemplateValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
 import { equals } from '../equiv';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, InvalidEnumValueError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
@@ -315,6 +315,6 @@ export function array<Rule extends ValidatorRuleBase<any>>(element: Rule): Array
   };
   return rule;
 }
-export function template<R extends Record<string, any>, Rule extends Record<keyof R, ValidatorRuleBase<R[keyof R]>> = Record<keyof R, ValidatorRuleBase<R[keyof R]>>>(properties: Rule): TemplateValidatorRuleBase<Rule> {
-  return object(properties) as TemplateValidatorRuleBase<Rule>;
+export function template<R extends Record<string, any>, Rule extends Record<keyof R, ValidatorRuleBase<R[keyof R]>> = Record<keyof R, ValidatorRuleBase<R[keyof R]>>>(properties: Rule): TemplateValidatorRule<R> {
+  return object(properties) as TemplateValidatorRule<R>;
 }
