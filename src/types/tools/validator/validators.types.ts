@@ -46,7 +46,7 @@ export type ValidatorRule<T> =
             : ValidatorRuleBase<T>;
 
 export interface StringValidatorRule extends ValidatorRuleBase<string> {
-  enum: <R extends string[]>(...strings: R) => TupleTemplateValidatorRule<R[number]>;
+  union: <R extends string[]>(...strings: R) => UnionValidatorRule<R[number]>;
 }
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface FileValidatorRule extends ValidatorRuleBase<string> {
@@ -83,5 +83,8 @@ export interface AlternativeValidatorRule<Rules extends Array<ValidatorRuleBase<
   rules: Rules;
 }
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface TupleTemplateValidatorRule<R> extends ValidatorRuleBase<R> {
+export interface UnionValidatorRule<R> extends ValidatorRuleBase<R> {
+}
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+export interface TupleValidatorRule<R> extends ValidatorRuleBase<R> {
 }

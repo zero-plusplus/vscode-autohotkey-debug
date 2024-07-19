@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, TemplateValidatorRule, TupleTemplateValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
+import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, TemplateValidatorRule, TupleValidatorRule, UnionValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
 import { equals } from '../equiv';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, InvalidEnumValueError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
@@ -78,8 +78,8 @@ export function string(): StringValidatorRule {
       }
       return true;
     }) as StringValidatorRule,
-    enum: <Args extends string[]>(...strings: Args): TupleTemplateValidatorRule<Args[number]> => {
-      return tuple(...strings);
+    union: <Args extends string[]>(...strings: Args): UnionValidatorRule<Args[number]> => {
+      return union(...strings);
     },
   };
   return rule;
@@ -314,11 +314,21 @@ export function array<Rule extends ValidatorRuleBase<any>>(element: Rule): Array
   };
   return rule;
 }
-export function template<R extends Record<string, any>, Rule extends Record<keyof R, ValidatorRuleBase<R[keyof R]>> = Record<keyof R, ValidatorRuleBase<R[keyof R]>>>(properties: Rule): TemplateValidatorRule<R> {
-  return object(properties) as TemplateValidatorRule<R>;
-}
-export function tuple<Args extends any[]>(...values: Args): TupleTemplateValidatorRule<Args[number]> {
-  return custom((value: any): value is Args[number] => {
+export function union<R, Args extends any[] = any[]>(...values: Args): UnionValidatorRule<R> {
+  return custom((value: any): value is R => {
     return values.some((_value) => value === _value);
+  });
+}
+export function tuple<Args extends any[]>(...values: Args): TupleValidatorRule<Args> {
+  return custom((value: any): value is Args[number] => {
+    if (!Array.isArray(value)) {
+      return false;
+    }
+    if (value.length !== values.length) {
+      return false;
+    }
+    return value.every((element, index) => {
+      return element === values[index];
+    });
   });
 }

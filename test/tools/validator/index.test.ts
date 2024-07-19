@@ -9,7 +9,7 @@ describe('validator/normalizer', () => {
     }
     const configRule = validators.object({
       name: validators.string(),
-      type: validators.string().enum('launch', 'attach'),
+      type: validators.string().union('launch', 'attach'),
       runtime: validators.file().normalize({
         'undefined': () => __filename,
       }),
