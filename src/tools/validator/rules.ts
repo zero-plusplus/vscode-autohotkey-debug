@@ -4,7 +4,7 @@ import { equals } from '../equiv';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, InvalidEnumValueError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
-function createBaseRule<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
+export function custom<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
   let normalizeMap: NormalizeMap<R> | undefined;
   const rule: ValidatorRuleBase<R> = {
     default: undefined,
@@ -51,7 +51,7 @@ export function optional<Rule extends ValidatorRuleBase<any>>(validatorRule: Rul
 }
 export function alternative<Rules extends Array<ValidatorRuleBase<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
-  const rule = createBaseRule((value: any): value is PickResultByRules<Rules> => {
+  const rule = custom((value: any): value is PickResultByRules<Rules> => {
     if (rule.optional) {
       return true;
     }
@@ -65,7 +65,7 @@ export function string(): StringValidatorRule {
   let enumStrings: string[] | undefined;
 
   const rule: StringValidatorRule = {
-    ...createBaseRule((value: any): value is string => {
+    ...custom((value: any): value is string => {
       if (rule.optional && value === undefined) {
         return true;
       }
@@ -145,7 +145,7 @@ export function number(): NumberValidatorRule {
   let limitMax: number | undefined;
 
   const rule: NumberValidatorRule = {
-    ...createBaseRule((value: any): value is number => {
+    ...custom((value: any): value is number => {
       if (rule.optional && value === undefined) {
         return true;
       }
@@ -199,7 +199,7 @@ export function number(): NumberValidatorRule {
 }
 export function boolean(): BooleanValidatorRule {
   const rule: BooleanValidatorRule = {
-    ...createBaseRule((value: any): value is boolean => {
+    ...custom((value: any): value is boolean => {
       if (rule.optional && value === undefined) {
         return true;
       }
@@ -217,7 +217,7 @@ export function bool(): BooleanValidatorRule {
 }
 export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(properties: RuleMap): ObjectValidatorRule<RuleMap> {
   const rule: ObjectValidatorRule<RuleMap> = {
-    ...createBaseRule((value: any): value is PickResultByMap<RuleMap> => {
+    ...custom((value: any): value is PickResultByMap<RuleMap> => {
       if (rule.optional && value === undefined) {
         return true;
       }
@@ -280,7 +280,7 @@ export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(p
 }
 export function array<Rule extends ValidatorRuleBase<any>>(element: Rule): ArrayValidatorRule<Rule> {
   const rule: ArrayValidatorRule<Rule> = {
-    ...createBaseRule((value: any): value is PickResultsByRule<Rule> => {
+    ...custom((value: any): value is PickResultsByRule<Rule> => {
       if (rule.optional && value === undefined) {
         return true;
       }
@@ -318,7 +318,7 @@ export function template<R extends Record<string, any>, Rule extends Record<keyo
   return object(properties) as TemplateValidatorRule<R>;
 }
 export function tuple<Args extends any[]>(...values: Args): TupleTemplateValidatorRule<Args[number]> {
-  return createBaseRule((value: any): value is Args[number] => {
+  return custom((value: any): value is Args[number] => {
     return values.some((_value) => value === _value);
   });
 }
