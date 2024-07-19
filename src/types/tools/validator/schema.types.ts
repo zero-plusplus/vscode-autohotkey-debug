@@ -1,3 +1,4 @@
-import { PickResult, ValidatorRule } from './validators.types';
+import { SimplifyDeep } from 'type-fest/source/merge-deep';
+import { PickResult, ValidatorRuleBase } from './validators.types';
 
-export type Schema<Rule extends ValidatorRule<any>> = (value: any) => Promise<PickResult<Rule>>;
+export type Schema<Rule extends ValidatorRuleBase<any>> = (value: any) => Promise<SimplifyDeep<PickResult<Rule>>>;

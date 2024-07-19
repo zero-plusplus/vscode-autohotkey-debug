@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResult, PickResultByMap, PickResultByRule, StringValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
+import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
 import { equals } from '../equiv';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, InvalidEnumValueError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
@@ -51,7 +51,7 @@ export function optional<Rule extends ValidatorRuleBase<any>>(validatorRule: Rul
 }
 export function alternative<Rules extends Array<ValidatorRuleBase<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
-  const rule = createBaseRule((value: any): value is PickResult<Rules> => {
+  const rule = createBaseRule((value: any): value is PickResultByRules<Rules> => {
     if (rule.optional) {
       return true;
     }
@@ -218,7 +218,7 @@ export function bool(): BooleanValidatorRule {
 }
 export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(properties: RuleMap): ObjectValidatorRule<RuleMap> {
   const rule: ObjectValidatorRule<RuleMap> = {
-    ...createBaseRule((value: any): value is PickResult<RuleMap> => {
+    ...createBaseRule((value: any): value is PickResultByMap<RuleMap> => {
       if (rule.optional && value === undefined) {
         return true;
       }
@@ -281,7 +281,7 @@ export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(p
 }
 export const array = <Rule extends ValidatorRuleBase<any>>(element: Rule): ArrayValidatorRule<Rule> => {
   const rule: ArrayValidatorRule<Rule> = {
-    ...createBaseRule((value: any): value is Array<PickResultByRule<Rule>> => {
+    ...createBaseRule((value: any): value is PickResultsByRule<Rule> => {
       if (rule.optional && value === undefined) {
         return true;
       }

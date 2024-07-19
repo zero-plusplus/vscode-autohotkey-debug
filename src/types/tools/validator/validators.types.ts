@@ -1,33 +1,17 @@
 import { TypePredicate } from '../predicate.types';
 
-export type PickResult<T extends ValidatorRule<any>> =
-  T extends ObjectValidatorRule<infer U>
-    ? PickResult<U>
-    : T extends ArrayValidatorRule<infer U>
-      ? PickResult<U>
-      : T extends AlternativeValidatorRule<infer U>
-        ? PickResult<U>[number]
-        : T extends OptionalValidatorRule<infer U>
-          ? PickResult<U> | undefined
-          : T extends StringValidatorRule
-            ? string
-            : T extends NumberValidatorRule
-              ? number
-              : T extends BooleanValidatorRule
-                ? boolean
-                : T extends Record<string, ValidatorRule<any>>
-                  ? { [key in keyof T]: PickResult<T[key]> }
-                  : T extends Array<ValidatorRule<infer U>>
-                    ? Array<PickResult<U>>
-                    : T extends ValidatorRuleBase<any>
-                      ? PickResultByRule<T>
-                      : never;
-
+export type PickResult<T extends ValidatorRuleBase<any>> = PickResultByRule<T>;
 export type PickResultByRule<T extends ValidatorRuleBase<any>> = T extends ValidatorRuleBase<infer U> ? U : never;
-export type PickResultByMap<T extends Record<string, ValidatorRule<any>>> = { [key in keyof T]: PickResult<T[key]> };
-export type PickResultByRules<T extends Array<ValidatorRule<any>>> =
+export type PickResultByMap<T extends Record<string, ValidatorRuleBase<any>>> = { [key in keyof T]: PickResult<T[key]> };
+export type PickResultsByRule<T extends ValidatorRuleBase<any>> =
+  T extends ValidatorRuleBase<infer U>
+    ? U[]
+    : never;
+export type PickResultByRules<T extends Array<ValidatorRuleBase<any>>> =
   T extends Array<infer U>
-    ? Array<PickResult<U>>
+    ? U extends ValidatorRuleBase<infer I>
+      ? I[][number]
+      : never
     : never;
 
 export type Normalizer<V, R> = SyncNormalizer<V, R> | AsyncNormalizer<V, R>;
@@ -55,7 +39,7 @@ export type ValidatorRule<T> =
   T extends string ? StringValidatorRule
     : T extends number ? NumberValidatorRule
       : T extends boolean ? BooleanValidatorRule
-        : T extends ValidatorRule<any>
+        : T extends ValidatorRuleBase<any>
           ? ArrayValidatorRule<T>
           : T extends Record<any, any>
             ? ObjectValidatorRule<T>
@@ -82,16 +66,16 @@ export interface NumberValidatorRule extends ValidatorRuleBase<number> {
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface BooleanValidatorRule extends ValidatorRuleBase<boolean> {
 }
-export type PropertyValidationMap<R> = { [key in keyof R]: ValidatorRule<any> };
-export interface ObjectValidatorRule<RuleMap extends Record<string, ValidatorRule<any>>> extends ValidatorRuleBase<PickResult<RuleMap>> {
+export type PropertyValidationMap<R> = { [key in keyof R]: ValidatorRuleBase<any> };
+export interface ObjectValidatorRule<RuleMap extends Record<string, ValidatorRuleBase<any>>> extends ValidatorRuleBase<PickResultByMap<RuleMap>> {
   properties: RuleMap;
 }
-export interface ArrayValidatorRule<Rule extends ValidatorRule<any>> extends ValidatorRuleBase<Array<PickResult<Rule>>> {
+export interface ArrayValidatorRule<Rule extends ValidatorRuleBase<any>> extends ValidatorRuleBase<PickResultsByRule<Rule>> {
   element: Rule;
 }
 export interface OptionalValidatorRule<Rule extends ValidatorRuleBase<any>> extends ValidatorRuleBase<PickResult<Rule> | undefined> {
   optional: true;
 }
-export interface AlternativeValidatorRule<Rules extends Array<ValidatorRuleBase<any>>> extends ValidatorRuleBase<PickResult<Rules>> {
+export interface AlternativeValidatorRule<Rules extends Array<ValidatorRuleBase<any>>> extends ValidatorRuleBase<PickResultByRules<Rules>> {
   rules: Rules;
 }
