@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, TemplateValidatorRule, TupleValidatorRule, UnionValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
+import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, TemplateValidatorRule, TupleValidatorRule, UnionValidatorRule, ValidatorRuleBase } from '../../types/tools/validator';
 import { equals } from '../equiv';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, InvalidEnumValueError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';

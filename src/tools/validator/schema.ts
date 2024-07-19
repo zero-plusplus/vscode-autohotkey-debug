@@ -1,5 +1,5 @@
 import { Schema } from '../../types/tools/validator/schema.types';
-import { ValidatorRuleBase } from '../../types/tools/validator/validators.types';
+import { ValidatorRuleBase } from '../../types/tools/validator/rules.types';
 import { ValidationError } from './error';
 
 export function createSchema<Rule extends ValidatorRuleBase<any>>(rule: Rule): (Schema<Rule>) {
