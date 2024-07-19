@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, TemplateValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
+import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, TemplateValidatorRule, TupleTemplateValidatorRule, ValidatorRuleBase } from '../../types/tools/validator/validators.types';
 import { equals } from '../equiv';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, InvalidEnumValueError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
@@ -78,9 +78,8 @@ export function string(): StringValidatorRule {
       }
       return true;
     }) as StringValidatorRule,
-    enum: <Args extends string[]>(...strings: Args): typeof rule & ValidatorRuleBase<Args[number]> => {
-      enumStrings = strings;
-      return rule as typeof rule & ValidatorRuleBase<Args>;
+    enum: <Args extends string[]>(...strings: Args): TupleTemplateValidatorRule<Args[number]> => {
+      return tuple(...strings);
     },
   };
   return rule;
@@ -317,4 +316,9 @@ export function array<Rule extends ValidatorRuleBase<any>>(element: Rule): Array
 }
 export function template<R extends Record<string, any>, Rule extends Record<keyof R, ValidatorRuleBase<R[keyof R]>> = Record<keyof R, ValidatorRuleBase<R[keyof R]>>>(properties: Rule): TemplateValidatorRule<R> {
   return object(properties) as TemplateValidatorRule<R>;
+}
+export function tuple<Args extends any[]>(...values: Args): TupleTemplateValidatorRule<Args[number]> {
+  return createBaseRule((value: any): value is Args[number] => {
+    return values.some((_value) => value === _value);
+  });
 }
