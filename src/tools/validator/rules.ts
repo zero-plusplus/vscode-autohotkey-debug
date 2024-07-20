@@ -9,6 +9,11 @@ export function custom<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
   const rule: ValidatorRuleBase<R> = {
     __optional: false,
     optional: () => optional(rule),
+    default: (defaultValue: R | Normalizer<undefined, R>): typeof rule => {
+      const undefinedCallback = predicate.isCallable(defaultValue) ? defaultValue : (): R => defaultValue;
+      normalizeMap = normalizeMap ? { ...normalizeMap, undefined: undefinedCallback } : { undefined: undefinedCallback };
+      return rule;
+    },
     validator: (value: any): value is R => {
       if (rule.__optional && value === undefined) {
         return true;

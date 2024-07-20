@@ -30,6 +30,7 @@ export interface NormalizeMap<R> {
 }
 export interface ValidatorRuleBase<R> {
   __optional: boolean;
+  default: (defaultValue: R | Normalizer<undefined, R>) => this;
   optional: () => OptionalValidatorRule<this>;
   __normalizer: Normalizer<any, any>;
   validator: TypePredicate<R>;
