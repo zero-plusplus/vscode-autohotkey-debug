@@ -1,15 +1,16 @@
+import { Primitive } from 'type-fest';
 import { TypePredicate } from '../predicate.types';
 
-export type PickResult<T extends ValidatorRuleBase<any>> = PickResultByRule<T>;
-export type PickResultByRule<T extends ValidatorRuleBase<any>> = T extends ValidatorRuleBase<infer U> ? U : never;
-export type PickResultByMap<T extends Record<string, ValidatorRuleBase<any>>> = { [key in keyof T]: PickResult<T[key]> };
-export type PickResultsByRule<T extends ValidatorRuleBase<any>> =
-  T extends ValidatorRuleBase<infer U>
+export type PickResult<T extends ValidatorRule<any>> = PickResultByRule<T>;
+export type PickResultByRule<T extends ValidatorRule<any>> = T extends ValidatorRule<infer U> ? U : never;
+export type PickResultByMap<T extends Record<string, ValidatorRule<any>>> = { [key in keyof T]: PickResult<T[key]> };
+export type PickResultsByRule<T extends ValidatorRule<any>> =
+  T extends ValidatorRule<infer U>
     ? U[]
     : never;
-export type PickResultByRules<T extends Array<ValidatorRuleBase<any>>> =
+export type PickResultByRules<T extends Array<ValidatorRule<any>>> =
   T extends Array<infer U>
-    ? U extends ValidatorRuleBase<infer I>
+    ? U extends ValidatorRule<infer I>
       ? I[][number]
       : never
     : never;
@@ -28,7 +29,7 @@ export interface NormalizeMap<R> {
   array?: Normalizer<any[], R>;
   any?: Normalizer<any, R>;
 }
-export interface ValidatorRuleBase<R> {
+export interface ValidatorRule<R> {
   __optional: boolean;
   default: (defaultValue: R | Normalizer<undefined, R>) => this;
   optional: () => OptionalValidatorRule<this>;
@@ -36,56 +37,36 @@ export interface ValidatorRuleBase<R> {
   validator: TypePredicate<R>;
   normalize: (normalizerOrNormalizeMap: Normalizer<any, R> | NormalizeMap<R>) => this;
 }
-export type ValidatorRule<T> =
-  T extends string ? StringValidatorRule
-    : T extends number ? NumberValidatorRule
-      : T extends boolean ? BooleanValidatorRule
-        : T extends ValidatorRuleBase<any>
-          ? ArrayValidatorRule<T>
-          : T extends Record<any, any>
-            ? ObjectValidatorRule<T>
-            : ValidatorRuleBase<T>;
 
-export interface StringValidatorRule extends ValidatorRuleBase<string> {
-  union: <R extends string[]>(...strings: R) => UnionValidatorRule<R[number]>;
+export interface LiteralSubRules<Normalized extends Primitive> {
+  union: <Args extends Normalized[]>(...values: Args) => ValidatorRule<Args[number]>;
 }
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface FileValidatorRule extends ValidatorRuleBase<string> {
-}
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface DirectoryValidatorRule extends ValidatorRuleBase<string> {
-}
-export interface PathValidatorRule extends FileValidatorRule, DirectoryValidatorRule {
-}
-export interface NumberValidatorRule extends ValidatorRuleBase<number> {
+export interface NumberSubRules extends LiteralSubRules<number> {
   min: (number: number) => this;
   max: (number: number) => this;
   minmax: (min: number, max: number) => this;
   positive: () => this;
   negative: () => this;
 }
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface BooleanValidatorRule extends ValidatorRuleBase<boolean> {
-}
-export type PropertyValidationMap<R> = { [key in keyof R]: ValidatorRuleBase<any> };
-export interface ObjectValidatorRule<RuleMap extends Record<string, ValidatorRuleBase<any>>> extends ValidatorRuleBase<PickResultByMap<RuleMap>> {
+export type PropertyValidationMap<R> = { [key in keyof R]: ValidatorRule<any> };
+export interface ObjectValidatorRule<RuleMap extends Record<string, ValidatorRule<any>>> extends ValidatorRule<PickResultByMap<RuleMap>> {
   properties: RuleMap;
 }
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface TemplateValidatorRule<R extends Record<string, any>> extends ObjectValidatorRule<{ [key in keyof R]: ValidatorRuleBase<R[key]> }> {
+export interface TemplateValidatorRule<R extends Record<string, any>> extends ObjectValidatorRule<{ [key in keyof R]: ValidatorRule<R[key]> }> {
 }
-export interface ArrayValidatorRule<Rule extends ValidatorRuleBase<any>> extends ValidatorRuleBase<PickResultsByRule<Rule>> {
+export interface ArrayValidatorRule<Rule extends ValidatorRule<any>> extends ValidatorRule<PickResultsByRule<Rule>> {
   element: Rule;
 }
-export interface OptionalValidatorRule<Rule extends ValidatorRuleBase<any>> extends ValidatorRuleBase<PickResult<Rule> | undefined> {
+export interface OptionalValidatorRule<Rule extends ValidatorRule<any>> extends ValidatorRule<PickResult<Rule> | undefined> {
   __optional: true;
 }
-export interface AlternativeValidatorRule<Rules extends Array<ValidatorRuleBase<any>>> extends ValidatorRuleBase<PickResultByRules<Rules>> {
+export interface AlternativeValidatorRule<Rules extends Array<ValidatorRule<any>>> extends ValidatorRule<PickResultByRules<Rules>> {
   rules: Rules;
 }
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface UnionValidatorRule<R> extends ValidatorRuleBase<R> {
+export interface UnionValidatorRule<R> extends ValidatorRule<R> {
 }
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface TupleValidatorRule<R> extends ValidatorRuleBase<R> {
+export interface TupleValidatorRule<R> extends ValidatorRule<R> {
 }

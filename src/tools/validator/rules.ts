@@ -1,12 +1,12 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, NormalizeMap, Normalizer, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, StringValidatorRule, TemplateValidatorRule, TupleValidatorRule, UnionValidatorRule, ValidatorRuleBase } from '../../types/tools/validator';
-import { equals } from '../equiv';
-import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, InvalidEnumValueError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
+import { AlternativeValidatorRule, ArrayValidatorRule, BooleanValidatorRule, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, NumberValidatorRule, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, TemplateValidatorRule, TupleValidatorRule, UnionValidatorRule, ValidatorRule } from '../../types/tools/validator';
+import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
-export function custom<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
+export function custom<R>(validator: TypePredicate<R>): ValidatorRule<R> {
   let normalizeMap: NormalizeMap<R> | undefined;
-  const rule: ValidatorRuleBase<R> = {
+
+  const rule: ValidatorRule<R> = {
     __optional: false,
     optional: () => optional(rule),
     default: (defaultValue: R | Normalizer<undefined, R>): typeof rule => {
@@ -53,11 +53,11 @@ export function custom<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
   return rule;
 }
 
-export function optional<Rule extends ValidatorRuleBase<any>>(validatorRule: Rule): OptionalValidatorRule<Rule> {
+export function optional<Rule extends ValidatorRule<any>>(validatorRule: Rule): OptionalValidatorRule<Rule> {
   validatorRule.__optional = true;
   return validatorRule as OptionalValidatorRule<Rule>;
 }
-export function alternative<Rules extends Array<ValidatorRuleBase<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
+export function alternative<Rules extends Array<ValidatorRule<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
   const rule = custom((value: any): value is PickResultByRules<Rules> => {
     const result = alternativeRules.some((rule) => {
@@ -76,68 +76,55 @@ export function alternative<Rules extends Array<ValidatorRuleBase<any>>>(...vali
   }) as AlternativeValidatorRule<Rules>;
   return rule;
 }
-export function string(): StringValidatorRule {
-  const ignoreCase = false;
-  let enumStrings: string[] | undefined;
-
-    ...custom((value: any): value is R => {
-      if (!predicate.isString(value)) {
-        return false;
+export function string(): ValidatorRule<string> & LiteralSubRules<string> {
+  const rule: ValidatorRule<string> & LiteralSubRules<string> = {
+    ...custom((value: any): value is string => {
+      if (predicate.isString(value)) {
+        return true;
       }
-      if (enumStrings && !enumStrings.some((childValue) => equals(value, childValue, ignoreCase))) {
-        throw new InvalidEnumValueError(value, enumStrings);
-      }
-      return true;
-    }) as StringValidatorRule,
-    union: <Args extends string[]>(...strings: Args): UnionValidatorRule<Args[number]> => {
-      return union(...strings);
+      throw new ValidationError(value);
+    }),
+    union: <Args extends string[]>(...values: Args): ValidatorRule<Args[number]> => {
+      return union(...values);
     },
-  };
+  } as ValidatorRule<string> & LiteralSubRules<string>;
   return rule;
 }
-export function file(): StringValidatorRule {
-  const baseRule = string();
-  const rule: StringValidatorRule = {
-    ...baseRule,
-    validator: (value: any): value is string => {
-      if (!predicate.isString(value)) {
-        throw new ValidationError(value);
-      }
-      if (!predicate.fileExists(value)) {
-        throw new FileNotFoundError(value);
-      }
-      return baseRule.validator(value);
-    },
-  };
+export function file(): ValidatorRule<string> {
+  const rule: ValidatorRule<string> = custom((value: any): value is string => {
+    if (!predicate.isString(value)) {
+      throw new ValidationError(value);
+    }
+    if (!predicate.fileExists(value)) {
+      throw new FileNotFoundError(value);
+    }
+    return true;
+  });
   return rule;
 }
-export function directory(): StringValidatorRule {
-  const baseRule = string();
-  const rule: StringValidatorRule = {
-    ...baseRule,
-    validator: (value: any): value is string => {
-      if (!predicate.isString(value)) {
-        throw new ValidationError(value);
-      }
-      if (!predicate.fileExists(value)) {
-        throw new DirectoryNotFoundError(value);
-      }
-      return baseRule.validator(value);
-    },
-  };
+export function directory(): ValidatorRule<string> {
+  const rule: ValidatorRule<string> = custom((value: any): value is string => {
+    if (!predicate.isString(value)) {
+      throw new ValidationError(value);
+    }
+    if (!predicate.directoryExists(value)) {
+      throw new DirectoryNotFoundError(value);
+    }
+    return true;
+  });
   return rule;
 }
-export function dir(): StringValidatorRule {
+export function dir(): ValidatorRule<string> {
   return directory();
 }
-export function path(): ValidatorRuleBase<string> {
+export function path(): ValidatorRule<string> {
   return alternative(file(), directory());
 }
-export function number(): NumberValidatorRule {
+export function number(): ValidatorRule<number> & NumberSubRules {
   let limitMin: number | undefined;
   let limitMax: number | undefined;
 
-  const rule: NumberValidatorRule = {
+  const rule: ValidatorRule<number> & NumberSubRules = {
     ...custom((value: any): value is number => {
       if (!predicate.isNumber(value)) {
         return false;
@@ -183,24 +170,22 @@ export function number(): NumberValidatorRule {
       limitMax = -1;
       return rule;
     },
-  };
+  } as ValidatorRule<number> & NumberSubRules;
   return rule;
 }
-export function boolean(): BooleanValidatorRule {
-  const rule: BooleanValidatorRule = {
-    ...custom((value: any): value is boolean => {
-      if (predicate.isBoolean(value)) {
-        return true;
-      }
-      return false;
-    }) as BooleanValidatorRule,
-  };
+export function boolean(): ValidatorRule<boolean> {
+  const rule: ValidatorRule<boolean> = custom((value: any): value is boolean => {
+    if (predicate.isBoolean(value)) {
+      return true;
+    }
+    return false;
+  });
   return rule;
 }
 export function bool(): BooleanValidatorRule {
   return boolean();
 }
-export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(properties: RuleMap): ObjectValidatorRule<RuleMap> {
+export function object<RuleMap extends Record<string, ValidatorRule<any>>>(properties: RuleMap): ObjectValidatorRule<RuleMap> {
   const rule: ObjectValidatorRule<RuleMap> = {
     ...custom((value: any): value is PickResultByMap<RuleMap> => {
       if (!predicate.isObjectLiteral(value)) {
@@ -259,7 +244,7 @@ export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(p
   };
   return rule;
 }
-export function array<Rule extends ValidatorRuleBase<any>>(element: Rule): ArrayValidatorRule<Rule> {
+export function array<Rule extends ValidatorRule<any>>(element: Rule): ArrayValidatorRule<Rule> {
   const rule: ArrayValidatorRule<Rule> = {
     ...custom((value: any): value is PickResultsByRule<Rule> => {
       if (!Array.isArray(value)) {
@@ -310,7 +295,7 @@ export function tuple<Args extends any[]>(...values: Args): TupleValidatorRule<A
   });
 }
 export const template = {
-  object: <R extends Record<string, any>>(properties: { [key in keyof R]: ValidatorRuleBase<R[key]> }): TemplateValidatorRule<R> => {
+  object: <R extends Record<string, any>>(properties: { [key in keyof R]: ValidatorRule<R[key]> }): TemplateValidatorRule<R> => {
     return object(properties) as TemplateValidatorRule<R>;
   },
   union<R>(...args: R[]): TupleValidatorRule<R> {
