@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, ArrayValidatorRule, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, TemplateValidatorRule, ValidatorRule } from '../../types/tools/validator';
+import { AlternativeValidatorRule, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, TemplateValidatorRule, ValidatorRule } from '../../types/tools/validator';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
@@ -244,9 +244,9 @@ export function object<RuleMap extends Record<string, ValidatorRule<any>>>(prope
   };
   return rule;
 }
-export function array<Rule extends ValidatorRule<any>>(element: Rule): ArrayValidatorRule<Rule> {
-  const rule: ArrayValidatorRule<Rule> = {
-    ...custom((value: any): value is PickResultsByRule<Rule> => {
+export function array<Normalized = any, Rule extends ValidatorRule<Normalized> = ValidatorRule<Normalized>>(element: Rule): ValidatorRule<Normalized extends any ? PickResultsByRule<Rule> : Normalized> {
+  const rule: ValidatorRule<Normalized extends any ? PickResultsByRule<Rule> : Normalized> = {
+    ...custom((value: any): value is Normalized extends any ? PickResultsByRule<Rule> : Normalized => {
       if (!Array.isArray(value)) {
         throw new ValidationError(value);
       }
@@ -260,7 +260,7 @@ export function array<Rule extends ValidatorRule<any>>(element: Rule): ArrayVali
         }
       });
       return true;
-    }) as ArrayValidatorRule<Rule>,
+    }),
     __normalizer: async<V>(value: V): Promise<Array<PickResultByRule<Rule>> | V> => {
       if (!Array.isArray(value)) {
         return value;
@@ -272,8 +272,7 @@ export function array<Rule extends ValidatorRule<any>>(element: Rule): ArrayVali
       }
       return normalized;
     },
-    element,
-  };
+  } as ValidatorRule<Normalized extends any ? PickResultsByRule<Rule> : Normalized>;
   return rule;
 }
 export function union<Args extends any[] = any[]>(...values: Args): ValidatorRule<Args[number]> {

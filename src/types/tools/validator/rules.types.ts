@@ -55,9 +55,6 @@ export interface ObjectValidatorRule<RuleMap extends Record<string, ValidatorRul
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface TemplateValidatorRule<Rule extends Record<string, any>> extends ObjectValidatorRule<{ [key in keyof Rule]: ValidatorRule<Rule[key]> }> {
 }
-export interface ArrayValidatorRule<Rule extends ValidatorRule<any>> extends ValidatorRule<PickResultsByRule<Rule>> {
-  element: Rule;
-}
 export interface OptionalValidatorRule<Rule extends ValidatorRule<any>> extends ValidatorRule<PickResult<Rule> | undefined> {
   __optional: true;
 }
