@@ -15,7 +15,7 @@ describe('validator/normalizer', () => {
       }),
       port: validators.number().min(1024).max(65535),
       skipFiles: validators.array(validators.string()),
-      useFoo: validators.template<UseFoo>({
+      useFoo: validators.template.object<UseFoo>({
         useBar: validators.boolean(),
         useBaz: validators.boolean(),
       }).normalize({

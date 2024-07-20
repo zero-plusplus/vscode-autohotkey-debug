@@ -332,3 +332,14 @@ export function tuple<Args extends any[]>(...values: Args): TupleValidatorRule<A
     });
   });
 }
+export const template = {
+  object: <R extends Record<string, any>>(properties: { [key in keyof R]: ValidatorRuleBase<R[key]> }): TemplateValidatorRule<R> => {
+    return object(properties) as TemplateValidatorRule<R>;
+  },
+  union<R>(...args: R[]): TupleValidatorRule<R> {
+    return union(...args);
+  },
+  tuple<R extends any[]>(...args: R): TupleValidatorRule<R> {
+    return tuple(...args);
+  },
+};
