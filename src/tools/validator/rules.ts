@@ -60,11 +60,19 @@ export function optional<Rule extends ValidatorRuleBase<any>>(validatorRule: Rul
 export function alternative<Rules extends Array<ValidatorRuleBase<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
   const rule = custom((value: any): value is PickResultByRules<Rules> => {
-    if (rule.optional) {
+    const result = alternativeRules.some((rule) => {
+      try {
+        return rule.validator(value);
+      }
+      catch {
+      }
+      return false;
+    });
+
+    if (result) {
       return true;
     }
-
-    return alternativeRules.some((rule) => rule.validator(value));
+    throw new ValidationError(value);
   }) as AlternativeValidatorRule<Rules>;
   return rule;
 }
@@ -122,18 +130,8 @@ export function directory(): StringValidatorRule {
 export function dir(): StringValidatorRule {
   return directory();
 }
-export function path(): StringValidatorRule {
-  const fileRule = file();
-  const dirRule = directory();
-
-  const rule: StringValidatorRule = {
-    ...fileRule,
-    ...dirRule,
-    validator: (value: any): value is string => {
-      return fileRule.validator(value) || dirRule.validator(value);
-    },
-  };
-  return rule;
+export function path(): ValidatorRuleBase<string> {
+  return alternative(file(), directory());
 }
 export function number(): NumberValidatorRule {
   let limitMin: number | undefined;
