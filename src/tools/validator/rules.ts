@@ -9,7 +9,12 @@ export function custom<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
   const rule: ValidatorRuleBase<R> = {
     __optional: false,
     optional: () => optional(rule),
-    validator,
+    validator: (value: any): value is R => {
+      if (rule.__optional && value === undefined) {
+        return true;
+      }
+      return validator(value);
+    },
     __normalizer: async<V>(value: V): Promise<V | R> => {
       if (!normalizeMap) {
         return Promise.resolve(value);
@@ -44,10 +49,7 @@ export function custom<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
 }
 
 export function optional<Rule extends ValidatorRuleBase<any>>(validatorRule: Rule): OptionalValidatorRule<Rule> {
-  return {
-    ...validatorRule,
-    __optional: true,
-  } as OptionalValidatorRule<Rule>;
+  return validatorRule.optional();
 }
 export function alternative<Rules extends Array<ValidatorRuleBase<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
@@ -64,12 +66,7 @@ export function string(): StringValidatorRule {
   const ignoreCase = false;
   let enumStrings: string[] | undefined;
 
-  const rule: StringValidatorRule = {
-    ...custom((value: any): value is string => {
-      if (rule.__optional && value === undefined) {
-        return true;
-      }
-
+    ...custom((value: any): value is R => {
       if (!predicate.isString(value)) {
         return false;
       }
@@ -89,10 +86,6 @@ export function file(): StringValidatorRule {
   const rule: StringValidatorRule = {
     ...baseRule,
     validator: (value: any): value is string => {
-      if (rule.__optional && value === undefined) {
-        return true;
-      }
-
       if (!predicate.isString(value)) {
         throw new ValidationError(value);
       }
@@ -109,10 +102,6 @@ export function directory(): StringValidatorRule {
   const rule: StringValidatorRule = {
     ...baseRule,
     validator: (value: any): value is string => {
-      if (rule.__optional && value === undefined) {
-        return true;
-      }
-
       if (!predicate.isString(value)) {
         throw new ValidationError(value);
       }
@@ -146,10 +135,6 @@ export function number(): NumberValidatorRule {
 
   const rule: NumberValidatorRule = {
     ...custom((value: any): value is number => {
-      if (rule.__optional && value === undefined) {
-        return true;
-      }
-
       if (!predicate.isNumber(value)) {
         return false;
       }
@@ -200,10 +185,6 @@ export function number(): NumberValidatorRule {
 export function boolean(): BooleanValidatorRule {
   const rule: BooleanValidatorRule = {
     ...custom((value: any): value is boolean => {
-      if (rule.__optional && value === undefined) {
-        return true;
-      }
-
       if (predicate.isBoolean(value)) {
         return true;
       }
@@ -218,10 +199,6 @@ export function bool(): BooleanValidatorRule {
 export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(properties: RuleMap): ObjectValidatorRule<RuleMap> {
   const rule: ObjectValidatorRule<RuleMap> = {
     ...custom((value: any): value is PickResultByMap<RuleMap> => {
-      if (rule.__optional && value === undefined) {
-        return true;
-      }
-
       if (!predicate.isObjectLiteral(value)) {
         throw new ValidationError(value);
       }
@@ -281,10 +258,6 @@ export function object<RuleMap extends Record<string, ValidatorRuleBase<any>>>(p
 export function array<Rule extends ValidatorRuleBase<any>>(element: Rule): ArrayValidatorRule<Rule> {
   const rule: ArrayValidatorRule<Rule> = {
     ...custom((value: any): value is PickResultsByRule<Rule> => {
-      if (rule.__optional && value === undefined) {
-        return true;
-      }
-
       if (!Array.isArray(value)) {
         throw new ValidationError(value);
       }
