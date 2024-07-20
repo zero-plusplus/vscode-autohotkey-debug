@@ -29,8 +29,8 @@ export interface NormalizeMap<R> {
   any?: Normalizer<any, R>;
 }
 export interface ValidatorRuleBase<R> {
-  default: R | undefined;
-  optional: boolean;
+  __optional: boolean;
+  optional: () => OptionalValidatorRule<this>;
   __normalizer: Normalizer<any, any>;
   validator: TypePredicate<R>;
   normalize: (normalizerOrNormalizeMap: Normalizer<any, R> | NormalizeMap<R>) => this;
@@ -77,7 +77,7 @@ export interface ArrayValidatorRule<Rule extends ValidatorRuleBase<any>> extends
   element: Rule;
 }
 export interface OptionalValidatorRule<Rule extends ValidatorRuleBase<any>> extends ValidatorRuleBase<PickResult<Rule> | undefined> {
-  optional: true;
+  __optional: true;
 }
 export interface AlternativeValidatorRule<Rules extends Array<ValidatorRuleBase<any>>> extends ValidatorRuleBase<PickResultByRules<Rules>> {
   rules: Rules;
