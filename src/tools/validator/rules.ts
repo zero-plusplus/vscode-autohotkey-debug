@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, ValidatorRule } from '../../types/tools/validator';
+import { AlternativeValidatorRule, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, ValidatorRule } from '../../types/tools/validator';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
@@ -53,9 +53,9 @@ export function custom<R>(validator: TypePredicate<R>): ValidatorRule<R> {
   return rule;
 }
 
-export function optional<Rule extends ValidatorRule<any>>(validatorRule: Rule): OptionalValidatorRule<Rule> {
+export function optional<Rule extends ValidatorRule<any>>(validatorRule: Rule): Rule {
   validatorRule.__optional = true;
-  return validatorRule as OptionalValidatorRule<Rule>;
+  return validatorRule;
 }
 export function alternative<Rules extends Array<ValidatorRule<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));

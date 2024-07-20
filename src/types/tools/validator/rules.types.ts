@@ -32,7 +32,7 @@ export interface NormalizeMap<Normalized> {
 export interface ValidatorRule<Normalized> {
   __optional: boolean;
   default: (defaultValue: Normalized | Normalizer<undefined, Normalized>) => this;
-  optional: () => OptionalValidatorRule<this>;
+  optional: () => this;
   __normalizer: Normalizer<any, any>;
   validator: TypePredicate<Normalized>;
   normalize: (normalizerOrNormalizeMap: Normalizer<any, Normalized> | NormalizeMap<Normalized>) => this;
@@ -47,9 +47,6 @@ export interface NumberSubRules extends LiteralSubRules<number> {
   minmax: (min: number, max: number) => this;
   positive: () => this;
   negative: () => this;
-}
-export interface OptionalValidatorRule<Rule extends ValidatorRule<any>> extends ValidatorRule<PickResult<Rule> | undefined> {
-  __optional: true;
 }
 export interface AlternativeValidatorRule<Rules extends Array<ValidatorRule<any>>> extends ValidatorRule<PickResultByRules<Rules>> {
   rules: Rules;
