@@ -64,9 +64,3 @@ export interface OptionalValidatorRule<Rule extends ValidatorRule<any>> extends 
 export interface AlternativeValidatorRule<Rules extends Array<ValidatorRule<any>>> extends ValidatorRule<PickResultByRules<Rules>> {
   rules: Rules;
 }
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface UnionValidatorRule<R> extends ValidatorRule<R> {
-}
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface TupleValidatorRule<R> extends ValidatorRule<R> {
-}
