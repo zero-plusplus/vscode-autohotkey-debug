@@ -48,13 +48,6 @@ export interface NumberSubRules extends LiteralSubRules<number> {
   positive: () => this;
   negative: () => this;
 }
-export type PropertyValidationMap<RuleMap> = { [key in keyof RuleMap]: ValidatorRule<any> };
-export interface ObjectValidatorRule<RuleMap extends Record<string, ValidatorRule<any>>> extends ValidatorRule<PickResultByMap<RuleMap>> {
-  properties: RuleMap;
-}
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface TemplateValidatorRule<Rule extends Record<string, any>> extends ObjectValidatorRule<{ [key in keyof Rule]: ValidatorRule<Rule[key]> }> {
-}
 export interface OptionalValidatorRule<Rule extends ValidatorRule<any>> extends ValidatorRule<PickResult<Rule> | undefined> {
   __optional: true;
 }

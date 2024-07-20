@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, ObjectValidatorRule, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, TemplateValidatorRule, ValidatorRule } from '../../types/tools/validator';
+import { AlternativeValidatorRule, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, OptionalValidatorRule, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, ValidatorRule } from '../../types/tools/validator';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
@@ -185,15 +185,18 @@ export function boolean(): ValidatorRule<boolean> {
 export function bool(): ValidatorRule<boolean> {
   return boolean();
 }
-export function object<RuleMap extends Record<string, ValidatorRule<any>>>(properties: RuleMap): ObjectValidatorRule<RuleMap> {
-  const rule: ObjectValidatorRule<RuleMap> = {
-    ...custom((value: any): value is PickResultByMap<RuleMap> => {
+export function object<
+  Normalized = any,
+  RuleMap extends { [key in keyof Normalized]: ValidatorRule<Normalized[key]> } = { [key in keyof Normalized]: ValidatorRule<Normalized[key]> },
+>(ruleMap: RuleMap): ValidatorRule<Normalized extends any ? PickResultByMap<RuleMap> : Normalized> {
+  const rule: ValidatorRule<Normalized extends any ? PickResultByMap<RuleMap> : Normalized> = {
+    ...custom((value: any): value is Normalized extends any ? PickResultByMap<RuleMap> : Normalized => {
       if (!predicate.isObjectLiteral(value)) {
         throw new ValidationError(value);
       }
 
       const valueKeys = Object.entries(value).map(([ key ]) => key).sort();
-      const propertyKeys = Object.entries(properties).map(([ key ]) => key).sort();
+      const propertyKeys = Object.entries(ruleMap).map(([ key ]) => key).sort();
 
       // If the value is an empty object, an error is raised unless the defined property is also an empty object
       if (valueKeys.length === 0) {
@@ -205,7 +208,7 @@ export function object<RuleMap extends Record<string, ValidatorRule<any>>>(prope
 
       // Check if the value has a defined property
       propertyKeys.forEach((key) => {
-        const property = properties[key];
+        const property = ruleMap[key] as RuleMap[keyof RuleMap];
         if (property.__optional) {
           return;
         }
@@ -217,17 +220,17 @@ export function object<RuleMap extends Record<string, ValidatorRule<any>>>(prope
 
       // Check each property
       for (const [ key, childValue ] of Object.entries(value)) {
-        if (!(key in properties)) {
+        if (!(key in ruleMap)) {
           throw new PropertyAccessError(value, key);
         }
 
-        const property = properties[key];
+        const property = ruleMap[key] as RuleMap[keyof RuleMap];
         if (!property.validator(childValue)) {
           throw new PropertyValidationError(childValue, key);
         }
       }
       return true;
-    }) as ObjectValidatorRule<RuleMap>,
+    }),
     __normalizer: async<V>(value: V): Promise<PickResultByMap<RuleMap> | V> => {
       if (!predicate.isObjectLiteral(value)) {
         return value;
@@ -235,12 +238,11 @@ export function object<RuleMap extends Record<string, ValidatorRule<any>>>(prope
 
       const normalized = {} as PickResultByMap<RuleMap>;
       for await (const [ key, childValue ] of Object.entries(value)) {
-        const property = properties[key];
-        normalized[key as keyof PickResultByMap<RuleMap>] = await property.__normalizer(childValue) as PickResultByMap<RuleMap>[typeof key];
+        const rule = ruleMap[key] as RuleMap[keyof RuleMap];
+        normalized[key] = await rule.__normalizer(childValue) as Normalized extends any ? PickResultByMap<RuleMap> : Normalized;
       }
       return normalized;
     },
-    properties,
   };
   return rule;
 }
@@ -294,9 +296,6 @@ export function tuple<Args extends any[]>(...values: Args): ValidatorRule<Args> 
   });
 }
 export const template = {
-  object: <R extends Record<string, any>>(properties: { [key in keyof R]: ValidatorRule<R[key]> }): TemplateValidatorRule<R> => {
-    return object(properties) as TemplateValidatorRule<R>;
-  },
   union<R>(...args: R[]): ValidatorRule<R> {
     return union(...args);
   },
