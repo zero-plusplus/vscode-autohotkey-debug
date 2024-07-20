@@ -48,6 +48,3 @@ export interface NumberSubRules extends LiteralSubRules<number> {
   positive: () => this;
   negative: () => this;
 }
-export interface AlternativeValidatorRule<Rules extends Array<ValidatorRule<any>>> extends ValidatorRule<PickResultByRules<Rules>> {
-  rules: Rules;
-}

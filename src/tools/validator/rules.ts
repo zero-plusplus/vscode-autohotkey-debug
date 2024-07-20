@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { AlternativeValidatorRule, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, ValidatorRule } from '../../types/tools/validator';
+import { LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, ValidatorRule } from '../../types/tools/validator';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
@@ -57,9 +57,9 @@ export function optional<Rule extends ValidatorRule<any>>(validatorRule: Rule): 
   validatorRule.__optional = true;
   return validatorRule;
 }
-export function alternative<Rules extends Array<ValidatorRule<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
+export function alternative<Rules extends Array<ValidatorRule<any>>>(...validatorRules: Rules): ValidatorRule<PickResultByRules<Rules>[number]> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
-  const rule = custom((value: any): value is PickResultByRules<Rules> => {
+  const rule = custom((value: any): value is PickResultByRules<Rules>[number] => {
     const result = alternativeRules.some((rule) => {
       try {
         return rule.validator(value);
@@ -73,7 +73,7 @@ export function alternative<Rules extends Array<ValidatorRule<any>>>(...validato
       return true;
     }
     throw new ValidationError(value);
-  }) as AlternativeValidatorRule<Rules>;
+  });
   return rule;
 }
 export function string(): ValidatorRule<string> & LiteralSubRules<string> {
