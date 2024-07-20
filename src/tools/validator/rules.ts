@@ -54,7 +54,8 @@ export function custom<R>(validator: TypePredicate<R>): ValidatorRuleBase<R> {
 }
 
 export function optional<Rule extends ValidatorRuleBase<any>>(validatorRule: Rule): OptionalValidatorRule<Rule> {
-  return validatorRule.optional();
+  validatorRule.__optional = true;
+  return validatorRule as OptionalValidatorRule<Rule>;
 }
 export function alternative<Rules extends Array<ValidatorRuleBase<any>>>(...validatorRules: Rules): AlternativeValidatorRule<Rules> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
