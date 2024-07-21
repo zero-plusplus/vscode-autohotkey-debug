@@ -283,7 +283,7 @@ export function array<Normalized = any, Rule extends ValidatorRule<Normalized> =
   } as ValidatorRule<Normalized extends any ? PickResultsByRule<Rule> : Normalized>;
   return rule;
 }
-export function union<Args extends any[] = any[]>(...values: Args): ValidatorRule<Args[number]> {
+export function union<Normalized = any, Args extends any[] = Normalized[]>(...values: Args): ValidatorRule<Args[number]> {
   return custom((value: any): value is Args[number] => {
     return values.some((_value) => value === _value);
   });
@@ -302,9 +302,6 @@ export function tuple<Args extends any[]>(...values: Args): ValidatorRule<Args> 
   });
 }
 export const template = {
-  union<R>(...args: R[]): ValidatorRule<R> {
-    return union(...args);
-  },
   tuple<R extends any[]>(...args: R): ValidatorRule<R> {
     return tuple(...args);
   },
