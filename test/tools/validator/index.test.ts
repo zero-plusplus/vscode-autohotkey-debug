@@ -4,7 +4,7 @@ import * as validators from '../../../src/tools/validator';
 describe('validator/normalizer', () => {
   test('object', async() => {
     interface UseFoo {
-      useBar: boolean;
+      useBar?: boolean;
       useBaz: boolean;
     }
     const configRule = validators.object({
@@ -16,7 +16,7 @@ describe('validator/normalizer', () => {
       port: validators.number().min(1024).max(65535),
       skipFiles: validators.array(validators.string()),
       useFoo: validators.object<UseFoo>({
-        useBar: validators.boolean(),
+        useBar: validators.boolean().optional(),
         useBaz: validators.boolean(),
       }).normalize({
         'boolean': (value: boolean) => {

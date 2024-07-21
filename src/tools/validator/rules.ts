@@ -191,7 +191,7 @@ export function bool(): ValidatorRule<boolean> {
 }
 export function object<
   Normalized = any,
-  ArgRuleMap extends RuleMap = Normalized extends Record<infer K, infer V> ? { [key in K]: ValidatorRule<V> } : RuleMap,
+  ArgRuleMap extends RuleMap = Normalized extends Record<string, any> ? { [key in keyof Normalized]-?: ValidatorRule<Normalized[key]> } : RuleMap,
 >(ruleMap: ArgRuleMap): ValidatorRule<Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized> {
   const rule: ValidatorRule<Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized> = {
     ...custom((value: any): value is Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized => {
