@@ -33,7 +33,7 @@ export interface NormalizeMap<Normalized> {
 export interface ValidatorRule<Normalized> {
   __optional: boolean;
   default: (defaultValue: Normalized | Normalizer<undefined, Normalized>) => this;
-  optional: () => this;
+  optional: () => ValidatorRule<Normalized | undefined>;
   __normalizer: Normalizer<any, any>;
   validator: TypePredicate<Normalized>;
   normalize: (normalizerOrNormalizeMap: Normalizer<any, Normalized> | NormalizeMap<Normalized>) => this;

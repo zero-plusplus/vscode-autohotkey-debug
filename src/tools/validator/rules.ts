@@ -53,9 +53,11 @@ export function custom<R>(validator: TypePredicate<R>): ValidatorRule<R> {
   return rule;
 }
 
-export function optional<Rule extends ValidatorRule<any>>(validatorRule: Rule): Rule {
-  validatorRule.__optional = true;
-  return validatorRule;
+export function optional<Rule extends ValidatorRule<any>>(validatorRule: Rule): ValidatorRule<PickResultByRule<Rule> | undefined> {
+  return {
+    ...validatorRule,
+    __optional: true,
+  } as ValidatorRule<PickResultByRule<Rule> | undefined>;
 }
 export function alternative<
   Normalized = any,
