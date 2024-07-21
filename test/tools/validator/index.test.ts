@@ -15,7 +15,7 @@ describe('validator/normalizer', () => {
       }),
       port: validators.number().min(1024).max(65535),
       skipFiles: validators.array(validators.string()),
-      useFoo: validators.template.object<UseFoo>({
+      useFoo: validators.object<UseFoo>({
         useBar: validators.boolean(),
         useBaz: validators.boolean(),
       }).normalize({
@@ -23,7 +23,7 @@ describe('validator/normalizer', () => {
           return { useBar: value, useBaz: value };
         },
       }),
-      alternativeAttribute: validators.alternative(validators.string(), validators.boolean()),
+      alternativeAttribute: validators.alternative<string | boolean>(validators.string(), validators.boolean()),
       optionalAttribute: validators.optional(validators.boolean()),
     });
     const configSchema = validators.createSchema(configRule);
