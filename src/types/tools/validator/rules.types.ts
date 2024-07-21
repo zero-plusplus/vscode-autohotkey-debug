@@ -1,9 +1,10 @@
 import { Primitive } from 'type-fest';
 import { TypePredicate } from '../predicate.types';
 
+export type RuleMap = Record<string, ValidatorRule<any>>;
 export type PickResult<Rule extends ValidatorRule<any>> = PickResultByRule<Rule>;
 export type PickResultByRule<Rule extends ValidatorRule<any>> = Rule extends ValidatorRule<infer U> ? U : never;
-export type PickResultByMap<Rule extends Record<string, ValidatorRule<any>>> = { [key in keyof Rule]: PickResult<Rule[key]> };
+export type PickResultByMap<Rule extends RuleMap> = { [key in keyof Rule]: PickResult<Rule[key]> };
 export type PickResultsByRule<Rule extends ValidatorRule<any>> =
   Rule extends ValidatorRule<infer Normalized>
     ? Normalized[]

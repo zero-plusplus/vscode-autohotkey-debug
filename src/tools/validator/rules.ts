@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, ValidatorRule } from '../../types/tools/validator';
+import { LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, RuleMap, ValidatorRule } from '../../types/tools/validator';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
@@ -191,10 +191,10 @@ export function bool(): ValidatorRule<boolean> {
 }
 export function object<
   Normalized = any,
-  RuleMap extends { [key in keyof Normalized]: ValidatorRule<Normalized[key]> } = { [key in keyof Normalized]: ValidatorRule<Normalized[key]> },
->(ruleMap: RuleMap): ValidatorRule<Normalized extends any ? PickResultByMap<RuleMap> : Normalized> {
-  const rule: ValidatorRule<Normalized extends any ? PickResultByMap<RuleMap> : Normalized> = {
-    ...custom((value: any): value is Normalized extends any ? PickResultByMap<RuleMap> : Normalized => {
+  ArgRuleMap extends RuleMap = Normalized extends Record<infer K, infer V> ? { [key in K]: ValidatorRule<V> } : RuleMap,
+>(ruleMap: ArgRuleMap): ValidatorRule<Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized> {
+  const rule: ValidatorRule<Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized> = {
+    ...custom((value: any): value is Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized => {
       if (!predicate.isObjectLiteral(value)) {
         throw new ValidationError(value);
       }
@@ -212,7 +212,7 @@ export function object<
 
       // Check if the value has a defined property
       propertyKeys.forEach((key) => {
-        const property = ruleMap[key] as RuleMap[keyof RuleMap];
+        const property = ruleMap[key] as ArgRuleMap[keyof ArgRuleMap];
         if (property.__optional) {
           return;
         }
@@ -228,22 +228,22 @@ export function object<
           throw new PropertyAccessError(value, key);
         }
 
-        const property = ruleMap[key] as RuleMap[keyof RuleMap];
+        const property = ruleMap[key] as ArgRuleMap[keyof ArgRuleMap];
         if (!property.validator(childValue)) {
           throw new PropertyValidationError(childValue, key);
         }
       }
       return true;
     }),
-    __normalizer: async<V>(value: V): Promise<PickResultByMap<RuleMap> | V> => {
+    __normalizer: async<V>(value: V): Promise<(Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized) | V> => {
       if (!predicate.isObjectLiteral(value)) {
         return value;
       }
 
-      const normalized = {} as PickResultByMap<RuleMap>;
+      const normalized = {} as Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized;
       for await (const [ key, childValue ] of Object.entries(value)) {
-        const rule = ruleMap[key] as RuleMap[keyof RuleMap];
-        normalized[key] = await rule.__normalizer(childValue) as Normalized extends any ? PickResultByMap<RuleMap> : Normalized;
+        const rule = ruleMap[key] as ArgRuleMap[keyof ArgRuleMap];
+        normalized[key] = await rule.__normalizer(childValue) as Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized;
       }
       return normalized;
     },
