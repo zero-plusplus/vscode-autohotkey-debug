@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, RuleMap, UnionToAlternativeRules, ValidatorRule } from '../../types/tools/validator';
+import { InterfaceToRuleMap, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, UnionToAlternativeRules, ValidatorRule } from '../../types/tools/validator';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
@@ -192,10 +192,10 @@ export function bool(): ValidatorRule<boolean> {
 }
 export function object<
   Normalized = any,
-  ArgRuleMap extends RuleMap = Normalized extends Record<string, any> ? { [key in keyof Normalized]-?: ValidatorRule<Normalized[key]> } : RuleMap,
->(ruleMap: ArgRuleMap): ValidatorRule<Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized> {
-  const rule: ValidatorRule<Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized> = {
-    ...custom((value: any): value is Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized => {
+  ArgRuleMap extends InterfaceToRuleMap<Normalized> = InterfaceToRuleMap<Normalized>,
+>(ruleMap: ArgRuleMap): ValidatorRule<PickResultByMap<ArgRuleMap>> {
+  const rule: ValidatorRule<PickResultByMap<ArgRuleMap>> = {
+    ...custom((value: any): value is PickResultByMap<ArgRuleMap> => {
       if (!predicate.isObjectLiteral(value)) {
         throw new ValidationError(value);
       }

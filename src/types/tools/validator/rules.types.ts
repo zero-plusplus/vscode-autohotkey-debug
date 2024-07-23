@@ -54,6 +54,10 @@ export type AlternativeRule<Normalized> =
         : Normalized extends any
           ? AlternativeRuleByUnion<Normalized>
           : never;
+export type InterfaceToRuleMap<InterfaceOrRuleMap = any> =
+  InterfaceOrRuleMap extends { [key in keyof InterfaceOrRuleMap ]: unknown }
+    ? { [key in keyof InterfaceOrRuleMap]-?: ValidatorRule<(InterfaceOrRuleMap[key] extends ValidatorRule<any> ? PickResult<InterfaceOrRuleMap[key]> : InterfaceOrRuleMap[key])> }
+    : never;
 
 export interface LiteralSubRules<Normalized extends Primitive> {
   union: <Args extends Normalized[]>(...values: Args) => ValidatorRule<Args[number]>;
