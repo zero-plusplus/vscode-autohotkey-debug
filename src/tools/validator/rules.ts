@@ -81,9 +81,9 @@ export function alternative<
   });
   return rule;
 }
-export function string(): ValidatorRule<string> & LiteralSubRules<string> {
-  const rule: ValidatorRule<string> & LiteralSubRules<string> = {
-    ...custom((value: any): value is string => {
+export function string<Normalized extends string = string>(): ValidatorRule<Normalized> & LiteralSubRules<Normalized> {
+  const rule: ValidatorRule<Normalized> & LiteralSubRules<Normalized> = {
+    ...custom((value: any): value is Normalized => {
       if (predicate.isString(value)) {
         return true;
       }
@@ -92,7 +92,7 @@ export function string(): ValidatorRule<string> & LiteralSubRules<string> {
     union: <Args extends string[]>(...values: Args): ValidatorRule<Args[number]> => {
       return union(...values);
     },
-  } as ValidatorRule<string> & LiteralSubRules<string>;
+  } as ValidatorRule<Normalized> & LiteralSubRules<Normalized>;
   return rule;
 }
 export function file(): ValidatorRule<string> {
