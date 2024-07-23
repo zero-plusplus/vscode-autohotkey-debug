@@ -62,7 +62,7 @@ export function optional<Rule extends ValidatorRule<any>>(validatorRule: Rule): 
 export function alternative<
   Normalized = any,
   Rules extends Array<ValidatorRule<any>> = UnionToAlternativeRules<Normalized>,
->(...validatorRules: Rules): Rules[number] {
+>(...validatorRules: Rules): ValidatorRule<PickResultByRules<Rules>> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
   const rule = custom((value: any): value is PickResultByRules<Rules> => {
     const result = alternativeRules.some((rule) => {
