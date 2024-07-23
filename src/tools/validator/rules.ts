@@ -1,5 +1,5 @@
 import * as predicate from '../predicate';
-import { LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, RuleMap, ValidatorRule } from '../../types/tools/validator';
+import { LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, RuleMap, UnionToAlternativeRules, ValidatorRule } from '../../types/tools/validator';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
 
@@ -61,11 +61,10 @@ export function optional<Rule extends ValidatorRule<any>>(validatorRule: Rule): 
 }
 export function alternative<
   Normalized = any,
-  Rules extends Array<Normalized extends infer U ? (U extends boolean ? ValidatorRule<boolean> : ValidatorRule<U>) : never>
-  = Array<Normalized extends infer U ? (U extends boolean ? ValidatorRule<boolean> : ValidatorRule<U>) : never>,
->(...validatorRules: Rules): ValidatorRule<Normalized extends any ? PickResultByRules<Rules> : Normalized> {
+  Rules extends Array<ValidatorRule<any>> = UnionToAlternativeRules<Normalized>,
+>(...validatorRules: Rules): Rules[number] {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
-  const rule = custom((value: any): value is Normalized extends any ? PickResultByRules<Rules> : Normalized => {
+  const rule = custom((value: any): value is PickResultByRules<Rules> => {
     const result = alternativeRules.some((rule) => {
       try {
         return rule.validator(value);

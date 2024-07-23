@@ -39,6 +39,22 @@ export interface ValidatorRule<Normalized> {
   normalize: (normalizerOrNormalizeMap: Normalizer<any, Normalized> | NormalizeMap<Normalized>) => this;
 }
 
+export type AlternativeRuleByUnion<NormalizedUnion> =
+  NormalizedUnion extends boolean
+    ? ValidatorRule<boolean>
+    : ValidatorRule<NormalizedUnion>;
+export type UnionToAlternativeRules<Normalized> = Array<AlternativeRule<Normalized>>;
+export type AlternativeRule<Normalized> =
+      Normalized extends Array<infer U>
+        ? U extends ValidatorRule<any>
+          ? Normalized[number] extends Record<string, any>
+            ? { [key in keyof Normalized[number]]-?: ValidatorRule<Normalized[number][key]> }
+            : Normalized[number]
+          : never
+        : Normalized extends any
+          ? AlternativeRuleByUnion<Normalized>
+          : never;
+
 export interface LiteralSubRules<Normalized extends Primitive> {
   union: <Args extends Normalized[]>(...values: Args) => ValidatorRule<Args[number]>;
 }
