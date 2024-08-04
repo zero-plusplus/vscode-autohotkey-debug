@@ -50,10 +50,8 @@ export type RuleToNormalized<Rule> =
     ? U
     : never;
 export type NormalizedToRule<Normalized> =
-  Normalized extends infer U
-    ? U extends boolean
-      ? ValidatorRule<boolean>
-      : ValidatorRule<Normalized>
+  Normalized extends boolean
+    ? ValidatorRule<boolean>
     : ValidatorRule<Normalized>;
 // #endregion normalized <-> rule
 
@@ -72,7 +70,7 @@ export type RulesToUnion<Rules> =
 // #region interface <-> rule map
 export type InterfaceToRuleMap<Normalized> =
   Normalized extends Interface
-    ? { [key in keyof Normalized]: NormalizedToRule<Normalized[key]> }
+    ? { [key in keyof Normalized]: ValidatorRule<Normalized[key]> }
     : never;
 export type RuleMapToInterface<Rule> =
   Rule extends RuleMap

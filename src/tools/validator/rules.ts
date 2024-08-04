@@ -95,8 +95,11 @@ export function alt<
 // #endregion combinator rules
 
 // #region literal rules
-export function literal<Normalized extends JsonPrimitive | true | false>(...literalUnion: Normalized[]): ValidatorRule<Normalized> {
-  const rule: ValidatorRule<Normalized> = {
+export function literal<
+  Normalized extends JsonPrimitive | true | false,
+  Args extends Normalized[] = Normalized[],
+>(...literalUnion: Args): ValidatorRule<Args[number]> {
+  const rule: ValidatorRule<Args[number]> = {
     ...custom((value: any): value is Normalized => {
       if (literalUnion.some((literal) => value === literal)) {
         return true;
@@ -115,8 +118,7 @@ export function string(): ValidatorRule<string> & LiteralValidatorUtils<string> 
       throw new ValidationError(value);
     }),
     union: <Normalized extends string, Args extends Normalized[] = Normalized[]>(...values: Args): ValidatorRule<Args[number]> => {
-      const rules = values.map(() => string());
-      return alternative(...rules);
+      return literal(...values);
     },
   } as ValidatorRule<string> & LiteralValidatorUtils<string>;
   return rule;
