@@ -1,21 +1,11 @@
-import { Primitive } from 'type-fest';
+import { JsonPrimitive } from 'type-fest';
 import { TypePredicate } from '../predicate.types';
 
+export type Interface = { [key in string]: any };
+export type Rules = Array<ValidatorRule<any>>;
 export type RuleMap = Record<string, ValidatorRule<any>>;
-export type PickResult<Rule extends ValidatorRule<any>> = PickResultByRule<Rule>;
-export type PickResultByRule<Rule extends ValidatorRule<any>> = Rule extends ValidatorRule<infer U> ? U : never;
-export type PickResultByMap<Rule extends RuleMap> = { [key in keyof Rule]: PickResult<Rule[key]> };
-export type PickResultsByRule<Rule extends ValidatorRule<any>> =
-  Rule extends ValidatorRule<infer Normalized>
-    ? Normalized[]
-    : never;
-export type PickResultByRules<Rules extends Array<ValidatorRule<any>>> =
-  Rules extends Array<infer Rule>
-    ? Rule extends ValidatorRule<infer Normalized>
-      ? Normalized[][number]
-      : never
-    : never;
 
+// #region normalizer
 export type Normalizer<Before, After> = SyncNormalizer<Before, After> | AsyncNormalizer<Before, After>;
 export type SyncNormalizer<Before, After> = (value: Before) => Before | After;
 export type AsyncNormalizer<Before, After> = (value: Before) => Promise<Before | After>;
@@ -30,6 +20,9 @@ export interface NormalizeMap<Normalized> {
   array?: Normalizer<any[], Normalized>;
   any?: Normalizer<any, Normalized>;
 }
+// #endregion normalizer
+
+// #region validator
 export interface ValidatorRule<Normalized> {
   __optional: boolean;
   default: (defaultValue: Normalized | Normalizer<undefined, Normalized>) => this;
@@ -38,34 +31,65 @@ export interface ValidatorRule<Normalized> {
   validator: TypePredicate<Normalized>;
   normalize: (normalizerOrNormalizeMap: Normalizer<any, Normalized> | NormalizeMap<Normalized>) => this;
 }
-
-export type AlternativeRuleByUnion<NormalizedUnion> =
-  NormalizedUnion extends boolean
-    ? ValidatorRule<boolean>
-    : ValidatorRule<NormalizedUnion>;
-export type UnionToAlternativeRules<Normalized> = Array<AlternativeRule<Normalized>>;
-export type AlternativeRule<Normalized> =
-      Normalized extends Array<infer U>
-        ? U extends ValidatorRule<any>
-          ? Normalized[number] extends Record<string, any>
-            ? { [key in keyof Normalized[number]]-?: ValidatorRule<Normalized[number][key]> }
-            : Normalized[number]
-          : never
-        : Normalized extends any
-          ? AlternativeRuleByUnion<Normalized>
-          : never;
-export type InterfaceToRuleMap<InterfaceOrRuleMap = any> =
-  InterfaceOrRuleMap extends { [key in keyof InterfaceOrRuleMap ]: unknown }
-    ? { [key in keyof InterfaceOrRuleMap]-?: ValidatorRule<(InterfaceOrRuleMap[key] extends ValidatorRule<any> ? PickResult<InterfaceOrRuleMap[key]> : InterfaceOrRuleMap[key])> }
-    : never;
-
-export interface LiteralSubRules<Normalized extends Primitive> {
-  union: <Args extends Normalized[]>(...values: Args) => ValidatorRule<Args[number]>;
+export interface LiteralValidatorUtils<Type extends JsonPrimitive = JsonPrimitive | true | false> {
+  union: <Normalized extends Type, Args extends Normalized[] = Normalized[]>(...values: Args) => ValidatorRule<Args[number]>;
 }
-export interface NumberSubRules extends LiteralSubRules<number> {
+export interface NumberValidatorUtils extends LiteralValidatorUtils<number> {
   min: (number: number) => this;
   max: (number: number) => this;
   minmax: (min: number, max: number) => this;
   positive: () => this;
   negative: () => this;
 }
+// #endregion validator
+
+// #region type converter
+// #region normalized <-> rule
+export type RuleToNormalized<Rule> =
+  Rule extends ValidatorRule<infer U>
+    ? U
+    : never;
+export type NormalizedToRule<Normalized> =
+  Normalized extends infer U
+    ? U extends boolean
+      ? ValidatorRule<boolean>
+      : ValidatorRule<Normalized>
+    : ValidatorRule<Normalized>;
+// #endregion normalized <-> rule
+
+// #region union <-> rules
+export type UnionToRules<Union> = Array<UnionToRule<Union>>;
+export type UnionToRule<Union> =
+  Union extends infer U
+    ? NormalizedToRule<U>
+    : never;
+export type RulesToUnion<Rules> =
+    Rules extends Array<ValidatorRule<any>>
+      ? RuleToNormalized<Rules[number]>
+      : never;
+// #endregion union <-> rules
+
+// #region interface <-> rule map
+export type InterfaceToRuleMap<Normalized> =
+  Normalized extends Interface
+    ? { [key in keyof Normalized]: NormalizedToRule<Normalized[key]> }
+    : never;
+export type RuleMapToInterface<Rule> =
+  Rule extends RuleMap
+    ? { [key in keyof Rule]: RuleToNormalized<Rule[key]> }
+    : never;
+// #endregion interface <-> rule map
+
+// #region array <-> rule
+export type RuleToNormalizedList<Rule> =
+  Rule extends ValidatorRule<infer Normalized>
+    ? Normalized[]
+    : never;
+export type RulesToTuple<Rules> =
+Rules extends Array<ValidatorRule<any>>
+  ? Rules extends [ infer Head, ...infer Rest]
+    ? [ RuleToNormalized<Head>, ...RulesToTuple<Rest> ]
+    : []
+  : never;
+// #endregion array <-> rule
+// #endregion type converter

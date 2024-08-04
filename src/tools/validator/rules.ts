@@ -1,51 +1,52 @@
 import * as predicate from '../predicate';
-import { InterfaceToRuleMap, LiteralSubRules, NormalizeMap, Normalizer, NumberSubRules, PickResultByMap, PickResultByRule, PickResultByRules, PickResultsByRule, UnionToAlternativeRules, ValidatorRule } from '../../types/tools/validator';
+import { InterfaceToRuleMap, LiteralValidatorUtils, NormalizeMap, Normalizer, NumberValidatorUtils, RuleMap, RuleMapToInterface, RuleToNormalized, Rules, RulesToTuple, RulesToUnion, UnionToRules, ValidatorRule } from '../../types/tools/validator';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
 import { TypePredicate } from '../../types/tools/predicate.types';
+import { IsAny, JsonPrimitive } from 'type-fest/';
 
-export function custom<R>(validator: TypePredicate<R>): ValidatorRule<R> {
-  let normalizeMap: NormalizeMap<R> | undefined;
+export function custom<Normalized>(validator: TypePredicate<Normalized>): ValidatorRule<Normalized> {
+  let normalizeMap: NormalizeMap<Normalized> | undefined;
 
-  const rule: ValidatorRule<R> = {
+  const rule: ValidatorRule<Normalized> = {
     __optional: false,
     optional: () => optional(rule),
-    default: (defaultValue: R | Normalizer<undefined, R>): typeof rule => {
-      const undefinedCallback = predicate.isCallable(defaultValue) ? defaultValue : (): R => defaultValue;
+    default: (defaultValue: Normalized | Normalizer<undefined, Normalized>): typeof rule => {
+      const undefinedCallback = predicate.isCallable(defaultValue) ? defaultValue : (): Normalized => defaultValue;
       normalizeMap = normalizeMap ? { ...normalizeMap, undefined: undefinedCallback } : { undefined: undefinedCallback };
       return rule;
     },
-    validator: (value: any): value is R => {
+    validator: (value: any): value is Normalized => {
       if (rule.__optional && value === undefined) {
         return true;
       }
       return validator(value);
     },
-    __normalizer: async<V>(value: V): Promise<V | R> => {
+    __normalizer: async<V>(value: V): Promise<V | Normalized> => {
       if (!normalizeMap) {
         return Promise.resolve(value);
       }
 
       switch (typeof value) {
-        case 'undefined': return normalizeMap.undefined?.(value) as R ?? Promise.resolve(value as V);
-        case 'string': return normalizeMap.string?.(value) as R ?? Promise.resolve(value as V);
-        case 'number': return normalizeMap.number?.(value) as R ?? Promise.resolve(value as V);
-        case 'boolean': return normalizeMap.boolean?.(value) as R ?? Promise.resolve(value as V);
+        case 'undefined': return normalizeMap.undefined?.(value) as Normalized ?? Promise.resolve(value as V);
+        case 'string': return normalizeMap.string?.(value) as Normalized ?? Promise.resolve(value as V);
+        case 'number': return normalizeMap.number?.(value) as Normalized ?? Promise.resolve(value as V);
+        case 'boolean': return normalizeMap.boolean?.(value) as Normalized ?? Promise.resolve(value as V);
         case 'object': {
           if (value === null) {
-            return await normalizeMap.null?.(value) as V | R ?? Promise.resolve(value);
+            return await normalizeMap.null?.(value) as V | Normalized ?? Promise.resolve(value);
           }
           if (Array.isArray(value)) {
-            return await normalizeMap.array?.(value) as V | R ?? Promise.resolve(value);
+            return await normalizeMap.array?.(value) as V | Normalized ?? Promise.resolve(value);
           }
-          return await normalizeMap.object?.(value as Record<string, any>) as V | R ?? Promise.resolve(value);
+          return await normalizeMap.object?.(value as Record<string, any>) as V | Normalized ?? Promise.resolve(value);
         }
         default: {
           break;
         }
       }
-      return await normalizeMap.any?.(value) as V | R ?? Promise.resolve(value);
+      return await normalizeMap.any?.(value) as V | Normalized ?? Promise.resolve(value);
     },
-    normalize: (normalizerOrNormalizeMap: Normalizer<any, R> | NormalizeMap<R>): typeof rule => {
+    normalize: (normalizerOrNormalizeMap: Normalizer<any, Normalized> | NormalizeMap<Normalized>): typeof rule => {
       normalizeMap = predicate.isCallable(normalizerOrNormalizeMap) ? { any: normalizerOrNormalizeMap } : normalizerOrNormalizeMap;
       return rule;
     },
@@ -53,18 +54,22 @@ export function custom<R>(validator: TypePredicate<R>): ValidatorRule<R> {
   return rule;
 }
 
-export function optional<Rule extends ValidatorRule<any>>(validatorRule: Rule): ValidatorRule<PickResultByRule<Rule> | undefined> {
+// #region combinator rules
+export function optional<
+  Normalized extends RuleToNormalized<Rule>,
+  Rule extends ValidatorRule<any> = ValidatorRule<Normalized>,
+>(validatorRule: Rule): ValidatorRule<RuleToNormalized<Rule> | undefined> {
   return {
     ...validatorRule,
     __optional: true,
-  } as ValidatorRule<PickResultByRule<Rule> | undefined>;
+  } as ValidatorRule<RuleToNormalized<Rule> | undefined>;
 }
 export function alternative<
-  Normalized = any,
-  Rules extends Array<ValidatorRule<any>> = UnionToAlternativeRules<Normalized>,
->(...validatorRules: Rules): ValidatorRule<PickResultByRules<Rules>> {
+  Normalized extends RulesToUnion<Args>,
+  Args extends Rules = UnionToRules<Normalized>,
+>(...validatorRules: Args): ValidatorRule<IsAny<Normalized> extends true ? RulesToUnion<Args> : Normalized> {
   const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
-  const rule = custom((value: any): value is PickResultByRules<Rules> => {
+  const rule = custom((value: any): value is Normalized => {
     const result = alternativeRules.some((rule) => {
       try {
         return rule.validator(value);
@@ -81,18 +86,39 @@ export function alternative<
   });
   return rule;
 }
-export function string<Normalized extends string = string>(): ValidatorRule<Normalized> & LiteralSubRules<Normalized> {
-  const rule: ValidatorRule<Normalized> & LiteralSubRules<Normalized> = {
+export function alt<
+  Normalized extends RulesToUnion<Args>,
+  Args extends Rules = UnionToRules<Normalized>,
+>(...validatorRules: Args): ValidatorRule<IsAny<Normalized> extends true ? RulesToUnion<Args> : Normalized> {
+  return alternative(...validatorRules);
+}
+// #endregion combinator rules
+
+// #region literal rules
+export function literal<Normalized extends JsonPrimitive | true | false>(...literalUnion: Normalized[]): ValidatorRule<Normalized> {
+  const rule: ValidatorRule<Normalized> = {
     ...custom((value: any): value is Normalized => {
+      if (literalUnion.some((literal) => value === literal)) {
+        return true;
+      }
+      throw new ValidationError(value);
+    }),
+  };
+  return rule;
+}
+export function string(): ValidatorRule<string> & LiteralValidatorUtils<string> {
+  const rule: ValidatorRule<string> & LiteralValidatorUtils<string> = {
+    ...custom((value: any): value is string => {
       if (predicate.isString(value)) {
         return true;
       }
       throw new ValidationError(value);
     }),
-    union: <Args extends string[]>(...values: Args): ValidatorRule<Args[number]> => {
-      return union(...values);
+    union: <Normalized extends string, Args extends Normalized[] = Normalized[]>(...values: Args): ValidatorRule<Args[number]> => {
+      const rules = values.map(() => string());
+      return alternative(...rules);
     },
-  } as ValidatorRule<Normalized> & LiteralSubRules<Normalized>;
+  } as ValidatorRule<string> & LiteralValidatorUtils<string>;
   return rule;
 }
 export function file(): ValidatorRule<string> {
@@ -125,11 +151,11 @@ export function dir(): ValidatorRule<string> {
 export function path(): ValidatorRule<string> {
   return alternative(file(), directory());
 }
-export function number(): ValidatorRule<number> & NumberSubRules {
+export function number(): ValidatorRule<number> & NumberValidatorUtils {
   let limitMin: number | undefined;
   let limitMax: number | undefined;
 
-  const rule: ValidatorRule<number> & NumberSubRules = {
+  const rule: ValidatorRule<number> & NumberValidatorUtils = {
     ...custom((value: any): value is number => {
       if (!predicate.isNumber(value)) {
         return false;
@@ -154,6 +180,10 @@ export function number(): ValidatorRule<number> & NumberSubRules {
       }
       return true;
     }),
+    union: <Normalized extends number, Args extends Normalized[] = Normalized[]>(...values: Args): ValidatorRule<Args[number]> => {
+      const rules = values.map(() => number());
+      return alternative(...rules) as ValidatorRule<Args[number]>;
+    },
     min: (number: number): typeof rule => {
       limitMin = number;
       return rule;
@@ -175,7 +205,7 @@ export function number(): ValidatorRule<number> & NumberSubRules {
       limitMax = -1;
       return rule;
     },
-  } as ValidatorRule<number> & NumberSubRules;
+  } as ValidatorRule<number> & NumberValidatorUtils;
   return rule;
 }
 export function boolean(): ValidatorRule<boolean> {
@@ -190,12 +220,15 @@ export function boolean(): ValidatorRule<boolean> {
 export function bool(): ValidatorRule<boolean> {
   return boolean();
 }
+// #endregion literal rules
+
+// #region object rules
 export function object<
-  Normalized = any,
-  ArgRuleMap extends InterfaceToRuleMap<Normalized> = InterfaceToRuleMap<Normalized>,
->(ruleMap: ArgRuleMap): ValidatorRule<PickResultByMap<ArgRuleMap>> {
-  const rule: ValidatorRule<PickResultByMap<ArgRuleMap>> = {
-    ...custom((value: any): value is PickResultByMap<ArgRuleMap> => {
+  Normalized extends RuleMapToInterface<Args>,
+  Args extends RuleMap = InterfaceToRuleMap<Normalized>,
+>(ruleMap: Args): ValidatorRule<Normalized> {
+  const rule: ValidatorRule<Normalized> = {
+    ...custom((value: any): value is Normalized => {
       if (!predicate.isObjectLiteral(value)) {
         throw new ValidationError(value);
       }
@@ -213,7 +246,7 @@ export function object<
 
       // Check if the value has a defined property
       propertyKeys.forEach((key) => {
-        const property = ruleMap[key] as ArgRuleMap[keyof ArgRuleMap];
+        const property = ruleMap[key];
         if (property.__optional) {
           return;
         }
@@ -229,31 +262,34 @@ export function object<
           throw new PropertyAccessError(value, key);
         }
 
-        const property = ruleMap[key] as ArgRuleMap[keyof ArgRuleMap];
+        const property = ruleMap[key];
         if (!property.validator(childValue)) {
           throw new PropertyValidationError(childValue, key);
         }
       }
       return true;
     }),
-    __normalizer: async<V>(value: V): Promise<(Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized) | V> => {
+    __normalizer: async<V>(value: V): Promise<Normalized | V> => {
       if (!predicate.isObjectLiteral(value)) {
         return value;
       }
 
-      const normalized = {} as Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized;
+      const normalized = {};
       for await (const [ key, childValue ] of Object.entries(value)) {
-        const rule = ruleMap[key] as ArgRuleMap[keyof ArgRuleMap];
-        normalized[key] = await rule.__normalizer(childValue) as Normalized extends any ? PickResultByMap<ArgRuleMap> : Normalized;
+        const rule = ruleMap[key];
+        normalized[key] = await rule.__normalizer(childValue) as Normalized[keyof Normalized];
       }
-      return normalized;
+      return normalized as Normalized;
     },
   };
   return rule;
 }
-export function array<Normalized = any, Rule extends ValidatorRule<Normalized> = ValidatorRule<Normalized>>(element: Rule): ValidatorRule<Normalized extends any ? PickResultsByRule<Rule> : Normalized> {
-  const rule: ValidatorRule<Normalized extends any ? PickResultsByRule<Rule> : Normalized> = {
-    ...custom((value: any): value is Normalized extends any ? PickResultsByRule<Rule> : Normalized => {
+export function array<
+  Normalized extends RuleToNormalized<Arg>,
+  Arg extends ValidatorRule<any> = ValidatorRule<Normalized>,
+>(element: Arg): ValidatorRule<Normalized[]> {
+  const rule: ValidatorRule<Normalized[]> = {
+    ...custom((value: any): value is Normalized[] => {
       if (!Array.isArray(value)) {
         throw new ValidationError(value);
       }
@@ -268,40 +304,38 @@ export function array<Normalized = any, Rule extends ValidatorRule<Normalized> =
       });
       return true;
     }),
-    __normalizer: async<V>(value: V): Promise<Array<PickResultByRule<Rule>> | V> => {
+    __normalizer: async<V>(value: V): Promise<Normalized[] | V> => {
       if (!Array.isArray(value)) {
         return value;
       }
 
-      const normalized: Array<PickResultByRule<Rule>> = [];
+      const normalized: Normalized[] = [];
       for await (const childValue of value) {
-        normalized.push(await element.__normalizer(childValue) as PickResultByRule<Rule>);
+        normalized.push(await element.__normalizer(childValue) as Normalized);
       }
       return normalized;
     },
-  } as ValidatorRule<Normalized extends any ? PickResultsByRule<Rule> : Normalized>;
+  };
   return rule;
 }
-export function union<Normalized = any, Args extends any[] = Normalized[]>(...values: Args): ValidatorRule<Args[number]> {
-  return custom((value: any): value is Args[number] => {
-    return values.some((_value) => value === _value);
-  });
-}
-export function tuple<Args extends any[]>(...values: Args): ValidatorRule<Args> {
-  return custom((value: any): value is Args[number] => {
+export function tuple<
+  Normalized extends RulesToTuple<Args>,
+  Args extends Array<ValidatorRule<any>> = Array<ValidatorRule<Normalized>>,
+>(...rules: Args): ValidatorRule<IsAny<Normalized> extends true ? RulesToTuple<Args> : Normalized> {
+  return custom((value: any): value is IsAny<Normalized> extends true ? RulesToTuple<Args> : Normalized => {
     if (!Array.isArray(value)) {
       return false;
     }
-    if (value.length !== values.length) {
+    if (value.length !== rules.length) {
       return false;
     }
     return value.every((element, index) => {
-      return element === values[index];
+      const rule = rules.at(index);
+      if (!rule) {
+        return false;
+      }
+      return rule.validator(element);
     });
   });
 }
-export const template = {
-  tuple<R extends any[]>(...args: R): ValidatorRule<R> {
-    return tuple(...args);
-  },
-};
+// #endregion object rules
