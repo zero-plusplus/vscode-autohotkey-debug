@@ -1517,7 +1517,7 @@
     "@vscode/debugadapter": "^1.65.0",
     "@vscode/debugprotocol": "^1.65.0",
     "@vscode/vsce": "^2.24.0",
-    "@zero-plusplus/eslint-my-rules": "github:zero-plusplus/eslint-my-rules#eslint-9-50",
+    "@zero-plusplus/eslint-my-rules": "github:zero-plusplus/eslint-my-rules#develop",
     "del": "^6.1.1",
     "esbuild": "^0.14.54",
     "fs-extra": "^10.1.0",
