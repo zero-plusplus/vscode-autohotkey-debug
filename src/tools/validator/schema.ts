@@ -1,13 +1,21 @@
 import { Schema } from '../../types/tools/validator/schema.types';
-import { ValidatorRule } from '../../types/tools/validator/rules.types';
-import { ValidationError } from './error';
+import { AttributeRule, OnError } from '../../types/tools/validator/rules.types';
+import { SchemaValidationError } from './error';
 
-export function createSchema<Rule extends ValidatorRule<any>>(rule: Rule): Schema<Rule> {
+export function createSchema<Rule extends AttributeRule<any>>(rule: Rule, onError?: OnError): Schema<Rule> {
   return async(value): ReturnType<Schema<Rule>> => {
-    const normalized = await rule.__normalizer(value) as ReturnType<Schema<Rule>>;
-    if (rule.validator(normalized)) {
+    try {
+      if (rule.config.validator(value)) {
+        return value as ReturnType<Schema<Rule>>;
+      }
+    }
+    catch {
+    }
+
+    const normalized = await rule.config.normalizer(value, onError) as ReturnType<Schema<Rule>>;
+    if (rule.config.validator(normalized, onError)) {
       return Promise.resolve(normalized);
     }
-    throw new ValidationError(value);
+    throw new SchemaValidationError(value);
   };
 }

@@ -16,14 +16,13 @@ describe('validator/normalizer', () => {
         };
       };
       alternative: string | number;
+      tuple: [ 'a', 'b', 'c' ];
       optional: string | undefined;
     }
-    const configRule = validators.object({
+    const configRule = validators.object<NormalizedConfig>({
       name: validators.string(),
-      type: validators.literal('launch', 'attach'),
-      runtime: validators.file().normalize({
-        'undefined': () => __filename,
-      }),
+      type: validators.literalUnion('launch', 'attach'),
+      runtime: validators.file(),
       port: validators.number().min(1024).max(65535),
       skipFiles: validators.array(validators.string()),
       useFoo: validators.object<NormalizedConfig['useFoo']>({
@@ -31,18 +30,26 @@ describe('validator/normalizer', () => {
         useBaz: validators.object<NormalizedConfig['useFoo']['useBaz']>({
           enabled: validators.boolean(),
         }),
-      }).normalize({
-        'boolean': (value: boolean) => {
-          return { useBar: value, useBaz: { enabled: value } };
-        },
       }),
-      alternativeAttribute: validators.alternative(validators.string(), validators.number()),
-      tupleAttribute: validators.tuple(validators.literal('a'), validators.literal('b'), validators.literal('c')),
-      optionalAttribute: validators.optional(validators.boolean()),
-    });
+      alternative: validators.alternative(validators.string(), validators.number()),
+      tuple: validators.tuple(validators.literal<'a'>(), validators.literal<'b'>(), validators.literal<'c'>()),
+      optional: validators.optional(validators.string()),
+    })
+      .normalizeProperties({
+        runtime: {
+          undefined: () => {
+            return __filename;
+          },
+        },
+        useFoo: (value, schema) => {
+          const type = schema.get('type');
+          return { useBar: Boolean(value), useBaz: { enabled: type === 'launch' ? Boolean(value) : !value } };
+        },
+      });
+
     const configSchema = validators.createSchema(configRule);
-    const rawConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: undefined, port: 9002, skipFiles: [ __filename ], useFoo: true, alternativeAttribute: 'string', tupleAttribute: [ 'a', 'b', 'c' ] };
-    const normalizedConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: __filename, port: 9002, skipFiles: [ __filename ], useFoo: { useBar: true, useBaz: { enabled: true } }, alternativeAttribute: 'string', tupleAttribute: [ 'a', 'b', 'c' ] };
+    const rawConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: undefined, port: 9002, skipFiles: [ __filename ], useFoo: true, alternative: 'string', tuple: [ 'a', 'b', 'c' ] };
+    const normalizedConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: __filename, port: 9002, skipFiles: [ __filename ], useFoo: { useBar: true, useBaz: { enabled: true } }, alternative: 'string', tuple: [ 'a', 'b', 'c' ] };
 
     expect(await configSchema(rawConfig)).toEqual(normalizedConfig);
     await expect(configSchema({})).rejects.toThrow();

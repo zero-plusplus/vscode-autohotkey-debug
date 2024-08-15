@@ -1,53 +1,46 @@
 import * as predicate from '../predicate';
-import { InterfaceToRuleMap, LiteralValidatorUtils, NormalizeMap, Normalizer, NumberValidatorUtils, RuleMap, RuleMapToInterface, RuleToNormalized, Rules, RulesToTuple, RulesToUnion, UnionToRules, ValidatorRule } from '../../types/tools/validator';
+import { AttributeNormalizer, AttributeNormalizersByType, AttributeRule, AttributeRuleConfig, Interface, InterfaceToRuleMap, LiteralAttributeRule, LiteralType, NumberAttributeRule, ObjectAttributeRule, PropertyNormalizers, RuleMap, RuleMapToInterface, RuleToNormalized, Rules, RulesToTuple, RulesToUnion, SchemaAccessor, StringAttributeRule, UnionToRules } from '../../types/tools/validator';
 import { DirectoryNotFoundError, ElementValidationError, FileNotFoundError, LowerLimitError, PropertyAccessError, PropertyFoundNotError, PropertyValidationError, RangeError, UpperLimitError, ValidationError } from './error';
-import { TypePredicate } from '../../types/tools/predicate.types';
-import { IsAny, JsonPrimitive } from 'type-fest/';
+import { IsAny, JsonValue, SetRequired } from 'type-fest/';
 
-export function custom<Normalized>(validator: TypePredicate<Normalized>): ValidatorRule<Normalized> {
-  let normalizeMap: NormalizeMap<Normalized> | undefined;
-
-  const rule: ValidatorRule<Normalized> = {
-    __optional: false,
-    optional: () => optional(rule),
-    default: (defaultValue: Normalized | Normalizer<undefined, Normalized>): typeof rule => {
-      const undefinedCallback = predicate.isCallable(defaultValue) ? defaultValue : (): Normalized => defaultValue;
-      normalizeMap = normalizeMap ? { ...normalizeMap, undefined: undefinedCallback } : { undefined: undefinedCallback };
-      return rule;
-    },
-    validator: (value: any): value is Normalized => {
-      if (rule.__optional && value === undefined) {
-        return true;
-      }
-      return validator(value);
-    },
-    __normalizer: async<V>(value: V): Promise<V | Normalized> => {
-      if (!normalizeMap) {
+export function custom<Normalized>(validatorOrCustomConfig: CustomConfig<Normalized>['validator'] | CustomConfig<Normalized>): AttributeRule<Normalized> {
+  const customConfig: CustomConfig<Normalized> = predicate.isCallable(validatorOrCustomConfig) ? { validator: validatorOrCustomConfig } : validatorOrCustomConfig;
+  const config: AttributeRule<Normalized>['config'] = {
+    normalizeMap: {},
+    optional: false,
+    normalizer: async<V>(value: V): Promise<Normalized | V> => {
+      if (!config.normalizeMap) {
         return Promise.resolve(value);
       }
-
-      switch (typeof value) {
-        case 'undefined': return normalizeMap.undefined?.(value) as Normalized ?? Promise.resolve(value as V);
-        case 'string': return normalizeMap.string?.(value) as Normalized ?? Promise.resolve(value as V);
-        case 'number': return normalizeMap.number?.(value) as Normalized ?? Promise.resolve(value as V);
-        case 'boolean': return normalizeMap.boolean?.(value) as Normalized ?? Promise.resolve(value as V);
-        case 'object': {
-          if (value === null) {
-            return await normalizeMap.null?.(value) as V | Normalized ?? Promise.resolve(value);
-          }
-          if (Array.isArray(value)) {
-            return await normalizeMap.array?.(value) as V | Normalized ?? Promise.resolve(value);
-          }
-          return await normalizeMap.object?.(value as Record<string, any>) as V | Normalized ?? Promise.resolve(value);
-        }
-        default: {
-          break;
-        }
+      const normalizer = getNormalizer(config.normalizeMap, value);
+      if (!normalizer) {
+        return Promise.resolve(value);
       }
-      return await normalizeMap.any?.(value) as V | Normalized ?? Promise.resolve(value);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      return normalizer(config.normalizeMap, value as any);
     },
-    normalize: (normalizerOrNormalizeMap: Normalizer<any, Normalized> | NormalizeMap<Normalized>): typeof rule => {
-      normalizeMap = predicate.isCallable(normalizerOrNormalizeMap) ? { any: normalizerOrNormalizeMap } : normalizerOrNormalizeMap;
+    expected: 'any',
+    ...customConfig,
+    validator: (value: any): value is Normalized => {
+      if (config.optional && value === undefined) {
+        return true;
+      }
+      return customConfig.validator(value);
+    },
+  };
+
+  const rule: AttributeRule<Normalized> = {
+    get config() {
+      return config;
+    },
+    optional: () => optional(rule),
+    default: (defaultValue: Normalized | AttributeNormalizer<undefined, Normalized>): typeof rule => {
+      const undefinedCallback = predicate.isCallable(defaultValue) ? defaultValue : (): Normalized => defaultValue;
+      config.normalizeMap = config.normalizeMap ? { ...config.normalizeMap, undefined: undefinedCallback } : { undefined: undefinedCallback };
+      return rule;
+    },
+    normalize: (normalizerOrNormalizeMap: AttributeNormalizer<any, Normalized> | AttributeNormalizersByType<Normalized>): typeof rule => {
+      config.normalizeMap = predicate.isCallable(normalizerOrNormalizeMap) ? { any: normalizerOrNormalizeMap } : normalizerOrNormalizeMap;
       return rule;
     },
   };
@@ -57,169 +50,208 @@ export function custom<Normalized>(validator: TypePredicate<Normalized>): Valida
 // #region combinator rules
 export function optional<
   Normalized extends RuleToNormalized<Rule>,
-  Rule extends ValidatorRule<any> = ValidatorRule<Normalized>,
->(validatorRule: Rule): ValidatorRule<RuleToNormalized<Rule> | undefined> {
-  return {
-    ...validatorRule,
-    __optional: true,
-  } as ValidatorRule<RuleToNormalized<Rule> | undefined>;
+  Rule extends AttributeRule<any> = AttributeRule<Normalized>,
+>(validatorRule: Rule): AttributeRule<RuleToNormalized<Rule> | undefined> {
+  return custom({ ...validatorRule.config, optional: true, expected: `${validatorRule.config.expected} | undefined` }) as AttributeRule<RuleToNormalized<Rule> | undefined>;
 }
+
 export function alternative<
   Normalized extends RulesToUnion<Args>,
   Args extends Rules = UnionToRules<Normalized>,
->(...validatorRules: Args): ValidatorRule<IsAny<Normalized> extends true ? RulesToUnion<Args> : Normalized> {
-  const alternativeRules = validatorRules.map((rule) => ({ ...rule, optional: false }));
-  const rule = custom((value: any): value is Normalized => {
-    const result = alternativeRules.some((rule) => {
-      try {
-        return rule.validator(value);
-      }
-      catch {
-      }
-      return false;
-    });
+>(...validatorRules: Args): AttributeRule<IsAny<Normalized> extends true ? RulesToUnion<Args> : Normalized> {
+  const alternativeRules = validatorRules.map((rule) => ({ ...rule, config: { ...rule.config, optional: false } }));
+  const rule: AttributeRule<Normalized> = custom({
+    expected: alternativeRules.map((rule) => rule.config.expected).join(' | '),
+    validator: (value: any): value is Normalized => {
+      const result = alternativeRules.some((rule) => {
+        try {
+          return rule.config.validator(value);
+        }
+        catch {
+        }
+        return false;
+      });
 
-    if (result) {
-      return true;
-    }
-    throw new ValidationError(value);
+      if (result) {
+        return true;
+      }
+      throw new ValidationError(value, rule.config.expected);
+    },
   });
   return rule;
 }
 export function alt<
   Normalized extends RulesToUnion<Args>,
   Args extends Rules = UnionToRules<Normalized>,
->(...validatorRules: Args): ValidatorRule<IsAny<Normalized> extends true ? RulesToUnion<Args> : Normalized> {
+>(...validatorRules: Args): AttributeRule<Normalized> {
   return alternative(...validatorRules);
+}
+export function literalUnion<
+  Normalized extends Args[number],
+  Args extends JsonValue[] = Normalized[],
+>(...literals: Args): AttributeRule<Args[number]> {
+  const rule = custom({
+    expected: literals.map((literal) => JSON.stringify(literal)).join(' | '),
+    validator: (value: any): value is Args[number] => {
+      if (literals.some((literal) => literal === value)) {
+        return true;
+      }
+      throw new ValidationError(value, rule.config.expected);
+    },
+  });
+  return rule;
 }
 // #endregion combinator rules
 
 // #region literal rules
 export function literal<
-  Normalized extends JsonPrimitive | true | false,
-  Args extends Normalized[] = Normalized[],
->(...literalUnion: Args): ValidatorRule<Args[number]> {
-  const rule: ValidatorRule<Args[number]> = {
-    ...custom((value: any): value is Normalized => {
-      if (literalUnion.some((literal) => value === literal)) {
-        return true;
-      }
-      throw new ValidationError(value);
-    }),
+  Type extends Args[number],
+  Args extends LiteralType[] = Type[],
+  Normalized extends LiteralType = IsAny<Type> extends true ? Type : Args[number],
+>(): LiteralAttributeRule<Normalized> {
+  const rule: LiteralAttributeRule<Normalized> = {
+    ...custom({
+      expected: `string | number | boolean`,
+      validator: (value: any): value is Normalized => {
+        return predicate.isString(value) || predicate.isNumber(value) || predicate.isBoolean(value);
+      },
+    }) as LiteralAttributeRule<Normalized>,
+    union: <
+      Normalized extends Args[number],
+      Args extends JsonValue[] = Normalized[],
+    >(...literals: Args): AttributeRule<Args[number]> => {
+      return literalUnion(...literals);
+    },
   };
   return rule;
 }
-export function string(): ValidatorRule<string> & LiteralValidatorUtils<string> {
-  const rule: ValidatorRule<string> & LiteralValidatorUtils<string> = {
-    ...custom((value: any): value is string => {
-      if (predicate.isString(value)) {
-        return true;
-      }
-      throw new ValidationError(value);
-    }),
-    union: <Normalized extends string, Args extends Normalized[] = Normalized[]>(...values: Args): ValidatorRule<Args[number]> => {
-      return literal(...values);
+export function string(): StringAttributeRule {
+  const rule: StringAttributeRule = {
+    ...custom({
+      expected: 'string',
+      validator: (value: any): value is string => {
+        if (predicate.isString(value)) {
+          return true;
+        }
+        throw new ValidationError(value, rule.config.expected);
+      },
+    }) as StringAttributeRule,
+    union: <
+      Normalized extends Args[number],
+      Args extends string[] = Normalized[],
+    >(...literals: Args): AttributeRule<Args[number]> => {
+      return literalUnion(...literals);
     },
-  } as ValidatorRule<string> & LiteralValidatorUtils<string>;
+  };
   return rule;
 }
-export function file(): ValidatorRule<string> {
-  const rule: ValidatorRule<string> = custom((value: any): value is string => {
-    if (!predicate.isString(value)) {
-      throw new ValidationError(value);
-    }
-    if (!predicate.fileExists(value)) {
-      throw new FileNotFoundError(value);
-    }
-    return true;
+export function file(): AttributeRule<string> {
+  const rule: AttributeRule<string> = custom({
+    expected: 'string',
+    validator: (value: any): value is string => {
+      if (!predicate.isString(value)) {
+        throw new ValidationError(value, rule.config.expected);
+      }
+      if (!predicate.fileExists(value)) {
+        throw new FileNotFoundError(value);
+      }
+      return true;
+    },
   });
   return rule;
 }
-export function directory(): ValidatorRule<string> {
-  const rule: ValidatorRule<string> = custom((value: any): value is string => {
-    if (!predicate.isString(value)) {
-      throw new ValidationError(value);
-    }
-    if (!predicate.directoryExists(value)) {
-      throw new DirectoryNotFoundError(value);
-    }
-    return true;
+export function directory(): AttributeRule<string> {
+  const rule: AttributeRule<string> = custom({
+    expected: 'string',
+    validator: (value: any): value is string => {
+      if (!predicate.isString(value)) {
+        throw new ValidationError(value, rule.config.expected);
+      }
+      if (!predicate.directoryExists(value)) {
+        throw new DirectoryNotFoundError(value);
+      }
+      return true;
+    },
   });
   return rule;
 }
-export function dir(): ValidatorRule<string> {
+export function dir(): AttributeRule<string> {
   return directory();
 }
-export function path(): ValidatorRule<string> {
+export function path(): AttributeRule<string> {
   return alternative(file(), directory());
 }
-export function number(): ValidatorRule<number> & NumberValidatorUtils {
-  let limitMin: number | undefined;
-  let limitMax: number | undefined;
+export function number(): NumberAttributeRule {
+  let min: number | undefined;
+  let max: number | undefined;
 
-  const rule: ValidatorRule<number> & NumberValidatorUtils = {
-    ...custom((value: any): value is number => {
-      if (!predicate.isNumber(value)) {
-        return false;
-      }
-      if (predicate.isNumber(limitMin) && predicate.isNumber(limitMax)) {
-        if (limitMin <= value && value <= limitMax) {
-          return true;
+  const rule: NumberAttributeRule = {
+    ...custom({
+      expected: 'number',
+      validator: (value: any): value is number => {
+        if (!predicate.isNumber(value)) {
+          throw new ValidationError(value, rule.config.expected);
         }
-        throw new RangeError(value, limitMin, limitMax);
-      }
-      else if (predicate.isNumber(limitMin)) {
-        if (limitMin <= value) {
-          return true;
+        if (predicate.isNumber(min) && predicate.isNumber(max)) {
+          if (min <= value && value <= max) {
+            return true;
+          }
+          throw new RangeError(value, min, max);
         }
-        throw new LowerLimitError(value, limitMin);
-      }
-      else if (predicate.isNumber(limitMax)) {
-        if (value <= limitMax) {
-          return true;
+        else if (predicate.isNumber(min)) {
+          if (min <= value) {
+            return true;
+          }
+          throw new LowerLimitError(value, min);
         }
-        throw new UpperLimitError(value, limitMax);
-      }
-      return true;
+        else if (predicate.isNumber(max)) {
+          if (value <= max) {
+            return true;
+          }
+          throw new UpperLimitError(value, max);
+        }
+        return true;
+      },
     }),
-    union: <Normalized extends number, Args extends Normalized[] = Normalized[]>(...values: Args): ValidatorRule<Args[number]> => {
-      const rules = values.map(() => number());
-      return alternative(...rules) as ValidatorRule<Args[number]>;
+    union: <
+      Normalized extends Args[number],
+      Args extends number[] = Normalized[],
+    >(...literals: Args): AttributeRule<Args[number]> => {
+      return literalUnion(...literals);
     },
-    min: (number: number): typeof rule => {
-      limitMin = number;
+    min: (limit: number) => {
+      min = limit;
       return rule;
     },
-    max: (number: number): typeof rule => {
-      limitMax = number;
+    max: (limit: number) => {
+      max = limit;
       return rule;
     },
-    minmax: (min: number, max: number): typeof rule => {
-      limitMin = min;
-      limitMax = max;
-      return rule;
+    minmax: (min: number, max: number) => {
+      return rule.min(min).max(max);
     },
-    positive: (): typeof rule => {
-      limitMin = 1;
-      return rule;
+    positive: () => {
+      return rule.min(1);
     },
-    negative: (): typeof rule => {
-      limitMax = -1;
-      return rule;
+    negative: () => {
+      return rule.max(-1);
     },
-  } as ValidatorRule<number> & NumberValidatorUtils;
+  } as NumberAttributeRule;
   return rule;
 }
-export function boolean(): ValidatorRule<boolean> {
-  const rule: ValidatorRule<boolean> = custom((value: any): value is boolean => {
-    if (predicate.isBoolean(value)) {
-      return true;
-    }
-    return false;
+export function boolean(): AttributeRule<boolean> {
+  const rule: AttributeRule<boolean> = custom({
+    expected: 'boolean',
+    validator: (value: any): value is boolean => {
+      if (predicate.isBoolean(value)) {
+        return true;
+      }
+      throw new ValidationError(value, rule.config.expected);
+    },
   });
   return rule;
 }
-export function bool(): ValidatorRule<boolean> {
+export function bool(): AttributeRule<boolean> {
   return boolean();
 }
 // #endregion literal rules
@@ -228,116 +260,200 @@ export function bool(): ValidatorRule<boolean> {
 export function object<
   Normalized extends RuleMapToInterface<Args>,
   Args extends RuleMap = InterfaceToRuleMap<Normalized>,
->(ruleMap: Args): ValidatorRule<Normalized> {
-  const rule: ValidatorRule<Normalized> = {
-    ...custom((value: any): value is Normalized => {
-      if (!predicate.isObjectLiteral(value)) {
-        throw new ValidationError(value);
-      }
-
-      const valueKeys = Object.entries(value).map(([ key ]) => key).sort();
-      const propertyKeys = Object.entries(ruleMap).map(([ key ]) => key).sort();
-
-      // If the value is an empty object, an error is raised unless the defined property is also an empty object
-      if (valueKeys.length === 0) {
-        if (propertyKeys.length === 0) {
-          return true;
-        }
-        throw new ValidationError(value);
-      }
-
-      // Check if the value has a defined property
-      propertyKeys.forEach((key) => {
-        const property = ruleMap[key];
-        if (property.__optional) {
-          return;
-        }
-        if (valueKeys.includes(key)) {
-          return;
-        }
-        throw new PropertyFoundNotError(value, key);
-      });
-
-      // Check each property
-      for (const [ key, childValue ] of Object.entries(value)) {
-        if (!(key in ruleMap)) {
-          throw new PropertyAccessError(value, key);
+>(ruleMap: Args): ObjectAttributeRule<Normalized> {
+  let normalizeProperties: PropertyNormalizers<Normalized>;
+  const rule: ObjectAttributeRule<Normalized> = {
+    ...custom({
+      expected: `{${Object.entries(ruleMap).map(([ key, rule ]) => `${key}: ${rule.config.expected}`).join('; ')}.}`,
+      validator: (value: any): value is Normalized => {
+        if (!predicate.isObjectLiteral(value)) {
+          throw new ValidationError(value, 'object');
         }
 
-        const property = ruleMap[key];
-        if (!property.validator(childValue)) {
-          throw new PropertyValidationError(childValue, key);
-        }
-      }
-      return true;
-    }),
-    __normalizer: async<V>(value: V): Promise<Normalized | V> => {
-      if (!predicate.isObjectLiteral(value)) {
-        return value;
-      }
+        const valueKeys = Object.entries(value).map(([ key ]) => key).sort();
+        const propertyKeys = Object.entries(ruleMap).map(([ key ]) => key).sort();
 
-      const normalized = {};
-      for await (const [ key, childValue ] of Object.entries(value)) {
-        const rule = ruleMap[key];
-        normalized[key] = await rule.__normalizer(childValue) as Normalized[keyof Normalized];
-      }
-      return normalized as Normalized;
+        // If the value is an empty object, an error is raised unless the defined property is also an empty object
+        if (valueKeys.length === 0) {
+          if (propertyKeys.length === 0) {
+            return true;
+          }
+          throw new ValidationError(value, rule.config.expected);
+        }
+
+        // Check if the value has a defined property
+        propertyKeys.forEach((key) => {
+          const property = ruleMap[key];
+          if (property.config.optional) {
+            return;
+          }
+          if (valueKeys.includes(key)) {
+            return;
+          }
+          throw new PropertyFoundNotError(value, key as keyof typeof value);
+        });
+
+        // Check each property
+        for (const [ key, childValue ] of Object.entries(value)) {
+          if (!(key in ruleMap)) {
+            throw new PropertyAccessError(value, key as keyof typeof value);
+          }
+
+          const property = ruleMap[key];
+          try {
+            if (property.config.validator(childValue)) {
+              continue;
+            }
+          }
+          catch {
+          }
+          throw new PropertyValidationError(value, key as keyof typeof value, property.config.expected);
+        }
+        return true;
+      },
+      normalizer: async<V>(value: V): Promise<Normalized | V> => {
+        if (!predicate.isObjectLiteral(value)) {
+          return value;
+        }
+
+        const normalized: Normalized = {} as Normalized;
+        const schemaAccessor = createSchemaAccessor<Normalized>(normalized);
+        for await (const [ key, childValue ] of Object.entries(value)) {
+          const normalizerOrNormalizeMap = normalizeProperties[key] as PropertyNormalizers<Normalized>[keyof Normalized] | undefined;
+          if (normalizerOrNormalizeMap === undefined) {
+            normalized[key as keyof Normalized] = childValue as Normalized[keyof Normalized];
+            continue;
+          }
+
+          normalized[key as keyof Normalized] = (
+            predicate.isCallable(normalizerOrNormalizeMap)
+              ? normalizerOrNormalizeMap(childValue, schemaAccessor)
+              : await getNormalizer(normalizerOrNormalizeMap, childValue)?.(childValue, schemaAccessor)
+          ) as Normalized[keyof Normalized];
+        }
+        return normalized;
+      },
+    }) as ObjectAttributeRule<Normalized>,
+    normalizeProperties: (propertyNormalizers: PropertyNormalizers<Normalized>) => {
+      normalizeProperties = { ...normalizeProperties, ...propertyNormalizers };
+      return rule;
     },
   };
   return rule;
 }
 export function array<
   Normalized extends RuleToNormalized<Arg>,
-  Arg extends ValidatorRule<any> = ValidatorRule<Normalized>,
->(element: Arg): ValidatorRule<Normalized[]> {
-  const rule: ValidatorRule<Normalized[]> = {
-    ...custom((value: any): value is Normalized[] => {
-      if (!Array.isArray(value)) {
-        throw new ValidationError(value);
-      }
+  Arg extends AttributeRule<any> = AttributeRule<Normalized>,
+>(elementRule: Arg): AttributeRule<Normalized[]> {
+  const rule: AttributeRule<Normalized[]> = {
+    ...custom({
+      expected: `Array<${elementRule.config.expected}>`,
+      validator: (value: any): value is Normalized[] => {
+        if (!Array.isArray(value)) {
+          throw new ValidationError(value, rule.config.expected);
+        }
 
-      value.forEach((childValue, index) => {
-        if (!predicate.isNumber(index)) {
-          return;
+        value.forEach((childValue, index) => {
+          if (!predicate.isNumber(index)) {
+            return;
+          }
+          try {
+            if (elementRule.config.validator(childValue)) {
+              return;
+            }
+          }
+          catch {
+          }
+          throw new ElementValidationError(value, index, rule.config.expected);
+        });
+        return true;
+      },
+      normalizer: async<V>(value: V): Promise<Normalized[] | V> => {
+        if (!Array.isArray(value)) {
+          return value;
         }
-        if (!element.validator(childValue)) {
-          throw new ElementValidationError(value, index);
+
+        const normalized: Normalized[] = [];
+        for await (const childValue of value) {
+          normalized.push(await elementRule.config.normalizer(childValue) as Normalized);
         }
-      });
-      return true;
+        return normalized;
+      },
     }),
-    __normalizer: async<V>(value: V): Promise<Normalized[] | V> => {
-      if (!Array.isArray(value)) {
-        return value;
-      }
-
-      const normalized: Normalized[] = [];
-      for await (const childValue of value) {
-        normalized.push(await element.__normalizer(childValue) as Normalized);
-      }
-      return normalized;
-    },
   };
   return rule;
 }
 export function tuple<
   Normalized extends RulesToTuple<Args>,
-  Args extends Array<ValidatorRule<any>> = Array<ValidatorRule<Normalized>>,
->(...rules: Args): ValidatorRule<IsAny<Normalized> extends true ? RulesToTuple<Args> : Normalized> {
-  return custom((value: any): value is IsAny<Normalized> extends true ? RulesToTuple<Args> : Normalized => {
-    if (!Array.isArray(value)) {
-      return false;
-    }
-    if (value.length !== rules.length) {
-      return false;
-    }
-    return value.every((element, index) => {
-      const rule = rules.at(index);
-      if (!rule) {
+  Args extends Array<AttributeRule<any>> = Array<AttributeRule<Normalized>>,
+>(...rules: Args): AttributeRule<IsAny<Normalized> extends true ? RulesToTuple<Args> : Normalized> {
+  return custom({
+    expected: `[${rules.map((rule) => rule.config.expected).join(', ')}]`,
+    validator: (value: any): value is IsAny<Normalized> extends true ? RulesToTuple<Args> : Normalized => {
+      if (!Array.isArray(value)) {
         return false;
       }
-      return rule.validator(element);
-    });
+      if (value.length !== rules.length) {
+        return false;
+      }
+      return value.every((element, index) => {
+        const elementRule = rules.at(index);
+        if (!elementRule) {
+          return false;
+        }
+        try {
+          if (elementRule.config.validator(element)) {
+            return true;
+          }
+        }
+        catch {
+        }
+
+        throw new ElementValidationError(value, index, elementRule.config.expected);
+      });
+    },
   });
 }
 // #endregion object rules
+
+
+// #region helpers
+type CustomConfig<Normalized> = SetRequired<Partial<AttributeRuleConfig<Normalized>>, 'validator'>;
+function getNormalizer<Normalized, Owner, Value>(normalizeMap: AttributeNormalizersByType<Normalized, Owner>, value: Value): AttributeNormalizer<any, Normalized, Owner> | undefined {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (!normalizeMap) {
+    return undefined;
+  }
+  switch (typeof value) {
+    case 'undefined': return 'undefined' in normalizeMap ? normalizeMap.undefined : undefined;
+    case 'string': return 'string' in normalizeMap ? normalizeMap.string : undefined;
+    case 'number': return 'number' in normalizeMap ? normalizeMap.number : undefined;
+    case 'boolean': return 'boolean' in normalizeMap ? normalizeMap.boolean : undefined;
+    case 'object': {
+      if (value === null) {
+        return 'null' in normalizeMap ? normalizeMap.null : undefined;
+      }
+      if (Array.isArray(value)) {
+        return 'array' in normalizeMap ? normalizeMap.array : undefined;
+      }
+      return 'object' in normalizeMap ? normalizeMap.object : undefined;
+    }
+    default: break;
+  }
+  return 'any' in normalizeMap ? normalizeMap.any : undefined;
+}
+function createSchemaAccessor<Normalized extends Interface>(normalized: Partial<Normalized>): SchemaAccessor<Normalized> {
+  return {
+    isValidated<Key extends keyof Normalized>(key: Key): boolean {
+      return key in normalized;
+    },
+    get<Key extends keyof Normalized>(key: Key): Normalized[Key] {
+      if (this.isValidated(key)) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return normalized[key]!;
+      }
+      throw Error(`"${String(key)}" is not yet normalized`);
+    },
+  };
+}
+// #region helpers

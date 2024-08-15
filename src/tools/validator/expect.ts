@@ -9,7 +9,7 @@ export function createValidator<T>(arg1: Predicate, arg2: ErrorHandle | Array<No
   const validator = arg1;
   const errorHandler = Array.isArray(arg2)
     ? ((value: T): void => {
-      throw new ValidationError(value);
+      throw new ValidationError(value, '');
     })
     : arg2;
   const normalizers = Array.isArray(arg2) ? arg2 : arg3!;
@@ -30,7 +30,7 @@ export function createValidator<T>(arg1: Predicate, arg2: ErrorHandle | Array<No
         }
       }
     }
-    throw new ValidationError(value);
+    throw new ValidationError(value, '');
   };
 
   async function handleError(handler: ErrorHandle | ErrorHandleMap, value: any): Promise<void> {
@@ -59,7 +59,7 @@ export function expect<V, R>(predicate: ((value: any) => value is V), normalizer
     if (predicate(value)) {
       return Promise.resolve(normalizer(value));
     }
-    throw new ValidationError(value);
+    throw new ValidationError(value, '');
   };
 }
 export function expectAny<R>(normalizer: Normalizer<any, R>): Validator<R> {

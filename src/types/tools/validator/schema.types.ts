@@ -1,3 +1,3 @@
-import { RuleToNormalized, ValidatorRule } from './rules.types';
+import { AttributeRule, RuleToNormalized } from './rules.types';
 
-export type Schema<Rule extends ValidatorRule<any>> = (value: any) => Promise<RuleToNormalized<Rule>>;
+export type Schema<Rule extends AttributeRule<any>> = (value: any) => Promise<RuleToNormalized<Rule>>;
