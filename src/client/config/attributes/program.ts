@@ -1,41 +1,38 @@
 import * as path from 'path';
 import * as validators from '../../../tools/validator';
-import * as predicate from '../../../tools/predicate';
-import { AttributeCheckerFactory, AttributeValidator, DebugConfig } from '../../../types/dap/config.types';
+import { DebugConfig } from '../../../types/dap/config.types';
+import { AttributeNormalizersByType, AttributeRule, PathAttributeRule } from '../../../types/tools/validator';
+import { directoryExists, fileExists } from '../../../tools/predicate';
 
 export const attributeName = 'program';
-export const defaultValue: DebugConfig['program'] = undefined;
-export const validator: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
-  const checker = createChecker(attributeName);
+export const dependAttributes: Array<keyof DebugConfig> = [ 'runtime' ];
+export const attributeRule: AttributeRule<DebugConfig['program']> & PathAttributeRule = validators.file().depends(...dependAttributes);
+export const attributeNormalizer: AttributeNormalizersByType<DebugConfig['program'], DebugConfig> = {
+  undefined: (value, schema, onError) => {
+    // Case 1: [Default file name](https://www.autohotkey.com/docs/v2/Scripts.htm#defaultfile)
+    // Only if the appropriate `runtime` is set before validation
+    if (schema.isNormalized('runtime')) {
+      const runtime = schema.getNormalizedAttribute('runtime');
+      if (fileExists(runtime)) {
+        const fileName = `${path.basename(runtime, path.extname(runtime))}.ahk`;
+        const program = path.resolve(path.dirname(runtime), fileName);
+        return program;
+      }
+      if (directoryExists(runtime)) {
+        const fileName = path.basename(runtime, 'AutoHotkey.ahk');
+        const program = path.resolve(runtime, fileName);
+        return program;
+      }
+    }
 
-  const validate = validators.createValidator(
-    predicate.fileExists,
-    checker.throwFileNotFoundError,
-    [
-      validators.expectUndefined(async() => {
-        // Case 1: If the editor can provide an open file
-        if (checker.utils.getCurrentFile) {
-          const currentFile = await checker.utils.getCurrentFile();
-          if (currentFile) {
-            return currentFile;
-          }
-        }
+    // Case 2: If the editor can provide an open file
+    if (schema.has('__filename')) {
+      const currentFile = schema.getRawAttribute<string | undefined>('__filename');
+      if (currentFile) {
+        return currentFile;
+      }
+    }
 
-        // Case 2: [Default file name](https://www.autohotkey.com/docs/v2/Scripts.htm#defaultfile)
-        // Only if the appropriate `runtime` is set before validation
-        const runtime = checker.getByName('runtime');
-        if (runtime && predicate.fileExists(runtime)) {
-          const fileName = `${path.basename(runtime, path.extname(runtime))}.ahk`;
-          const program = path.resolve(runtime, fileName);
-          return program;
-        }
-        return '';
-      }),
-      validators.expectString((value) => value),
-    ],
-  );
-
-  const rawAttribute = checker.get();
-  const validated = await validate(rawAttribute);
-  checker.markValidated(validated);
+    return value as unknown as DebugConfig['program'];
+  },
 };

@@ -1,63 +1,39 @@
 import { checkPortUsed, range } from '../../../tools/utils';
 import * as validators from '../../../tools/validator';
 import * as predicate from '../../../tools/predicate';
-import { AttributeCheckerFactory, AttributeValidator, DebugConfig } from '../../../types/dap/config.types';
-import { NormalizationError } from '../../../tools/validator/error';
+import { DebugConfig } from '../../../types/dap/config.types';
+import { AttributeNormalizersByType, AttributeRule } from '../../../types/tools/validator';
 
 export const attributeName = 'port';
 export const defaultValue: DebugConfig['port'] = 9002;
-export const validator: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
-  const checker = createChecker(attributeName);
-  const validate = validators.createValidator(
-    isValidPort,
-    [
-      validators.expectUndefined(() => defaultValue),
-      validators.expectString(async(value: string) => {
-        const portsRegexp = /(?<start>\d+)-(?<end>\d+)/u;
-        if (!portsRegexp.test(value)) {
-          throw new NormalizationError(attributeName, value);
-        }
-        const match = value.match(portsRegexp)!;
-        const { start, end } = match.groups!;
-
-        const startPort = Number(start);
-        const endPort = Number(end);
-        return normalizeNumberArray(range(startPort, endPort));
-      }),
-      validators.expectNumber((value: number) => {
-        if (isValidPort(value)) {
-          return value;
-        }
-        throw new NormalizationError(attributeName, value);
-      }),
-      validators.expectNumberArray(normalizeNumberArray),
-    ],
-  );
-
-  const rawAttribute = checker.get();
-  const validated = await validate(rawAttribute);
-  checker.markValidated(validated);
-  return Promise.resolve();
-
-  // #region helpers
-  function isValidPort(value: any): value is number {
-    if (!predicate.isNumber(value)) {
-      return false;
+export const attributeRule: AttributeRule<DebugConfig['port']> = validators.number().min(1024).max(65535);
+export const attributeNormalizer: AttributeNormalizersByType<DebugConfig['port'], DebugConfig> = {
+  undefined() {
+    return defaultValue;
+  },
+  async string(value, schema, onError) {
+    const portsRegexp = /(?<start>\d+)-(?<end>\d+)/u;
+    if (!portsRegexp.test(value)) {
+      onError(new validators.NormalizationError(`\`${attributeName}\` should be specified as "9002-9010", but the actual value \`${value}\` was specified.`));
+      return value as unknown as number;
     }
 
-    const registeredPortStart = 1024;
-    const privatePortEnd = 65535;
-    return registeredPortStart <= value && value <= privatePortEnd;
-  }
-  async function normalizeNumberArray(value: number[]): Promise<number> {
-    for await (const port of value) {
+    const match = value.match(portsRegexp)!;
+    const { start, end } = match.groups!;
+    return await this.array!(range(Number(start), Number(end)), schema, onError);
+  },
+  async array(value, schema, onError) {
+    for await (const [ index, port ] of Object.entries(value)) {
+      if (!predicate.isNumber(port)) {
+        onError(new validators.NormalizationWarning(`\`${attributeName}[${index}]\` was ignored because it is not a number representing a port.`));
+        continue;
+      }
+
       const isPortUsed = await checkPortUsed(port);
       if (!isPortUsed) {
         return port;
       }
     }
-    throw new NormalizationError(attributeName, value);
-  }
-  // #endregion helpers
+    throw new validators.NormalizationError(attributeName);
+  },
 };
-

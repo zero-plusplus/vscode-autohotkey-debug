@@ -1,7 +1,13 @@
+export class ValidationWarning extends Error {
+  // eslint-disable-next-line @typescript-eslint/no-useless-constructor
+  constructor(message: string) {
+    super(message);
+  }
+}
 export class ValidationError<T> extends Error {
   public readonly value: T;
   constructor(value: T, expected: string) {
-    super(`Expected ${expected}, but the actual value was ${JSON.stringify(value)}.`);
+    super(`Expected ${expected}, but the actual value was ${JSON.stringify(value, undefined, 4)}.`);
 
     this.value = value;
   }
@@ -9,7 +15,7 @@ export class ValidationError<T> extends Error {
 export class SchemaValidationError<T> extends Error {
   public readonly value: T;
   constructor(value: T) {
-    super(`Schema validation failed for some reason. This schema has the structure of ${JSON.stringify(value)}`);
+    super(`Schema validation failed for some reason. This schema has the structure of ${JSON.stringify(value, undefined, 4)}`);
 
     this.value = value;
   }
@@ -18,7 +24,7 @@ export class PropertyValidationError<Value extends Record<string, any>> extends 
   public readonly value: Value;
   public readonly key: keyof Value;
   constructor(value: Value, key: keyof Value, expected: string) {
-    super(`Expected ${expected}, but the actual value was ${JSON.stringify(value[key])}. This value was taken from property ${String(key)} of ${JSON.stringify(value)}.`);
+    super(`Expected ${expected}, but the actual value was ${JSON.stringify(value[key], undefined, 4)}. This value was taken from property ${String(key)} of ${JSON.stringify(value, undefined, 4)}.`);
 
     this.value = value;
     this.key = key;
@@ -28,7 +34,7 @@ export class ElementValidationError<Element, Value extends Element[]> extends Er
   public readonly value: Value;
   public readonly index: number;
   constructor(value: Value, index: number, expected: string) {
-    super(`Expected ${expected}, but the actual value was ${JSON.stringify(value[index])}. This value was taken from element index ${index} of ${JSON.stringify(value)}.`);
+    super(`Expected ${expected}, but the actual value was ${JSON.stringify(value[index], undefined, 4)}. This value was taken from element index ${index} of ${JSON.stringify(value, undefined, 4)}.`);
 
     this.value = value;
     this.index = index;
@@ -105,13 +111,15 @@ export class PropertyFoundNotError<V extends Record<string, any>> extends Error 
     this.key = key;
   }
 }
-export class NormalizationError<T> extends Error {
-  public readonly valuePath: string;
-  public readonly value: T;
-  constructor(valuePath: string, value: T, ...args: Parameters<typeof Error>) {
-    super(...args);
-
-    this.valuePath = valuePath;
-    this.value = value;
+export class NormalizationWarning extends Error {
+  // eslint-disable-next-line @typescript-eslint/no-useless-constructor
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
+  }
+}
+export class NormalizationError extends Error {
+  // eslint-disable-next-line @typescript-eslint/no-useless-constructor
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
   }
 }

@@ -1,50 +1,84 @@
 import { describe, expect, test } from '@jest/globals';
-import { createDefaultDebugConfig } from '../../../../src/client/config/default';
-import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { DebugConfig } from '../../../../src/types/dap/config.types';
-import { AttributeTypeError } from '../../../../src/client/config/error';
 import * as attributes from '../../../../src/client/config/attributes';
+import { createSchema, object } from '../../../../src/tools/validator';
+import { DebugConfig } from '../../../../src/types/dap/config.types';
+import { SetRequired } from 'type-fest';
 
-describe('usePerfTips attribute', () => {
-  describe('validate', () => {
-    test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.usePerfTips.validator ]);
+describe('usePerfTips', () => {
+  const schema = createSchema(object<SetRequired<Partial<DebugConfig>, 'usePerfTips'>>({
+    usePerfTips: attributes.usePerfTips.attributeRule,
+  }).normalizeProperties({ usePerfTips: attributes.usePerfTips.attributeNormalizer }));
 
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        usePerfTips: false,
-      });
-      expect(config.usePerfTips).toBe(attributes.usePerfTips.defaultValue);
+  describe('pass', () => {
+    test(
+      'Specified `false`',
+      async() => expect(schema.apply({ usePerfTips: false })).resolves.toEqual({ usePerfTips: false }),
+    );
+    test(
+      'Specified `true`',
+      async() => expect(schema.apply({ usePerfTips: false })).resolves.toEqual({ usePerfTips: attributes.usePerfTips.defaultValue }),
+    );
+
+    describe('fontColor', () => {
+      test(
+        'Specified undefined',
+        async() => expect(schema.apply({ usePerfTips: { fontStyle: 'italic', format: '' } }))
+          .resolves.toEqual({ usePerfTips: { fontColor: 'gray', fontStyle: 'italic', format: '' } }),
+      );
+      test(
+        'Specified string',
+        async() => expect(schema.apply({ usePerfTips: { fontColor: '#000000', fontStyle: 'italic', format: '' } }))
+          .resolves.toEqual({ usePerfTips: { fontColor: '#000000', fontStyle: 'italic', format: '' } }),
+      );
     });
-    test('normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.usePerfTips.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        usePerfTips: undefined,
-      });
-      expect(config.usePerfTips).toBe(attributes.usePerfTips.defaultValue);
+    describe('fontStyle', () => {
+      test(
+        'Specified undefined',
+        async() => expect(schema.apply({ usePerfTips: { fontStyle: 'italic', fontColor: 'gray', format: '' } }))
+          .resolves.toEqual({ usePerfTips: { fontStyle: 'italic', fontColor: 'gray', format: '' } }),
+      );
+      test(
+        'Specified string',
+        async() => expect(schema.apply({ usePerfTips: { fontStyle: 'bold', fontColor: 'gray', format: '' } }))
+          .resolves.toEqual({ usePerfTips: { fontStyle: 'bold', fontColor: 'gray', format: '' } }),
+      );
     });
-    test('normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.usePerfTips.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        usePerfTips: true,
-      });
-      expect(config.usePerfTips).toBe(attributes.usePerfTips.normalizedDefaultValue);
+    describe('format', () => {
+      test(
+        'Specified undefined',
+        async() => expect(schema.apply({ usePerfTips: { format: undefined, fontStyle: 'italic', fontColor: 'gray' } }))
+          .resolves.toEqual({ usePerfTips: { format: attributes.usePerfTips.enabledDefaultValue.format, fontStyle: 'italic', fontColor: 'gray' } }),
+      );
+      test(
+        'Specified string',
+        async() => expect(schema.apply({ usePerfTips: { format: '', fontStyle: 'bold', fontColor: 'gray' } }))
+          .resolves.toEqual({ usePerfTips: { format: '', fontStyle: 'bold', fontColor: 'gray' } }),
+      );
     });
   });
+  describe('fail', () => {
+    test(
+      'Unsupported data',
+      async() => expect(schema.apply({ usePerfTips: 'abc' })).rejects.toThrow(),
+    );
 
-  describe('validate error', () => {
-    test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.usePerfTips.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        usePerfTips: '' as unknown as boolean,
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
+    describe('fontColor', () => {
+      test(
+        'Unsupported data',
+        async() => expect(schema.apply({ usePerfTips: { fontColor: {} } })).rejects.toThrow(),
+      );
+    });
+    describe('fontStyle', () => {
+      test(
+        'Unsupported data',
+        async() => expect(schema.apply({ usePerfTips: { fontStyle: {} } })).rejects.toThrow(),
+      );
+    });
+    describe('format', () => {
+      test(
+        'Unsupported data',
+        async() => expect(schema.apply({ usePerfTips: { format: {} } })).rejects.toThrow(),
+      );
     });
   });
 });

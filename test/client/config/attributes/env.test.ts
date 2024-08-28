@@ -1,41 +1,24 @@
 import { describe, expect, test } from '@jest/globals';
-import { createDefaultDebugConfig } from '../../../../src/client/config/default';
-import { createAttributesValidator } from '../../../../src/client/config/validator';
 import * as attributes from '../../../../src/client/config/attributes';
-import { AttributeTypeError } from '../../../../src/client/config/error';
+import { createSchema, object } from '../../../../src/tools/validator';
 import { DebugConfig } from '../../../../src/types/dap/config.types';
 
-describe('env attribute', () => {
-  describe('validate', () => {
-    test('normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.env.validator ]);
+describe('env', () => {
+  const schema = createSchema(object<Partial<DebugConfig>>({
+    env: attributes.env.attributeRule,
+  }).normalizeProperties({ env: attributes.env.attributeNormalizer }));
 
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        env: undefined,
-      });
-      expect(config.env).toBe(attributes.env.defaultValue);
-    });
-    test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.env.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        env: {},
-      });
-      expect(config.env).toEqual({});
-    });
+  test('pass', async() => {
+    await expect(schema.apply({ env: { a: 'a', b: __filename, c: undefined } })).resolves.toEqual({ env: { a: 'a', b: __filename, c: undefined } });
+    await expect(schema.apply({ env: undefined })).resolves.toEqual({ env: undefined });
   });
-
-  describe('validate error', () => {
-    test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.env.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        env: [] as unknown as undefined,
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
-    });
+  test('warning', async() => {
+    await expect(schema.apply({ env: { a: 'a', b: {} } })).resolves.toEqual({ env: { a: 'a' } });
+  });
+  describe('fail', () => {
+    test(
+      'Unsupported data',
+      async() => expect(schema.apply({ env: 'abc' })).rejects.toThrow(),
+    );
   });
 });

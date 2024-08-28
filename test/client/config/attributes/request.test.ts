@@ -1,50 +1,28 @@
 import { describe, expect, test } from '@jest/globals';
-import { createDefaultDebugConfig } from '../../../../src/client/config/default';
-import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { DebugConfig } from '../../../../src/types/dap/config.types';
-import { AttributeTypeError, AttributeValueError } from '../../../../src/client/config/error';
 import * as attributes from '../../../../src/client/config/attributes';
+import { createSchema, object } from '../../../../src/tools/validator';
+import { DebugConfig } from '../../../../src/types/dap/config.types';
+import { SetRequired } from 'type-fest';
 
-describe('request attribute', () => {
-  describe('validate', () => {
-    test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.request.validator ]);
+describe('request', () => {
+  const schema = createSchema(object<SetRequired<Partial<DebugConfig>, 'request'>>({
+    request: attributes.request.attributeRule,
+  }).normalizeProperties({ request: attributes.request.attributeNormalizer }));
 
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        request: 'launch',
-      });
-      expect(config.request).toBe('launch');
-    });
-    test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.request.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        request: 'attach',
-      });
-      expect(config.request).toBe('attach');
-    });
+  describe('pass', () => {
+    test(
+      'Specify `"launch"`',
+      async() => expect(schema.apply({ request: 'launch' })).resolves.toEqual({ request: 'launch' }),
+    );
+    test(
+      'Specify `"attach"`',
+      async() => expect(schema.apply({ request: 'attach' })).resolves.toEqual({ request: 'attach' }),
+    );
   });
-
-  describe('validate error', () => {
-    test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.request.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        request: {} as 'launch',
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
-    });
-    test('value error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.request.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        request: 'abc' as 'launch',
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeValueError);
-    });
+  describe('fail', () => {
+    test(
+      'Unsupported data',
+      async() => expect(schema.apply({ request: {} })).rejects.toThrow(),
+    );
   });
 });

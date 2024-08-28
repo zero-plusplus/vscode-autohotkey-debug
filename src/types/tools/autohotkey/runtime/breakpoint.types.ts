@@ -14,7 +14,7 @@ export type BreakpointData
   | ExceptionBreakpointData;
 export interface BreakpointDataBase {
   kind: BreakpointKind;
-  hidden: VisibleCondition;
+  hidden?: VisibleCondition;
   temporary?: boolean;
   condition?: string;
   hitCondition?: string;

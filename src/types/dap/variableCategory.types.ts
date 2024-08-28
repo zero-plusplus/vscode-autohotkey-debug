@@ -38,11 +38,12 @@ export type MatchPattern
   | VariableSuffixPattern
   | VariableExactPattern
   | VariableWildcardPattern;
-export type PatternType = 'partial' | 'prefix' | 'suffix' | 'exact' | 'regex' | 'regexp' | 'wildcard';
+export const patternTypes = [ 'partial', 'prefix', 'suffix', 'exact', 'regex', 'regexp', 'wildcard' ] as const;
+export type PatternType = typeof patternTypes[number];
 export interface VariablePatternBase {
   patternType: PatternType;
   pattern: string;
-  ignorecase?: boolean;
+  ignorecase: boolean;
 }
 export interface VariablePartialPattern extends VariablePatternBase {
   patternType: 'partial';
@@ -64,7 +65,7 @@ export interface VariableWildcardPattern extends VariablePatternBase {
 }
 export interface VariableAttributes {
   type?: string;
-  kindName?: string;
+  className?: string;
   isBuiltin?: boolean;
   isStatic?: boolean;
 }

@@ -68,6 +68,12 @@ export function isFloat(value: any): boolean {
   const num = Number(value);
   return !Number.isInteger(num) && Number.isFinite(num);
 }
+export function isPositiveNumber(value: any): value is number {
+  return isNumber(value) && 0 < value;
+}
+export function isNegativeNumber(value: any): value is number {
+  return isNumber(value) && value < 0;
+}
 export function isBoolean(value: any): value is boolean {
   return typeof value === 'boolean';
 }

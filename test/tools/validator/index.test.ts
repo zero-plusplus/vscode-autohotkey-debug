@@ -32,7 +32,7 @@ describe('validator/normalizer', () => {
         }),
       }),
       alternative: validators.alternative(validators.string(), validators.number()),
-      tuple: validators.tuple(validators.literal<'a'>(), validators.literal<'b'>(), validators.literal<'c'>()),
+      tuple: validators.tuple(validators.literalUnion('a'), validators.literalUnion('b'), validators.literalUnion('c')),
       optional: validators.optional(validators.string()),
     })
       .normalizeProperties({
@@ -42,7 +42,7 @@ describe('validator/normalizer', () => {
           },
         },
         useFoo: (value, schema) => {
-          const type = schema.get('type');
+          const type = schema.getNormalizedAttribute('type');
           return { useBar: Boolean(value), useBaz: { enabled: type === 'launch' ? Boolean(value) : !value } };
         },
       });
@@ -51,9 +51,9 @@ describe('validator/normalizer', () => {
     const rawConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: undefined, port: 9002, skipFiles: [ __filename ], useFoo: true, alternative: 'string', tuple: [ 'a', 'b', 'c' ] };
     const normalizedConfig = { name: 'AutoHotkey Debug', type: 'launch', runtime: __filename, port: 9002, skipFiles: [ __filename ], useFoo: { useBar: true, useBaz: { enabled: true } }, alternative: 'string', tuple: [ 'a', 'b', 'c' ] };
 
-    expect(await configSchema(rawConfig)).toEqual(normalizedConfig);
-    await expect(configSchema({})).rejects.toThrow();
-    await expect(configSchema({ name: rawConfig.name })).rejects.toThrow();
-    await expect(configSchema({ ...rawConfig, unknownKey: 'unknown' })).rejects.toThrow();
+    expect(await configSchema.apply(rawConfig)).toEqual(normalizedConfig);
+    await expect(configSchema.apply({})).rejects.toThrow();
+    await expect(configSchema.apply({ name: rawConfig.name })).rejects.toThrow();
+    await expect(configSchema.apply({ ...rawConfig, unknownKey: 'unknown' })).rejects.toThrow();
   });
 });

@@ -1,45 +1,30 @@
 import * as validators from '../../../tools/validator';
-import * as predicate from '../../../tools/predicate';
-import { AttributeCheckerFactory, AttributeValidator, DebugConfig, NormalizedDebugConfig } from '../../../types/dap/config.types';
-import { AttributeWarningError } from '../error';
-import { messageCategories } from '../../../types/dap/adapter/adapter.types';
+import { DebugConfig } from '../../../types/dap/config.types';
+import { MessageCategory, messageCategories } from '../../../types/dap/adapter/adapter.types';
+import { AttributeNormalizersByType, AttributeRule } from '../../../types/tools/validator';
+import { OutputDebugConfig } from '../../../types/client/config/attributes/useOutputDebug.types';
 
 export const attributeName = 'useOutputDebug';
-export const defaultValue: DebugConfig['useOutputDebug'] = undefined;
-export const normalizedDefaultValue: NormalizedDebugConfig['useOutputDebug'] = {
-  category: 'stderr',
+export const defaultValue: DebugConfig['useOutputDebug'] = false;
+export const enabledDefaultValue: DebugConfig['useOutputDebug'] = {
+  category: 'stdout',
   useTrailingLinebreak: false,
 };
-export const validator: AttributeValidator = async(createChecker: AttributeCheckerFactory): Promise<void> => {
-  const checker = createChecker(attributeName);
-  const validate = validators.createValidator(
-    isOutputDebug,
-    [
-      validators.expectUndefined((value) => value),
-      validators.expectBoolean((value) => (value ? normalizedDefaultValue : undefined)),
-      validators.expectObjectLiteral((value) => ({ ...normalizedDefaultValue, ...value })),
-    ],
-  );
-
-  const rawAttribute = checker.get();
-  const validated = await validate(rawAttribute);
-  checker.markValidated(validated);
-  return Promise.resolve();
-
-  // #region helpers
-  function isMessageCategory(value: any): value is NonNullable<NormalizedDebugConfig['useOutputDebug']>['category'] {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    return messageCategories.includes(value);
-  }
-  function isOutputDebug(value: any): value is NormalizedDebugConfig['useOutputDebug'] {
-    if (predicate.isUndefined(value)) {
-      return true;
+export const attributeRule: AttributeRule<DebugConfig['useOutputDebug']> = validators.alternative(
+  validators.literalUnion(false),
+  validators.object<OutputDebugConfig>({
+    category: validators.literalUnion<MessageCategory>(...messageCategories).default(enabledDefaultValue.category),
+    useTrailingLinebreak: validators.boolean().default(enabledDefaultValue.useTrailingLinebreak),
+  }),
+);
+export const attributeNormalizer: AttributeNormalizersByType<DebugConfig['useOutputDebug'], DebugConfig> = {
+  undefined() {
+    return defaultValue;
+  },
+  boolean(value) {
+    if (value) {
+      return enabledDefaultValue;
     }
-
-    return predicate.isObject(value, {
-      category: predicate.strictly(isMessageCategory, new AttributeWarningError(attributeName, 'category', '')),
-      useTrailingLinebreak: predicate.strictly(predicate.isBoolean, new AttributeWarningError(attributeName, 'useTrailingLinebreak', '')),
-    });
-  }
-  // #endregion helpers
+    return value;
+  },
 };

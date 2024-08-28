@@ -1,50 +1,33 @@
 import { describe, expect, test } from '@jest/globals';
-import { createDefaultDebugConfig } from '../../../../src/client/config/default';
-import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { DebugConfig } from '../../../../src/types/dap/config.types';
-import { AttributeTypeError } from '../../../../src/client/config/error';
 import * as attributes from '../../../../src/client/config/attributes';
+import { createSchema, object } from '../../../../src/tools/validator';
+import { DebugConfig } from '../../../../src/types/dap/config.types';
+import { SetRequired } from 'type-fest';
 
-describe('useLoadedScripts attribute', () => {
-  describe('validate', () => {
-    test('normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useLoadedScripts.validator ]);
+describe('useLoadedScripts', () => {
+  const schema = createSchema(object<SetRequired<Partial<DebugConfig>, 'useLoadedScripts'>>({
+    useLoadedScripts: attributes.useLoadedScripts.attributeRule,
+  }).normalizeProperties({ useLoadedScripts: attributes.useLoadedScripts.attributeNormalizer }));
 
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        useLoadedScripts: true,
-      });
-      expect(config.useLoadedScripts).toBe(attributes.useLoadedScripts.defaultValue);
-    });
-    test('normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useLoadedScripts.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        useLoadedScripts: undefined,
-      });
-      expect(config.useLoadedScripts).toBe(attributes.useLoadedScripts.defaultValue);
-    });
-    test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useLoadedScripts.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        useLoadedScripts: { scanImplicitLibrary: false },
-      });
-      expect(config.useLoadedScripts).toEqual({ scanImplicitLibrary: false });
-    });
+  describe('pass', () => {
+    test(
+      'Specified `true`',
+      async() => expect(schema.apply({ useLoadedScripts: true })).resolves.toEqual({ useLoadedScripts: true }),
+    );
+    test(
+      'Specified `false`',
+      async() => expect(schema.apply({ useLoadedScripts: false })).resolves.toEqual({ useLoadedScripts: false }),
+    );
+    test(
+      'Specified object',
+      async() => expect(schema.apply({ useLoadedScripts: { scanImplicitLibrary: false } }))
+        .resolves.toEqual({ useLoadedScripts: { scanImplicitLibrary: false } }),
+    );
   });
-
-  describe('validate error', () => {
-    test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useLoadedScripts.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        useLoadedScripts: '' as unknown as boolean,
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
-    });
+  describe('fail', () => {
+    test(
+      'Unsupported data',
+      async() => expect(schema.apply({ useLoadedScripts: 'abc' })).rejects.toThrow(),
+    );
   });
 });

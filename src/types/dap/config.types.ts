@@ -22,7 +22,7 @@ export interface AttributeChecker<K extends keyof DebugConfig> {
   get: () => DebugConfig[K];
   getByName: <K extends keyof DebugConfig>(attributeName: K) => DebugConfig[K];
   isValid: boolean;
-  getDependency: <NK extends keyof NormalizedDebugConfig>(dependedAttributeName: NK) => NormalizedDebugConfig[NK];
+  getDependency: <NK extends keyof DebugConfig>(dependedAttributeName: NK) => DebugConfig[NK];
   markValidated: (value?: DebugConfig[K]) => void;
   markValidatedPath: (value?: DebugConfig[K]) => void;
   warning: (message: string) => void;
@@ -32,73 +32,62 @@ export interface AttributeChecker<K extends keyof DebugConfig> {
   throwFileNotFoundError: (filePath?: string) => void;
 }
 export type AttributeValidator = (createChecker: AttributeCheckerFactory) => Promise<void>;
+export type DebugConfigValidator = (config: DebugConfig, callback?: (err: Error) => void) => Promise<DebugConfig>;
 
-export type DebugConfigValidator = (config: DebugConfig, callback?: (err: Error) => void) => Promise<NormalizedDebugConfig>;
 export type DebugRequest = 'launch' | 'attach';
 export interface DebugConfig extends DebugProtocol.LaunchRequestArguments, DebugProtocol.AttachRequestArguments {
   // #region basic configurations
-  name?: string;
-  type: string;
-  request?: DebugRequest;
-  stopOnEntry?: boolean;
+  name: string;
+  type: 'autohotkey';
+  request: DebugRequest;
+  stopOnEntry: boolean;
   skipFunctions?: string[];
   skipFiles?: string[];
   trace: boolean;
 
   // #region launcher configurations
-  runtime?: string;
-  runtime_v1?: string;
-  runtime_v2?: string;
-  runtimeArgs?: string[];
-  runtimeArgs_v1?: string[];
-  runtimeArgs_v2?: string[];
-  program?: string;
-  args?: string[];
-  port?: number | `${number}-${number}`;
-  hostname?: string;
-  noDebug?: boolean;
+  runtime: string;
+  runtimeArgs: string[];
+  program: string;
+  args: string[];
+  port: number;
+  hostname: string;
+  noDebug: boolean;
   cwd?: string;
   env?: NodeJS.ProcessEnv;
-  maxChildren?: number;
+  maxChildren: number;
   // #endregion lancher configurations
   // #region basic configurations
 
   // #region custom configurations
   openFileOnExit?: string;
-  variableCategories?: false | 'recommend' | VariableCategory[];
+  variableCategories: false | VariableCategory[];
   setBreakpoints?: BreakpointDataArray;
   // #endregion custom configurations
 
   // #region feature configurations
-  usePerfTips?: boolean | PerfTipsConfig;
-  useIntelliSenseInDebugging?: boolean;
-  useDebugDirective?: boolean | DebugDirectiveConfig;
-  useAutoJumpToError: boolean;
-  useUIAVersion?: boolean;
-  useOutputDebug?: boolean | OutputDebugConfig;
-  useAnnounce?: boolean | AnnounceLevel;
-  useLoadedScripts?: boolean | LoadedScriptsConfig;
-  // #endregion feature configurations
-}
-export interface NormalizedDebugConfig extends Omit<DebugConfig, 'runtime_v1' | 'runtime_v2' | 'runtimeArgs_v1' | 'runtimeArgs_v2'> {
-  name: string;
-  request: DebugRequest;
-  stopOnEntry: boolean;
-  port: number;
-  hostname: string;
-
-  runtime: string;
-  runtimeArgs: string[];
-  program: string;
-  args: string[];
-  maxChildren: number;
-
-  variableCategories?: VariableCategory[];
-
-  usePerfTips?: PerfTipsConfig;
+  usePerfTips: false | PerfTipsConfig;
   useIntelliSenseInDebugging: boolean;
   useDebugDirective?: DebugDirectiveConfig;
-  useOutputDebug?: OutputDebugConfig;
-  useAnnounce?: AnnounceLevel;
-  useLoadedScripts?: LoadedScriptsConfig;
+  useAutoJumpToError: boolean;
+  useUIAVersion: boolean;
+  useOutputDebug: false | OutputDebugConfig;
+  useAnnounce: false | AnnounceLevel;
+  useLoadedScripts: false | LoadedScriptsConfig;
+  // #endregion feature configurations
+
+  // #region internal
+  /**
+   * This value is used during normalization.
+   * The path of the file that the editor currently open.
+   * @internal
+   */
+  __filename?: string;
+  /**
+   * This value is used during normalization.
+   * The language id of the file that the editor currently open.
+   * @internal
+   */
+  __languageId?: 'ahk' | 'ahk2' | 'ah2' | 'ahkh' | 'ahkh2';
+  // #endregion internal
 }

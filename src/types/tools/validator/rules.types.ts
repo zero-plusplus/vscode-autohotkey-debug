@@ -1,33 +1,49 @@
+import { LiteralUnion, OnError } from 'type-fest';
+
 export type Interface = { [key in string]: any };
 export type Rules = Array<AttributeRule<any>>;
 export type RuleMap = Record<string, AttributeRule<any>>;
 export interface SchemaAccessor<Normalized> {
-  get: <K extends keyof Normalized>(key: K) => Normalized[K];
-  isValidated: <K extends keyof Normalized>(key: K) => boolean;
+  /**
+   * Determines if the specified attribute is validated.
+   */
+  isNormalized: <K extends keyof Normalized>(key: K) => boolean;
+  /**
+   * Determine whether or not it has the attribute.
+   */
+  has: <K extends keyof Normalized>(key: K) => boolean;
+  /**
+   * Get the other attribute. If the attribute is not normalized, an exception is thrown.
+   */
+  getNormalizedAttribute: <K extends keyof Normalized>(key: K) => Normalized[K];
+  /**
+   * Get the other raw attribute. Returns undefined if it does not exist
+   */
+  getRawAttribute: <T>(key: LiteralUnion<keyof Normalized, string>) => T | undefined;
 }
-export type OnError = (err?: Error) => void;
 
 // #region validator
 export interface AttributeRuleConfig<Normalized> {
   expected: string;
   optional: boolean;
+  depends?: string[] | boolean;
   normalizeMap: AttributeNormalizersByType<Normalized> | undefined;
   validator: AttributeValidator<Normalized>;
-  normalizer: <V>(value: V, onError?: OnError) => Promise<Normalized | V>;
+  normalizer: <V>(value: V, onError: OnError) => Promise<Normalized | V>;
 }
-export type AttributeValidator<Normalized> = (value: any, onError?: OnError) => value is Normalized;
+export type AttributeValidator<Normalized> = (value: any, onError: OnError) => value is Normalized;
 // #endregion validator
 
 // #region normalizer
 export type AttributeNormalizer<Value, Normalized, Owner = undefined> = SyncAttributeNormalizer<Value, Normalized, Owner> | AsyncAttributeNormalizer<Value, Normalized, Owner>;
 export type SyncAttributeNormalizer<Value, Normalized, Owner = undefined> =
   Owner extends undefined
-    ? (value: Value, schema: undefined, onError?: OnError) => Normalized
-    : (value: Value, schema: SchemaAccessor<Owner>, onError?: OnError) => Normalized;
+    ? (value: Value, schema: undefined, onError: OnError, optionals?: Record<string, any>) => Normalized
+    : (value: Value, schema: SchemaAccessor<Owner>, onError: OnError, optionals?: Record<string, any>) => Normalized;
 export type AsyncAttributeNormalizer<Value, Normalized, Owner = undefined> =
   Owner extends undefined
-    ? (value: Value, schema: undefined, onError?: OnError) => Promise<Normalized>
-    : (value: Value, schema: SchemaAccessor<Owner>, onError?: OnError) => Promise<Normalized>;
+    ? (value: Value, schema: undefined, onError: OnError, optionals?: Record<string, any>) => Promise<Normalized>
+    : (value: Value, schema: SchemaAccessor<Owner>, onError: OnError, optionals?: Record<string, any>) => Promise<Normalized>;
 export interface AttributeNormalizersByType<Normalized, Owner = undefined> {
   null?: AttributeNormalizer<null, Normalized, Owner>;
   undefined?: AttributeNormalizer<undefined, Normalized, Owner>;
@@ -46,23 +62,30 @@ export type PropertyNormalizers<Normalized> = {
 // #region rule
 export interface AttributeRule<Normalized> {
   config: AttributeRuleConfig<Normalized>;
-  default: (defaultValue: Normalized | AttributeNormalizer<undefined, Normalized>) => this;
+  default: (defaultValue: Normalized | (() => Normalized)) => this;
   optional: () => AttributeRule<Normalized | undefined>;
   normalize: (normalizerOrNormalizeMap: AttributeNormalizer<any, Normalized> | AttributeNormalizersByType<Normalized>) => this;
+  immediate: () => this;
+  lazy: () => this;
+  depends: (...names: string[]) => this;
 }
 
 export type LiteralType = string | number | boolean;
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface LiteralAttributeRule<Normalized extends LiteralType> extends AttributeRule<Normalized> {
-  union: <
-    Type extends Args[number],
-    Args extends LiteralType[] = Type[],
-  >(...literals: Args) => AttributeRule<Args[number]>;
 }
 export interface StringAttributeRule extends AttributeRule<string> {
   union: <
     Type extends Args[number],
     Args extends string[] = Type[],
   >(...literals: Args) => AttributeRule<Args[number]>;
+}
+export interface PathAttributeRule extends AttributeRule<string> {
+  /**
+   * Convert to string rules.
+   * This is to relax the rules when you do not want to validate paths at test time.
+   */
+  asString: () => StringAttributeRule;
 }
 export interface NumberAttributeRule extends AttributeRule<number> {
   union: <
@@ -121,6 +144,18 @@ export type RuleMapToInterface<Rule> =
     ? { [key in keyof Rule]: RuleToNormalized<Rule[key]> }
     : never;
 // #endregion interface <-> rule map
+
+// #region record <-> rule map
+export type RecordToRuleRecord<Normalized> =
+  Normalized extends Record<infer K, infer V>
+    ? { [key in K]: AttributeRule<V> }
+    : never;
+export type RuleRecordToRecord<Rule> =
+  Rule extends Record<infer K, AttributeRule<infer V>>
+    ? Record<K, V>
+    : never;
+// #endregion record <-> rule map
+
 
 // #region array <-> rule
 export type RuleToNormalizedList<Rule> =

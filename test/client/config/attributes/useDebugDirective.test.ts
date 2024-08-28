@@ -1,50 +1,43 @@
 import { describe, expect, test } from '@jest/globals';
-import { createDefaultDebugConfig } from '../../../../src/client/config/default';
-import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { DebugConfig } from '../../../../src/types/dap/config.types';
-import { AttributeTypeError } from '../../../../src/client/config/error';
 import * as attributes from '../../../../src/client/config/attributes';
+import { createSchema, object } from '../../../../src/tools/validator';
+import { DebugConfig } from '../../../../src/types/dap/config.types';
 
-describe('useDebugDirective attribute', () => {
-  describe('validate', () => {
-    test('normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useDebugDirective.validator ]);
+describe('useDebugDirective', () => {
+  const schema = createSchema(object<Partial<DebugConfig>>({
+    useDebugDirective: attributes.useDebugDirective.attributeRule,
+  }).normalizeProperties({ useDebugDirective: attributes.useDebugDirective.attributeNormalizer }));
 
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        useDebugDirective: true,
-      });
-      expect(config.useDebugDirective).toBe(attributes.useDebugDirective.normalizedDefaultValue);
-    });
-    test('normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useDebugDirective.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        useDebugDirective: { useBreakpointDirective: true, useClearConsoleDirective: true, useOutputDirective: true },
-      });
-      expect(config.useDebugDirective).toEqual({ useBreakpointDirective: true, useClearConsoleDirective: true, useOutputDirective: true });
-    });
-    test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useDebugDirective.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        useDebugDirective: false,
-      });
-      expect(config.useDebugDirective).toBe(attributes.useDebugDirective.defaultValue);
-    });
+  describe('pass', () => {
+    test(
+      'Specified `undefined`',
+      async() => expect(schema.apply({ useDebugDirective: undefined }))
+        .resolves.toEqual({
+          useDebugDirective: attributes.useDebugDirective.defaultValue,
+        }),
+    );
+    test(
+      'Specified object',
+      async() => expect(schema.apply({
+        useDebugDirective: {
+          useBreakpointDirective: true,
+          useClearConsoleDirective: true,
+          useOutputDirective: false,
+        },
+      }))
+        .resolves.toEqual({
+          useDebugDirective: {
+            useBreakpointDirective: true,
+            useClearConsoleDirective: true,
+            useOutputDirective: false,
+          },
+        }),
+    );
   });
-
-  describe('validate error', () => {
-    test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.useDebugDirective.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        useDebugDirective: '' as unknown as boolean,
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
-    });
+  describe('fail', () => {
+    test(
+      'Unsupported data',
+      async() => expect(schema.apply({ useDebugDirective: '' })).rejects.toThrow(),
+    );
   });
 });

@@ -1,73 +1,32 @@
-import { afterAll, beforeAll, describe, expect, test } from '@jest/globals';
+import { describe, expect, test } from '@jest/globals';
+import * as path from 'path';
 import * as attributes from '../../../../src/client/config/attributes';
-import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { createDefaultDebugConfig } from '../../../../src/client/config/default';
-import { TemporaryResource, createTempDirectoryWithFile } from '../../../../src/tools/temp';
-import { utf8BomText } from '../../../../src/tools/utils/checkUtf8WithBom';
+import { createSchema, object } from '../../../../src/tools/validator';
 import { DebugConfig } from '../../../../src/types/dap/config.types';
-import { AttributeTypeError, AttributeWarningError } from '../../../../src/client/config/error';
+import { SetRequired } from 'type-fest';
 
-describe(`runtimeArgs attribute`, () => {
-  let tempUtf8: TemporaryResource;
-  let tempUtf8WithBom: TemporaryResource;
-  beforeAll(async() => {
-    const text = 'foo';
-    tempUtf8 = await createTempDirectoryWithFile('utf8-with-bom', '.ahk', text);
-    tempUtf8WithBom = await createTempDirectoryWithFile('utf8-with-bom', '.ahk', `${utf8BomText}${text}`);
+describe('runtimeArgs', () => {
+  const schema = createSchema(object<SetRequired<Partial<DebugConfig>, 'runtimeArgs' | 'program'>>({
+    runtimeArgs: attributes.runtimeArgs.attributeRule,
+    program: attributes.program.attributeRule.immediate(),
+  }).normalizeProperties({ runtimeArgs: attributes.runtimeArgs.attributeNormalizer }));
+
+  describe('pass', () => {
+    test(
+      '`runtimeArgs` attribute is not specified and `program` attribute is utf8',
+      async() => expect(schema.apply({ runtimeArgs: undefined, program: path.resolve(__dirname, 'data', 'utf8.ahk') }))
+        .resolves.toMatchObject({ runtimeArgs: attributes.runtimeArgs.defaultValue }),
+    );
+    test(
+      '`runtimeArgs` attribute is not specified and `program` attribute is utf8',
+      async() => expect(schema.apply({ runtimeArgs: undefined, program: path.resolve(__dirname, 'data', 'utf8bom.ahk') }))
+        .resolves.toMatchObject({ runtimeArgs: attributes.runtimeArgs.defaultValueByUtf8WithBom }),
+    );
   });
-  afterAll(() => {
-    tempUtf8.cleanup();
-    tempUtf8WithBom.cleanup();
-  });
-
-  describe('validate', () => {
-    test('default with bom', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.program.validator, attributes.runtimeArgs.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(tempUtf8WithBom.path),
-        runtimeArgs: undefined,
-      });
-      expect(config.runtimeArgs).toEqual(attributes.runtimeArgs.defaultValueByUtf8WithBom);
-    });
-    test('default without bom', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.program.validator, attributes.runtimeArgs.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(tempUtf8.path),
-        runtimeArgs: undefined,
-      });
-      expect(config.runtimeArgs).toEqual(attributes.runtimeArgs.defaultValue);
-    });
-    test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.runtimeArgs.validator ]);
-
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        runtimeArgs: [ 'abc' ],
-      });
-      expect(config.runtimeArgs).toEqual([ 'abc' ]);
-    });
-  });
-
-  describe('validate error', () => {
-    test('warning', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.runtimeArgs.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        runtimeArgs: [ true as unknown as string, false as unknown as string ],
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeWarningError);
-    });
-    test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.runtimeArgs.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        runtimeArgs: false as unknown as string[],
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
-    });
+  describe('fail', () => {
+    test(
+      'Unsupported data',
+      async() => expect(schema.apply({ runtimeArgs: '' })).rejects.toThrow(),
+    );
   });
 });

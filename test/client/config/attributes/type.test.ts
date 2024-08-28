@@ -1,41 +1,25 @@
 import { describe, expect, test } from '@jest/globals';
-import { createDefaultDebugConfig } from '../../../../src/client/config/default';
-import { createAttributesValidator } from '../../../../src/client/config/validator';
-import { DebugConfig } from '../../../../src/types/dap/config.types';
-import { AttributeTypeError, AttributeWarningError } from '../../../../src/client/config/error';
 import * as attributes from '../../../../src/client/config/attributes';
+import { createSchema, object } from '../../../../src/tools/validator';
+import { DebugConfig } from '../../../../src/types/dap/config.types';
+import { SetRequired } from 'type-fest';
 
-describe('type attribute', () => {
-  describe('validate', () => {
-    test('non-normalize', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.type.validator ]);
+describe('type', () => {
+  const schema = createSchema(object<SetRequired<Partial<DebugConfig>, 'type'>>({
+    type: attributes.type.attributeRule,
+  }).normalizeProperties({ type: attributes.type.attributeNormalizer }));
 
-      const config = await validateDebugConfig({
-        ...createDefaultDebugConfig(''),
-        type: 'autohotkey',
-      });
-      expect(config.type).toBe('autohotkey');
-    });
+  describe('pass', () => {
+    test(
+      'Specify `"autohotkey"`',
+      async() => expect(schema.apply({ type: 'autohotkey' }))
+        .resolves.toEqual({ type: 'autohotkey' }),
+    );
   });
-
-  describe('validate error', () => {
-    test('warning', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.type.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        type: '',
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeWarningError);
-    });
-    test('type error', async() => {
-      const validateDebugConfig = createAttributesValidator([ attributes.type.validator ]);
-
-      const config: DebugConfig = {
-        ...createDefaultDebugConfig(''),
-        type: false as unknown as string,
-      };
-      await expect(validateDebugConfig(config)).rejects.toThrow(AttributeTypeError);
-    });
+  describe('fail', () => {
+    test(
+      'Unsupported data',
+      async() => expect(schema.apply({ type: {} })).rejects.toThrow(),
+    );
   });
 });
