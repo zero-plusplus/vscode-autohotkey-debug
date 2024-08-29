@@ -9,7 +9,8 @@ import { createDefaultDebugConfig } from '../../../src/client/config/default';
 import { utf8BomText } from '../../../src/tools/utils/checkUtf8WithBom';
 import { defaultAutoHotkeyRuntimePath_v1, defaultAutoHotkeyRuntimePath_v2 } from '../../../src/tools/autohotkey';
 import { createAELLUtils } from '../../../src/tools/AELL/utils';
-import { validateDebugConfig } from '../../../src/client/config/validator';
+import { debugConfigRuleWithNormalizer } from '../../../src/client/config/validator';
+import { createSchema } from '../../../src/tools/validator';
 
 describe('evaluator', () => {
   describe('v2', () => {
@@ -44,7 +45,8 @@ describe('evaluator', () => {
       `;
 
       testFile = await createTempDirectoryWithFile('evaluator-v2', '.ahk', `${utf8BomText}${text}`);
-      const config = await validateDebugConfig({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2, port: '9005-9010' });
+      const schema = createSchema(debugConfigRuleWithNormalizer);
+      const config = await schema.apply({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v2, port: '9005-9010' });
       const launcher = createScriptRuntimeLauncher(config);
       runtime = await launcher.launch();
       await runtime.setLineBreakpoint({ kind: 'line', fileName: testFile.path, line: 17, hidden: false });
@@ -163,7 +165,8 @@ describe('evaluator', () => {
       `;
 
       testFile = await createTempDirectoryWithFile('evaluator-v1', '.ahk', `${utf8BomText}${text}`);
-      const config = await validateDebugConfig({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1, port: '9005-9010' });
+      const schema = createSchema(debugConfigRuleWithNormalizer);
+      const config = await schema.apply({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1, port: '9005-9010' });
       const launcher = createScriptRuntimeLauncher(config);
       runtime = await launcher.launch();
       await runtime.setLineBreakpoint({ kind: 'line', fileName: testFile.path, line: 13, hidden: false });

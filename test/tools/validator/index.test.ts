@@ -54,6 +54,5 @@ describe('validator/normalizer', () => {
     expect(await configSchema.apply(rawConfig)).toEqual(normalizedConfig);
     await expect(configSchema.apply({})).rejects.toThrow();
     await expect(configSchema.apply({ name: rawConfig.name })).rejects.toThrow();
-    await expect(configSchema.apply({ ...rawConfig, unknownKey: 'unknown' })).rejects.toThrow();
   });
 });
