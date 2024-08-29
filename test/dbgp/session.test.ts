@@ -6,7 +6,8 @@ import { createDefaultDebugConfig } from '../../src/client/config/default';
 import { ScriptRuntime } from '../../src/types/tools/autohotkey/runtime/scriptRuntime.types';
 import { defaultAutoHotkeyRuntimePath_v1 } from '../../src/tools/autohotkey';
 import { CallStack } from '../../src/types/dbgp/session.types';
-import { validateDebugConfig } from '../../src/client/config/validator';
+import { debugConfigRule } from '../../src/client/config/validator';
+import { createSchema } from '../../src/tools/validator';
 
 describe('session', () => {
   describe('v1', () => {
@@ -26,7 +27,8 @@ describe('session', () => {
       ].join('\n');
 
       testFile = await createTempDirectoryWithFile('utf8-with-bom', '.ahk', `${utf8BomText}${text}`);
-      const config = await validateDebugConfig({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1, port: '9005-9010' });
+      const schema = createSchema(debugConfigRule);
+      const config = await schema.apply({ ...createDefaultDebugConfig(testFile.path), runtime: defaultAutoHotkeyRuntimePath_v1, port: '9005-9010' });
       const launcher = createScriptRuntimeLauncher(config);
       runtime = await launcher.launch();
     });
