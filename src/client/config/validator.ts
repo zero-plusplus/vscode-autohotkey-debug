@@ -1,9 +1,9 @@
 import * as attributes from './attributes';
 import { DebugConfig } from '../../types/dap/config.types';
 import * as validators from '../../tools/validator';
-import { ObjectAttributeRule, PropertyNormalizers } from '../../types/tools/validator';
+import { InterfaceToRuleMap, ObjectAttributeRule, PropertyNormalizers } from '../../types/tools/validator';
 
-export const debugConfigRule: ObjectAttributeRule<DebugConfig> = validators.object<DebugConfig>({
+export const debugConfigRuleMap: InterfaceToRuleMap<DebugConfig> = {
   [attributes.args.attributeName]: attributes.args.attributeRule,
   [attributes.cwd.attributeName]: attributes.cwd.attributeRule,
   [attributes.env.attributeName]: attributes.env.attributeRule,
@@ -35,7 +35,8 @@ export const debugConfigRule: ObjectAttributeRule<DebugConfig> = validators.obje
 
   __filename: validators.string().optional(),
   __languageId: validators.literalUnion('ahk', 'ahk2', 'ah2', 'ahkh', 'ahkh2').optional(),
-});
+};
+export const debugConfigRule: ObjectAttributeRule<DebugConfig> = validators.object<DebugConfig>(debugConfigRuleMap);
 export const debugConfigNormalizer: PropertyNormalizers<DebugConfig> = {
   [attributes.args.attributeName]: attributes.args.attributeNormalizer,
   [attributes.cwd.attributeName]: attributes.cwd.attributeNormalizer,
@@ -66,3 +67,4 @@ export const debugConfigNormalizer: PropertyNormalizers<DebugConfig> = {
   [attributes.useUIAVersion.attributeName]: attributes.useUIAVersion.attributeNormalizer,
   [attributes.variableCategories.attributeName]: attributes.variableCategories.attributeNormalizer,
 };
+export const debugConfigRuleWithNormalizer: ObjectAttributeRule<DebugConfig> = validators.object<DebugConfig>(debugConfigRuleMap).normalizeProperties(debugConfigNormalizer);
