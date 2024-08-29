@@ -1,6 +1,6 @@
 /* eslint-disable @stylistic/ts/key-spacing */
 import * as ohm from 'ohm-js';
-import { DereferenceExpression, Identifier, SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.types';
+import { DereferenceExpression, Identifier, Parser, SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.types';
 import { createAstMappingUtils, createParser } from './utils';
 
 export const grammarText = `
@@ -270,10 +270,9 @@ export const grammarText = `
     endOfFileToken = end
   }
 `;
-export const grammar = ohm.grammar(grammarText);
+export const grammar: ohm.Grammar = ohm.grammar(grammarText);
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const astMapping = (() => {
+export const astMapping: Record<string, any> = ((): Record<string, any> => {
   const {
     endPosition,
     identifierKind,
@@ -477,4 +476,4 @@ export const astMapping = (() => {
   }
 })();
 
-export const parser = createParser(grammar, astMapping);
+export const parser: Parser = createParser(grammar, astMapping);

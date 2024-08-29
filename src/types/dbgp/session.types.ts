@@ -146,7 +146,7 @@ export type SessionEventName =
 
 export interface PendingCommand {
   request: string;
-  resolve: (...args) => any;
+  resolve: (...args: any[]) => any;
 }
 export interface Session extends SessionCommunicator {
   ahkVersion: ParsedAutoHotkeyVersion;

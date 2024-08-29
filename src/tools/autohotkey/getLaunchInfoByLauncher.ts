@@ -3,7 +3,7 @@ import { spawnSync } from 'child_process';
 import { fileExists } from '../predicate';
 import { defaultAutoHotkeyInstallDir } from './';
 
-export const getLaunchInfoByLauncher = (program: string, installDir = defaultAutoHotkeyInstallDir): { requires: string; runtime: string; args: string[] } | undefined => {
+export const getLaunchInfoByLauncher = (program: string, installDir: string = defaultAutoHotkeyInstallDir): { requires: string; runtime: string; args: string[] } | undefined => {
   if (!fileExists(program)) {
     return undefined;
   }

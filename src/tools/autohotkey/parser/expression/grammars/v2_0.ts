@@ -2,7 +2,7 @@
 import * as ohm from 'ohm-js';
 import { createAstMappingUtils, createParser } from './utils';
 import * as v1_0 from './v1_0';
-import { SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.types';
+import { Parser, SyntaxKind } from '../../../../../types/tools/autohotkey/parser/common.types';
 
 export const grammarText = `
   AutoHotkey_v2_0 <: AutoHotkey_v1_1 {
@@ -35,10 +35,9 @@ export const grammarText = `
     exclamationEqualsEqualsToken = "!=="
   }
 `;
-export const grammar = ohm.grammar(grammarText, ohm.grammars(v1_0.grammarText));
+export const grammar: ohm.Grammar = ohm.grammar(grammarText, ohm.grammars(v1_0.grammarText));
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export const astMapping = (() => {
+export const astMapping: Record<string, any> = ((): Record<string, any> => {
   const {
     endPosition,
     slicedText,
@@ -54,4 +53,4 @@ export const astMapping = (() => {
   };
   return mapping;
 })();
-export const parser = createParser(grammar, astMapping);
+export const parser: Parser = createParser(grammar, astMapping);

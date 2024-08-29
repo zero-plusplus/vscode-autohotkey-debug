@@ -33,16 +33,19 @@ import { createMutex } from '../../tools/promise';
 import { createEventManager } from '../../dbgp/event';
 import { CriticalError } from './error';
 import { createFrameIdManager, createVariablesReferenceManager } from './utils';
+import { FrameIdManager, VariablesReferenceManager } from '../../types/dap/adapter/utils.types';
+import { EventManager } from '../../types/dbgp/event.types';
+import { Mutex } from '../../types/tools/promise.types';
 
 export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
-  public variablesReferenceManager = createVariablesReferenceManager();
-  public framdIdManager = createFrameIdManager();
-  public runtime!: Readonly<ScriptRuntime>;
-  public config!: Readonly<NormalizedDebugConfig>;
+  public variablesReferenceManager: VariablesReferenceManager = createVariablesReferenceManager();
+  public framdIdManager: FrameIdManager = createFrameIdManager();
+  public runtime!: ScriptRuntime;
+  public config!: DebugConfig;
   public evaluator!: AELLEvaluator;
   public isTerminateRequested = false;
-  public eventManager = createEventManager();
-  public mutex = createMutex();
+  public eventManager: EventManager = createEventManager();
+  public mutex: Mutex = createMutex();
   // #region public methods
   public sendStoppedEvent(reason: StopReason | ExecResult): void {
     const stopReason = toStopReason(reason);

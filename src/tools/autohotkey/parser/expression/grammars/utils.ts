@@ -15,8 +15,7 @@ export const createParser = (grammar: ohm.Grammar, astMapping: Record<string, an
     },
   };
 };
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type, @typescript-eslint/explicit-module-boundary-types
-export const createAstMappingUtils = () => {
+export const createAstMappingUtils = (): { identifierKind: (nodes: ohm.Node[]) => SyntaxKind; identifierValue: (nodes: ohm.Node[]) => string | boolean; slicedText: (start: number, end?: number) => (nodes: ohm.Node[]) => string; text: (nodes: ohm.Node[]) => string; startPosition: (nodes: ohm.Node[]) => number; endPosition: (nodes: ohm.Node[]) => number } => {
   const utils = {
     identifierKind: (nodes: ohm.Node[]): SyntaxKind => {
       const identifierName = utils.text(nodes);

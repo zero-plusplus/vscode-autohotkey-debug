@@ -1,7 +1,7 @@
 import { spawnSync } from 'child_process';
 import { defaultHostName, defaultPort, escapePcreRegExEscape, evaluateAhkVersion } from './';
 
-export const attachAutoHotkeyScript = (runtime: string, program: string, hostname = defaultHostName, port = defaultPort): boolean => {
+export const attachAutoHotkeyScript = (runtime: string, program: string, hostname: string = defaultHostName, port: number = defaultPort): boolean => {
   const version = evaluateAhkVersion(runtime);
   if (!version) {
     return false;
