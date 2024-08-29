@@ -6,7 +6,7 @@ import { createCommandArgs, encodeToBase64 } from './utils';
 import { createMutex, timeoutPromise, timeoutTask } from '../tools/promise';
 import { DbgpError } from './error';
 import { ParsedAutoHotkeyVersion } from '../types/tools/autohotkey/version/common.types';
-import { parseAutoHotkeyVersion } from '../tools/autohotkey';
+import { parseAutoHotkeyVersion } from '../tools/autohotkey/version/parseAutoHotkeyVersion';
 import { safeCallAsync } from '../tools/utils';
 import { isNumber } from '../tools/predicate';
 
