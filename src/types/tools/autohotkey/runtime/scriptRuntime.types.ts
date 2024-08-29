@@ -1,4 +1,4 @@
-import { NormalizedDebugConfig } from '../../../dap/config.types';
+import { DebugConfig } from '../../../dap/config.types';
 import { ExecResult, ScriptStatus, Session } from '../../../dbgp/session.types';
 import { BreakpointManager } from './breakpoint.types';
 import { ContinuationCommandExecutor } from './executor.types';
@@ -14,7 +14,7 @@ export interface ScriptRuntimeLauncher {
   launch: () => Promise<ScriptRuntime>;
   attach: () => Promise<ScriptRuntime>;
 }
-export type ScriptRuntimeCreateor = (config: NormalizedDebugConfig) => ScriptRuntime;
+export type ScriptRuntimeCreateor = (config: DebugConfig) => ScriptRuntime;
 export interface ScriptRuntime extends BreakpointManager, ExecutionContextManager {
   readonly threadId: number;
   session: Session;

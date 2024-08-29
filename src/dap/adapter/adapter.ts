@@ -1,6 +1,6 @@
 import { InitializedEvent, LoggingDebugSession, OutputEvent, StoppedEvent, TerminatedEvent } from '@vscode/debugadapter';
 import { DebugProtocol } from '@vscode/debugprotocol';
-import { NormalizedDebugConfig } from '../../types/dap/config.types';
+import { DebugConfig } from '../../types/dap/config.types';
 import { initializeRequest } from './requests/initializeRequest';
 import { configurationDoneRequest } from './requests/configurationDoneRequest';
 import { launchRequest } from './requests/launchRequest';
@@ -108,7 +108,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
       await initializeRequest(response, args);
     });
   }
-  protected async launchRequest(response: DebugProtocol.LaunchResponse, config: NormalizedDebugConfig): Promise<void> {
+  protected async launchRequest(response: DebugProtocol.LaunchResponse, config: DebugConfig): Promise<void> {
     await this.request(response, async() => {
       this.config = config;
       this.registerEvents();
@@ -120,7 +120,7 @@ export class AutoHotkeyDebugAdapter extends LoggingDebugSession {
       return Promise.resolve();
     });
   }
-  protected async attachRequest(response: DebugProtocol.AttachResponse, config: NormalizedDebugConfig): Promise<void> {
+  protected async attachRequest(response: DebugProtocol.AttachResponse, config: DebugConfig): Promise<void> {
     await this.request(response, async() => {
       this.config = config;
       this.registerEvents();

@@ -3,11 +3,11 @@ import { createDebugServer } from '../../../dbgp/session';
 import { ScriptRuntime, ScriptRuntimeLauncher } from '../../../types/tools/autohotkey/runtime/scriptRuntime.types';
 import { spawn } from 'child_process';
 import { attachAutoHotkeyScript } from '..';
-import { NormalizedDebugConfig } from '../../../types/dap/config.types';
+import { DebugConfig } from '../../../types/dap/config.types';
 import { AutoHotkeyProcess, Session } from '../../../types/dbgp/session.types';
 import { createScriptRuntime } from './scriptRuntime';
 
-export function launchAutoHotkeyProcess(config: Readonly<NormalizedDebugConfig>): AutoHotkeyProcess {
+export function launchAutoHotkeyProcess(config: DebugConfig): AutoHotkeyProcess {
   const { noDebug, runtime, cwd, hostname, port, runtimeArgs, program, args, env, useUIAVersion } = config;
 
   const launchArgs = [
@@ -26,20 +26,20 @@ export function launchAutoHotkeyProcess(config: Readonly<NormalizedDebugConfig>)
   return process;
 }
 
-export async function startDebug(config: Readonly<NormalizedDebugConfig>): Promise<Session> {
+export async function startDebug(config: DebugConfig): Promise<Session> {
   const process = launchAutoHotkeyProcess(config);
 
   const server = createDebugServer(process);
   return server.listen(config.port, config.hostname);
 }
-export async function attachDebug(config: Readonly<NormalizedDebugConfig>): Promise<Session> {
+export async function attachDebug(config: DebugConfig): Promise<Session> {
   const { runtime, program, hostname, port } = config;
   attachAutoHotkeyScript(runtime, program, hostname, port);
 
   const server = createDebugServer();
   return server.listen(config.port, config.hostname);
 }
-export const createScriptRuntimeLauncher = (config: Readonly<NormalizedDebugConfig>): ScriptRuntimeLauncher => {
+export const createScriptRuntimeLauncher = (config: DebugConfig): ScriptRuntimeLauncher => {
   return {
     async launch(): Promise<ScriptRuntime> {
       const session = await startDebug(config);
