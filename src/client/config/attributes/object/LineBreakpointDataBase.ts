@@ -1,10 +1,10 @@
 import * as validators from '../../../../tools/validator';
 import { LineBreakpointDataBase } from '../../../../types/tools/autohotkey/runtime/breakpoint.types';
 import { InterfaceToRuleMap } from '../../../../types/tools/validator';
-import * as breakpointDataBase from './BreakpointDataBase';
+import { breakpointDataBaseRuleMap } from './BreakpointDataBase';
 
-export const attributeRuleMap: InterfaceToRuleMap<LineBreakpointDataBase> = {
-  ...breakpointDataBase.attributeRuleMap,
+export const lineBreakpointDataBaseRuleMap: InterfaceToRuleMap<LineBreakpointDataBase> = {
+  ...breakpointDataBaseRuleMap,
   fileName: validators.string(),
   line: validators.number(),
   character: validators.number().optional(),

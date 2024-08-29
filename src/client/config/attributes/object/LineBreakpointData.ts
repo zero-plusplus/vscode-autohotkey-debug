@@ -1,10 +1,10 @@
 import * as validators from '../../../../tools/validator';
 import { LineBreakpointData } from '../../../../types/tools/autohotkey/runtime/breakpoint.types';
 import { AttributeRule } from '../../../../types/tools/validator';
-import * as lineBreakpointDataBase from './LineBreakpointDataBase';
+import { lineBreakpointDataBaseRuleMap } from './LineBreakpointDataBase';
 
-export const attributeRule: AttributeRule<LineBreakpointData> = validators.object<LineBreakpointData>({
-  ...lineBreakpointDataBase.attributeRuleMap,
+export const lineBreakpointDataRule: AttributeRule<LineBreakpointData> = validators.object<LineBreakpointData>({
+  ...lineBreakpointDataBaseRuleMap,
   kind: validators.literalUnion('line'),
 }).normalizeProperties({
   kind: {

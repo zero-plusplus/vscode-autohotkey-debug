@@ -1,10 +1,10 @@
 import * as validators from '../../../../tools/validator';
 import { ExpressionCategoryItem } from '../../../../types/dap/variableCategory.types';
 import { AttributeRule } from '../../../../types/tools/validator';
-import * as categoryItemBase from './CategoryItemBase';
+import { categoryItemBaseRuleMap } from './CategoryItemBase';
 
-export const attributeRule: AttributeRule<ExpressionCategoryItem> = validators.object<ExpressionCategoryItem>({
-  ...categoryItemBase.attributeRuleMap,
+export const expressionCategoryItemRule: AttributeRule<ExpressionCategoryItem> = validators.object<ExpressionCategoryItem>({
+  ...categoryItemBaseRuleMap,
   label: validators.string(),
   expression: validators.string().optional().depends('label'),
 }).normalizeProperties({

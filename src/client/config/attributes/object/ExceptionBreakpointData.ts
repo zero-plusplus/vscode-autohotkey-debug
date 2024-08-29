@@ -3,7 +3,7 @@ import { ExceptionBreakpointData } from '../../../../types/tools/autohotkey/runt
 import { AttributeRule } from '../../../../types/tools/validator';
 import * as namedBreakpointDataBase from './NamedBreakpointDataBase';
 
-export const attributeRule: AttributeRule<ExceptionBreakpointData> = validators.object<ExceptionBreakpointData>({
-  ...namedBreakpointDataBase.attributeRuleMap,
+export const exceptionBreakpointDataRule: AttributeRule<ExceptionBreakpointData> = validators.object<ExceptionBreakpointData>({
+  ...namedBreakpointDataBase.namedBreakpointDataBaseRuleMap,
   kind: validators.literalUnion('exception'),
 });
