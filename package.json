@@ -3,6 +3,7 @@
   "version": "1.11.0",
   "description": "Advanced debugging support for AutoHotkey(includes H) v1 and v2",
   "author": "zero-plusplus <git@zero-plusplus.com>",
+  "license": "SEE LICENSE IN README.md",
   "main": "./build/extension",
   "repository": {
     "type": "git",

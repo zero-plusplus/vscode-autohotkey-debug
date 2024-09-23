@@ -127,7 +127,7 @@ const runSandBoxTest = async(): Promise<void> => {
 const buildWithoutClean = gulp.parallel(lint, buildMain);
 const build = gulp.series(clean, buildWithoutClean);
 const vscePackage = async(): Promise<void> => {
-  await run('vsce package')();
+  await run('npx @vscode/vsce package')();
 };
 const watchMain = async(): Promise<void> => {
   await esbuild.build({
