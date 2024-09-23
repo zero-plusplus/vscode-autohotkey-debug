@@ -1,5 +1,7 @@
 **Translated by [DeepL Tranlator](https://www.deepl.com/translator)**
 
+**If you encounter problems with v1.11.1, please downgrade to v1.11.0.**
+
 # IMPORTANT
 In order to protect my goal of growing my extension, I have decided to waive the MIT license. This is a statement that I do not want you to use my source code in ways that compete with my activities. Also, please do not include it in extension pack, etc.
 
