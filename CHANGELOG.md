@@ -12,7 +12,7 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
-## [1.11.1] - 202x-xx-xx
+## [1.11.1] - 2024-09-23
 Support working with [AutoHotkey Dev Tools](https://github.com/zero-plusplus/autohotkey-devtools) to be released in the future
 
 ## [1.11.0] - 2022-02-11
@@ -449,6 +449,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.11.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.11.0..v1.11.1
 [1.11.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.2..v1.11.0
 [1.10.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.1..v1.10.2
 [1.10.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.0..v1.10.1

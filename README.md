@@ -17,7 +17,7 @@ Basically, I will cease activity on this extension, but I will continue to respo
 This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/) that provides many [advanced features](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Features) in addition to the basic debugging features.
 
 ## Update
-* `1.11.1` - 202x-xx-xx
+* `1.11.1` - 2024-09-23
   * Support working with [AutoHotkey Dev Tools](https://github.com/zero-plusplus/autohotkey-devtools) to be released in the future
 
 There will be no further updates. Previous changes can be found [here](CHANGELOG.md).
