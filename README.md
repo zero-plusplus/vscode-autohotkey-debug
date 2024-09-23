@@ -1,19 +1,15 @@
 **Translated by [DeepL Tranlator](https://www.deepl.com/translator)**
 
 # IMPORTANT
-The MIT license was a mismatch for my purposes, so I have decided to stop maintaining this project.
+In order to protect my goal of growing my extension, I have decided to waive the MIT license. This is a statement that I do not want you to use my source code in ways that compete with my activities. Also, please do not include it in extension pack, etc.
 
-From now on, I plan to develop [here](https://github.com/zero-plusplus/autohotkey-devtools) an integrated development environment for AutoHotkey under the new license. This project was supposed to be the main body of vscode-autohotkey-debug, and the features that were supposed to be implemented in v2.0.0 will be re-implemented here with different specifications.
+This does not affect end users at all. Please continue to use the end user as before.
 
-It will take some time to release the software because I need to rewrite the source code from scratch and implement other features besides the debugger.
+From now on, I have decided to develop an [AutoHotkey IDE](https://github.com/zero-plusplus/autohotkey-devtools) from scratch under a new license. The features of vscode-autohotkey-debug up to v1.11.0 and those planned to be implemented in v2.0.0 will be integrated into this IDE after it is reconfigured.
 
-While this project will cease maintenance, I will not archive the repository in order to provide support to users who have installed this extension for questions about its usage.
-Support does not include bug fixes, but I may be able to work with you to find a workaround.
+I apologize to those of you who have been waiting for v2.0.0 of this extension, please understand.
 
-The support is provided in [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues) or [Discussions](https://github.com/zero-plusplus/vscode-autohotkey-debug/discussions). I think I will be able to reply by the next day unless there are problems in the future as well.
-
-Finally, I apologise for the prolonged development due to trying to implement a lot of features and also for ending the maintenance before providing v2.0.0.
-In the next project I plan to repeat small releases based on the failures of this one. However, the release will be at a slower pace until the project base is completed.
+Basically, I will cease activity on this extension, but I will continue to respond to [Discussions](https://github.com/zero-plusplus/vscode-autohotkey-debug/discussions) regarding usage, etc.
 
 # Overview
 This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/) that provides many [advanced features](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Features) in addition to the basic debugging features.
