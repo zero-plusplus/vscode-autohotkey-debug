@@ -39,7 +39,11 @@
     "onDebug",
     "onLanguage:ahk",
     "onLanguage:ahk2",
-    "onLanguage:ah2"
+    "onLanguage:ah2",
+    "onLanguage:autohotkey",
+    "onLanguage:autohotkeynext",
+    "onLanguage:autohotkey2",
+    "onLanguage:autohotkeyl"
   ],
   "contributes": {
     "breakpoints": [
@@ -51,6 +55,18 @@
       },
       {
         "language": "ah2"
+      },
+      {
+        "language": "autohotkey"
+      },
+      {
+        "language": "autohotkeynext"
+      },
+      {
+        "language": "autohotkey2"
+      },
+      {
+        "language": "autohotkeyl"
       }
     ],
     "commands": [
@@ -172,7 +188,11 @@
         "languages": [
           "ahk",
           "ahk2",
-          "ah2"
+          "ah2",
+          "autohotkey",
+          "autohotkeynext",
+          "autohotkey2",
+          "autohotkeyl"
         ],
         "program": "./build/src/dap/debugAdapter.js",
         "runtime": "node",
@@ -1008,5 +1028,6 @@
     "typescript": "^4.4.4",
     "vsce": "^1.88.0",
     "vscode-debugadapter-testsupport": "^1.40.3"
-  }
+  },
+  "private": true
 }

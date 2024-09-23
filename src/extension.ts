@@ -196,9 +196,16 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
     await (async(): Promise<void> => {
       if (typeof config.runtime === 'undefined') {
         const doc = await vscode.workspace.openTextDocument(config.program ?? vscode.window.activeTextEditor?.document.uri.fsPath);
-        config.runtime = doc.languageId.toLowerCase() === 'ahk'
-          ? config.runtime_v1
-          : config.runtime_v2; // ahk2 or ah2
+        switch (doc.languageId.toLowerCase()) {
+          case 'ahk':
+          case 'autohotkeyl': config.runtime = config.runtime_v1; break;
+          case 'ahk2':
+          case 'ah2':
+          case 'autohotkey':
+          case 'autohotkey2':
+          case 'autohotkeynext':
+          default: config.runtime = config.runtime_v2; break;
+        }
       }
 
       if (!isString(config.runtime)) {
@@ -246,9 +253,16 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
         }
 
         const doc = await vscode.workspace.openTextDocument(config.program);
-        config.runtimeArgs = doc.languageId.toLowerCase() === 'ahk'
-          ? config.runtimeArgs_v1
-          : config.runtimeArgs_v2; // ahk2 or ah2
+        switch (doc.languageId.toLowerCase()) {
+          case 'ahk':
+          case 'autohotkeyl': config.runtimeArgs = config.runtimeArgs_v1; break;
+          case 'ahk2':
+          case 'ah2':
+          case 'autohotkey':
+          case 'autohotkey2':
+          case 'autohotkeynext':
+          default: config.runtimeArgs = config.runtimeArgs_v2; break;
+        }
 
         config.runtimeArgs = config.runtimeArgs.filter((arg) => arg.search(/\/debug/ui) === -1);
         config.runtimeArgs = config.runtimeArgs.filter((arg) => arg !== ''); // If a blank character is set here, AutoHotkey cannot be started. It is confusing for users to pass an empty string as an argument and generate an error, so fix it here.
@@ -589,7 +603,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('ahk', provider));
   context.subscriptions.push(vscode.debug.registerDebugConfigurationProvider('autohotkey', provider));
   context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory('autohotkey', new InlineDebugAdapterFactory()));
-  context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2' ], completionItemProvider, '.'));
+  context.subscriptions.push(vscode.languages.registerCompletionItemProvider([ 'ahk', 'ahk2', 'ah2', 'autohotkey', 'autohotkeynext', 'autohotkey2', 'autohotkeyl' ], completionItemProvider, '.'));
 
   const findWordRange = (ahkVersion: AhkVersion, document: vscode.TextDocument, position: vscode.Position, offset = 0): vscode.Range | undefined => {
     const range = document.getWordRangeAtPosition(position);
@@ -601,7 +615,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
     const debug = document.getText(fixedRange); debug;
     return fixedRange;
   };
-  context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk' ], {
+  context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk', 'autohotkeyl' ], {
     provideEvaluatableExpression(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.EvaluatableExpression> {
       const range = findWordRange(new AhkVersion('1.0'), document, position);
       if (!range) {
@@ -610,7 +624,7 @@ export const activate = (context: vscode.ExtensionContext): void => {
       return new vscode.EvaluatableExpression(range);
     },
   }));
-  context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk2', 'ah2' ], {
+  context.subscriptions.push(vscode.languages.registerEvaluatableExpressionProvider([ 'ahk2', 'ah2', 'autohotkey', 'autohotkeynext', 'autohotkey2' ], {
     provideEvaluatableExpression(document: vscode.TextDocument, position: vscode.Position): vscode.ProviderResult<vscode.EvaluatableExpression> {
       const range = findWordRange(new AhkVersion('2.0'), document, position);
       if (!range) {

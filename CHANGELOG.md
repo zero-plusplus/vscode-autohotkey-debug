@@ -1,6 +1,4 @@
-# Before reading
-Please read the following first.
-* This document has been translated from Japanese to English using DeepL Translate
+**NOTE: This document has been translated by a translator.**
 
 # Changelog
 All notable changes to this project will be documented in this file.
@@ -14,6 +12,9 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.11.1] - 202x-xx-xx
+Support working with [AutoHotkey Dev Tools](https://github.com/zero-plusplus/autohotkey-devtools) to be released in the future
+
 ## [1.11.0] - 2022-02-11
 ### Added
 * [#201](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/201) Add `useLoadedScripts` to launch.json
