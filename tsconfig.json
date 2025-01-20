@@ -7,8 +7,7 @@
 			"DOM"
 		],
 		"types": [
-			"node",
-			"mocha"
+			"node"
 		],
 
 		"outDir": "build",
@@ -28,8 +27,10 @@
 		"newLine": "crlf"
 	},
 	"include": [
-		"src/**/*",
-		"test/**/*",
-		"gulpfile.ts"
+		"scripts/**/*",
+		"src/**/*"
+	],
+	"exclude": [
+		"test/**/*"
 	]
 }

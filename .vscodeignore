@@ -7,12 +7,9 @@ node_modules/
 !node_modules/ts-predicates
 !node_modules/typeof-util
 !node_modules/vscode-uri
+scripts/
 src/
 test/
 .eslint*
 .gitignore
-.huskyrc.js
-.mocharc.js
-gulpfile.ts
 tsconfig.json
-yarn-error.log
