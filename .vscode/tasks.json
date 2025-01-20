@@ -9,12 +9,12 @@
       "problemMatcher": [
         {
           "pattern": {
-              "regexp": "^\\s*([^:]+):(\\d+):(\\d+) - (error) (.+)$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4,
-              "message": 5,
+            "regexp": "^\\s*([^:]+):(\\d+):(\\d+) - (error) (.+)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5,
           },
           "background": {
             "activeOnStart": true,
@@ -32,12 +32,12 @@
       "problemMatcher": [
         {
           "pattern": {
-              "regexp": "^\\s*([^:]+):(\\d+):(\\d+) - (error) (.+)$",
-              "file": 1,
-              "line": 2,
-              "column": 3,
-              "severity": 4,
-              "message": 5,
+            "regexp": "^\\s*([^:]+):(\\d+):(\\d+) - (error) (.+)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5,
           },
           "background": {
             "activeOnStart": true,
