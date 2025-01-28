@@ -776,6 +776,11 @@ export class Session extends EventEmitter {
       return this.fetchProperty(context, name, maxDepth);
     }
 
+    // No workaround is required after stable version 2.0
+    if (this.ahkVersion.mejor === 2.0 && this.ahkVersion.beta === undefined && this.ahkVersion.alpha === undefined) {
+      return this.fetchProperty(context, name, maxDepth);
+    }
+
     // Under 1.1, the dynamic property issue does not occur
     if (this.ahkVersion.mejor <= 1.1) {
       return this.fetchProperty(context, name, maxDepth);
