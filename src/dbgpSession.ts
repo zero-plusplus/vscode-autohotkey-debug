@@ -772,6 +772,10 @@ export class Session extends EventEmitter {
   }
   // workaround the issue of getting dynamic properties directly, which causes errors, get the parent element and return its child elements
   public async safeFetchProperty(context: Context, name: string, maxDepth = this.DEFAULT_MAX_DEPTH): Promise<Property | undefined> {
+    if (2.1 <= this.ahkVersion.mejor) {
+      return this.fetchProperty(context, name, maxDepth);
+    }
+
     // Under 1.1, the dynamic property issue does not occur
     if (this.ahkVersion.mejor <= 1.1) {
       return this.fetchProperty(context, name, maxDepth);
