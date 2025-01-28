@@ -24,18 +24,6 @@
             "variableCategories": "recommend"
         },
         {
-            "name": "AutoHotkey v2.1 Debug",
-            "type": "autohotkey",
-            "request": "launch",
-            "runtime": "v2.1-alpha.15/AutoHotkey64.exe",
-            "program": "${file}",
-            "args": [],
-            "port": "9002-9010",
-            "variableCategories": "recommend",
-            "useDebugDirective": true,
-            "useAutoJumpToError": true
-        },
-        {
             "name": "VariableCategories Test",
             "type": "autohotkey",
             "request": "launch",

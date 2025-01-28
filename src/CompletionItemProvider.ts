@@ -171,7 +171,7 @@ export const completionItemProvider = {
 
     const properties = await this.session.fetchSuggestList(word);
     const fixedProperties = properties.filter((property) => {
-      if (this.session!.ahkVersion.mejor < 2.1 && property.name === '<enum>') {
+      if (property.name === '<enum>') {
         return false;
       }
       if ((/\d+/u).test(property.name)) {
