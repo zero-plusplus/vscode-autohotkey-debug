@@ -980,7 +980,7 @@ export class Session extends EventEmitter {
         return;
       }
 
-      this.socket.write(Buffer.from(command), (err) => {
+      this.socket.write(command, (err) => {
         if (err) {
           reject(new Error('Some error occurred when writing'));
         }
