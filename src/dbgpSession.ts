@@ -998,7 +998,14 @@ export class Session extends EventEmitter {
     //               command="command_name"
     //               transaction_id="transaction_id"/>
     //     [NULL]
-    const currentPacket = Buffer.concat([ this.insufficientData, packet ]);
+    const currentPacket = Buffer.concat([
+      // Note:
+      // Perhaps the following code is causing problems with Buffer-related type changes in typescript 5.7.
+      // Since I could not find a solution, I am forced to cast it.
+      // The code has not been changed and should work fine.
+      this.insufficientData as unknown as Uint8Array,
+      packet as unknown as Uint8Array,
+    ]);
     this.insufficientData = Buffer.from('');
 
     const terminatorIndex = currentPacket.indexOf(0);
