@@ -421,7 +421,7 @@ export class Variable implements DebugProtocol.Variable {
     const variables: Variable[] = [];
     for await (const property of this.children) {
       // Fix: [#133](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/133)
-      if (property.fullName.includes('<enum>')) {
+      if (this.session.ahkVersion.mejor < 2.1 && property.fullName.includes('<enum>')) {
         continue;
       }
 

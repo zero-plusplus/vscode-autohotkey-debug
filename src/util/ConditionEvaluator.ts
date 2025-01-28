@@ -265,7 +265,7 @@ export class ConditionalEvaluator {
             const searchValue = valueB instanceof dbgp.PrimitiveProperty ? valueB.value : valueB;
             const isRegExp = String(searchValue).startsWith('/');
             result = isPrimitive(searchValue) ? keys.some((key) => {
-              if (key === '<enum>') {
+              if (this.session.ahkVersion.mejor < 2.1 && key === '<enum>') {
                 return false;
               }
               const fixedName = key.replace(/^\["|^<|"\]$|>$/gu, '');
