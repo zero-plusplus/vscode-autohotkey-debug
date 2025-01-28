@@ -678,37 +678,6 @@ export class Session extends EventEmitter {
   public async sendStderrCommand(mode: StdMode): Promise<StdResponse> {
     return new StdResponse(await this.sendCommand('stderr', `-c ${StdModeEnum[mode]}`));
   }
-  public async existsProperty(context: Context, name: string): Promise<boolean> {
-    const splitedVariablePathList = splitVariablePath(this.ahkVersion, this.normalizeVariablePath(name));
-
-    for await (const [ i ] of Object.entries(splitedVariablePathList.slice(0, -1))) {
-      const index = Number(i);
-      const currentName = joinVariablePathArray(splitedVariablePathList.slice(0, index + 1));
-      const property = await this.safeFetchProperty(context, currentName, 1);
-      if (!property) {
-        return false;
-      }
-
-      const lastLoop = splitedVariablePathList.length - 1 <= index;
-      if (!lastLoop && property instanceof PrimitiveProperty) {
-        return false;
-      }
-
-      if (property instanceof ObjectProperty) {
-        const childName = splitedVariablePathList[index + 1];
-        const containsChild = property.children.some((child) => equalsIgnoreCase(child.name, childName));
-        if (containsChild) {
-          continue;
-        }
-        const inherited = await this.fetchInheritedProperty(context, property.fullName, childName);
-        if (inherited) {
-          continue;
-        }
-        return false;
-      }
-    }
-    return true;
-  }
   public normalizeVariablePath(variablePath: string): string {
     const normalizedPathList: string[] = [];
     for (const part of splitVariablePath(this.ahkVersion, variablePath)) {
@@ -846,10 +815,6 @@ export class Session extends EventEmitter {
     const resolvedName = (await this.resolveVariablePath(name, stackFrame));
     const { contexts } = await this.sendContextNamesCommand(_stackFrame);
     for await (const context of contexts) {
-      if (!(await this.existsProperty(context, resolvedName))) {
-        continue;
-      }
-
       const property = await this.safeFetchProperty(context, resolvedName, maxDepth);
       if (property) {
         return property;
