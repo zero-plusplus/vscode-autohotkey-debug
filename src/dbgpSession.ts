@@ -1035,9 +1035,9 @@ export class Session extends EventEmitter {
 
       this.emit('message', response);
 
-      const restPacket = currentPacket.slice(terminatorIndex + 1);
+      const restPacket = Uint8Array.prototype.slice.call(currentPacket, terminatorIndex + 1);
       if (0 < restPacket.length) {
-        this.handlePacket(restPacket);
+        this.handlePacket(Buffer.from(restPacket));
       }
       return;
     }
