@@ -820,22 +820,29 @@ export class Session extends EventEmitter {
         return property;
       }
 
+      // No additional processing is required after v2.0
+      if (2.0 <= this.ahkVersion.mejor) {
+        continue;
+      }
+
+      // #region Additional processing to access inherited members
+      // Do not search for inherited properties when using bracket notation
       const variablePathArray = splitVariablePath(this.ahkVersion, resolvedName);
       if (variablePathArray.length < 2) {
         continue;
       }
       const shortName = variablePathArray.pop()!;
-
-      // Common to v1 and v2, do not search for inherited properties when using bracket notation
       if (shortName.startsWith('[')) {
         continue;
       }
 
+      // Prior to v1.1, inherited methods cannot be referenced directly, so additional exploration is required (high cost)
       const parentName = joinVariablePathArray(variablePathArray);
       const inheritedProperty = await this.fetchInheritedProperty(context, parentName, shortName);
       if (inheritedProperty) {
         return inheritedProperty;
       }
+      // #endregion
     }
     return undefined;
   }
