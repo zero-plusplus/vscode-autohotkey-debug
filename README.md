@@ -1,17 +1,42 @@
+Language (en / [ja](https://github.com/zero-plusplus/vscode-autohotkey-debug/blob/master/README.ja.md))
+
 **Translated by [DeepL Tranlator](https://www.deepl.com/translator)**
 
-**If you encounter problems with v1.11.1, please downgrade to v1.11.0.**
-
 # IMPORTANT
-In order to protect my goal of growing my extension, I have decided to waive the MIT license. This is a statement that I do not want you to use my source code in ways that compete with my activities. Also, please do not include it in extension pack, etc.
 
-This does not affect end users at all. Please continue to use the end user as before.
+I stopped maintenance after `v1.11.1`, but decided to provide a small patch that does not affect the [main project](https://github.com/zero-plusplus/autohotkey-devtools). If it is not too much work, I might port some of the features that were planned to be added in `v2.0.0`. However, I have not decided whether or not I will continue to provide patches in the future and this may be the last patch.
 
-From now on, I have decided to develop an [AutoHotkey IDE](https://github.com/zero-plusplus/autohotkey-devtools) from scratch under a new license. The features of vscode-autohotkey-debug up to v1.11.0 and those planned to be implemented in v2.0.0 will be integrated into this IDE after it is reconfigured.
+I accept [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues), but they are not always corrected. I respond to them by the next day at the latest, unless there is a problem.
 
-I apologize to those of you who have been waiting for v2.0.0 of this extension, please understand.
+## License Revision Notice
 
-Basically, I will cease activity on this extension, but I will continue to respond to [Discussions](https://github.com/zero-plusplus/vscode-autohotkey-debug/discussions) regarding usage, etc.
+> **Note: The license for the `source code` of this extension has been changed since `v1.11.1`, but this does not affect end users. You can continue to use it as before.**
+
+The current license prohibits use by anyone other than end users and completely prohibits the inclusion of my source code in other projects. Please also refrain from any other actions that may have an indirect affect on the project, such as including it in an extensions pack. These are intended to preserve the value of my extension and not create unnecessary extension conflict issues.
+
+The reason my extension can work together without conflicts is that they have completely standalone source code on the marketplace. However, if a third party inclues the source code and uploads it to the marketplace, then a situation may arise where multiple copies of the same debugger adapter are installed on a single VSCode, depending on the combination. If this creates a conflict problem, it will reduce the reliability of my extension.
+
+Also, including the source code means that you do not have to install my extension to use its features. That is the opposite of the goal of growing my extension.
+
+In the extreme, if all extensions supporting AutoHotkey incorporated my source code, there would be no point in installing my extension. On the contrary, installing it would just be annoying because it would create a conflict problem. It would be more beneficial to the user to remove my extension when that happens.
+
+Of course, I understand that these are extreme examples to show that adverse effects can occur and that such things will not happen in practice.
+
+The above problem surfaced with the [proposal](https://github.com/zero-plusplus/vscode-autohotkey-debug/discussions/332) to actually include the source code. Since this proposal itself was not a problem at all as the MIT license, I finally decided that the MIT license was not the optimal license for my activities and decided to change the license. I apologize here for causing so much trouble at this time due to my ignorance and no understanding of the license. Also, thank you for accepting my selfishness.
+
+The reason I decided to stop maintenance instead of continuing after changing the license is that until `v1.11.0` it is effectively an MIT license, which does not fundamentally solve the above problem.
+
+I have added many unique features to grow this extension and have added more refined features as I have received feedback from end users that I have gained from it. Because of the importance of this cycle in creating a great tool, I cannot continue to maintain it with problems that could destroy it.
+
+Due to personal circumstances, I have resumed maintenance, but this is the reason why I am limiting it to only minimal patches.
+
+Finally, all my projects are personal tools that are only publicly available and developed by myself. I cannot accept any proposals for cooperation, as I do so with the intention of achieving my personal goals.
+
+All I need is feedback from end users.
+
+Again, the license change is for development reasons and has nothing to do with the end user.
+
+Thank you.
 
 # Overview
 This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/) that provides many [advanced features](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Features) in addition to the basic debugging features.
