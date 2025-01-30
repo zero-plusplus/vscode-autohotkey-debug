@@ -10,7 +10,7 @@ I accept [Issues](https://github.com/zero-plusplus/vscode-autohotkey-debug/issue
 
 ## License Revision Notice
 
-> **Note: The license for the `source code` of this extension has been changed since `v1.11.1`, but this does not affect end users. You can continue to use it as before.**
+> **Note: The license for the `source code` of this extension has been changed since `v1.11.1`, but this does not affect end users. You are free to continue to use it at your own risk.**
 
 The current license prohibits use by anyone other than end users and completely prohibits the inclusion of my source code in other projects. Please also refrain from any other actions that may have an indirect affect on the project, such as including it in an extensions pack. These are intended to preserve the value of my extension and not create unnecessary extension conflict issues.
 
