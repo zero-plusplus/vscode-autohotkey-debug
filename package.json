@@ -201,7 +201,10 @@
           "launch": {
             "properties": {
               "runtime": {
-                "type": "string",
+                "type": [
+                  "string",
+                  "object"
+                ],
                 "description": "The path to AutoHotkey.exe. If you specify a relative path, the current directory is \"C:/Program Files/AutoHotkey\". Also extension(i.e. \".exe\") is optional.",
                 "default": "AutoHotkey.exe"
               },

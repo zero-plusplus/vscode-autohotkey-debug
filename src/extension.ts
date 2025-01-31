@@ -194,7 +194,19 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
 
     // init runtime
     await (async(): Promise<void> => {
-      if (typeof config.runtime === 'undefined') {
+      if (typeof config.runtime === 'object') {
+        const doc = await vscode.workspace.openTextDocument(config.program ?? vscode.window.activeTextEditor?.document.uri.fsPath);
+        if (doc.languageId in config.runtime) {
+          config.runtime = config.runtime[doc.languageId];
+        }
+        else if (path.extname(doc.fileName) in config.runtime) {
+          config.runtime = config.runtime[path.extname(doc.fileName)];
+        }
+        else {
+          throw Error(`[Experimental Feature]\nIf an object is specified in \`runtime\` and an AutoHotkey runtime is to be assigned, the key must be the language ID or extension assigned to the file specified in \`program\`. In this case, the language ID assigned to the file \`program\` was \`${doc.languageId}\` and the extension was \`${path.extname(doc.fileName)}\`.`);
+        }
+      }
+      else if (typeof config.runtime === 'undefined') {
         const doc = await vscode.workspace.openTextDocument(config.program ?? vscode.window.activeTextEditor?.document.uri.fsPath);
         switch (doc.languageId.toLowerCase()) {
           case 'ahk':
@@ -211,6 +223,7 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
       if (!isString(config.runtime)) {
         throw Error('`runtime` must be a string.');
       }
+
       if (config.runtime) {
         config.runtime = ahkPathResolve(config.runtime);
       }
