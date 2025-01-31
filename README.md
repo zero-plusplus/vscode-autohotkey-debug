@@ -1,5 +1,3 @@
-Language (en / [ja](https://github.com/zero-plusplus/vscode-autohotkey-debug/blob/master/README.ja.md))
-
 **Translated by [DeepL Tranlator](https://www.deepl.com/translator)**
 
 # IMPORTANT
