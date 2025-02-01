@@ -196,8 +196,8 @@ class AhkConfigurationProvider implements vscode.DebugConfigurationProvider {
     await (async(): Promise<void> => {
       if (typeof config.runtime === 'object') {
         const doc = await vscode.workspace.openTextDocument(config.program ?? vscode.window.activeTextEditor?.document.uri.fsPath);
-        if (doc.languageId in config.runtime) {
-          config.runtime = config.runtime[doc.languageId];
+        if (`[${doc.languageId}]` in config.runtime) {
+          config.runtime = config.runtime[`[${doc.languageId}]`];
         }
         else if (path.extname(doc.fileName) in config.runtime) {
           config.runtime = config.runtime[path.extname(doc.fileName)];
