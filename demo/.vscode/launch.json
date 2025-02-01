@@ -1,189 +1,168 @@
 {
-    "version": "0.2.0",
-    "configurations": [
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "AutoHotkey Debug (File Extension)",
+      "type": "autohotkey",
+      "request": "launch",
+      "runtime": {
+        ".ahk": "AutoHotkey.exe",
+        ".ahk2": "v2/AutoHotkey.exe",
+        ".ahknext": "v2.1-alpha.15/AutoHotkey64.exe",
+      },
+      "program": "${file}",
+      "args": [],
+      "port": "9002-9010",
+      "variableCategories": "recommend",
+      "useDebugDirective": true,
+      "useAutoJumpToError": true
+    },
+    {
+      "name": "AutoHotkey Debug (Language ID)",
+      "type": "autohotkey",
+      "request": "launch",
+      "runtime": {
+        "[autohotkeyl]": "AutoHotkey.exe",
+        "[autohotkey2]": "v2/AutoHotkey.exe",
+        "[autohotkeynext]": "v2.1-alpha.15/AutoHotkey64.exe",
+      },
+      "program": "${file}",
+      "args": [],
+      "port": "9002-9010",
+      "variableCategories": "recommend",
+      "useDebugDirective": true,
+      "useAutoJumpToError": true
+    },
+    {
+      "extends": "AutoHotkey Debug",
+      "name": "VariableCategories Test",
+      "type": "autohotkey",
+      "request": "launch",
+      "variableCategories": [
+        "Local",
         {
-            "name": "AutoHotkey Debug",
-            "type": "autohotkey",
-            "request": "launch",
-            "program": "${file}",
-            "runtime_v1": "AutoHotkey.exe",
-            "runtime_v2": "v2/AutoHotkey.exe",
-            "args": [],
-            "port": "9002-9010",
-            "stopOnEntry": false,
-            "useDebugDirective": true,
-            "usePerfTips": true,
-            "openFileOnExit": "${file}",
-            "internalConsoleOptions": "openOnSessionStart",
-            "useAutoJumpToError": true,
-            "trace": false,
-            "useOutputDebug": {
-                "useTrailingLinebreak": true
+          "label": "Global",
+          "source": "Global",
+          "noduplicate": true,
+          "matchers": [
+            {
+              "method": "exclude",
+              "pattern": "\\d"
             },
-            "useAnnounce": "detail",
-            "variableCategories": "recommend"
+          ]
         },
         {
-            "name": "AutoHotkey v2.1 Debug",
-            "type": "autohotkey",
-            "request": "launch",
-            "runtime": "v2.1-alpha.15/AutoHotkey64.exe",
-            "program": "${file}",
-            "args": [],
-            "port": "9002-9010",
-            "variableCategories": "recommend",
-            "useDebugDirective": true,
-            "useAutoJumpToError": true
+          "label": "Global Func",
+          "source": "Global",
+          "hidden": "auto",
+          "matchers": [
+            {
+              "method": "exclude",
+              "pattern": "\\d"
+            },
+            {
+              "className": "Func",
+              "builtin": false,
+            },
+          ],
         },
         {
-            "name": "VariableCategories Test",
-            "type": "autohotkey",
-            "request": "launch",
-            "program": "${file}",
-            "runtime_v1": "AutoHotkey.exe",
-            "runtime_v2": "v2/AutoHotkey.exe",
-            "args": [],
-            "port": "9002-9010",
-            "stopOnEntry": false,
-            "useDebugDirective": true,
-            "usePerfTips": true,
-            "openFileOnExit": "${file}",
-            "internalConsoleOptions": "openOnSessionStart",
-            "useAutoJumpToError": true,
-            "trace": false,
-            "variableCategories": [
-                "Local",
-                {
-                    "label": "Global",
-                    "source": "Global",
-                    "noduplicate": true,
-                    "matchers": [
-                        {
-                            "method": "exclude",
-                            "pattern": "\\d"
-                        },
-                    ]
-                },
-                {
-                    "label": "Global Func",
-                    "source": "Global",
-                    "hidden": "auto",
-                    "matchers": [
-                        {
-                            "method": "exclude",
-                            "pattern": "\\d"
-                        },
-                        {
-                            "className": "Func",
-                            "builtin": false,
-                        },
-                    ],
-                },
-                {
-                    "label": "Built-in Func",
-                    "source": "Global",
-                    "hidden": "auto",
-                    "matchers": [
-                        {
-                            "method": "exclude",
-                            "pattern": "\\d"
-                        },
-                        {
-                            "className": "Func",
-                            "builtin": true,
-                        },
-                    ],
-                },
-                {
-                    "label": "Built-in Global",
-                    "source": "Global",
-                    "matchers": [
-                        {
-                            "method": "exclude",
-                            "pattern": "\\d"
-                        },
-                        {
-                            "method": "exclude",
-                            "className": "Func",
-                        },
-                        {
-                            "builtin": true,
-                        }
-                    ],
-                },
-                {
-                    "label": "Constant",
-                    "source": "Global",
-                    "matchers": [
-                        {
-                            "pattern": "^[A-Z_]+$",
-                            "ignorecase": false,
-                        }
-                    ],
-                },
-                {
-                    "label": "All",
-                    "source": [ "Local", "Static", "Global" ],
-                },
-            ],
-            "useAnnounce": "detail",
+          "label": "Built-in Func",
+          "source": "Global",
+          "hidden": "auto",
+          "matchers": [
+            {
+              "method": "exclude",
+              "pattern": "\\d"
+            },
+            {
+              "className": "Func",
+              "builtin": true,
+            },
+          ],
         },
         {
-            "name": "AutoHotkey Debug (UIA)",
-            "type": "autohotkey",
-            "request": "launch",
-            "program": "${file}",
-            "runtime": "AutoHotkeyU64_UIA.exe",
-            "args": [],
-            "port": "9002-9010",
-            "stopOnEntry": false,
-            "useDebugDirective": true,
-            "usePerfTips": true,
-            "openFileOnExit": "${file}",
-            "internalConsoleOptions": "openOnSessionStart",
-            "useAutoJumpToError": true,
-            "useUIAVersion": true,
-            "useAnnounce": "detail",
-            "trace": false,
+          "label": "Built-in Global",
+          "source": "Global",
+          "matchers": [
+            {
+              "method": "exclude",
+              "pattern": "\\d"
+            },
+            {
+              "method": "exclude",
+              "className": "Func",
+            },
+            {
+              "builtin": true,
+            }
+          ],
         },
         {
-            "name": "AutoHotkey_H Debug",
-            "request": "launch",
-            "type": "autohotkey",
-            "runtime_v1": "h/AutoHotkey.exe",
-            "runtime_v2": "h/v2/AutoHotkey.exe",
-            "program": "${file}",
-            "args": [],
-            "stopOnEntry": false,
-            "maxChildren": 10000,
-            "useAnnounce": "detail",
-            "variableCategories": "recommend",
+          "label": "Constant",
+          "source": "Global",
+          "matchers": [
+            {
+              "pattern": "^[A-Z_]+$",
+              "ignorecase": false,
+            }
+          ],
         },
         {
-            "name": "AutoHotkey Attach",
-            "type": "autohotkey",
-            "request": "attach",
-            "runtime": "AutoHotkey.exe",
-            "program": "${file}",
-            "hostname": "127.0.0.1",
-            "useDebugDirective": true,
-            "openFileOnExit": "${file}",
-            "useAutoJumpToError": true,
-            "useAnnounce": "detail",
-            "trace": false,
+          "label": "All",
+          "source": [ "Local", "Static", "Global" ],
         },
-        {
-            "name": "AutoHotkey Selected Attach",
-            "type": "autohotkey",
-            "request": "attach",
-            "runtime": "AutoHotkey.exe",
-            "hostname": "127.0.0.1",
-            "useDebugDirective": true,
-            "openFileOnExit": "${file}",
-            "useAutoJumpToError": true,
-            "useAnnounce": "detail",
-            "stopOnEntry": true,
-            "trace": false,
-        },
-    ]
+      ],
+    },
+    {
+      "extends": "AutoHotkey Debug",
+      "name": "AutoHotkey Debug UIA Version (File Extension)",
+      "type": "autohotkey",
+      "request": "launch",
+      "runtime": {
+        ".ahkl": "AutoHotkeyU64_UIA.exe",
+        ".ahk2": "v2/AutoHotkeyU64_UIA.exe",
+        ".ahknext": "v2.0-alpha.15/AutoHotkeyU64_UIA.exe",
+      },
+      "program": "${file}",
+    },
+    {
+      "extends": "AutoHotkey Debug",
+      "name": "AutoHotkey Debug UIA Version (Language ID)",
+      "type": "autohotkey",
+      "request": "launch",
+      "runtime": {
+        "[autohotkeyl]": "AutoHotkeyU64_UIA.exe",
+        "[autohotkey2]": "v2/AutoHotkeyU64_UIA.exe",
+        "[autohotkeynext]": "v2.0-alpha.15/AutoHotkeyU64_UIA.exe",
+      },
+      "program": "${file}",
+    },
+    {
+        "name": "AutoHotkey Attach",
+        "type": "autohotkey",
+        "request": "attach",
+        "runtime": "AutoHotkey.exe",
+        "program": "${file}",
+        "hostname": "127.0.0.1",
+        "useDebugDirective": true,
+        "openFileOnExit": "${file}",
+        "useAutoJumpToError": true,
+        "useAnnounce": "detail",
+        "trace": false,
+    },
+    {
+        "name": "AutoHotkey Selected Attach",
+        "type": "autohotkey",
+        "request": "attach",
+        "runtime": "AutoHotkey.exe",
+        "hostname": "127.0.0.1",
+        "useDebugDirective": true,
+        "openFileOnExit": "${file}",
+        "useAutoJumpToError": true,
+        "useAnnounce": "detail",
+        "stopOnEntry": true,
+        "trace": false,
+    },
+  ]
 }
