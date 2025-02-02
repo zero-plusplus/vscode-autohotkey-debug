@@ -30,6 +30,10 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 
 * The `runtime` attribute of launch.json now accepts object keyed by language ID (e.g. `[ahk]`) or extension (e.g. `.ahk`). This is similar to `runtime_v1` and `runtime_v2`, but more flexible
 
+## Fixed
+
+* Update dependent packages
+
 # Installation
 1. Install [VSCode](https://code.visualstudio.com/) with version `1.49.0` or higher
 2. Install [AutoHotkey](https://www.autohotkey.com/)

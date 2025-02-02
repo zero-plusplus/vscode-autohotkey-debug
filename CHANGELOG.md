@@ -16,6 +16,9 @@ Also want to check the development status, check the [commit history](https://gi
 ### Added
 * The `runtime` attribute of launch.json now accepts object keyed by language ID (e.g. `[ahk]`) or extension (e.g. `.ahk`)
 
+### Fixed
+* Update dependent packages
+
 ## [1.11.1] - 2024-09-23
 Support working with [AutoHotkey Dev Tools](https://github.com/zero-plusplus/autohotkey-devtools) to be released in the future
 

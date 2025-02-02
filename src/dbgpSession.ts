@@ -1,8 +1,7 @@
 // Ref: https://github.com/Lexikos/AutoHotkey_L/blob/master/source/Debugger.cpp
 import { EventEmitter } from 'events';
 import { Socket } from 'net';
-import * as parser from 'fast-xml-parser';
-import * as he from 'he';
+import { XMLParser } from 'fast-xml-parser';
 import convertHrTime from 'convert-hrtime';
 import { uniq, uniqBy } from 'lodash';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
@@ -11,6 +10,14 @@ import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/u
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
 import { isComObject, unescapeAhk } from './util/VariableManager';
+
+const xmlParser = new XMLParser({
+  attributeNamePrefix: '',
+  attributesGroupName: 'attributes',
+  textNodeName: 'content',
+  ignoreAttributes: false,
+  parseAttributeValue: false,
+});
 
 export interface XmlDocument {
   init?: XmlNode;
@@ -1001,15 +1008,7 @@ export class Session extends EventEmitter {
       // https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/171
       // If it contains a newline, it should be escaped in an AutoHotkey-like manner.
       const xml_str = data.toString().replace(/\r\n/gu, '`r`n').replace(/\n/gu, '`n');
-      const response = parser.parse(xml_str, {
-        attributeNamePrefix: '',
-        attrNodeName: 'attributes',
-        textNodeName: 'content',
-        ignoreAttributes: false,
-        parseNodeValue: false,
-        attrValueProcessor: (value: string, attrName: string) => String(he.decode(value, { isAttributeValue: true })),
-        tagValueProcessor: (value: string, tagName: string) => String(he.decode(value)),
-      });
+      const response = xmlParser.parse(xml_str);
 
       this.emit('message', response);
 
