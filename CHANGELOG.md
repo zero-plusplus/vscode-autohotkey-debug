@@ -12,6 +12,10 @@ Also want to check the development status, check the [commit history](https://gi
 ---
 
 ## [Released]
+## [1.12.0] - 202x-xx-xx
+### Added
+* The `runtime` attribute of launch.json now accepts object keyed by language ID (e.g. `[ahk]`) or extension (e.g. `.ahk`)
+
 ## [1.11.1] - 2024-09-23
 Support working with [AutoHotkey Dev Tools](https://github.com/zero-plusplus/autohotkey-devtools) to be released in the future
 
@@ -449,6 +453,7 @@ First released
 [Semantic Versioning]: https://semver.org/
 
 <!-- Versions -->
+[1.12.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.11.1..v1.12.0
 [1.11.1]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.11.0..v1.11.1
 [1.11.0]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.2..v1.11.0
 [1.10.2]: https://github.com/zero-plusplus/vscode-autohotkey-debug/compare/v1.10.1..v1.10.2
