@@ -20,11 +20,15 @@ I understand that this change is selfish of me, but I hope you understand that i
 # Overview
 This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/) that provides many [advanced features](https://github.com/zero-plusplus/vscode-autohotkey-debug/wiki/Features) in addition to the basic debugging features.
 
-## Update
-* `1.11.1` - 2024-09-23
-  * Support working with [AutoHotkey Dev Tools](https://github.com/zero-plusplus/autohotkey-devtools) to be released in the future
+# Update `v1.12.0`
 
-There will be no further updates. Previous changes can be found [here](CHANGELOG.md).
+> **Note: The v1.11.1 and later versions are provided with much less time spent on implementation and its testing. I will make every effort not to reduce reliability, but please be aware of this before installing.**
+
+## Added
+
+> **Note: All features added after `v1.11.1` are experimental. Specifications are not finalized and may be withdrawn in the future due to conflicts with existing features or other reasons.**
+
+* The `runtime` attribute of launch.json now accepts object keyed by language ID (e.g. `[ahk]`) or extension (e.g. `.ahk`). This is similar to `runtime_v1` and `runtime_v2`, but more flexible
 
 # Installation
 1. Install [VSCode](https://code.visualstudio.com/) with version `1.49.0` or higher
