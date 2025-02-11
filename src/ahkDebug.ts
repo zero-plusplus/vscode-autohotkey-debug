@@ -935,7 +935,7 @@ export class AhkDebugSession extends LoggingDebugSession {
             } as BreakpointAdvancedData;
             await this.breakpointManager!.registerBreakpoint(fileUri, line, advancedData);
           }
-        }));
+        })).catch(() => {});
       }));
     }
     // const DEBUG_hrtime = process.hrtime(DEBUG_start);

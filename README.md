@@ -33,6 +33,7 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 ## Fixed
 
 * Update dependent packages
+* [#236](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/236) Debugging may get stuck when using debug directive
 
 # Installation
 1. Install [VSCode](https://code.visualstudio.com/) with version `1.49.0` or higher
