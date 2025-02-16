@@ -15,6 +15,7 @@ Also want to check the development status, check the [commit history](https://gi
 ## [1.12.0] - 202x-xx-xx
 ### Added
 * The `runtime` attribute of launch.json now accepts object keyed by language ID (e.g. `[ahk]`) or extension (e.g. `.ahk`)
+* Enable ANSI escape sequences in the debug console, supported since [vscode v1.94](https://code.visualstudio.com/updates/v1_94#_support-for-data-colorization)
 
 ### Fixed
 * Update dependent packages

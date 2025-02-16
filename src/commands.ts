@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { DebugProtocol } from 'vscode-debugprotocol';
+import { DebugProtocol } from '@vscode/debugprotocol';
 import { URI } from 'vscode-uri';
 import { unescapeAhk } from './util/VariableManager';
 

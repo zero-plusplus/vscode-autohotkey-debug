@@ -11,8 +11,8 @@ import {
   TerminatedEvent,
   Thread,
   ThreadEvent,
-} from 'vscode-debugadapter';
-import { DebugProtocol } from 'vscode-debugprotocol';
+} from '@vscode/debugadapter';
+import { DebugProtocol } from '@vscode/debugprotocol';
 import { URI } from 'vscode-uri';
 import { sync as pathExistsSync } from 'path-exists';
 import AsyncLock from 'async-lock';
@@ -146,6 +146,7 @@ export class AhkDebugSession extends LoggingDebugSession {
       supportsLogPoints: true,
       supportsSetVariable: true,
       supportTerminateDebuggee: true,
+      supportsANSIStyling: true,                // vscode ^1.94, dap: ^1.69.0
     };
 
     this.sendResponse(response);

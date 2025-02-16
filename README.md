@@ -30,6 +30,20 @@ This extension is a debugger adapter for [VSCode](https://code.visualstudio.com/
 
 * The `runtime` attribute of launch.json now accepts object keyed by language ID (e.g. `[ahk]`) or extension (e.g. `.ahk`). This is similar to `runtime_v1` and `runtime_v2`, but more flexible
 
+* Enable ANSI escape sequences in the debug console, supported since [vscode v1.94](https://code.visualstudio.com/updates/v1_94#_support-for-data-colorization)
+
+  You can try the following code.
+
+  ```ahk
+  ; AutoHotkey v2
+  FileAppend(Chr(0x001b) . "[32m Example Green Text`n", "*")
+  ```
+  ```ahk
+  ; AutoHotkey v1
+  FileAppend, % Chr(0x001b) . "[32m Example Green Text`n", *
+  ```
+
+
 ## Fixed
 
 * Update dependent packages
