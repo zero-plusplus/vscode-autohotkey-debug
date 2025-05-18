@@ -192,16 +192,21 @@ export class AhkDebugSession extends LoggingDebugSession {
       }
     }
 
-    await this.session?.close();
-    this.server?.close();
+    await timeoutPromise(Promise.all([
+      this.session?.close(500),
+      new Promise<void>((resolve) => {
+        this.server?.close(() => {
+          resolve();
+        });
+      }),
+    ]), 500);
     this.isTerminateRequested = true;
+    this.sendResponse(response);
 
     const jumpToError = await this.jumpToError();
     if (!jumpToError) {
       this.openFileOnExit();
     }
-
-    this.sendResponse(response);
   }
   protected async launchRequest(response: DebugProtocol.LaunchResponse, args: LaunchRequestArguments): Promise<void> {
     this.traceLogger.enable = args.trace;

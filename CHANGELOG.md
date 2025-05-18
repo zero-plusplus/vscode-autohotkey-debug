@@ -20,6 +20,7 @@ Also want to check the development status, check the [commit history](https://gi
 ### Fixed
 * Update dependent packages
 * [#236](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/236) Debugging may get stuck when using debug directive
+* [#291](https://github.com/zero-plusplus/vscode-autohotkey-debug/issues/291) Debug adapter may not terminate properly if the AutoHotkey runtime is killed for some reason
 
 ## [1.11.1] - 2024-09-23
 Support working with [AutoHotkey Dev Tools](https://github.com/zero-plusplus/autohotkey-devtools) to be released in the future

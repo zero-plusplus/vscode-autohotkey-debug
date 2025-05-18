@@ -6,7 +6,7 @@ import convertHrTime from 'convert-hrtime';
 import { uniq, uniqBy } from 'lodash';
 import { AhkVersion } from '@zero-plusplus/autohotkey-utilities';
 import { CaseInsensitiveMap } from './util/CaseInsensitiveMap';
-import { isNumberLike, joinVariablePathArray, splitVariablePath } from './util/util';
+import { isNumberLike, joinVariablePathArray, splitVariablePath, timeoutPromise } from './util/util';
 import { equalsIgnoreCase } from './util/stringUtils';
 import { TraceLogger } from './util/TraceLogger';
 import { isComObject, unescapeAhk } from './util/VariableManager';
@@ -940,9 +940,9 @@ export class Session extends EventEmitter {
 
     return await getChildren(parentVariablePath) ?? [];
   }
-  public async close(): Promise<void> {
+  public async close(timeout_ms = 500): Promise<void> {
     this.removeAllListeners();
-    return new Promise<void>((resolve, reject) => {
+    return timeoutPromise(new Promise<void>((resolve, reject) => {
       if (this.socketClosed) {
         resolve();
         return;
@@ -950,7 +950,7 @@ export class Session extends EventEmitter {
 
       this.socket.once('close', resolve);
       this.socket.end();
-    });
+    }), timeout_ms);
   }
   private createTransactionId(): number {
     this.transactionCounter += 1;
