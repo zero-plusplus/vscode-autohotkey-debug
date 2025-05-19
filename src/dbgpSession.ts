@@ -504,7 +504,7 @@ export class Session extends EventEmitter {
     return this.socket.writable;
   }
   public get socketClosed(): boolean {
-    return !this.socket.writable;
+    return this.socket.destroyed || this.socket.closed || !this.socket.writable;
   }
   constructor(socket: Socket, logger?: TraceLogger) {
     super();
